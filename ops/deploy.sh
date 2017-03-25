@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Tests and validates code, increment version, tag in git and commit, push to
 # pypi.
+# Requirements:
+# pip install virtualenv
 # Usage:
-# Run when git working directory clean.
+# Run when git working directory clean otherwise it'll error and tell you.
 # run like so: ./ops/deploy.sh [bumplevel]
 # where bumplevel either: major, minor, patch
 # if you don't set bumplevel it defaults to patch.
