@@ -21,7 +21,7 @@ pip
 ---
 .. code-block:: bash
 
-    # pip install --upgrade pyper-cli
+  # pip install --upgrade pyper-cli
 
 Python version
 --------------
@@ -29,3 +29,40 @@ Test against Python 3.x
 
 Usage
 =====
+
+
+Testing
+=======
+Testing without worrying about dependencies
+-------------------------------------------
+Run from tox to test the packaging cycle inside a virtual env, plus run all
+tests:
+
+  .. code-block:: bash
+
+      # just run tests
+      $ tox -e dev -- tests
+      # run tests, validate README.rst, run flake8 linter
+      $ tox -e stage -- tests
+
+If tox is taking too long
+-------------------------
+The test framework is pytest. If you only want to run tests:
+
+.. code-block:: bash
+
+  $ pip install -e .[dev,test]
+
+Day-to-day testing
+------------------
+- Tests live under /tests (surprising, eh?). Mirror the directory structure of
+  the code being tested.
+- Prefix a test definition with `test_` - so a unit test looks like
+
+  .. code-block:: python
+
+    def test_this_should_totally_work():
+
+- To execute tests, from root directory: `pytest tests`
+- For a bit more info on running tests: `pytest --verbose [path]`
+- To execute a specific test module: `pytest tests/unit/arb_test_file.py`

@@ -1,0 +1,5 @@
+# To execute this pipeline, shell something like:
+# pypyr --name echo --context "echoMe=text goes here"
+context_parser: pypyrcli.context.keyvaluepairs
+steps:
+  - pypyrcli.steps.echo
