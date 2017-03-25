@@ -70,7 +70,7 @@ bumpversion --tag ${BUMPLEVEL} 'pypyrcli/__init__.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
-NEW_VERSION = pypyr --v | cut -d " " -f2
+NEW_VERSION=pypyr --v | cut -d " " -f2
 echo "New version is: ${NEW_VERSION}"
 
 # Build wheel
@@ -91,7 +91,7 @@ echo "Deploy to pypi complete. Testing in new virtual env."
 
 create_virtualenv .pypitest
 pip install pypyr-cli
-TEST_DEPLOY_VERSION = pypyr --v | cut -d " " -f2
+TEST_DEPLOY_VERSION=pypyr --v | cut -d " " -f2
 if [ "${TEST_DEPLOY_VERSION}" =  "${NEW_VERSION}" ]; then
   echo "Deployed version is ${TEST_DEPLOY_VERSION}. Smoke test passed OK."
 else
