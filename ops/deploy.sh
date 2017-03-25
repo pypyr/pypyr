@@ -70,13 +70,14 @@ bumpversion --tag ${BUMPLEVEL} 'pypyrcli/__init__.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
-set ${PYPER_NEW_VERSION} = pypyr --v | cut -d " " -f2
+set ${NEW_VERSION} = pypyr --v | cut -d " " -f2
+echo "New version is: ${NEW_VERSION}"
 
 # Build wheel
 python setup.py bdist_wheel
 
 # Deploy wheel
-twine upload -s dist/pypyr_cli-${PYPER_NEW_VERSION}-py3-none-any.whl
+twine upload -s dist/pypyr_cli-${NEW_VERSION}-py3-none-any.whl
 
 # Any dirt in working dir is deploy related, so commit local changes and push
 # the new tag to origin.
@@ -91,10 +92,10 @@ echo "Deploy to pypi complete. Testing in new virtual env."
 create_virtualenv .pypitest
 pip install pypyr-cli
 SET ${TEST_DEPLOY_VERSION} = pypyr --v | cut -d " " -f2
-if [ "${TEST_DEPLOY_VERSION}" =  "${PYPER_NEW_VERSION}" ]; then
+if [ "${TEST_DEPLOY_VERSION}" =  "${NEW_VERSION}" ]; then
   echo "Deployed version is ${TEST_DEPLOY_VERSION}. Smoke test passed OK."
 else
-  echo "Something went wrong. Deployed version is ${TEST_DEPLOY_VERSION}, but expected ${PYPER_NEW_VERSION}"
+  echo "Something went wrong. Deployed version is ${TEST_DEPLOY_VERSION}, but expected ${NEW_VERSION}"
 fi;
 
 remove_virtualenv .pypitest
