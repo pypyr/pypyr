@@ -82,7 +82,7 @@ twine upload -s dist/pypyr_cli-${NEW_VERSION}-py3-none-any.whl
 
 # Any dirt in working dir is deploy related, so commit local changes and push
 # the new commits AND tags to origin.
-git push --follow-tags
+git push && git push --tags
 
 # all done, clean-up
 remove_virtualenv .deployenv
