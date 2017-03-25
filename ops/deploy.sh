@@ -13,7 +13,7 @@
 # git tag -d `git describe --tags --abbrev=0`    # delete the tag
 
 # default BUMPLEVEL to patch if it doesn't exist.
-set ${BUMPLEVEL} = ${BUMPLEVEL:=patch}
+let ${BUMPLEVEL} = ${BUMPLEVEL:=patch}
 echo "Bumping (major.minor.patch): ${BUMPLEVEL}"
 
 # take one parameter: name of virtual environment
@@ -70,7 +70,7 @@ bumpversion --tag ${BUMPLEVEL} 'pypyrcli/__init__.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
-set ${NEW_VERSION} = pypyr --v | cut -d " " -f2
+let ${NEW_VERSION} = pypyr --v | cut -d " " -f2
 echo "New version is: ${NEW_VERSION}"
 
 # Build wheel
