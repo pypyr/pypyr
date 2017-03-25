@@ -57,7 +57,8 @@ def get_parsed_context(pipeline, context):
         logger.debug(
             "pipeline does not have custom context parser. Return None.")
         logger.debug("done")
-        # initialize to an empty dictionary
+        # initialize to an empty dictionary because you want to be able to run
+        # with no context.
         return {}
 
 

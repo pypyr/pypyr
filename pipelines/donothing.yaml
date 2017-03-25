@@ -1,0 +1,3 @@
+# To execute this pipeline, shell something like:
+# pypyr --name donothing
+steps:

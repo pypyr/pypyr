@@ -10,7 +10,7 @@ def get_args():
     """Parse arguments passed in from shell."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
-        description='cd pipeline runner')
+        description='pypyr pipeline runner')
     parser.add_argument('--name', dest='pipeline_name', required=True,
                         help='Name of pipeline to run. It should exist in the '
                         '/pipelines directory.')
