@@ -81,8 +81,8 @@ python setup.py bdist_wheel
 twine upload -s dist/pypyr_cli-${NEW_VERSION}-py3-none-any.whl
 
 # Any dirt in working dir is deploy related, so commit local changes and push
-# the new tag to origin.
-git push --tags
+# the new commits AND tags to origin.
+git push --follow-tags
 
 # all done, clean-up
 remove_virtualenv .deployenv
