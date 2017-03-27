@@ -66,6 +66,20 @@ Day-to-day testing
 
     def test_this_should_totally_work():
 
-- To execute tests, from root directory: `pytest tests`
-- For a bit more info on running tests: `pytest --verbose [path]`
-- To execute a specific test module: `pytest tests/unit/arb_test_file.py`
+- To execute tests, from root directory:
+
+  .. code-block:: bash
+
+    pytest tests
+
+- For a bit more info on running tests:
+
+  .. code-block:: bash
+
+    pytest --verbose [path]
+
+- To execute a specific test module:
+
+  .. code-block:: bash
+
+    pytest tests/unit/arb_test_file.py
