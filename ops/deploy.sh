@@ -67,7 +67,7 @@ create_virtualenv .deployenv
 pip install -e .[deploy]
 
 # Bump version number. first param is choice of: major, minor, patch
-bumpversion --commit --tag ${BUMPLEVEL} 'pypyrcli/__init__.py'
+bumpversion --commit --tag ${BUMPLEVEL} 'pypyr/__init__.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
@@ -78,7 +78,7 @@ echo "New version is: ${NEW_VERSION}"
 python setup.py bdist_wheel
 
 # Deploy wheel
-twine upload -s dist/pypyr_cli-${NEW_VERSION}-py3-none-any.whl
+twine upload -s dist/pypyr-${NEW_VERSION}-py3-none-any.whl
 
 # Any dirt in working dir is deploy related, so commit local changes and push
 # the new commits AND tags to origin.
@@ -91,7 +91,9 @@ remove_virtualenv .deployenv
 echo "Deploy to pypi complete. Testing in new virtual env."
 
 create_virtualenv .pypitest
-pip install pypyr-cli
+pip install pypyr
+# pypyr --v will return "pypyr x.y.z" - get everything after the space for the
+# bare version number.
 TEST_DEPLOY_VERSION=`pypyr --v | cut -d " " -f2`
 if [ "${TEST_DEPLOY_VERSION}" =  "${NEW_VERSION}" ]; then
   echo "Deployed version is ${TEST_DEPLOY_VERSION}. Smoke test passed OK."

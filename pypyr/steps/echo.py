@@ -1,8 +1,8 @@
 """Step that echos simple input back to logger."""
-import pypyrcli.log.logger
+import pypyr.log.logger
 
 # logger means the log level will be set correctly
-logger = pypyrcli.log.logger.get_logger(__name__)
+logger = pypyr.log.logger.get_logger(__name__)
 
 
 def run_step(context):

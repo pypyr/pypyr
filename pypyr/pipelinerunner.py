@@ -3,15 +3,15 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
-import pypyrcli.log.logger
+import pypyr.log.logger
 import importlib
 import os
 import ruamel.yaml as yaml
 
 
-pypyrcli.log.logger.set_logging_config()
+pypyr.log.logger.set_logging_config()
 
-logger = pypyrcli.log.logger.get_logger(__name__)
+logger = pypyr.log.logger.get_logger(__name__)
 
 
 def get_module(module_abs_import):
@@ -157,7 +157,7 @@ def get_step_input_context(in_parameters, context):
 
 def main(pipeline_name, pipeline_context_input, log_level):
     """Entry point for pipeline runner."""
-    pypyrcli.log.logger.log_level = log_level
+    pypyr.log.logger.log_level = log_level
     logger.setLevel(log_level)
     logger.debug("starting pipeline runner")
 

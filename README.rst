@@ -24,7 +24,7 @@ pip
 ---
 .. code-block:: bash
 
-  # pip install --upgrade pypyr-cli
+  # pip install --upgrade pypyr
 
 Python version
 --------------

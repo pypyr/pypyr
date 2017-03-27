@@ -11,7 +11,7 @@ from setuptools import setup, find_packages
 from codecs import open
 from os import path
 
-import pypyrcli
+import pypyr
 
 here = path.abspath(path.dirname(__file__))
 
@@ -20,12 +20,12 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='pypyr-cli',
+    name='pypyr',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=pypyrcli.__version__,
+    version=pypyr.__version__,
 
     description='pipeline runner',
     long_description=long_description,
@@ -107,8 +107,8 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'pypyr=pypyrcli.cli:main',
-            'pypyr-cli=pypyrcli.cli:main'
+            'pypyr=pypyr.cli:main',
+            'pypyr-cli=pypyr.cli:main'
         ],
     },
 )

@@ -1,10 +1,10 @@
 """Default execution entry point if running the package via python -m"""
-import cd.cli
+import pypyr.cli
 import sys
 
 
 def main():
-    return cd.cli.main()
+    return pypyr.cli.main()
 
 
 if __name__ == '__main__':
