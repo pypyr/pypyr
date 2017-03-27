@@ -38,8 +38,7 @@ Testing
 =======
 Testing without worrying about dependencies
 -------------------------------------------
-Run from tox to test the packaging cycle inside a virtual env, plus run all
-tests:
+Run tox to test the packaging cycle inside a virtual env, plus run all tests:
 
   .. code-block:: bash
 
@@ -48,8 +47,8 @@ tests:
       # run tests, validate README.rst, run flake8 linter
       $ tox -e stage -- tests
 
-If tox is taking too long
--------------------------
+If tox takes too long
+---------------------
 The test framework is pytest. If you only want to run tests:
 
 .. code-block:: bash
