@@ -42,10 +42,10 @@ Run tox to test the packaging cycle inside a virtual env, plus run all tests:
 
   .. code-block:: bash
 
-      # just run tests
-      $ tox -e dev -- tests
-      # run tests, validate README.rst, run flake8 linter
-      $ tox -e stage -- tests
+    # just run tests
+    $ tox -e dev -- tests
+    # run tests, validate README.rst, run flake8 linter
+    $ tox -e stage -- tests
 
 If tox takes too long
 ---------------------
@@ -57,9 +57,9 @@ The test framework is pytest. If you only want to run tests:
 
 Day-to-day testing
 ------------------
-- Tests live under /tests (surprising, eh?). Mirror the directory structure of
+- Tests live under */tests* (surprising, eh?). Mirror the directory structure of
   the code being tested.
-- Prefix a test definition with `test_` - so a unit test looks like
+- Prefix a test definition with *test_* - so a unit test looks like
 
   .. code-block:: python
 
