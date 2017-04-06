@@ -67,7 +67,7 @@ create_virtualenv .deployenv
 pip install -e .[deploy]
 
 # Bump version number. first param is choice of: major, minor, patch
-bumpversion --commit --tag ${BUMPLEVEL} 'pypyr/__init__.py'
+bumpversion --commit --tag ${BUMPLEVEL} 'pypyr/version.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
