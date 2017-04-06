@@ -1,4 +1,4 @@
-"""Pypyr Step that executes a shell as a sub-process.
+"""pypyr Step that executes a shell as a sub-process.
 
 The context['cmd'] string must be formatted exactly as it would be when typed
 at the shell prompt. This includes, for example, quoting or backslash escaping

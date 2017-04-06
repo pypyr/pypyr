@@ -1,4 +1,4 @@
-"""Pypyr Step that executes a safe shell as a sub-process.
+"""pypyr Step that executes a safe shell as a sub-process.
 
 You cannot use things like exit, return, shell pipes, filename wildcards,
 environment,variable expansion, and expansion of ~ to a user’s home
