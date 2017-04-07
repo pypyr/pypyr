@@ -72,7 +72,7 @@ def get_pipeline_definition(pipeline_name):
     logger.debug("loading pipeline definition")
 
     # look for name.yaml in the pipelines/ sub-directory
-    logger.info(f"current directory is {os.getcwd()}")
+    logger.debug(f"current directory is {os.getcwd()}")
 
     # looking for {cwd}/pipelines/[pipeline_name].yaml
     pipeline_path = os.path.abspath(os.path.join('pipelines',
@@ -125,7 +125,7 @@ def get_pipeline_steps(pipeline, steps_group):
         logger.debug("done")
         return pipeline[steps_group]
     else:
-        logger.info(
+        logger.debug(
             f"pipeline doesn't have a {steps_group} collection. Add a "
             f"{steps_group}: sequence to the yaml if you want {steps_group} "
             "actually to do something.")
