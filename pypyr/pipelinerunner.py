@@ -3,7 +3,6 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
-import logging
 import os
 import pypyr.log.logger
 import pypyr.moduleloader
