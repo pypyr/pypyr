@@ -226,11 +226,15 @@ def run_pipeline_step(step_name, context):
     try:
         logger.debug(f"running step {step}")
         result_context = step.run_step(context)
-        assert result_context, (
-            f"{step_name} returned None context. At the very least it must "
-            "return an empty dictionary. Is the step super-sure it really "
-            "wants to nuke the context for all subsequent steps? If not, add "
-            "'return context' at the end of the step code.")
+
+        if context:
+            # only ensure result is not empty if input wasn't empty. This is to
+            # make sure step doesn't kill the context for downstream.
+            assert (result_context), (
+                f"{step_name} returned None context. At the very least it must"
+                " return an empty dictionary. Is the step super-sure it really"
+                " wants to nuke the context for all subsequent steps? If not,"
+                " add 'return context' at the end of the step code.")
         logger.debug(f"step {step} done")
         return result_context
     except AttributeError:

@@ -6,4 +6,5 @@ __version__ = '0.0.10'
 
 
 def get_version():
-    return f'%(prog)s {__version__} python {platform.python_version()}'
+    return (f'pypyr {__version__} '
+            f'python {platform.python_version()}')
