@@ -6,6 +6,7 @@ pipelinerunner uses this to parse and run steps.
 import pypyr.log.logger
 import pypyr.moduleloader
 
+# use pypyr logger to ensure loglevel is set correctly
 logger = pypyr.log.logger.get_logger(__name__)
 
 

@@ -3,15 +3,14 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
+import logging
+import os
 import pypyr.log.logger
 import pypyr.moduleloader
 import pypyr.stepsrunner
-import os
 import ruamel.yaml as yaml
 
-
-pypyr.log.logger.set_logging_config()
-
+# use pypyr logger to ensure loglevel is set correctly
 logger = pypyr.log.logger.get_logger(__name__)
 
 
@@ -51,14 +50,10 @@ def get_pipeline_definition(pipeline_name):
     pipeline_name.yaml should be in the pipelines folder.
     """
     logger.debug("starting")
-    logger.debug("loading pipeline definition")
 
-    # look for name.yaml in the pipelines/ sub-directory
-    logger.debug(f"current directory is {os.getcwd()}")
-
-    # looking for {cwd}/pipelines/[pipeline_name].yaml
-    pipeline_path = os.path.abspath(os.path.join('pipelines',
-                                                 pipeline_name + '.yaml'))
+    pipeline_path = pypyr.moduleloader.get_pipeline_path(
+        pipeline_name=pipeline_name,
+        working_directory=os.getcwd())
 
     logger.debug(f"Trying to open pipeline at path {pipeline_path}")
     try:
@@ -80,8 +75,8 @@ def get_pipeline_definition(pipeline_name):
 
 def main(pipeline_name, pipeline_context_input, log_level):
     """Entry point for pipeline runner."""
-    pypyr.log.logger.log_level = log_level
-    logger.setLevel(log_level)
+    pypyr.log.logger.set_root_logger(log_level)
+
     logger.debug("starting pipeline runner")
 
     logger.debug(f"you asked to run pipeline: {pipeline_name}")
