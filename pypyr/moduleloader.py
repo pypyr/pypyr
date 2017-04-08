@@ -6,6 +6,7 @@ Load modules dynamically, find things on file-system.
 import importlib
 import os
 import pypyr.log.logger
+import sys
 
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -68,3 +69,16 @@ def get_pipeline_path(pipeline_name, working_directory):
 
     logger.debug("done")
     return pipeline_path
+
+
+def set_working_directory(working_directory):
+    """Add working_directory to sys.paths.
+
+    This allows dynamic loading of arbitrary python modules in cwd.
+    """
+    logger.debug("starting")
+
+    logger.debug(f"adding {working_directory} to sys.paths")
+    sys.path.append(working_directory)
+
+    logger.debug("done")

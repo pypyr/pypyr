@@ -81,6 +81,11 @@ def main(pipeline_name, pipeline_context_input, log_level):
     logger.debug(f"you asked to run pipeline: {pipeline_name}")
     logger.debug(f"you set the initial context to: {pipeline_context_input}")
 
+    # pipelines specify steps in python modules that load dynamically.
+    # make it easy for the operator so that the cwd is automatically included
+    # without needing to pip install a package 1st.
+    pypyr.moduleloader.set_working_directory(os.getcwd())
+
     pipeline_definition = get_pipeline_definition(pipeline_name=pipeline_name)
 
     try:
