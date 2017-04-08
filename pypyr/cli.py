@@ -19,7 +19,7 @@ def get_args():
     parser.add_argument('--context', dest='pipeline_context',
                         help='String for context values. Parsed by '
                         'pipeline''s context_parser function.')
-    parser.add_argument('--dir', dest='working_dir', default='{os.getcwd()}',
+    parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
     parser.add_argument('--loglevel', dest='log_level', type=int, default=10,
