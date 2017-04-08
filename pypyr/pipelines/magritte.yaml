@@ -1,0 +1,5 @@
+  steps:
+    - name: pypyr.steps.echo
+      description: Output echoMe
+      in:
+        echoMe: Ceci n'est pas une pipe
