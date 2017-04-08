@@ -443,4 +443,5 @@ so that you don't have to deal with yet another dependency you don't need if you
 current project isn't using AWS.
 
 If you want your plug-in listed here for official cred, please get in touch via
-the Issues list. Get in touch anyway, would love to hear from you.
+the Issues list. Get in touch anyway, would love to hear from you at 
+https://www.345.systems/contact.
