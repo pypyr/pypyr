@@ -3,7 +3,6 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
-import os
 import pypyr.log.logger
 import pypyr.moduleloader
 import pypyr.stepsrunner
@@ -42,7 +41,7 @@ def get_parsed_context(pipeline, context):
         return {}
 
 
-def get_pipeline_definition(pipeline_name):
+def get_pipeline_definition(pipeline_name, working_dir):
     """Open and parse the pipeline definition yaml.
 
     Get instance of the module specified by the pipeline_name.
@@ -52,7 +51,7 @@ def get_pipeline_definition(pipeline_name):
 
     pipeline_path = pypyr.moduleloader.get_pipeline_path(
         pipeline_name=pipeline_name,
-        working_directory=os.getcwd())
+        working_directory=working_dir)
 
     logger.debug(f"Trying to open pipeline at path {pipeline_path}")
     try:
@@ -72,7 +71,7 @@ def get_pipeline_definition(pipeline_name):
     return pipeline_definition
 
 
-def main(pipeline_name, pipeline_context_input, log_level):
+def main(pipeline_name, pipeline_context_input, working_dir, log_level):
     """Entry point for pipeline runner."""
     pypyr.log.logger.set_root_logger(log_level)
 
@@ -84,9 +83,10 @@ def main(pipeline_name, pipeline_context_input, log_level):
     # pipelines specify steps in python modules that load dynamically.
     # make it easy for the operator so that the cwd is automatically included
     # without needing to pip install a package 1st.
-    pypyr.moduleloader.set_working_directory(os.getcwd())
+    pypyr.moduleloader.set_working_directory(working_dir)
 
-    pipeline_definition = get_pipeline_definition(pipeline_name=pipeline_name)
+    pipeline_definition = get_pipeline_definition(pipeline_name=pipeline_name,
+                                                  working_dir=working_dir)
 
     try:
         # if parsed_context fails to assign, the failure hanlder will be unable
