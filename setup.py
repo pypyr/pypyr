@@ -27,7 +27,8 @@ setup(
     # https://packaging.python.org/en/latest/single_source_version.html
     version=pypyr.version.__version__,
 
-    description='pipeline runner',
+    description='pipeline runner command line to run pipelines defined in '
+    'yaml',
     long_description=long_description,
 
     # The project's main homepage.
