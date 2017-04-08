@@ -15,8 +15,9 @@
 # git tag -d `git describe --tags --abbrev=0`    # delete the tag
 
 # default BUMPLEVEL to patch if it doesn't exist.
-BUMPLEVEL=${BUMPLEVEL:=patch}
+BUMPLEVEL=${1:=patch}
 echo "Bumping (major.minor.patch): ${BUMPLEVEL}"
+read -rsp $'Press enter to continue...\n'
 
 # take one parameter: name of virtual environment
 create_virtualenv()
