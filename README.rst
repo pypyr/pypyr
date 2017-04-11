@@ -92,7 +92,7 @@ working directory.
       - my.package.my.module # simple step pointing at a python module in a package
       - mymodule # simple step pointing at a python file
       - name: my.package.another.module # complex step. It contains a description and in parameters.
-        description: Description is for humans. It's any text that makes your life easier.
+        description: Optional description is for humans. It's any text that makes your life easier.
         in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
           parameter1: value1
           parameter2: value2
@@ -223,6 +223,45 @@ You can specify a step in the pipeline yaml in two ways:
 
 Built-in steps
 ~~~~~~~~~~~~~~
+pypyr.steps.contextset
+``````````````````````
+Sets context values from already existing context values.
+
+This is handy if you need to prepare certain keys in context where a next step
+might need a specific key. If you already have the value in context, you can
+create a new key (or update existing key) with that value.
+
+So let's say you already have `context['currentKey'] = 'eggs'`.
+If you run newKey: currentKey, you'll end up with `context['newKey'] == 'eggs'`
+
+For example, say your context looks like this,
+
+  .. code-block:: yaml
+
+        key1: value1
+        key2: value2
+        key3: value3
+
+and your pipeline yaml looks like this:
+
+  .. code-block:: yaml
+
+    steps:
+      - name: pypyr.steps.contextset
+        in:
+          contextSet:
+            key2: key1
+            key4: key3
+
+This will result in context like this:
+
+  .. code-block:: yaml
+
+      key1: value1
+      key2: value1
+      key3: value3
+      key4: value3
+
 pypyr.steps.echo
 ````````````````
 Echo the context value `echoMe` to the output.
