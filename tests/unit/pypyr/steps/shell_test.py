@@ -1,5 +1,4 @@
 """shell.py unit tests."""
-import pypyr.log.logger
 import pypyr.steps.shell
 import pytest
 import subprocess

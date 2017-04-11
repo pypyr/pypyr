@@ -1,5 +1,4 @@
 """safeshell.py unit tests."""
-import pypyr.log.logger
 import pypyr.steps.safeshell
 import pytest
 import subprocess
