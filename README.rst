@@ -152,6 +152,8 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.context.json          | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.context.jsonfile      | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
@@ -443,5 +445,5 @@ so that you don't have to deal with yet another dependency you don't need if you
 current project isn't using AWS.
 
 If you want your plug-in listed here for official cred, please get in touch via
-the Issues list. Get in touch anyway, would love to hear from you at 
+the Issues list. Get in touch anyway, would love to hear from you at
 https://www.345.systems/contact.

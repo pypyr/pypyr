@@ -3,7 +3,7 @@
 import pypyr.log.logger
 import json
 
-# use cdlogger to ensure loglevel is set correctly
+# use pypyrlogger to ensure loglevel is set correctly
 logger = pypyr.log.logger.get_logger(__name__)
 
 
