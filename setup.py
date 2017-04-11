@@ -113,5 +113,8 @@ setup(
             'pypyr=pypyr.cli:main',
             'pypyr-cli=pypyr.cli:main'
         ],
+        'pypyr': [
+            'pypyr=pypyrcli'
+        ]
     },
 )
