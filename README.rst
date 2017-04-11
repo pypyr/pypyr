@@ -473,13 +473,13 @@ Dependencies to external libraries should generally get their own package, so
 end-users can selectively install what they need rather than have a monolithic
 batteries-included application.
 
-If you've got some custom context_parser or steps code that are useful, create a repo
-and bask in the glow of sharing with the open source community. Honor the pypyr
-Apache license please.
+If you've got some custom context_parser or steps code that are useful, create a
+repo and bask in the glow of sharing with the open source community. Honor the
+pypyr Apache license please.
 
 I generally name plug-ins `pypyr-myplugin`, where myplugin is likely some sort
 of dependency that you don't want in the pypyr core cli. For example,
-`pypyr-aws` contains pypyr-steps for the AWS boto3 library. This is kept seperate
+`pypyr-aws` contains pypyr-steps for the AWS boto3 library. This is kept separate
 so that you don't have to deal with yet another dependency you don't need if your
 current project isn't using AWS.
 
