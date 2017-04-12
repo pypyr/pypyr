@@ -30,8 +30,8 @@ def test_py_sequence_with_semicolons():
     pypyr.steps.py.run_step(context)
 
     assert context == {'pycode':
-                       'print(1); print(2); print(3);'}, ("""context in and out
-                                                             the same""")
+                       'print(1); print(2); print(3);'}, ("context in and out "
+                                                          "the same")
 
 
 def test_py_sequence_with_linefeeds():
