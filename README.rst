@@ -298,10 +298,30 @@ You can run:
 
     $ pypyr --name look-ma-no-params --log 20
 
+pypyr.steps.py
+``````````````
+Executes the context value `pycode` as python code.
+
+Will exec context['pycode'] as a dynamically interpreted python code block.
+
+You can access and change the context dictionary in a py step. See a worked
+example here:
+https://github.com/pypyr/pypyr-example/tree/master/pipelines/py.yaml
+
+For example, this will invoke python print and print 2:
+
+.. code-block:: yaml
+
+  steps:
+    - name: pypyr.steps.py
+      description: Example of an arb python command. Will print 2.
+      in:
+        pycode: print(1+1)
 
 pypyr.steps.pypyrversion
 ````````````````````````
 Outputs the same as:
+
   .. code-block:: bash
 
     pypyr --version
