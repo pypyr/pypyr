@@ -45,3 +45,22 @@ def test_key_in_context_has_value_passes():
     pypyr.validate.asserts.key_in_context_has_value({'key1': 'value1'},
                                                     'key1',
                                                     None)
+
+
+def test_keys_in_context_has_value_passes():
+    """Pass if list of keys all found in context dictionary."""
+    context = {'key1': 'value1', 'key2': 'value2', 'key3': 'value3'}
+    pypyr.validate.asserts.keys_in_context_has_value(context,
+                                                     ['key1', 'key3'],
+                                                     None)
+
+
+def test_keys_in_context_not_found():
+    """AssertionError if list of keys not all found in context."""
+    with pytest.raises(AssertionError):
+        context = {'key1': 'value1', 'key2': 'value2', 'key3': 'value3'}
+        pypyr.validate.asserts.keys_in_context_has_value(context,
+                                                         ['key1',
+                                                          'key4',
+                                                          'key2'],
+                                                         None)
