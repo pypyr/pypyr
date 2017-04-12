@@ -51,9 +51,9 @@ def get_pipeline_path(pipeline_name, working_directory):
     if os.path.isfile(pipeline_path):
         logger.debug(f"Found {pipeline_path}")
     else:
-        logger.debug(f"""{pipeline_name} not found in current
-        directory/pipelines folder. Looking in pypyr install directory
-        instead.""")
+        logger.debug(f"{pipeline_name} not found in current "
+                     "directory/pipelines folder. Looking in pypyr install "
+                     "directory instead.")
         pypyr_dir = os.path.dirname(os.path.abspath(__file__))
         logger.debug(f"pypyr installation directory is: {pypyr_dir}")
         pipeline_path = os.path.abspath(os.path.join(
@@ -64,8 +64,9 @@ def get_pipeline_path(pipeline_name, working_directory):
         if os.path.isfile(pipeline_path):
             logger.debug(f"Found {pipeline_path}")
         else:
-            raise FileNotFoundError(f"""{pipeline_name}.yaml not found in
-            either {working_directory}/pipelines or {pypyr_dir}/pipelines""")
+            raise FileNotFoundError(f"{pipeline_name}.yaml not found in "
+                                    f"either {working_directory}/pipelines or "
+                                    f"{pypyr_dir}/pipelines")
 
     logger.debug("done")
     return pipeline_path
