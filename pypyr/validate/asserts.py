@@ -2,7 +2,7 @@
 
 
 def key_in_context_has_value(context, key, caller):
-    """Assert that validate_me contains key which has a value.
+    """Assert that context contains key which has a value.
 
     Args:
         context: dictionary
@@ -21,3 +21,15 @@ def key_in_context_has_value(context, key, caller):
         f"{caller}.")
     assert context[key], (
         f"context['{key}'] must have a value for {caller}.")
+
+
+def keys_in_context_has_value(context, keys, caller):
+    """Check that keys list are all in context.
+
+    Args:
+        context: dictionary
+        keys: list. Will check each of these keys in context
+        caller: calling function name - just used for informational messages
+    """
+    for key in keys:
+        key_in_context_has_value(context, key, caller)
