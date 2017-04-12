@@ -28,14 +28,19 @@ def get_parsed_context(pipeline, context_in_string):
             logger.debug(f"step {parser_module_name} done")
             # Downstream steps likely to expect context not to be None, hence
             # empty rather than None.
-            return {} if result_context is None else result_context
+            if result_context is None:
+                logger.debug(f"{parser_module_name} returned None. Using "
+                             "empty context instead")
+                return {}
+            else:
+                return result_context
         except AttributeError:
             logger.error(f"The parser {parser_module_name} doesn't have a "
                          "get_parsed_context(context) function.")
             raise
     else:
-        logger.debug(
-            "pipeline does not have custom context parser. Return None.")
+        logger.debug("pipeline does not have custom context parser. Using "
+                     "empty context.")
         logger.debug("done")
         # initialize to an empty dictionary because you want to be able to run
         # with no context.
