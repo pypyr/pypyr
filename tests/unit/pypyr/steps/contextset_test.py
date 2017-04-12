@@ -17,7 +17,7 @@ def test_context_set_throws_on_contextset_missing():
 
 def test_context_set_pass():
     """contextset success case"""
-    context_in = {
+    context = {
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
@@ -27,7 +27,7 @@ def test_context_set_pass():
         }
     }
 
-    context = pypyr.steps.contextset.run_step(context_in)
+    pypyr.steps.contextset.run_step(context)
 
     assert context['key1'] == 'value1'
     assert context['key2'] == 'value1'

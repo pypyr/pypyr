@@ -41,4 +41,3 @@ def run_step(context):
         pass
 
     logger.debug("done")
-    return context

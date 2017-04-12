@@ -40,6 +40,13 @@ Run one of the built-in pipelines to get a feel for it:
 
   $ pypyr --name echo --context "echoMe=Ceci n'est pas une pipe" --log 20
 
+You can achieve the same thing by running a pipeline where the context is set
+in the pipeline yaml rather than as a --context argument:
+
+.. code-block:: bash
+
+  $ pypyr --name magritte --log 20
+
 
 Run a pipeline
 --------------
@@ -170,9 +177,9 @@ Roll your own context_parser
     logger = pypyr.log.logger.get_logger(__name__)
 
 
-    def get_parsed_context(context):
+    def get_parsed_context(context_string):
         """This is the signature for a context parser. Input context is the string received from pypyr --context 'value here'"""
-        assert context, ("pipeline must be invoked with --context set.")
+        assert context_string, ("pipeline must be invoked with --context set.")
         logger.debug("starting")
 
         # your clever code here. Chances are pretty good you'll be doing things with the input context string to create a dictionary.
@@ -376,8 +383,9 @@ Roll your own step
   import pypyr.log.logger
 
 
-  # use pypyr logger to ensure loglevel is set correctly and logs are formatted nicely
-  # this gets a python logging.Logger type - so you can .warning, .error et.
+  # use pypyr logger to ensure loglevel is set correctly and logs are formatted
+  # nicely. this gets a python logging.Logger type - so you can .warning,
+  # .error et.
   logger = pypyr.log.logger.get_logger(__name__)
 
 
@@ -395,11 +403,12 @@ Roll your own step
       # For .debug() being verbose is very much encouraged.
       logger.info("Your clever code goes here. . . ")
 
+      # Add or edit context items. These are available to any pipeline steps
+      # following this one.
+      context['existingkey'] = 'new value overwrites old value'
+      context['mynewcleverkey'] = 'new value'
+
       logger.debug("done")
-      # it's good form to return the context when you're done with it.
-      # this allows subsequent steps to use the values in the context.
-      # you can obviously add your own values to the context while you're at it.
-      return context
 
 on_success
 ----------

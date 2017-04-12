@@ -12,7 +12,7 @@ import ruamel.yaml as yaml
 logger = pypyr.log.logger.get_logger(__name__)
 
 
-def get_parsed_context(pipeline, context):
+def get_parsed_context(pipeline, context_in_string):
     """Execute get_parsed_context handler if specified."""
     logger.debug("starting")
 
@@ -23,10 +23,11 @@ def get_parsed_context(pipeline, context):
 
         try:
             logger.debug(f"running parser {parser_module_name}")
-            result_context = parser_module.get_parsed_context(context)
+            result_context = parser_module.get_parsed_context(
+                context_in_string)
             logger.debug(f"step {parser_module_name} done")
-            # Return context if it exists. If not, initialize to an empty
-            # dictionary.
+            # Downstream steps likely to expect context not to be None, hence
+            # empty rather than None.
             return {} if result_context is None else result_context
         except AttributeError:
             logger.error(f"The parser {parser_module_name} doesn't have a "
@@ -91,11 +92,12 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
     try:
         # if parsed_context fails to assign, the failure hanlder will be unable
         # to run. View this as a dead-in-the-water irrecoverable input error.
-        parsed_context = get_parsed_context(pipeline=pipeline_definition,
-                                            context=pipeline_context_input)
+        parsed_context = get_parsed_context(
+            pipeline=pipeline_definition,
+            context_in_string=pipeline_context_input)
 
         # run main steps
-        context_out = pypyr.stepsrunner.run_step_group(
+        pypyr.stepsrunner.run_step_group(
             pipeline_definition=pipeline_definition,
             step_group_name='steps',
             context=parsed_context)
@@ -105,7 +107,7 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         pypyr.stepsrunner.run_step_group(
             pipeline_definition=pipeline_definition,
             step_group_name='on_success',
-            context=context_out)
+            context=parsed_context)
     except Exception:
         # yes, yes, don't catch Exception. Have to, though, to run the failure
         # handler. Also, it does raise it back up.
