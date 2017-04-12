@@ -117,8 +117,9 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         # yes, yes, don't catch Exception. Have to, though, to run the failure
         # handler. Also, it does raise it back up.
         logger.error("Something went wrong. Will now try to run on_failure.")
-        # use the input context, because context_out prob doesn't have a value
-        # yet.
+        # if something went wrong with pipeline loading there will likely be
+        # another exception here because it's looking for failure steps in the
+        # pipeline, but the failure_step_group will swallow it.
         pypyr.stepsrunner.run_failure_step_group(
             pipeline=pipeline_definition,
             context=parsed_context)
