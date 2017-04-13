@@ -4,10 +4,6 @@ language: python
 python:
  - "3.6"
 
-env:
-  global:
-    - XUNIT_FILE=shippable/testresults/junitresults.xml
-
 build:
   ci:
       # Shippable uses special folders for test and cov reports. Dist is for twine.
