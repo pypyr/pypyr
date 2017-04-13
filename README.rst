@@ -13,6 +13,11 @@ pypyr cli pipeline runner
 
 pypyr is a command line interface to run pipelines defined in yaml.
 
+Run status
+
+.. image: https://api.shippable.com/projects/58efdfe130eb380700e559a6/badge?branch=master
+  :target: https://app.shippable.com/github/pypyr/pypyr-cli
+
 .. contents::
 
 .. section-numbering::

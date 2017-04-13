@@ -88,7 +88,7 @@ setup(
     # $ pip install -e .[dev,test]
     extras_require={
         'dev': ['check-manifest', 'flake8'],
-        'test': ['pytest', 'pytest-cov', 'tox'],
+        'test': ['pytest', 'tox'],
         'deploy': ['bumpversion']
     },
 

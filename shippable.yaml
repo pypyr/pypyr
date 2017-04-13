@@ -1,0 +1,37 @@
+
+language: python
+
+python:
+ - "3.6"
+
+env:
+  global:
+    - XUNIT_FILE=shippable/testresults/junitresults.xml
+
+build:
+  ci:
+      #Create folders for test and code coverage
+    - mkdir -p shippable/testresults
+    - mkdir -p shippable/codecoverage
+
+    - pip install tox
+    - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
+
+    #  set up a virtualenv and activate the python version that you want to use
+    - mkdir -p $HOME/bldve/
+    - virtualenv -p $SHIPPABLE_PYTHON  $HOME/bldve/
+    - source $HOME/bldve/bin/activate
+
+  on_success:
+    - if [ "$IS_RELEASE" = "true" ]; then echo this is a release; fi;
+
+integrations:
+    notifications:
+      - integrationName: slack-pypyr
+        type: slack
+        recipients:
+          - "#build"
+        on_success: always
+        on_failure: always
+        on_start: never
+        on_pull_request: never
