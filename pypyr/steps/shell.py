@@ -37,4 +37,3 @@ def run_step(context):
     subprocess.run(context['cmd'], shell=True, check=True)
 
     logger.debug("done")
-    return context

@@ -22,4 +22,3 @@ def run_step(context):
     logger.info(context['echoMe'])
 
     logger.debug("done")
-    return context

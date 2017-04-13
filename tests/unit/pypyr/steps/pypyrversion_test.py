@@ -8,5 +8,6 @@ def test_pypyr_version():
 
 
 def test_pypyr_version_context_out_same_as_in():
-    context = pypyr.steps.pypyrversion.run_step({'test': 'value1'})
+    context = {'test': 'value1'}
+    pypyr.steps.pypyrversion.run_step(context)
     assert context['test'] == 'value1', "context not returned from step."

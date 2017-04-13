@@ -45,4 +45,3 @@ def run_step(context):
         context[k] = context[v]
 
     logger.debug("done")
-    return context

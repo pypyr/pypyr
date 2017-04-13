@@ -66,7 +66,6 @@ def get_step_input_context(in_parameters, context):
             context.update(in_parameters)
 
     logger.debug("done")
-    return context
 
 
 def run_failure_step_group(pipeline, context):
@@ -76,18 +75,17 @@ def run_failure_step_group(pipeline, context):
     condition that got it here to begin with.
     """
     logger.debug("starting")
-    context_out = context
     try:
         assert pipeline
         # if no on_failure exists, it'll do nothing.
-        context_out = run_step_group(pipeline_definition=pipeline,
-                                     step_group_name='on_failure',
-                                     context=context)
+        run_step_group(pipeline_definition=pipeline,
+                       step_group_name='on_failure',
+                       context=context)
     except Exception as exception:
         logger.error("Failure handler also failed. Swallowing.")
         logger.error(exception)
+
     logger.debug("done")
-    return context_out
 
 
 def run_pipeline_step(step_name, context):
@@ -99,30 +97,28 @@ def run_pipeline_step(step_name, context):
 
     try:
         logger.debug(f"running step {step}")
-        result_context = step.run_step(context)
+        in_context_is_set = bool(context)
+        step.run_step(context)
 
-        if context:
+        if in_context_is_set:
             # only ensure result is not empty if input wasn't empty. This is to
             # make sure step doesn't kill the context for downstream.
-            assert (result_context), (
+            assert (context), (
                 f"{step_name} returned None context. At the very least it must"
                 " return an empty dictionary. Is the step super-sure it really"
-                " wants to nuke the context for all subsequent steps? If not,"
-                " add 'return context' at the end of the step code.")
+                " wants to nuke the context for all subsequent steps?")
         logger.debug(f"step {step} done")
-        return result_context
     except AttributeError:
         logger.error(f"The step {step_name} doesn't have a run_step(context) "
                      "function.")
         raise
 
 
-def run_pipeline_steps(steps, context_input):
+def run_pipeline_steps(steps, context):
     """Run the run(context) method of each step in steps."""
     logger.debug("starting")
     assert isinstance(
-        context_input, dict), "context must be a dictionary, even if empty {}."
-    context = context_input
+        context, dict), "context must be a dictionary, even if empty {}."
 
     if steps is None:
         logger.debug("No steps found to execute.")
@@ -134,20 +130,18 @@ def run_pipeline_steps(steps, context_input):
                 logger.debug(f"{step} is complex.")
                 step_name = step['name']
 
-                context = get_step_input_context(step['in'], context)
+                get_step_input_context(step['in'], context)
             else:
                 logger.debug(f"{step} is a simple string.")
                 step_name = step
 
-            context = run_pipeline_step(step_name=step_name,
-                                        context=context)
+            run_pipeline_step(step_name=step_name,
+                              context=context)
             step_count += 1
 
         logger.debug(f"executed {step_count} steps")
 
     logger.debug("done")
-
-    return context
 
 
 def run_step_group(pipeline_definition, step_group_name, context):
@@ -158,8 +152,6 @@ def run_step_group(pipeline_definition, step_group_name, context):
     steps = get_pipeline_steps(pipeline=pipeline_definition,
                                steps_group=step_group_name)
 
-    context_out = run_pipeline_steps(steps=steps, context_input=context)
+    run_pipeline_steps(steps=steps, context=context)
 
     logger.debug(f"done {step_group_name}")
-
-    return context_out

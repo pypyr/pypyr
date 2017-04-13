@@ -12,11 +12,12 @@ import pypyr.log.logger
 logger = pypyr.log.logger.get_logger(__name__)
 
 
-def get_parsed_context(context):
+def get_parsed_context(context_arg):
     """Parse input context string and returns context as dictionary."""
-    assert context, ("pipeline must be invoked with --context set. For this "
-                     "keyvaluepairs parser you're looking for something like "
-                     "--context 'key1=value1,key2=value2'.")
+    assert context_arg, ("pipeline must be invoked with --context set. For "
+                         "this keyvaluepairs parser you're looking for "
+                         "something like "
+                         "--context 'key1=value1,key2=value2'.")
     logger.debug("starting")
     # for each comma-delimited element, project key=value
-    return dict(element.split('=') for element in context.split(','))
+    return dict(element.split('=') for element in context_arg.split(','))

@@ -13,4 +13,3 @@ def run_step(context):
     logger.info(f"pypyr version is: {pypyr.version.get_version()}")
 
     logger.debug("done")
-    return context
