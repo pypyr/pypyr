@@ -10,11 +10,13 @@ env:
 
 build:
   ci:
-      #Create folders for test and code coverage
+      # Shippable uses special folders for test and cov reports. Dist is for twine.
+    - mkdir -p dist
     - mkdir -p shippable/testresults
     - mkdir -p shippable/codecoverage
 
     - pip install tox
+    # tox ci flakes, tests and covs.
     - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
 
     #  set up a virtualenv and activate the python version that you want to use

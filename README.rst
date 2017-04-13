@@ -11,7 +11,8 @@ pypyr cli pipeline runner
     valleys wild"
 
 
-pypyr is a command line interface to run pipelines defined in yaml.
+pypyr is a command line interface to run pipelines defined in yaml. Think of
+pypyr as a simple task runner that lets you run sequential steps.
 
 |build-status| |coverage|
 
