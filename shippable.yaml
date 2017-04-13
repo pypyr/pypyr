@@ -15,7 +15,7 @@ build:
     - mkdir -p shippable/codecoverage
 
     - pip install tox
-    - tox -e ci -- --cov=pypyr --cov-branch --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
+    - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
 
     #  set up a virtualenv and activate the python version that you want to use
     - mkdir -p $HOME/bldve/
