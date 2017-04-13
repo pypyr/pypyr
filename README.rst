@@ -177,9 +177,9 @@ Roll your own context_parser
     logger = pypyr.log.logger.get_logger(__name__)
 
 
-    def get_parsed_context(context_string):
+    def get_parsed_context(context_arg):
         """This is the signature for a context parser. Input context is the string received from pypyr --context 'value here'"""
-        assert context_string, ("pipeline must be invoked with --context set.")
+        assert context_arg, ("pipeline must be invoked with --context set.")
         logger.debug("starting")
 
         # your clever code here. Chances are pretty good you'll be doing things with the input context string to create a dictionary.
