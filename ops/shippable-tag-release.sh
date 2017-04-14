@@ -15,7 +15,7 @@ echo "New version is: ${NEW_VERSION}"
 TAG_NAME="v${NEW_VERSION}"
 
 # all done, clean-up
-pip uninstall pypyr
+pip uninstall -y pypyr
 
 if [ $(git tag -l "${TAG_NAME}") ]; then
     echo "----------tag already exists.----------------------------------------"
