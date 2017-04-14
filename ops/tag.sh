@@ -59,7 +59,7 @@ pip install -e .
 # bare version number.
 NEW_VERSION=`pypyr --v | cut -d " " -f2`
 echo "New version is: ${NEW_VERSION}"
-TAG_NAME="v${$NEW_VERSION}"
+TAG_NAME="v${NEW_VERSION}"
 echo "Tag name: ${TAG_NAME}"
 
 git tag ${TAG_NAME}
