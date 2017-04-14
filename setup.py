@@ -88,8 +88,8 @@ setup(
     # $ pip install -e .[dev,test]
     extras_require={
         'dev': ['check-manifest', 'flake8'],
-        'test': ['pytest', 'pytest-cov', 'tox'],
-        'deploy': ['bumpversion']
+        'test': ['pytest', 'tox'],
+        'deploy': ['bumpversion', 'twine']
     },
 
     # If there are data files included in your packages that need to be
