@@ -5,6 +5,10 @@
 # Be sure your working dir is clean and on master branch, i.e
 # git checkout master
 # git pull origin master
+#
+# roll back a tag like this:
+# git tag -d TAGNAMEHERE
+# git push origin :refs/tags/TAGNAMEHERE
 
 echo "You're on master AND you've bumped version number?"
 read -rsp $'Press enter to continue...\n'
