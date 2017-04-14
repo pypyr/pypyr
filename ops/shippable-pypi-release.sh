@@ -8,23 +8,24 @@ set -o errexit
 create_virtualenv()
 {
   echo "Creating virtual environment name is: ${1}"
-  virtualenv ${1}
+  mkdir -p $HOME/${1}/
+  virtualenv -p $SHIPPABLE_PYTHON $HOME/${1}/
   # virtualenv activate doesn't work with strict no unset vars mode
-  set +u
-  . ${1}/bin/activate
-  set -u
+  # set +u
+  . $HOME/${1}/bin/activate
+  # set -u
 }
 
 # take one parameter: name of virtual environment
 remove_virtualenv()
 {
   echo "removing virtual env ${1} if it exists."
-  if [ -n "${VIRTUAL_ENV-}" ] && [ "`basename "${VIRTUAL_ENV}"`" = "${1}" ]; then
+  if [ -n "${VIRTUAL_ENV-}" ] && [ "`basename "${VIRTUAL_ENV}"`" = "$HOME/${1}/" ]; then
     # get rid of the virtual env
     echo "Virtual Environment name is: ${VIRTUAL_ENV}"
     echo "Removing virtualenv ${1}"
     deactivate
-    rm -rf $1
+    rm -rf $HOME/$1
   fi
 }
 
