@@ -17,7 +17,7 @@ build:
     - if [ "$IS_PULL_REQUEST" == false ] && [ "$BRANCH" == "master" ] ; then ./ops/shippable-tag-release.sh; fi
 
   on_success:
-    - if [ "$IS_RELEASE" = "false" ]; then ./ops/shippable-pypi-release.sh; fi;
+    - if [ "$IS_RELEASE" = "true" ]; then ./ops/shippable-pypi-release.sh; fi;
 
 integrations:
   generic:
