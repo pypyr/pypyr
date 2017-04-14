@@ -9,6 +9,7 @@ set -o errexit
 create_virtualenv()
 {
   echo "Creating virtual environment name is: ${1}"
+  mkdir -p ${HOME}/${1}
   virtualenv -p ${SHIPPABLE_PYTHON} ${HOME}/${1}
   # virtualenv activate doesn't work with strict no unset vars mode
   set +u
