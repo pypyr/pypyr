@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # Runs on shippable. Releases to pypi.
 
+# stop processing on any statement return != 0
+set -o errexit
+set -o pipefail
+
 # take one parameter: name of virtual environment
 create_virtualenv()
 {
   echo "Creating virtual environment name is: ${1}"
-  virtualenv ${1}
+  virtualenv -p ${SHIPPABLE_PYTHON} ${HOME}/${1}
   # virtualenv activate doesn't work with strict no unset vars mode
   set +u
-  . ${1}/bin/activate
+  . ${HOME}/${1}/bin/activate
   set -u
 }
 
