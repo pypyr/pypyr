@@ -1,8 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 # Runs on shippable. Releases to pypi.
 
 # stop processing on any statement return != 0
-set -o errexit
 set -e
 
 # Use deploy switch on setup.py to install deploy deps.
