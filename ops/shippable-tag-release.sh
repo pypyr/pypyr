@@ -3,9 +3,10 @@
 
 # stop processing on any statement return != 0
 set -o errexit
+set -e
 
 # Use deploy switch on setup.py to install deploy deps.
-pip install -e .[deploy]
+pip install -q -e .[deploy]
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.

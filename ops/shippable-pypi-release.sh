@@ -3,6 +3,19 @@
 
 # stop processing on any statement return != 0
 set -o errexit
+set -e
+
+# Use deploy switch on setup.py to install deploy deps.
+pip install -q -e .[deploy]
+
+# pypyr --v will return "pypyr x.y.z" - get everything after the space for the
+# bare version number.
+NEW_VERSION=`pypyr --v | cut -d " " -f2`
+echo "New version is: ${NEW_VERSION}"
+TAG_NAME="v${NEW_VERSION}"
+
+# all done, clean-up
+pip uninstall pypyr
 
 # Build wheel in dist/
 python setup.py bdist_wheel
@@ -15,7 +28,7 @@ echo "----------Done with twine upload-------------------------------------"
 # smoke test
 echo "----------Deploy to pypi complete. Testing in new virtual env.-------"
 
-pip install pypyr
+pip install pypyr -q
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
 TEST_DEPLOY_VERSION=`pypyr --v | cut -d " " -f2`
