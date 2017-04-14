@@ -3,7 +3,7 @@
 
 # stop processing on any statement return != 0
 set -o errexit
-set -o pipefail
+# set -o pipefail
 
 # take one parameter: name of virtual environment
 create_virtualenv()
