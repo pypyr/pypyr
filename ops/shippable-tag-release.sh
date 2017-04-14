@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
 # Runs on shippable. tags branchs as it stands and pushes tags to github.
 
 # stop processing on any statement return != 0

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
 # Runs on shippable. Releases to pypi.
 
 # stop processing on any statement return != 0
