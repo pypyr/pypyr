@@ -15,12 +15,6 @@ build:
     # tox ci flakes, tests and covs.
     - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
 
-    - twine upload --repository-url ${PYPI_URL} --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD} dist/pypyr-${NEW_VERSION}-py3-none-any.whl
-    #  set up a virtualenv and activate the python version that you want to use
-    # - mkdir -p $HOME/bldve/
-    # - virtualenv -p $SHIPPABLE_PYTHON  $HOME/bldve/
-    # - source $HOME/bldve/bin/activate
-
   on_success:
     - if [ "$IS_RELEASE" = "true" ]; then sh ./ops/shippable-pypi-release.sh; fi;
 
