@@ -4,17 +4,14 @@ Configuration for the python logging library.
 """
 import logging
 
-log_level = 0
-
 
 def get_logger(logger_name):
     """Create a logger with the log_level set."""
     logger = logging.getLogger(logger_name)
-
     return logger
 
 
-def set_logging_config():
+def set_logging_config(log_level):
     """Set python logging library config.
 
     Run this ONCE at the start of your process. It formats the python logging
@@ -24,7 +21,7 @@ def set_logging_config():
     logging.basicConfig(
         format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
-        level=logging.INFO)
+        level=log_level)
 
 
 def set_root_logger(root_log_level):
@@ -32,9 +29,9 @@ def set_root_logger(root_log_level):
 
     Run once and only once at initialization.
     """
-    log_level = root_log_level
-    set_logging_config()
+    set_logging_config(root_log_level)
     root_logger = logging.getLogger("pypyr")
-    root_logger.setLevel(root_log_level)
+    # root_logger.setLevel(root_log_level)
     root_logger.debug(
-        f"Root logger {root_logger.name} configured with level {log_level}")
+        f"Root logger {root_logger.name} configured with level "
+        f"{root_log_level}")
