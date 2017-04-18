@@ -34,6 +34,6 @@ TEST_DEPLOY_VERSION=`pypyr --v | cut -d " " -f2`
 if [ "${TEST_DEPLOY_VERSION}" =  "${NEW_VERSION}" ]; then
   echo "Deployed version is ${TEST_DEPLOY_VERSION}. Smoke test passed OK."
 else
-  echo "Something went wrong. Deployed version is ${TEST_DEPLOY_VERSION}, but expected ${NEW_VERSION}"
-  return 1
+  echo "Something went wrong. Deployed version is ${TEST_DEPLOY_VERSION}, but expected ${NEW_VERSION}" >&2
+  exit 1
 fi;
