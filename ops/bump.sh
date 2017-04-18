@@ -68,7 +68,8 @@ create_virtualenv .deployenv
 pip install -e .[deploy]
 
 # Bump version number. first param is choice of: major, minor, patch
-bumpversion --commit --tag ${BUMPLEVEL} 'pypyr/version.py'
+# NOT tagging here, because tagging is happening in shippable on master merge.
+bumpversion --no-tag  --commit ${BUMPLEVEL} 'pypyr/version.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
@@ -77,7 +78,7 @@ echo "New version is: ${NEW_VERSION}"
 
 # Any dirt in working dir is deploy related, so commit local changes and push
 # the new commits AND tags to origin.
-git push && git push --tags
+git push
 
 # all done, clean-up
 remove_virtualenv .deployenv
