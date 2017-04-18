@@ -18,7 +18,6 @@ pip uninstall -y pypyr
 
 if [ $(git tag -l "${TAG_NAME}") ]; then
     echo "----------tag already exists.----------------------------------------"
-    return 0
 else
     echo "version tag doesn't exist. create tag. ${TAG_NAME}"
     git tag "${TAG_NAME}"
