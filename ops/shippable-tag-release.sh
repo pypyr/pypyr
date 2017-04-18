@@ -21,5 +21,6 @@ if [ $(git tag -l "${TAG_NAME}") ]; then
 else
     echo "version tag doesn't exist. create tag. ${TAG_NAME}"
     git tag "${TAG_NAME}"
-    git push origin --tags
+    # use the key that Shippable uses to connect to GitHub
+    ssh-agent bash -c "ssh-add ~/keys/id_${JOB_ID}; git push origin --tags"
 fi;
