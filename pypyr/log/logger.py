@@ -31,7 +31,6 @@ def set_root_logger(root_log_level):
     """
     set_logging_config(root_log_level)
     root_logger = logging.getLogger("pypyr")
-    # root_logger.setLevel(root_log_level)
     root_logger.debug(
         f"Root logger {root_logger.name} configured with level "
         f"{root_log_level}")
