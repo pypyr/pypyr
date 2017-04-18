@@ -174,10 +174,12 @@ Roll your own context_parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .. code-block:: python
 
-    import pypyr.log.logger
+    import logging
 
-    # use pypyr logger to ensure loglevel is set correctly and logs are formatted nicely
-    logger = pypyr.log.logger.get_logger(__name__)
+
+    # getLogger will grab the parent logger context, so your loglevel and
+    # formatting will inherit correctly automatically from the pypyr core.
+    logger = logging.getLogger(__name__)
 
 
     def get_parsed_context(context_arg):
@@ -383,13 +385,12 @@ Roll your own step
 ~~~~~~~~~~~~~~~~~~
 .. code-block:: python
 
-  import pypyr.log.logger
+  import logging
 
 
-  # use pypyr logger to ensure loglevel is set correctly and logs are formatted
-  # nicely. this gets a python logging.Logger type - so you can .warning,
-  # .error et.
-  logger = pypyr.log.logger.get_logger(__name__)
+  # getLogger will grab the parent logger context, so your loglevel and
+  # formatting will inherit correctly automatically from the pypyr core.
+  logger = logging.getLogger(__name__)
 
 
   def run_step(context):
