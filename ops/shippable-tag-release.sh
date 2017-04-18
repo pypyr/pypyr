@@ -23,5 +23,5 @@ else
     git tag "${TAG_NAME}"
     # use the key that Shippable uses to connect to GitHub
     git remote set-url origin git@github.com:${ORG_NAME}/${REPO_NAME}.git
-    ssh-agent bash -c "ssh-add /tmp/ssh/01_deploy}; git push origin --tags"
+    git push origin --tags
 fi;
