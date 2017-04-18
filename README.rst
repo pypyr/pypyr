@@ -11,7 +11,10 @@ pypyr cli pipeline runner
     valleys wild"
 
 
-pypyr is a command line interface to run pipelines defined in yaml.
+pypyr is a command line interface to run pipelines defined in yaml. Think of
+pypyr as a simple task runner that lets you run sequential steps.
+
+|build-status| |coverage|
 
 .. contents::
 
@@ -515,3 +518,11 @@ current project isn't using AWS.
 If you want your plug-in listed here for official cred, please get in touch via
 the Issues list. Get in touch anyway, would love to hear from you at
 https://www.345.systems/contact.
+
+.. |build-status| image:: https://api.shippable.com/projects/58efdfe130eb380700e559a6/badge?branch=master
+                    :alt: build status
+                    :target: https://app.shippable.com/github/pypyr/pypyr-cli
+
+.. |coverage| image:: https://api.shippable.com/projects/58efdfe130eb380700e559a6/coverageBadge?branch=master
+                :alt: coverage status
+                :target: https://app.shippable.com/github/pypyr/pypyr-cli

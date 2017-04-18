@@ -1,0 +1,34 @@
+
+language: python
+
+python:
+ - "3.6"
+
+build:
+  ci:
+      # Shippable uses special folders for test and cov reports. Dist is for twine.
+    - mkdir -p dist
+    - mkdir -p shippable/testresults
+    - mkdir -p shippable/codecoverage
+    - pip install tox
+    # tox ci flakes, tests and covs.
+    - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
+    # all checks cleared on master and this is a merge commit (branch is protected and not in the midst of a PR), tag for release.
+    - if [ "$IS_PULL_REQUEST" == false ] && [ "$BRANCH" == "master" ] ; then ./ops/shippable-tag-release.sh; fi
+
+  on_success:
+    - if [ "$IS_RELEASE" = "true" ]; then ./ops/shippable-pypi-release.sh; fi;
+
+integrations:
+  generic:
+    - integrationName: pypi
+
+  notifications:
+    - integrationName: slack-pypyr
+      type: slack
+      recipients:
+        - "#build"
+      on_success: always
+      on_failure: always
+      on_start: never
+      on_pull_request: never

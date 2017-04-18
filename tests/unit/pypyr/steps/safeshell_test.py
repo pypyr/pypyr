@@ -25,7 +25,7 @@ def test_shell_sequence():
 def test_shell_error_throws():
     """Shell process returning 1 should throw CalledProcessError"""
     with pytest.raises(subprocess.CalledProcessError):
-        context = {'cmd': '/usr/bin/false'}
+        context = {'cmd': '/bin/false'}
         context = pypyr.steps.safeshell.run_step(context)
 
 
