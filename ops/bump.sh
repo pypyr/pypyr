@@ -75,5 +75,9 @@ bumpversion --commit --tag ${BUMPLEVEL} 'pypyr/version.py'
 NEW_VERSION=`pypyr --v | cut -d " " -f2`
 echo "New version is: ${NEW_VERSION}"
 
+# Any dirt in working dir is deploy related, so commit local changes and push
+# the new commits AND tags to origin.
+git push && git push --tags
+
 # all done, clean-up
 remove_virtualenv .deployenv
