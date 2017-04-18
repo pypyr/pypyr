@@ -68,7 +68,8 @@ create_virtualenv .deployenv
 pip install -e .[deploy]
 
 # Bump version number. first param is choice of: major, minor, patch
-bumpversion ${BUMPLEVEL} --commit 'pypyr/version.py'
+# NOT tagging here, because tagging is happening in shippable on master merge.
+bumpversion --no-tag  --commit ${BUMPLEVEL} 'pypyr/version.py'
 
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
