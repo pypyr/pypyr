@@ -20,6 +20,30 @@ def test_string_interpolate_works_with_no_swaps():
         "string interpolation incorrect")
 
 
+def test_string_interpolate_escapes_double_curly():
+    context = {'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+    input_string = 'Piping {{ down the valleys wild'
+    output = pypyr.format.string.get_interpolated_string(input_string, context)
+    assert output == 'Piping { down the valleys wild', (
+        "string interpolation incorrect")
+
+
+def test_string_interpolate_escapes_double_curly_pair():
+    context = {'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+    input_string = 'Piping {{down}} the valleys wild'
+    output = pypyr.format.string.get_interpolated_string(input_string, context)
+    assert output == 'Piping {down} the valleys wild', (
+        "string interpolation incorrect")
+
+
+def test_single_curly_should_throw():
+    """pycode error should raise up to caller."""
+    with pytest.raises(ValueError):
+        context = {'key1': 'value1'}
+        input_string = '{key1} this { is {key2} string'
+        pypyr.format.string.get_interpolated_string(input_string, context)
+
+
 def test_tag_not_in_context_should_throw():
     """pycode error should raise up to caller."""
     with pytest.raises(KeyError):
