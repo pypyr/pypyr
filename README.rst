@@ -364,7 +364,7 @@ home directory. Use pypyr.steps.shell for this instead.
 
 You can use context variable substitutions with curly braces. See a worked
 example `for substitions here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`_.
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
 
 Escape literal curly braces with doubles: {{ for {, }} for }
 
@@ -393,7 +393,7 @@ Friendly reminder of the difference between separating your commands with ; or
 
 You can use context variable substitutions with curly braces. See a worked
 example `for substitions here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`_.
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
 
 Escape literal curly braces with doubles: {{ for {, }} for }
 
