@@ -158,7 +158,9 @@ Built-in context parsers
 | pypyr.context.commas        | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             | Don't have spaces between commas unless you     |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.context.json          | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -167,6 +169,9 @@ Built-in context parsers
 | pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 
@@ -355,7 +360,14 @@ Runs the context value `cmd` in the default shell. On a sensible O/S, this is
 
 In `safeshell`, you cannot use things like exit, return, shell pipes, filename
 wildcards, environment variable expansion, and expansion of ~ to a user’s
-home directory.
+home directory. Use pypyr.steps.shell for this instead.
+
+You can use context variable substitutions with curly braces. See a worked
+example here:
+https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml
+
+Escape literal curly braces with doubles: {{ for {, }} for }
+
 
 Example pipeline yaml:
 
@@ -371,6 +383,19 @@ pypyr.steps.shell
 Runs the context value `cmd` in the default shell.
 
 Do all the things you can't do with `safeshell`.
+
+Friendly reminder of the difference between separating your commands with ; or
+&&:
+
+- ; will continue to the next statement even if the previous command errored.
+  It won't exit with an error code if it wasn't the last statement.
+- && stops and exits reporting error on first error.
+
+You can use context variable substitutions with curly braces. See a worked
+example here:
+https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml
+
+Escape literal curly braces with doubles: {{ for {, }} for }
 
 Example pipeline yaml using a pipe:
 

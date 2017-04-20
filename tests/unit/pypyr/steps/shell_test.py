@@ -29,6 +29,14 @@ def test_shell_sequence_with_semicolons():
     context = pypyr.steps.shell.run_step(context)
 
 
+def test_shell_sequence_with_string_interpolation():
+    """Single shell command string works with string interpolation."""
+    context = {'fileName': 'deleteme.arb',
+               'cmd':
+               'touch {fileName} && ls deleteme.arb && rm -f deleteme.arb;'}
+    context = pypyr.steps.shell.run_step(context)
+
+
 def test_shell_sequence_with_ampersands():
     """Single shell command string with ampersands works."""
     context = {'cmd':
