@@ -36,16 +36,14 @@ def run_step(context):
                      "--context 'cmd=<<shell cmd here>>'?")
     assert 'cmd' in context, ("context['cmd'] must exist for step shell.")
 
-    logger.debug(f"Executing command string: {context['cmd']}")
+    logger.debug(f"Processing command string: {context['cmd']}")
     interpolated_string = pypyr.format.string.get_interpolated_string(
         input_string=context['cmd'],
         context=context)
-    logger.debug(f"Interpolated string: {interpolated_string}")
 
     # input string is a command like 'ls -l | grep boom'. Split into list on
     # spaces to allow for natural shell language input string.
     args = interpolated_string.split(' ')
-    logger.debug(f"Prepared command sequence: {args}")
 
     # check=True throws CalledProcessError if exit code != 0
     subprocess.run(args, shell=False, check=True)
