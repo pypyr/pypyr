@@ -22,6 +22,20 @@ def test_shell_sequence():
     context = pypyr.steps.safeshell.run_step(context)
 
 
+def test_shell_sequence_with_string_interpolation():
+    """Single shell command string works with string interpolation."""
+    context = {'fileName': 'deleteinterpolatedme.arb',
+               'cmd': 'touch {fileName}'}
+    context = pypyr.steps.safeshell.run_step(context)
+
+    context = {'cmd': 'ls deleteinterpolatedme.arb'}
+    context = pypyr.steps.safeshell.run_step(context)
+
+    context = {'fileName': 'deleteinterpolatedme.arb',
+               'cmd': 'rm -f {fileName}'}
+    context = pypyr.steps.safeshell.run_step(context)
+
+
 def test_shell_error_throws():
     """Shell process returning 1 should throw CalledProcessError"""
     with pytest.raises(subprocess.CalledProcessError):

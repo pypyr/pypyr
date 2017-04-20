@@ -88,34 +88,34 @@ Pipeline yaml structure
 A pipeline is a .yaml file. Save pipelines to a `pipelines` directory in your
 working directory.
 
-  .. code-block:: yaml
+.. code-block:: yaml
 
-    # This is an example showing the anatomy of a pypyr pipeline
-    # A pipeline should be saved as {working dir}/pipelines/mypipelinename.yaml.
-    # Run the pipeline from {working dir} like this: pypyr --name mypipelinename
+  # This is an example showing the anatomy of a pypyr pipeline
+  # A pipeline should be saved as {working dir}/pipelines/mypipelinename.yaml.
+  # Run the pipeline from {working dir} like this: pypyr --name mypipelinename
 
-    # optional
-    context_parser: my.custom.parser
+  # optional
+  context_parser: my.custom.parser
 
-    # mandatory.
-    steps:
-      - my.package.my.module # simple step pointing at a python module in a package
-      - mymodule # simple step pointing at a python file
-      - name: my.package.another.module # complex step. It contains a description and in parameters.
-        description: Optional description is for humans. It's any text that makes your life easier.
-        in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
-          parameter1: value1
-          parameter2: value2
+  # mandatory.
+  steps:
+    - my.package.my.module # simple step pointing at a python module in a package
+    - mymodule # simple step pointing at a python file
+    - name: my.package.another.module # complex step. It contains a description and in parameters.
+      description: Optional description is for humans. It's any text that makes your life easier.
+      in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+        parameter1: value1
+        parameter2: value2
 
-    # optional.
-    on_success:
-      - my.first.success.step
-      - my.second.success.step
+  # optional.
+  on_success:
+    - my.first.success.step
+    - my.second.success.step
 
-    # optional.
-    on_failure:
-      - my.failure.handler.step
-      - my.failure.handler.notifier
+  # optional.
+  on_failure:
+    - my.failure.handler.step
+    - my.failure.handler.notifier
 
 Built-in pipelines
 ------------------
@@ -158,7 +158,9 @@ Built-in context parsers
 | pypyr.context.commas        | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             | Don't have spaces between commas unless you     |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.context.json          | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -167,30 +169,33 @@ Built-in context parsers
 | pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 
 Roll your own context_parser
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  .. code-block:: python
+.. code-block:: python
 
-    import logging
-
-
-    # getLogger will grab the parent logger context, so your loglevel and
-    # formatting will inherit correctly automatically from the pypyr core.
-    logger = logging.getLogger(__name__)
+  import logging
 
 
-    def get_parsed_context(context_arg):
-        """This is the signature for a context parser. Input context is the string received from pypyr --context 'value here'"""
-        assert context_arg, ("pipeline must be invoked with --context set.")
-        logger.debug("starting")
+  # getLogger will grab the parent logger context, so your loglevel and
+  # formatting will inherit correctly automatically from the pypyr core.
+  logger = logging.getLogger(__name__)
 
-        # your clever code here. Chances are pretty good you'll be doing things with the input context string to create a dictionary.
 
-        # function signature returns a dictionary
-        return {'key1': 'value1', 'key2':'value2'}
+  def get_parsed_context(context_arg):
+      """This is the signature for a context parser. Input context is the string received from pypyr --context 'value here'"""
+      assert context_arg, ("pipeline must be invoked with --context set.")
+      logger.debug("starting")
+
+      # your clever code here. Chances are pretty good you'll be doing things with the input context string to create a dictionary.
+
+      # function signature returns a dictionary
+      return {'key1': 'value1', 'key2':'value2'}
 
 steps
 -----
@@ -248,31 +253,31 @@ If you run newKey: currentKey, you'll end up with `context['newKey'] == 'eggs'`
 
 For example, say your context looks like this,
 
-  .. code-block:: yaml
+.. code-block:: yaml
 
-        key1: value1
-        key2: value2
-        key3: value3
+      key1: value1
+      key2: value2
+      key3: value3
 
 and your pipeline yaml looks like this:
 
-  .. code-block:: yaml
+.. code-block:: yaml
 
-    steps:
-      - name: pypyr.steps.contextset
-        in:
-          contextSet:
-            key2: key1
-            key4: key3
+  steps:
+    - name: pypyr.steps.contextset
+      in:
+        contextSet:
+          key2: key1
+          key4: key3
 
 This will result in context like this:
 
-  .. code-block:: yaml
+.. code-block:: yaml
 
-      key1: value1
-      key2: value1
-      key3: value3
-      key4: value3
+    key1: value1
+    key2: value1
+    key3: value3
+    key4: value3
 
 pypyr.steps.echo
 ````````````````
@@ -280,17 +285,17 @@ Echo the context value `echoMe` to the output.
 
 For example, if you had pipelines/mypipeline.yaml like this:
 
-  .. code-block:: yaml
+.. code-block:: yaml
 
-    context_parser: pypyr.context.keyvaluepairs
-    steps:
-      - name: pypyr.steps.echo
+  context_parser: pypyr.context.keyvaluepairs
+  steps:
+    - name: pypyr.steps.echo
 
 You can run:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    pypyr --name mypipeline --context 'echoMe=test test test'
+  pypyr --name mypipeline --context 'echoMe=test test test'
 
 
 Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
@@ -306,9 +311,9 @@ Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
 
 You can run:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    $ pypyr --name look-ma-no-params --log 20
+  $ pypyr --name look-ma-no-params --log 20
 
 pypyr.steps.py
 ``````````````
@@ -317,8 +322,8 @@ Executes the context value `pycode` as python code.
 Will exec context['pycode'] as a dynamically interpreted python code block.
 
 You can access and change the context dictionary in a py step. See a worked
-example here:
-https://github.com/pypyr/pypyr-example/tree/master/pipelines/py.yaml
+example `here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/py.yaml>`_.
 
 For example, this will invoke python print and print 2:
 
@@ -334,19 +339,19 @@ pypyr.steps.pypyrversion
 ````````````````````````
 Outputs the same as:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    pypyr --version
+  pypyr --version
 
 This is an actual pipeline, though, so unlike --version, it'll use the standard
 pypyr logging format.
 
 Example pipeline yaml:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-      steps:
-        - pypyr.steps.pypyrversion
+    steps:
+      - pypyr.steps.pypyrversion
 
 pypyr.steps.safeshell
 `````````````````````
@@ -355,16 +360,23 @@ Runs the context value `cmd` in the default shell. On a sensible O/S, this is
 
 In `safeshell`, you cannot use things like exit, return, shell pipes, filename
 wildcards, environment variable expansion, and expansion of ~ to a user’s
-home directory.
+home directory. Use pypyr.steps.shell for this instead.
+
+You can use context variable substitutions with curly braces. See a worked
+example `for substitions here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
+
+Escape literal curly braces with doubles: {{ for {, }} for }
+
 
 Example pipeline yaml:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    steps:
-      - name: pypyr.steps.safeshell
-        in:
-          cmd: ls -a
+  steps:
+    - name: pypyr.steps.safeshell
+      in:
+        cmd: ls -a
 
 pypyr.steps.shell
 `````````````````````
@@ -372,14 +384,27 @@ Runs the context value `cmd` in the default shell.
 
 Do all the things you can't do with `safeshell`.
 
+Friendly reminder of the difference between separating your commands with ; or
+&&:
+
+- ; will continue to the next statement even if the previous command errored.
+  It won't exit with an error code if it wasn't the last statement.
+- && stops and exits reporting error on first error.
+
+You can use context variable substitutions with curly braces. See a worked
+example `for substitions here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
+
+Escape literal curly braces with doubles: {{ for {, }} for }
+
 Example pipeline yaml using a pipe:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    steps:
-      - name: pypyr.steps.shell
-        in:
-          cmd: ls | grep pipe; echo if you had something pipey it should show up;
+  steps:
+    - name: pypyr.steps.shell
+      in:
+        cmd: ls | grep pipe; echo if you had something pipey it should show up;
 
 Roll your own step
 ~~~~~~~~~~~~~~~~~~
@@ -439,12 +464,12 @@ Testing without worrying about dependencies
 -------------------------------------------
 Run tox to test the packaging cycle inside a virtual env, plus run all tests:
 
-  .. code-block:: bash
+.. code-block:: bash
 
-    # just run tests
-    $ tox -e dev -- tests
-    # run tests, validate README.rst, run flake8 linter
-    $ tox -e stage -- tests
+  # just run tests
+  $ tox -e dev -- tests
+  # run tests, validate README.rst, run flake8 linter
+  $ tox -e stage -- tests
 
 If tox takes too long
 ---------------------

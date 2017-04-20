@@ -7,7 +7,6 @@ python:
 build:
   ci:
       # Shippable uses special folders for test and cov reports. Dist is for twine.
-    - ls -l /tmp/ssh/
     - mkdir -p dist
     - mkdir -p shippable/testresults
     - mkdir -p shippable/codecoverage

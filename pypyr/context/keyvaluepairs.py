@@ -3,6 +3,9 @@
 Takes a comma delimited key=value pair string and returns a dictionary where
 each pair becomes a dictionary element.
 
+Don't have spaces between commas unless your really mean it. "k1=v1, k2=v2"
+will result in a context key name of ' k2' not 'k2'.
+
 So a string like this "pig=ham,hen=eggs,yummypig=bacon", will yield:
 {'pig': 'ham', 'hen': ''eggs', 'yummypig': 'bacon'}
 """
