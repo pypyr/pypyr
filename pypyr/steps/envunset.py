@@ -33,6 +33,12 @@ def run_step(context):
 
     for env_var_name in context['envUnset']:
         logger.debug(f"unsetting ${env_var_name}")
-        del os.environ[env_var_name]
+        try:
+            del os.environ[env_var_name]
+        except KeyError:
+            # If user is trying to get rid of the $ENV, if it doesn't exist, no
+            # real point in throwing up an error that the thing you're trying
+            # to be rid off isn't there anyway.
+            logger.debug(f"${env_var_name} doesn't exist anyway. As you were.")
 
     logger.debug("done")
