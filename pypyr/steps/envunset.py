@@ -13,8 +13,7 @@ def run_step(context):
     Context is a dictionary or dictionary-like. context is mandatory.
 
     context['envUnset'] must exist. It's a list.
-    Values are the keys of the pypyr context values to write to $ENV.
-    Keys are the names of the $ENV values to which to write.
+    List items are the names of the $ENV values to unset.
 
     For example, say input context is:
         key1: value1

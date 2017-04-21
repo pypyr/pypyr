@@ -240,6 +240,33 @@ You can specify a step in the pipeline yaml in two ways:
 
 Built-in steps
 ~~~~~~~~~~~~~~
+
++-----------------------------+-------------------------------------------------+------------------------------+
+| **step**                    | **description**                                 | **input context properties** |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dictionary)      |
+|                             | context values.                                 |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.echo`_         | Echo the context value `echoMe` to the output.  | echoMe (string)              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.envget`_       | Get $ENVs into the pypyr context.               | envGet (dictionary)          |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.envset`_       | Set $ENVs from the pypyr context.               | envSet (dictionary)          |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.envunset`_     | Unset $ENVs.                                    | envUnset (list)              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.py`_           | Executes the context value `pycode` as python   | pycode (string)              |
+|                             | code.                                           |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.pypyrversion`_ | Writes installed pypyr version to output.       |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.safeshell`_    | Runs the program and args specified in the      | cmd (string)                 |
+|                             | context value `cmd` as a subprocess.            |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.shell`_        | Runs the context value `cmd` in the default     | cmd (string)                 |
+|                             | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+
 pypyr.steps.contextset
 ``````````````````````
 Sets context values from already existing context values.
@@ -281,7 +308,7 @@ This will result in context like this:
 
 pypyr.steps.echo
 ````````````````
-Echo the context value `echoMe` to the output.
+Echo the context value ``echoMe`` to the output.
 
 For example, if you had pipelines/mypipeline.yaml like this:
 
@@ -315,11 +342,111 @@ You can run:
 
   $ pypyr --name look-ma-no-params --log 20
 
+pypyr.steps.envget
+``````````````````
+Get $ENVs into the pypyr context.
+
+``context['envGet']`` must exist. It's a dictionary.
+
+Values are the names of the $ENVs to write to the pypyr context.
+
+Keys are the pypyr context item to which to write the $ENV values.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+  key1: value1
+  key2: value2
+  pypyrCurrentDir: value3
+  envGet:
+    pypyrUser: USER
+    pypyrCurrentDir: PWD
+
+
+This will result in context:
+
+.. code-block:: yaml
+
+  key1: value1
+  key2: value2
+  key3: value3
+  pypyrCurrentDir: <<value of $PWD here, not value3>>
+  pypyrUser: <<value of $USER here>>
+
+See a worked example `for environment variables here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
+pypyr.steps.envset
+``````````````````
+Set $ENVs from the pypyr context.
+
+``context['envSet']`` must exist. It's a dictionary.
+
+Values are the keys of the pypyr context values to write to $ENV.
+Keys are the names of the $ENV values to which to write.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: value2
+    key3: value3
+    envSet:
+        MYVAR1: key1
+        MYVAR2: key3
+
+This will result in the following $ENVs:
+
+.. code-block:: yaml
+
+  $MYVAR1 = value1
+  $MYVAR2 = value3
+
+Note that the $ENVs are not persisted system-wide, they only exist for the
+pypyr process itself, and as such for the following steps during this pypyr
+pipeline execution. If you set an $ENV here, don't expect to see it in your
+system environment variables after the pipeline finishes running.
+
+See a worked example `for environment variables here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
+pypyr.steps.envunset
+````````````````````
+Unset $ENVs.
+
+Context is a dictionary or dictionary-like. context is mandatory.
+
+``context['envUnset']`` must exist. It's a list.
+List items are the names of the $ENV values to unset.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: value2
+    key3: value3
+    envUnset:
+        MYVAR1
+        MYVAR2
+
+This will result in the following $ENVs being unset:
+
+.. code-block:: bash
+
+  $MYVAR1
+  $MYVAR2
+
+See a worked example `for environment variables here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
 pypyr.steps.py
 ``````````````
 Executes the context value `pycode` as python code.
 
-Will exec context['pycode'] as a dynamically interpreted python code block.
+Will exec ``context['pycode']`` as a dynamically interpreted python code block.
 
 You can access and change the context dictionary in a py step. See a worked
 example `here
@@ -355,12 +482,12 @@ Example pipeline yaml:
 
 pypyr.steps.safeshell
 `````````````````````
-Runs the context value `cmd` in the default shell. On a sensible O/S, this is
-`/bin/sh`
+Runs the context value `cmd` as a sub-process.
 
 In `safeshell`, you cannot use things like exit, return, shell pipes, filename
 wildcards, environment variable expansion, and expansion of ~ to a user’s
-home directory. Use pypyr.steps.shell for this instead.
+home directory. Use pypyr.steps.shell for this instead. Safeshell runs a
+program, it does not invoke the shell.
 
 You can use context variable substitutions with curly braces. See a worked
 example `for substitions here
@@ -380,7 +507,8 @@ Example pipeline yaml:
 
 pypyr.steps.shell
 `````````````````````
-Runs the context value `cmd` in the default shell.
+Runs the context value `cmd` in the default shell. On a sensible O/S, this is
+`/bin/sh`
 
 Do all the things you can't do with `safeshell`.
 

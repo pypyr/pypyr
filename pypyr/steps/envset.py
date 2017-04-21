@@ -27,6 +27,11 @@ def run_step(context):
     This will result in the following $ENVs:
     $MYVAR1 = value1
     $MYVAR2 = value3
+
+    Note that the $ENVs are not persisted system-wide, they only exist for the
+    pypyr process itself, and as such for the following steps during this pypyr
+    pipeline execution. If you set an $ENV here, don't expect to see it in your
+    system environment variables after the pipeline finishes running.
     """
     logger.debug("started")
     pypyr.validate.asserts.key_in_context_has_value(
