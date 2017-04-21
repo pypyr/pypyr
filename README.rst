@@ -505,6 +505,9 @@ Example pipeline yaml:
       in:
         cmd: ls -a
 
+See a worked example `for shell power here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
+
 pypyr.steps.shell
 `````````````````````
 Runs the context value `cmd` in the default shell. On a sensible O/S, this is
@@ -533,6 +536,9 @@ Example pipeline yaml using a pipe:
     - name: pypyr.steps.shell
       in:
         cmd: ls | grep pipe; echo if you had something pipey it should show up;
+
+See a worked example `for shell power here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
 
 Roll your own step
 ~~~~~~~~~~~~~~~~~~
