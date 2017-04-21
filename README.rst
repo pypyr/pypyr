@@ -50,7 +50,7 @@ in the pipeline yaml rather than as a --context argument:
 
   $ pypyr --name magritte --log 20
 
-Check here `pypyr.steps.echo`_ for to see yaml that does this.
+Check here `pypyr.steps.echo`_ to see yaml that does this.
 
 Run a pipeline
 --------------
