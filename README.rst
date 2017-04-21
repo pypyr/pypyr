@@ -62,12 +62,12 @@ pypyr assumes a pipelines directory in your current working directory.
   $ pypyr --name mypipelinename
 
   # run pipelines/mypipelinename.yaml with INFO logging level
-  $ pypyr --name pipelinename --log 20
+  $ pypyr --name mypipelinename --log 20
 
   # run pipelines/mypipelinename.yaml with an input context. For this input to
-  # be available to your pipeline you need to specify a context_parser on your
-  # pipeline.
-  $ pypyr --name pipelinename --context 'mykey=value'
+  # be available to your pipeline you need to specify a context_parser in your
+  # pipeline yaml.
+  $ pypyr --name mypipelinename --context 'mykey=value'
 
 Get cli help
 ------------
