@@ -50,6 +50,7 @@ in the pipeline yaml rather than as a --context argument:
 
   $ pypyr --name magritte --log 20
 
+Check here `pypyr.steps.echo`_ for to see yaml that does this.
 
 Run a pipeline
 --------------
@@ -322,7 +323,7 @@ You can run:
 
 .. code-block:: bash
 
-  pypyr --name mypipeline --context 'echoMe=test test test'
+  pypyr --name mypipeline --context "echoMe=Ceci n'est pas une pipe"
 
 
 Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
@@ -405,7 +406,7 @@ This will result in the following $ENVs:
   $MYVAR2 = value3
 
 Note that the $ENVs are not persisted system-wide, they only exist for the
-pypyr process itself, and as such for the following steps during this pypyr
+pypyr sub-processes, and as such for the subsequent steps during this pypyr
 pipeline execution. If you set an $ENV here, don't expect to see it in your
 system environment variables after the pipeline finishes running.
 

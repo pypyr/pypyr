@@ -28,8 +28,8 @@ def run_step(context):
     $MYVAR1 = value1
     $MYVAR2 = value3
 
-    Note that the $ENVs are not persisted system-wide, they only exist for the
-    pypyr process itself, and as such for the following steps during this pypyr
+    Note that the $ENVs are not persisted system-wide, they only exist for
+    pypyr sub-processes, and as such for the following steps during this pypyr
     pipeline execution. If you set an $ENV here, don't expect to see it in your
     system environment variables after the pipeline finishes running.
     """
