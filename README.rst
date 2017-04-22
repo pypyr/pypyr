@@ -159,7 +159,8 @@ Built-in context parsers
 | pypyr.context.commas        | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             | Don't have spaces between commas unless you     |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -170,9 +171,30 @@ Built-in context parsers
 | pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
+|                             |                                                 |                                                                                     |
 |                             | Don't have spaces between commas unless you     |                                                                                     |
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.context.yamlfile      | Opens a yaml file and writes the contents into  |`pypyr --name pipelinename --context \'./path/sample.yaml'`                          |
+|                             | the pypyr context dictionary.                   |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | The top (or root) level yaml should describe a  |                                                                                     |
+|                             | map, not a sequence.                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Sequence (this won't work):                     |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | .. code-block:: yaml                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             |   - thing1                                      |                                                                                     |
+|                             |   - thing2                                      |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Instead, do a map (aka dictionary):             |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | .. code-block:: yaml                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             |   thing1: thing1value                           |                                                                                     |
+|                             |   thing2: thing2value                           |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 
