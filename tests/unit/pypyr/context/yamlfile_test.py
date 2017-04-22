@@ -1,23 +1,23 @@
 """yamlfile.py unit tests."""
-import pypyr.context.yamlfile
+import pypyr.parser.yamlfile
 import pytest
 
 
 def test_yaml_file_open_fails_on_arbitrary_string():
     """Non path-y input string should fail."""
     with pytest.raises(FileNotFoundError):
-        pypyr.context.yamlfile.get_parsed_context('value 1,value 2, value3')
+        pypyr.parser.yamlfile.get_parsed_context('value 1,value 2, value3')
 
 
 def test_yaml_file_open_fails_on_empty_string():
     """Non path-y input string should fail."""
     with pytest.raises(AssertionError):
-        pypyr.context.yamlfile.get_parsed_context(None)
+        pypyr.parser.yamlfile.get_parsed_context(None)
 
 
 def test_yaml_pass():
     """Relative path to yaml should succeed"""
-    context = pypyr.context.yamlfile.get_parsed_context(
+    context = pypyr.parser.yamlfile.get_parsed_context(
         './tests/testfiles/dict.yaml')
 
     assert context, "context shouldn't be None"
@@ -33,5 +33,5 @@ def test_yaml_pass():
 def test_list_yaml_fails():
     """Yaml describing a list rather than a dict should fail."""
     with pytest.raises(TypeError):
-        pypyr.context.yamlfile.get_parsed_context(
+        pypyr.parser.yamlfile.get_parsed_context(
             './tests/testfiles/list.yaml')

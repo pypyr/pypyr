@@ -156,7 +156,7 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.commas        | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
+| pypyr.parser.commas         | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
 |                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
@@ -164,11 +164,11 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.json          | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.jsonfile      | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
+| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
+| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
 |                             |                                                 |                                                                                     |
@@ -176,7 +176,7 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.yamlfile      | Opens a yaml file and writes the contents into  |`pypyr --name pipelinename --context \'./path/sample.yaml'`                          |
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |`pypyr --name pipelinename --context \'./path/sample.yaml'`                          |
 |                             | the pypyr context dictionary.                   |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             | The top (or root) level yaml should describe a  |                                                                                     |
@@ -337,7 +337,7 @@ For example, if you had pipelines/mypipeline.yaml like this:
 
 .. code-block:: yaml
 
-  context_parser: pypyr.context.keyvaluepairs
+  context_parser: pypyr.parser.keyvaluepairs
   steps:
     - name: pypyr.steps.echo
 
