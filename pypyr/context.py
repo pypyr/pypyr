@@ -13,36 +13,6 @@ class Context(dict):
     Attributes:
     """
 
-    def get_formatted(self, key):
-        """Returns formatted value for context[key].
-
-        Only valid if context[key] is a type string.
-        Return a string interpolated from the context dictionary.
-
-        If input_string='Piping {key1} the {key2} wild'
-        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
-
-        Then this will return string: "Piping down the valleys wild"
-
-        Args:
-            key: dictionary key to retrieve.
-
-        Returns:
-            Formatted string.
-
-        Raises:
-            KeyError: context[key] has {somekey} where somekey does not exist
-                      in context dictionary.
-            TypeError: Attempt operation on a non-string type.
-        """
-        val = self[key]
-
-        if isinstance(val, str):
-            return val.format(**self)
-        else:
-            raise TypeError("can only format on strings. This is a "
-                            "{type(val)} instead.")
-
     def assert_key_has_value(self, key, caller):
         """Assert that context contains key which also has a value.
 
@@ -77,3 +47,65 @@ class Context(dict):
         """
         for key in keys:
             self.assert_key_has_value(key, caller)
+
+    def get_formatted(self, key):
+        """Returns formatted value for context[key].
+
+        Only valid if context[key] is a type string.
+        Return a string interpolated from the context dictionary.
+
+        If context[key]='Piping {key1} the {key2} wild'
+        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+
+        Then this will return string: "Piping down the valleys wild"
+
+        Args:
+            key: dictionary key to retrieve.
+
+        Returns:
+            Formatted string.
+
+        Raises:
+            KeyError: context[key] has {somekey} where somekey does not exist
+                      in context dictionary.
+            TypeError: Attempt operation on a non-string type.
+        """
+        val = self[key]
+
+        if isinstance(val, str):
+            return val.format(**self)
+        else:
+            raise TypeError("can only format on strings. This is a "
+                            "{type(val)} instead.")
+
+    def get_formatted_string(self, input_string):
+        """Returns formatted value for input_string.
+
+        get_formatted gets a context[key] value.
+        get_formatted_string is for any arbitrary string that is not in the
+        context.
+
+        Only valid if input_string is a type string.
+        Return a string interpolated from the context dictionary.
+
+        If input_string='Piping {key1} the {key2} wild'
+        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+
+        Then this will return string: "Piping down the valleys wild"
+
+        Args:
+            input_string: string to parse for substitutions.
+
+        Returns:
+            Formatted string.
+
+        Raises:
+            KeyError: context[key] has {somekey} where somekey does not exist
+                      in context dictionary.
+            TypeError: Attempt operation on a non-string type.
+        """
+        if isinstance(input_string, str):
+            return input_string.format(**self)
+        else:
+            raise TypeError("can only format on strings. This is a "
+                            "{type(val)} instead.")
