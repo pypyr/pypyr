@@ -121,6 +121,13 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         # if something went wrong with pipeline loading there will likely be
         # another exception here because it's looking for failure steps in the
         # pipeline, but the failure_step_group will swallow it.
+        try:
+            # parsed_context at the very least needs needs assignment before
+            # run_failure_step_group will work.
+            parsed_context
+        except NameError:
+            parsed_context = {}
+
         pypyr.stepsrunner.run_failure_step_group(
             pipeline=pipeline_definition,
             context=parsed_context)
