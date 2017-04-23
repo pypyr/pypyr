@@ -12,8 +12,12 @@ def test_context_set_throws_on_empty_context():
 
 def test_context_set_throws_on_contextset_missing():
     """contextSet must exist in context."""
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError) as err_info:
         pypyr.steps.contextset.run_step(Context({'arbkey': 'arbvalue'}))
+
+    assert repr(err_info.value) == ("AssertionError(\"context['contextSet'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.contextset.\",)")
 
 
 def test_context_set_pass():

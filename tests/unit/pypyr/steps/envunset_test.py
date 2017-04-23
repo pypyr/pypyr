@@ -12,9 +12,13 @@ def test_envunset_throws_on_empty_context():
 
 
 def test_envset_throws_on_envset_missing():
-    """envunSet must exist in context."""
-    with pytest.raises(AssertionError):
+    """envUnset must exist in context."""
+    with pytest.raises(AssertionError) as err_info:
         pypyr.steps.envunset.run_step(Context({'arbkey': 'arbvalue'}))
+
+    assert repr(err_info.value) == ("AssertionError(\"context['envUnset'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.envunset.\",)")
 
 
 def test_envset_pass():

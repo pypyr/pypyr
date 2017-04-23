@@ -33,7 +33,7 @@ def run_step(context):
     system environment variables after the pipeline finishes running.
     """
     logger.debug("started")
-    context.assert_key_has_value(key='envSet', caller='envset')
+    context.assert_key_has_value(key='envSet', caller=__name__)
 
     for k, v in context['envSet'].items():
         logger.debug(f"setting ${k} to context[{v}]")

@@ -27,7 +27,7 @@ def run_step(context):
     $MYVAR2
     """
     logger.debug("started")
-    context.assert_key_has_value(key='envUnset', caller='envunset')
+    context.assert_key_has_value(key='envUnset', caller=__name__)
 
     for env_var_name in context['envUnset']:
         logger.debug(f"unsetting ${env_var_name}")

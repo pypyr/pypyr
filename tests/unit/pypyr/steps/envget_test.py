@@ -13,8 +13,12 @@ def test_envget_throws_on_empty_context():
 
 def test_envget_throws_on_envget_missing():
     """envSet must exist in context."""
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError) as err_info:
         pypyr.steps.envget.run_step(Context({'arbkey': 'arbvalue'}))
+
+    assert repr(err_info.value) == ("AssertionError(\"context['envGet'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.envget.\",)")
 
 
 def test_envget_pass():

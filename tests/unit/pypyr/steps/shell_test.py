@@ -57,6 +57,10 @@ def test_shell_error_throws():
 
 def test_empty_context_cmd_throw():
     """Empty cmd in context should throw assert error."""
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError) as err_info:
         context = Context({'blah': 'blah blah'})
         pypyr.steps.shell.run_step(context)
+
+    assert repr(err_info.value) == ("AssertionError(\"context['cmd'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.shell.\",)")

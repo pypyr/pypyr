@@ -31,7 +31,7 @@ def run_step(context):
         pypyrCurrentDir: <<value of $PWD here, not value3>>
     """
     logger.debug("started")
-    context.assert_key_has_value(key='envGet', caller='envget')
+    context.assert_key_has_value(key='envGet', caller=__name__)
 
     for k, v in context['envGet'].items():
         logger.debug(f"setting context {k} to $ENV {v}")

@@ -20,7 +20,7 @@ def run_step(context):
         pipeline-runner [name here] --context 'pycode=print(1+1)'.
     """
     logger.debug("started")
-    context.assert_key_has_value(key='pycode', caller='py step')
+    context.assert_key_has_value(key='pycode', caller=__name__)
 
     logger.debug(f"Executing python string: {context['pycode']}")
     locals_dictionary = locals()

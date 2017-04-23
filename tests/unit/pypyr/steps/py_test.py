@@ -51,9 +51,13 @@ def test_pycode_error_throws():
 
 def test_no_pycode_context_throw():
     """No pycode in context should throw assert error."""
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError) as err_info:
         context = Context({'blah': 'blah blah'})
         pypyr.steps.py.run_step(context)
+
+    assert repr(err_info.value) == ("AssertionError(\"context['pycode'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.py.\",)")
 
 
 def test_empty_pycode_context_throw():
