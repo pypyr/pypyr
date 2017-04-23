@@ -120,8 +120,9 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         logger.error("Something went wrong. Will now try to run on_failure.")
 
         try:
-            # parsed_context at the very least needs needs assignment before
-            # run_failure_step_group will work.
+            # parsed_context at the very least has to be defined before
+            # run_failure_step_group will work and not cause another ref
+            # before assignment err.
             parsed_context
         except NameError:
             parsed_context = {}
