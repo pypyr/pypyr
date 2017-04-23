@@ -105,7 +105,6 @@ def test_string_interpolate_escapes_double_curly_pair():
 
 
 def test_single_curly_should_throw():
-    """pycode error should raise up to caller."""
     with pytest.raises(ValueError):
         context = Context({'key1': 'value1'})
         context['input_string'] = '{key1} this { is {key2} string'
@@ -113,10 +112,37 @@ def test_single_curly_should_throw():
 
 
 def test_tag_not_in_context_should_throw():
-    """pycode error should raise up to caller."""
     with pytest.raises(KeyError):
         context = Context({'key1': 'value1'})
         context['input_string'] = '{key1} this is {key2} string'
         context.get_formatted('input_string')
 
+
+def test_context_item_not_a_string_should_throw():
+    with pytest.raises(TypeError):
+        context = Context({'key1': 'value1'})
+        context['input_string'] = 77
+        context.get_formatted('input_string')
+
+
+def test_input_string_interpolate_works():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'Piping {key1} the {key2} wild'
+    output = context.get_formatted_string(input_string)
+    assert output == 'Piping down the valleys wild', (
+        "string interpolation incorrect")
+
+
+def test_input_string_tag_not_in_context_should_throw():
+    with pytest.raises(KeyError):
+        context = Context({'key1': 'value1'})
+        input_string = '{key1} this is {key2} string'
+        context.get_formatted_string(input_string)
+
+
+def test_input_string_not_a_string_throw():
+    with pytest.raises(TypeError):
+        context = Context({'key1': 'value1'})
+        input_string = 77
+        context.get_formatted_string(input_string)
 # ------------------- formats ------------------------------------------------#
