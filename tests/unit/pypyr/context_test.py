@@ -1,6 +1,64 @@
 """context.py unit tests."""
+from collections.abc import MutableMapping
 from pypyr.context import Context
 import pytest
+
+# ------------------- behaves like a dictionary-------------------------------#
+
+
+def test_context_is_dictionary_like():
+    """Context should behave like a dictionary"""
+    # initializes to empty
+    d = Context()
+    assert d is not None
+    # len is not a given on custom implementations
+    assert len(d) == 0
+
+    # dict ctor "just works"
+    d = Context({'k1': 'v1', 'k2': 'v2'})
+    assert d
+    assert len(d) == 2
+    assert d['k1'] == 'v1'
+    assert d['k2'] == 'v2'
+
+    # __set_item__ assignment add and update works
+    d['k1'] = 'value 1'
+    d['k2'] = 'value 2'
+    d['k3'] = ['one list', 'two list', 'three list']
+    d['k4'] = {'kk1': 'vv1', 'kk2': 'vv2', 'kk3': 'vv3'}
+    d['k5'] = True
+    d['k6'] = ('thing', False, ['1', '2', '3'], 6)
+    d['k7'] = 77
+
+    assert d['k5']
+
+    # isinstance resolves to dict - this test might become invalid if refactor
+    # to a MutableMapping custom object
+    assert isinstance(d, dict)
+    assert isinstance(d, MutableMapping)
+    assert len(d) == 7
+
+    # items() can iterate
+    for k, v in d.items():
+        if k == 'k4':
+            assert isinstance(v, dict)
+
+        if k == 'k6':
+            assert isinstance(v, tuple)
+
+    # values() can iterate
+    for v in d.values():
+        assert v
+
+    # __get_item__ works
+    assert d['k1'] == 'value 1'
+
+    # update merging works
+    mergedic = {'k1': 'NEWVALUE'}
+    d.update(mergedic)
+    assert d['k1'] == 'NEWVALUE'
+
+# ------------------- behaves like a dictionary-------------------------------#
 
 # ------------------- asserts ------------------------------------------------#
 
