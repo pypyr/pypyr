@@ -1,7 +1,6 @@
 """Step that gets env vars and set context values from them."""
 import os
 import pypyr.log.logger
-import pypyr.validate.asserts
 
 # logger means the log level will be set correctly
 logger = pypyr.log.logger.get_logger(__name__)
@@ -32,8 +31,7 @@ def run_step(context):
         pypyrCurrentDir: <<value of $PWD here, not value3>>
     """
     logger.debug("started")
-    pypyr.validate.asserts.key_in_context_has_value(
-        context=context, key='envGet', caller='envget')
+    context.assert_key_has_value(key='envGet', caller='envget')
 
     for k, v in context['envGet'].items():
         logger.debug(f"setting context {k} to $ENV {v}")

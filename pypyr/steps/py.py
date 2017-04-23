@@ -3,7 +3,6 @@
 Uses python's exec() to evaluate and execute arbitrary python code.
 """
 import pypyr.log.logger
-import pypyr.validate.asserts
 
 # logger means the log level will be set correctly
 logger = pypyr.log.logger.get_logger(__name__)
@@ -21,8 +20,7 @@ def run_step(context):
         pipeline-runner [name here] --context 'pycode=print(1+1)'.
     """
     logger.debug("started")
-    pypyr.validate.asserts.key_in_context_has_value(
-        context, 'pycode', 'py step')
+    context.assert_key_has_value(key='pycode', caller='py step')
 
     logger.debug(f"Executing python string: {context['pycode']}")
     locals_dictionary = locals()

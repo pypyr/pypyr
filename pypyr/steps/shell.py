@@ -4,7 +4,6 @@ The context['cmd'] string must be formatted exactly as it would be when typed
 at the shell prompt. This includes, for example, quoting or backslash escaping
 filenames with spaces in them. The shell defaults to /bin/sh.
 """
-import pypyr.format.string
 import pypyr.log.logger
 import subprocess
 
@@ -36,17 +35,13 @@ def run_step(context):
     The cmd passed to the shell will be "mything --arg value1"
     """
     logger.debug("started")
-    assert context, ("context must be set for step shell. Did you set "
-                     "--context 'cmd=<<shell cmd here>>'?")
-    assert 'cmd' in context, ("context['cmd'] must exist for step shell.")
+    context.assert_key_has_value(key='cmd', caller=__name__)
 
     # input string is a command like 'ls -l | grep boom'. Split into list on
     # spaces to allow for natural shell language input string.
     logger.debug(f"Processing command string: {context['cmd']}")
 
-    interpolated_string = pypyr.format.string.get_interpolated_string(
-        input_string=context['cmd'],
-        context=context)
+    interpolated_string = context.get_formatted('cmd')
 
     # check=True throws CalledProcessError if exit code != 0
     subprocess.run(interpolated_string, shell=True, check=True)

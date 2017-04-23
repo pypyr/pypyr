@@ -3,6 +3,7 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
+import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 import pypyr.stepsrunner
@@ -31,9 +32,9 @@ def get_parsed_context(pipeline, context_in_string):
             if result_context is None:
                 logger.debug(f"{parser_module_name} returned None. Using "
                              "empty context instead")
-                return {}
+                return pypyr.context.Context()
             else:
-                return result_context
+                return pypyr.context.Context(result_context)
         except AttributeError:
             logger.error(f"The parser {parser_module_name} doesn't have a "
                          "get_parsed_context(context) function.")
@@ -44,7 +45,7 @@ def get_parsed_context(pipeline, context_in_string):
         logger.debug("done")
         # initialize to an empty dictionary because you want to be able to run
         # with no context.
-        return {}
+        return pypyr.context.Context()
 
 
 def get_pipeline_definition(pipeline_name, working_dir):

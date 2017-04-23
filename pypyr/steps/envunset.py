@@ -1,7 +1,6 @@
 """Step that unsets env vars."""
 import os
 import pypyr.log.logger
-import pypyr.validate.asserts
 
 # logger means the log level will be set correctly
 logger = pypyr.log.logger.get_logger(__name__)
@@ -28,8 +27,7 @@ def run_step(context):
     $MYVAR2
     """
     logger.debug("started")
-    pypyr.validate.asserts.key_in_context_has_value(
-        context=context, key='envUnset', caller='envunset')
+    context.assert_key_has_value(key='envUnset', caller='envunset')
 
     for env_var_name in context['envUnset']:
         logger.debug(f"unsetting ${env_var_name}")

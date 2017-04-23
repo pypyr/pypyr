@@ -1,5 +1,6 @@
 """envunset.py unit tests."""
 import os
+from pypyr.context import Context
 import pypyr.steps.envunset
 import pytest
 
@@ -7,13 +8,13 @@ import pytest
 def test_envunset_throws_on_empty_context():
     """context must exist."""
     with pytest.raises(AssertionError):
-        pypyr.steps.envunset.run_step(None)
+        pypyr.steps.envunset.run_step(Context())
 
 
 def test_envset_throws_on_envset_missing():
     """envunSet must exist in context."""
     with pytest.raises(AssertionError):
-        pypyr.steps.envunset.run_step({'arbkey': 'arbvalue'})
+        pypyr.steps.envunset.run_step(Context({'arbkey': 'arbvalue'}))
 
 
 def test_envset_pass():
@@ -23,7 +24,7 @@ def test_envset_pass():
     os.environ['ARB_DELETE_ME1'] = 'arb from pypyr context ARB_DELETE_ME1'
     os.environ['ARB_DELETE_ME2'] = 'arb from pypyr context ARB_DELETE_ME2'
 
-    context = {
+    context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
@@ -31,7 +32,7 @@ def test_envset_pass():
             'ARB_DELETE_ME1',
             'ARB_DELETE_ME2'
         ]
-    }
+    })
 
     pypyr.steps.envunset.run_step(context)
 
@@ -47,14 +48,14 @@ def test_envset_doesnt_exist():
     except KeyError:
         pass
 
-    context = {
+    context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
         'envUnset': [
             'ARB_DELETE_SNARK'
         ]
-    }
+    })
 
     pypyr.steps.envunset.run_step(context)
 
