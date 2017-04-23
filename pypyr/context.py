@@ -66,8 +66,8 @@ class Context(dict):
             Formatted string.
 
         Raises:
-            KeyError: context[key] has {somekey} where somekey does not exist
-                      in context dictionary.
+            KeyError: context[key] value contains {somekey} where somekey does
+                      not exist in context dictionary.
             TypeError: Attempt operation on a non-string type.
         """
         val = self[key]
