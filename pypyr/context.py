@@ -1,4 +1,11 @@
 """pypyr context class. Dictionary ahoy."""
+from collections import namedtuple
+
+ContextItemInfo = namedtuple('ContextItemInfo',
+                             ['key',
+                              'key_in_context',
+                              'expected_type',
+                              'is_expected_type'])
 
 
 class Context(dict):
@@ -109,3 +116,48 @@ class Context(dict):
         else:
             raise TypeError("can only format on strings. This is a "
                             "{type(val)} instead.")
+
+    def keys_exist(self, *keys):
+        """Check if keys exist in context.
+
+        Args:
+            *keys: *args of str for keys to check in context.
+
+        Returns:
+            tuple (bool) where bool indicates the key does exist in context,
+            same order as *keys.
+        """
+        return tuple(key in self.keys() for key in keys)
+
+    def keys_of_type_exist(self, *keys):
+        """Check if keys exist in context and if types are as expected.
+
+        Args:
+            *keys: *args for keys to check in context.
+                Each arg is a tuple (str, type)
+
+        Returns:
+            Tuple of namedtuple ContextItemInfo, same order as *keys.
+            ContextItemInfo(key,
+                            key_in_context,
+                            expected_type,
+                            is_expected_type)
+
+            Remember if there is only one key in keys, the return assignment
+            needs an extra comma to remind python that it's a tuple:
+            # one
+            a, = context.keys_of_type_exist('a')
+            # > 1
+            a, b = context.keys_of_type_exist('a', 'b')
+        """
+        # k[0] = key name, k[1] = exists, k2 = expected type
+        keys_exist = [(key, key in self.keys(), expected_type)
+                      for key, expected_type in keys]
+
+        return tuple(ContextItemInfo(
+            key=k[0],
+            key_in_context=k[1],
+            expected_type=k[2],
+            is_expected_type=isinstance(self[k[0]], k[2])
+            if k[1] else None
+        ) for k in keys_exist)

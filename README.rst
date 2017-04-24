@@ -20,23 +20,25 @@ pypyr as a simple task runner that lets you run sequential steps.
 
 .. section-numbering::
 
+************
 Installation
-============
+************
 
 pip
----
+===
 .. code-block:: bash
 
   $ pip install --upgrade pypyr
 
 Python version
---------------
+==============
 Tested against Python 3.6
 
+*****
 Usage
-=====
+*****
 Run your first pipeline
------------------------
+=======================
 Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
@@ -53,7 +55,7 @@ in the pipeline yaml rather than as a --context argument:
 Check here `pypyr.steps.echo`_ to see yaml that does this.
 
 Run a pipeline
---------------
+==============
 pypyr assumes a pipelines directory in your current working directory.
 
 .. code-block:: bash
@@ -70,7 +72,7 @@ pypyr assumes a pipelines directory in your current working directory.
   $ pypyr --name mypipelinename --context 'mykey=value'
 
 Get cli help
-------------
+============
 pypyr has a couple of arguments and switches you might find useful. See them all
 here:
 
@@ -79,13 +81,14 @@ here:
   $ pypyr -h
 
 Examples
---------
+========
 If you prefer reading code to reading words, https://github.com/pypyr/pypyr-example
 
+***************************
 Anatomy of a pypyr pipeline
-===========================
+***************************
 Pipeline yaml structure
------------------------
+=======================
 A pipeline is a .yaml file. Save pipelines to a `pipelines` directory in your
 working directory.
 
@@ -119,7 +122,7 @@ working directory.
     - my.failure.handler.notifier
 
 Built-in pipelines
-------------------
+==================
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **pipeline**                | **description**                                 | **how to run**                                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -140,7 +143,7 @@ Built-in pipelines
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 context_parser
---------------
+==============
 Optional.
 
 A context_parser parses the pypyr --context input argument. The chances are
@@ -152,7 +155,7 @@ pipeline. The context_parser can initialize the context. Any step in the pipelin
 can add, edit or remove items from the context dictionary.
 
 Built-in context parsers
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -199,7 +202,7 @@ Built-in context parsers
 
 
 Roll your own context_parser
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 .. code-block:: python
 
   import logging
@@ -221,48 +224,49 @@ Roll your own context_parser
       return {'key1': 'value1', 'key2':'value2'}
 
 steps
------
+=====
 Mandatory.
 
 steps is a list of steps to execute in sequence. A step is simply a bit of
 python that does stuff.
 
 You can specify a step in the pipeline yaml in two ways:
-  * Simple step
 
-    - a simple step is just the name of the python module.
+* Simple step
 
-    - pypyr will look in your working directory for these modules or packages.
+  - a simple step is just the name of the python module.
 
-    - For a package, be sure to specify the full namespace (i.e not just `mymodule`, but `mypackage.mymodule`).
+  - pypyr will look in your working directory for these modules or packages.
 
-      .. code-block:: yaml
+  - For a package, be sure to specify the full namespace (i.e not just `mymodule`, but `mypackage.mymodule`).
 
-        steps:
-          - my.package.my.module # points at a python module in a package.
-          - mymodule # simple step pointing at a python file
+    .. code-block:: yaml
 
-  * Complex step
+      steps:
+        - my.package.my.module # points at a python module in a package.
+        - mymodule # simple step pointing at a python file
 
-    - a complex step allows you to specify a few more details for your step, but at heart it's the same thing as a simple step - it points at some python.
+* Complex step
 
-      .. code-block:: yaml
+  - a complex step allows you to specify a few more details for your step, but at heart it's the same thing as a simple step - it points at some python.
 
-        steps:
-          - name: my.package.another.module
-            description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
-            in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
-              parameter1: value1
-              parameter2: value2
+    .. code-block:: yaml
+
+      steps:
+        - name: my.package.another.module
+          description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
+          in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+            parameter1: value1
+            parameter2: value2
 
 
-  * You can freely mix and match simple and complex steps in the same pipeline.
+* You can freely mix and match simple and complex steps in the same pipeline.
 
-  * Frankly, the only reason simple steps are there is because I'm lazy and I dislike redundant typing.
+* Frankly, the only reason simple steps are there is because I'm lazy and I dislike redundant typing.
 
 
 Built-in steps
-~~~~~~~~~~~~~~
+--------------
 
 +-----------------------------+-------------------------------------------------+------------------------------+
 | **step**                    | **description**                                 | **input context properties** |
@@ -272,11 +276,11 @@ Built-in steps
 +-----------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.echo`_         | Echo the context value `echoMe` to the output.  | echoMe (string)              |
 +-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.envget`_       | Get $ENVs into the pypyr context.               | envGet (dictionary)          |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.envset`_       | Set $ENVs from the pypyr context.               | envSet (dictionary)          |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.envunset`_     | Unset $ENVs.                                    | envUnset (list)              |
+| `pypyr.steps.env`_          | Get, set or unset $ENVs.                        | envGet (dictionary)          |
+|                             |                                                 |                              |
+|                             |                                                 | envSet (dictionary)          |
+|                             |                                                 |                              |
+|                             |                                                 | envUnset (list)              |
 +-----------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_           | Executes the context value `pycode` as python   | pycode (string)              |
 |                             | code.                                           |                              |
@@ -291,7 +295,7 @@ Built-in steps
 +-----------------------------+-------------------------------------------------+------------------------------+
 
 pypyr.steps.contextset
-``````````````````````
+^^^^^^^^^^^^^^^^^^^^^^
 Sets context values from already existing context values.
 
 This is handy if you need to prepare certain keys in context where a next step
@@ -330,7 +334,7 @@ This will result in context like this:
     key4: value3
 
 pypyr.steps.echo
-````````````````
+^^^^^^^^^^^^^^^^
 Echo the context value ``echoMe`` to the output.
 
 For example, if you had pipelines/mypipeline.yaml like this:
@@ -365,8 +369,24 @@ You can run:
 
   $ pypyr --name look-ma-no-params --log 20
 
-pypyr.steps.envget
-``````````````````
+pypyr.steps.env
+^^^^^^^^^^^^^^^
+Get, set or unset environment variables.
+
+At least one of these context keys must exist:
+
+- envGet
+- envSet
+- envUnset
+
+This step will run whatever combination of Get, Set and Unset you specify.
+Regardless of combination, execution order is Get, Set, Unset.
+
+See a worked example `for environment variables here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
+envGet
+""""""
 Get $ENVs into the pypyr context.
 
 ``context['envGet']`` must exist. It's a dictionary.
@@ -397,11 +417,8 @@ This will result in context:
   pypyrCurrentDir: <<value of $PWD here, not value3>>
   pypyrUser: <<value of $USER here>>
 
-See a worked example `for environment variables here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
-
-pypyr.steps.envset
-``````````````````
+envSet
+""""""
 Set $ENVs from the pypyr context.
 
 ``context['envSet']`` must exist. It's a dictionary.
@@ -432,11 +449,8 @@ pypyr sub-processes, and as such for the subsequent steps during this pypyr
 pipeline execution. If you set an $ENV here, don't expect to see it in your
 system environment variables after the pipeline finishes running.
 
-See a worked example `for environment variables here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
-
-pypyr.steps.envunset
-````````````````````
+envUnset
+""""""""
 Unset $ENVs.
 
 Context is a dictionary or dictionary-like. context is mandatory.
@@ -462,11 +476,8 @@ This will result in the following $ENVs being unset:
   $MYVAR1
   $MYVAR2
 
-See a worked example `for environment variables here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
-
 pypyr.steps.py
-``````````````
+^^^^^^^^^^^^^^
 Executes the context value `pycode` as python code.
 
 Will exec ``context['pycode']`` as a dynamically interpreted python code block.
@@ -486,7 +497,7 @@ For example, this will invoke python print and print 2:
         pycode: print(1+1)
 
 pypyr.steps.pypyrversion
-````````````````````````
+^^^^^^^^^^^^^^^^^^^^^^^^
 Outputs the same as:
 
 .. code-block:: bash
@@ -504,7 +515,7 @@ Example pipeline yaml:
       - pypyr.steps.pypyrversion
 
 pypyr.steps.safeshell
-`````````````````````
+^^^^^^^^^^^^^^^^^^^^^
 Runs the context value `cmd` as a sub-process.
 
 In `safeshell`, you cannot use things like exit, return, shell pipes, filename
@@ -532,7 +543,7 @@ See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
 
 pypyr.steps.shell
-`````````````````````
+^^^^^^^^^^^^^^^^^
 Runs the context value `cmd` in the default shell. On a sensible O/S, this is
 `/bin/sh`
 
@@ -564,7 +575,7 @@ See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
 
 Roll your own step
-~~~~~~~~~~~~~~~~~~
+------------------
 .. code-block:: python
 
   import logging
@@ -597,7 +608,7 @@ Roll your own step
       logger.debug("done")
 
 on_success
-----------
+==========
 on_success is a list of steps to execute in sequence. Runs when `steps:`
 completes successfully.
 
@@ -605,7 +616,7 @@ You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
 
 on_failure
-----------
+==========
 on_failure is a list of steps to execute in sequence. Runs when any of the
 above hits an unhandled exception.
 
@@ -615,10 +626,11 @@ both that exception and the original cause exception will be logged.
 You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
 
+**********************************
 Testing (for pypyr-cli developers)
-==================================
+**********************************
 Testing without worrying about dependencies
--------------------------------------------
+===========================================
 Run tox to test the packaging cycle inside a virtual env, plus run all tests:
 
 .. code-block:: bash
@@ -629,7 +641,7 @@ Run tox to test the packaging cycle inside a virtual env, plus run all tests:
   $ tox -e stage -- tests
 
 If tox takes too long
----------------------
+=====================
 The test framework is pytest. If you only want to run tests:
 
 .. code-block:: bash
@@ -637,7 +649,7 @@ The test framework is pytest. If you only want to run tests:
   $ pip install -e .[dev,test]
 
 Day-to-day testing
-------------------
+==================
 - Tests live under */tests* (surprising, eh?). Mirror the directory structure of
   the code being tested.
 - Prefix a test definition with *test_* - so a unit test looks like
@@ -664,15 +676,16 @@ Day-to-day testing
 
     pytest tests/unit/arb_test_file.py
 
+**********
 Contribute
-==========
+**********
 Bugs
-----
+====
 Well, you know. No one's perfect. Feel free to `create an issue
 <https://github.com/pypyr/pypyr-cli/issues/new>`_.
 
 Contribute to the core cli
---------------------------
+==========================
 The usual jazz - create an issue, fork, code, test, PR. It might be an idea to
 discuss your idea via the Issues list first before you go off and write a
 huge amount of code - you never know, something might already be in the works,
@@ -680,7 +693,7 @@ or maybe it's not quite right for the core-cli (you're still welcome to fork
 and go wild regardless, of course, it just mightn't get merged back in here).
 
 Plug-Ins
---------
+========
 You've probably noticed by now that pypyr is built to be pretty extensible.
 You've probably also noticed that the core pypyr cli is deliberately kept light.
 The core cli is philosophically only a way of running a sequence of steps.

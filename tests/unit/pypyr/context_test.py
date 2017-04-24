@@ -204,3 +204,91 @@ def test_input_string_not_a_string_throw():
         input_string = 77
         context.get_formatted_string(input_string)
 # ------------------- formats ------------------------------------------------#
+
+# ------------------- key info -----------------------------------------------#
+
+
+def test_key_in_context():
+    context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
+
+    k1 = context.keys_exist('k1')
+    assert k1
+    k1, k2, k3 = context.keys_exist('k1', 'k2', 'k3')
+    assert k1 and k2 and k3
+
+    k4, k2, k1 = context.keys_exist('k4', 'k2', 'k1')
+    assert k1 and k2 and not k4
+
+
+def test_keys_of_type_exist_single():
+    """return a single tuple"""
+    context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
+
+    k1, = context.keys_of_type_exist(('k1', str),)
+    assert k1
+    assert k1.key == 'k1'
+    assert k1.key_in_context
+    assert k1.expected_type is str
+    assert k1.is_expected_type
+
+
+def test_keys_of_type_exist_triple():
+    context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
+
+    k3, k2, k1 = context.keys_of_type_exist(
+        ('k3', list),
+        ('k2', list),
+        ('k1', str)
+    )
+
+    assert k1
+    assert k1.key == 'k1'
+    assert k1.key_in_context
+    assert k1.expected_type is str
+    assert k1.is_expected_type
+
+    assert k2
+    assert k2.key == 'k2'
+    assert k2.key_in_context
+    assert k2.expected_type is list
+    assert not k2.is_expected_type
+
+    assert k3
+    assert k3.key == 'k3'
+    assert k3.key_in_context
+    assert k3.expected_type is list
+    assert k3.is_expected_type
+
+
+def test_keys_none_exist():
+    context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
+
+    k4, = context.keys_of_type_exist(
+        ('k4', list)
+    )
+
+    k5, k6 = context.keys_of_type_exist(
+        ('k5', bool),
+        ('k6', list),
+    )
+
+    assert k4
+    assert k4.key == 'k4'
+    assert not k4.key_in_context
+    assert k4.expected_type is list
+    assert k4.is_expected_type is None
+
+    assert k5
+    assert k5.key == 'k5'
+    assert not k5.key_in_context
+    assert k5.expected_type is bool
+    assert k4.is_expected_type is None
+
+    assert k6
+    assert k6.key == 'k6'
+    assert not k6.key_in_context
+    assert k6.expected_type is list
+    assert k6.is_expected_type is None
+
+
+# ------------------- key info -----------------------------------------------#
