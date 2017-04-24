@@ -1,4 +1,5 @@
 """pypyrversion.py unit tests."""
+from pypyr.context import Context
 import pypyr.log.logger
 import pypyr.steps.pypyrversion
 
@@ -8,6 +9,6 @@ def test_pypyr_version():
 
 
 def test_pypyr_version_context_out_same_as_in():
-    context = {'test': 'value1'}
+    context = Context({'test': 'value1'})
     pypyr.steps.pypyrversion.run_step(context)
     assert context['test'] == 'value1', "context not returned from step."

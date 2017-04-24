@@ -1,23 +1,23 @@
 """jsonfile.py unit tests."""
-import pypyr.context.jsonfile
+import pypyr.parser.jsonfile
 import pytest
 
 
 def test_json_file_open_fails_on_arbitrary_string():
     """Non path-y input string should fail."""
     with pytest.raises(FileNotFoundError):
-        pypyr.context.jsonfile.get_parsed_context('value 1,value 2, value3')
+        pypyr.parser.jsonfile.get_parsed_context('value 1,value 2, value3')
 
 
 def test_json_file_open_fails_on_empty_string():
     """Non path-y input string should fail."""
     with pytest.raises(AssertionError):
-        pypyr.context.jsonfile.get_parsed_context(None)
+        pypyr.parser.jsonfile.get_parsed_context(None)
 
 
 def test_json_pass():
     """Relative path to json should succeed"""
-    context = pypyr.context.jsonfile.get_parsed_context(
+    context = pypyr.parser.jsonfile.get_parsed_context(
         './tests/testfiles/test.json')
 
     assert context, "context shouldn't be None"

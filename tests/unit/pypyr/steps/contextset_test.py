@@ -1,4 +1,5 @@
 """contextset.py unit tests."""
+from pypyr.context import Context
 import pypyr.steps.contextset
 import pytest
 
@@ -6,18 +7,22 @@ import pytest
 def test_context_set_throws_on_empty_context():
     """context must exist."""
     with pytest.raises(AssertionError):
-        pypyr.steps.contextset.run_step(None)
+        pypyr.steps.contextset.run_step(Context())
 
 
 def test_context_set_throws_on_contextset_missing():
     """contextSet must exist in context."""
-    with pytest.raises(AssertionError):
-        pypyr.steps.contextset.run_step({'arbkey': 'arbvalue'})
+    with pytest.raises(AssertionError) as err_info:
+        pypyr.steps.contextset.run_step(Context({'arbkey': 'arbvalue'}))
+
+    assert repr(err_info.value) == ("AssertionError(\"context['contextSet'] "
+                                    "doesn't exist. It must have a value for "
+                                    "pypyr.steps.contextset.\",)")
 
 
 def test_context_set_pass():
     """contextset success case"""
-    context = {
+    context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
@@ -25,7 +30,7 @@ def test_context_set_pass():
             'key2': 'key1',
             'key4': 'key3'
         }
-    }
+    })
 
     pypyr.steps.contextset.run_step(context)
 

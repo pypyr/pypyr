@@ -20,23 +20,25 @@ pypyr as a simple task runner that lets you run sequential steps.
 
 .. section-numbering::
 
+************
 Installation
-============
+************
 
 pip
----
+===
 .. code-block:: bash
 
   $ pip install --upgrade pypyr
 
 Python version
---------------
+==============
 Tested against Python 3.6
 
+*****
 Usage
-=====
+*****
 Run your first pipeline
------------------------
+=======================
 Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
@@ -50,9 +52,10 @@ in the pipeline yaml rather than as a --context argument:
 
   $ pypyr --name magritte --log 20
 
+Check here `pypyr.steps.echo`_ to see yaml that does this.
 
 Run a pipeline
---------------
+==============
 pypyr assumes a pipelines directory in your current working directory.
 
 .. code-block:: bash
@@ -61,15 +64,15 @@ pypyr assumes a pipelines directory in your current working directory.
   $ pypyr --name mypipelinename
 
   # run pipelines/mypipelinename.yaml with INFO logging level
-  $ pypyr --name pipelinename --log 20
+  $ pypyr --name mypipelinename --log 20
 
   # run pipelines/mypipelinename.yaml with an input context. For this input to
-  # be available to your pipeline you need to specify a context_parser on your
-  # pipeline.
-  $ pypyr --name pipelinename --context 'mykey=value'
+  # be available to your pipeline you need to specify a context_parser in your
+  # pipeline yaml.
+  $ pypyr --name mypipelinename --context 'mykey=value'
 
 Get cli help
-------------
+============
 pypyr has a couple of arguments and switches you might find useful. See them all
 here:
 
@@ -78,13 +81,14 @@ here:
   $ pypyr -h
 
 Examples
---------
+========
 If you prefer reading code to reading words, https://github.com/pypyr/pypyr-example
 
+***************************
 Anatomy of a pypyr pipeline
-===========================
+***************************
 Pipeline yaml structure
------------------------
+=======================
 A pipeline is a .yaml file. Save pipelines to a `pipelines` directory in your
 working directory.
 
@@ -118,7 +122,7 @@ working directory.
     - my.failure.handler.notifier
 
 Built-in pipelines
-------------------
+==================
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **pipeline**                | **description**                                 | **how to run**                                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -139,7 +143,7 @@ Built-in pipelines
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 context_parser
---------------
+==============
 Optional.
 
 A context_parser parses the pypyr --context input argument. The chances are
@@ -151,32 +155,54 @@ pipeline. The context_parser can initialize the context. Any step in the pipelin
 can add, edit or remove items from the context dictionary.
 
 Built-in context parsers
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.commas        | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
+| pypyr.parser.commas         | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             | Don't have spaces between commas unless you     |{'param1': True, 'param2': True, 'param3': True}                                     |
-|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
-|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
-+-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.json          | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
-+-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.jsonfile      | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
-+-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.context.keyvaluepairs | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
-|                             | and returns a dictionary where each pair becomes|                                                                                     |
-|                             | a dictionary element.                           |                                                                                     |
+|                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
 |                             | Don't have spaces between commas unless you     |                                                                                     |
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
+|                             | and returns a dictionary where each pair becomes|                                                                                     |
+|                             | a dictionary element.                           |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |`pypyr --name pipelinename --context \'./path/sample.yaml'`                          |
+|                             | the pypyr context dictionary.                   |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | The top (or root) level yaml should describe a  |                                                                                     |
+|                             | map, not a sequence.                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Sequence (this won't work):                     |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | .. code-block:: yaml                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             |   - thing1                                      |                                                                                     |
+|                             |   - thing2                                      |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Instead, do a map (aka dictionary):             |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | .. code-block:: yaml                            |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             |   thing1: thing1value                           |                                                                                     |
+|                             |   thing2: thing2value                           |                                                                                     |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 
 
 Roll your own context_parser
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------
 .. code-block:: python
 
   import logging
@@ -198,50 +224,78 @@ Roll your own context_parser
       return {'key1': 'value1', 'key2':'value2'}
 
 steps
------
+=====
 Mandatory.
 
 steps is a list of steps to execute in sequence. A step is simply a bit of
 python that does stuff.
 
 You can specify a step in the pipeline yaml in two ways:
-  * Simple step
 
-    - a simple step is just the name of the python module.
+* Simple step
 
-    - pypyr will look in your working directory for these modules or packages.
+  - a simple step is just the name of the python module.
 
-    - For a package, be sure to specify the full namespace (i.e not just `mymodule`, but `mypackage.mymodule`).
+  - pypyr will look in your working directory for these modules or packages.
 
-      .. code-block:: yaml
+  - For a package, be sure to specify the full namespace (i.e not just `mymodule`, but `mypackage.mymodule`).
 
-        steps:
-          - my.package.my.module # points at a python module in a package.
-          - mymodule # simple step pointing at a python file
+    .. code-block:: yaml
 
-  * Complex step
+      steps:
+        - my.package.my.module # points at a python module in a package.
+        - mymodule # simple step pointing at a python file
 
-    - a complex step allows you to specify a few more details for your step, but at heart it's the same thing as a simple step - it points at some python.
+* Complex step
 
-      .. code-block:: yaml
+  - a complex step allows you to specify a few more details for your step, but at heart it's the same thing as a simple step - it points at some python.
 
-        steps:
-          - name: my.package.another.module
-            description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
-            in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
-              parameter1: value1
-              parameter2: value2
+    .. code-block:: yaml
+
+      steps:
+        - name: my.package.another.module
+          description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
+          in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+            parameter1: value1
+            parameter2: value2
 
 
-  * You can freely mix and match simple and complex steps in the same pipeline.
+* You can freely mix and match simple and complex steps in the same pipeline.
 
-  * Frankly, the only reason simple steps are there is because I'm lazy and I dislike redundant typing.
+* Frankly, the only reason simple steps are there is because I'm lazy and I dislike redundant typing.
 
 
 Built-in steps
-~~~~~~~~~~~~~~
+--------------
+
++-----------------------------+-------------------------------------------------+------------------------------+
+| **step**                    | **description**                                 | **input context properties** |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dictionary)      |
+|                             | context values.                                 |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.echo`_         | Echo the context value `echoMe` to the output.  | echoMe (string)              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.env`_          | Get, set or unset $ENVs.                        | envGet (dictionary)          |
+|                             |                                                 |                              |
+|                             |                                                 | envSet (dictionary)          |
+|                             |                                                 |                              |
+|                             |                                                 | envUnset (list)              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.py`_           | Executes the context value `pycode` as python   | pycode (string)              |
+|                             | code.                                           |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.pypyrversion`_ | Writes installed pypyr version to output.       |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.safeshell`_    | Runs the program and args specified in the      | cmd (string)                 |
+|                             | context value `cmd` as a subprocess.            |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.shell`_        | Runs the context value `cmd` in the default     | cmd (string)                 |
+|                             | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+
 pypyr.steps.contextset
-``````````````````````
+^^^^^^^^^^^^^^^^^^^^^^
 Sets context values from already existing context values.
 
 This is handy if you need to prepare certain keys in context where a next step
@@ -280,14 +334,14 @@ This will result in context like this:
     key4: value3
 
 pypyr.steps.echo
-````````````````
-Echo the context value `echoMe` to the output.
+^^^^^^^^^^^^^^^^
+Echo the context value ``echoMe`` to the output.
 
 For example, if you had pipelines/mypipeline.yaml like this:
 
 .. code-block:: yaml
 
-  context_parser: pypyr.context.keyvaluepairs
+  context_parser: pypyr.parser.keyvaluepairs
   steps:
     - name: pypyr.steps.echo
 
@@ -295,7 +349,7 @@ You can run:
 
 .. code-block:: bash
 
-  pypyr --name mypipeline --context 'echoMe=test test test'
+  pypyr --name mypipeline --context "echoMe=Ceci n'est pas une pipe"
 
 
 Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
@@ -315,11 +369,118 @@ You can run:
 
   $ pypyr --name look-ma-no-params --log 20
 
+pypyr.steps.env
+^^^^^^^^^^^^^^^
+Get, set or unset environment variables.
+
+At least one of these context keys must exist:
+
+- envGet
+- envSet
+- envUnset
+
+This step will run whatever combination of Get, Set and Unset you specify.
+Regardless of combination, execution order is Get, Set, Unset.
+
+See a worked example `for environment variables here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
+envGet
+""""""
+Get $ENVs into the pypyr context.
+
+``context['envGet']`` must exist. It's a dictionary.
+
+Values are the names of the $ENVs to write to the pypyr context.
+
+Keys are the pypyr context item to which to write the $ENV values.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+  key1: value1
+  key2: value2
+  pypyrCurrentDir: value3
+  envGet:
+    pypyrUser: USER
+    pypyrCurrentDir: PWD
+
+
+This will result in context:
+
+.. code-block:: yaml
+
+  key1: value1
+  key2: value2
+  key3: value3
+  pypyrCurrentDir: <<value of $PWD here, not value3>>
+  pypyrUser: <<value of $USER here>>
+
+envSet
+""""""
+Set $ENVs from the pypyr context.
+
+``context['envSet']`` must exist. It's a dictionary.
+
+Values are the keys of the pypyr context values to write to $ENV.
+Keys are the names of the $ENV values to which to write.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: value2
+    key3: value3
+    envSet:
+        MYVAR1: key1
+        MYVAR2: key3
+
+This will result in the following $ENVs:
+
+.. code-block:: yaml
+
+  $MYVAR1 = value1
+  $MYVAR2 = value3
+
+Note that the $ENVs are not persisted system-wide, they only exist for the
+pypyr sub-processes, and as such for the subsequent steps during this pypyr
+pipeline execution. If you set an $ENV here, don't expect to see it in your
+system environment variables after the pipeline finishes running.
+
+envUnset
+""""""""
+Unset $ENVs.
+
+Context is a dictionary or dictionary-like. context is mandatory.
+
+``context['envUnset']`` must exist. It's a list.
+List items are the names of the $ENV values to unset.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: value2
+    key3: value3
+    envUnset:
+        MYVAR1
+        MYVAR2
+
+This will result in the following $ENVs being unset:
+
+.. code-block:: bash
+
+  $MYVAR1
+  $MYVAR2
+
 pypyr.steps.py
-``````````````
+^^^^^^^^^^^^^^
 Executes the context value `pycode` as python code.
 
-Will exec context['pycode'] as a dynamically interpreted python code block.
+Will exec ``context['pycode']`` as a dynamically interpreted python code block.
 
 You can access and change the context dictionary in a py step. See a worked
 example `here
@@ -336,7 +497,7 @@ For example, this will invoke python print and print 2:
         pycode: print(1+1)
 
 pypyr.steps.pypyrversion
-````````````````````````
+^^^^^^^^^^^^^^^^^^^^^^^^
 Outputs the same as:
 
 .. code-block:: bash
@@ -354,13 +515,13 @@ Example pipeline yaml:
       - pypyr.steps.pypyrversion
 
 pypyr.steps.safeshell
-`````````````````````
-Runs the context value `cmd` in the default shell. On a sensible O/S, this is
-`/bin/sh`
+^^^^^^^^^^^^^^^^^^^^^
+Runs the context value `cmd` as a sub-process.
 
 In `safeshell`, you cannot use things like exit, return, shell pipes, filename
 wildcards, environment variable expansion, and expansion of ~ to a user’s
-home directory. Use pypyr.steps.shell for this instead.
+home directory. Use pypyr.steps.shell for this instead. Safeshell runs a
+program, it does not invoke the shell.
 
 You can use context variable substitutions with curly braces. See a worked
 example `for substitions here
@@ -378,9 +539,13 @@ Example pipeline yaml:
       in:
         cmd: ls -a
 
+See a worked example `for shell power here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
+
 pypyr.steps.shell
-`````````````````````
-Runs the context value `cmd` in the default shell.
+^^^^^^^^^^^^^^^^^
+Runs the context value `cmd` in the default shell. On a sensible O/S, this is
+`/bin/sh`
 
 Do all the things you can't do with `safeshell`.
 
@@ -406,8 +571,11 @@ Example pipeline yaml using a pipe:
       in:
         cmd: ls | grep pipe; echo if you had something pipey it should show up;
 
+See a worked example `for shell power here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
+
 Roll your own step
-~~~~~~~~~~~~~~~~~~
+------------------
 .. code-block:: python
 
   import logging
@@ -440,7 +608,7 @@ Roll your own step
       logger.debug("done")
 
 on_success
-----------
+==========
 on_success is a list of steps to execute in sequence. Runs when `steps:`
 completes successfully.
 
@@ -448,7 +616,7 @@ You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
 
 on_failure
-----------
+==========
 on_failure is a list of steps to execute in sequence. Runs when any of the
 above hits an unhandled exception.
 
@@ -458,10 +626,11 @@ both that exception and the original cause exception will be logged.
 You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
 
+**********************************
 Testing (for pypyr-cli developers)
-==================================
+**********************************
 Testing without worrying about dependencies
--------------------------------------------
+===========================================
 Run tox to test the packaging cycle inside a virtual env, plus run all tests:
 
 .. code-block:: bash
@@ -472,7 +641,7 @@ Run tox to test the packaging cycle inside a virtual env, plus run all tests:
   $ tox -e stage -- tests
 
 If tox takes too long
----------------------
+=====================
 The test framework is pytest. If you only want to run tests:
 
 .. code-block:: bash
@@ -480,7 +649,7 @@ The test framework is pytest. If you only want to run tests:
   $ pip install -e .[dev,test]
 
 Day-to-day testing
-------------------
+==================
 - Tests live under */tests* (surprising, eh?). Mirror the directory structure of
   the code being tested.
 - Prefix a test definition with *test_* - so a unit test looks like
@@ -507,23 +676,24 @@ Day-to-day testing
 
     pytest tests/unit/arb_test_file.py
 
+**********
 Contribute
-==========
+**********
 Bugs
-----
+====
 Well, you know. No one's perfect. Feel free to `create an issue
 <https://github.com/pypyr/pypyr-cli/issues/new>`_.
 
 Contribute to the core cli
---------------------------
+==========================
 The usual jazz - create an issue, fork, code, test, PR. It might be an idea to
 discuss your idea via the Issues list first before you go off and write a
 huge amount of code - you never know, something might already be in the works,
 or maybe it's not quite right for the core-cli (you're still welcome to fork
-and go wild regardless, of course, it just mighn't get merged back in here).
+and go wild regardless, of course, it just mightn't get merged back in here).
 
 Plug-Ins
---------
+========
 You've probably noticed by now that pypyr is built to be pretty extensible.
 You've probably also noticed that the core pypyr cli is deliberately kept light.
 The core cli is philosophically only a way of running a sequence of steps.

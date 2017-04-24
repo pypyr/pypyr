@@ -3,6 +3,7 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
+import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 import pypyr.stepsrunner
@@ -31,9 +32,9 @@ def get_parsed_context(pipeline, context_in_string):
             if result_context is None:
                 logger.debug(f"{parser_module_name} returned None. Using "
                              "empty context instead")
-                return {}
+                return pypyr.context.Context()
             else:
-                return result_context
+                return pypyr.context.Context(result_context)
         except AttributeError:
             logger.error(f"The parser {parser_module_name} doesn't have a "
                          "get_parsed_context(context) function.")
@@ -44,7 +45,7 @@ def get_parsed_context(pipeline, context_in_string):
         logger.debug("done")
         # initialize to an empty dictionary because you want to be able to run
         # with no context.
-        return {}
+        return pypyr.context.Context()
 
 
 def get_pipeline_definition(pipeline_name, working_dir):
@@ -117,9 +118,16 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         # yes, yes, don't catch Exception. Have to, though, to run the failure
         # handler. Also, it does raise it back up.
         logger.error("Something went wrong. Will now try to run on_failure.")
-        # if something went wrong with pipeline loading there will likely be
-        # another exception here because it's looking for failure steps in the
-        # pipeline, but the failure_step_group will swallow it.
+
+        try:
+            # parsed_context at the very least has to be defined before
+            # run_failure_step_group will work and not cause another ref
+            # before assignment err.
+            parsed_context
+        except NameError:
+            parsed_context = {}
+
+        # failure_step_group will log but swallow any errors
         pypyr.stepsrunner.run_failure_step_group(
             pipeline=pipeline_definition,
             context=parsed_context)

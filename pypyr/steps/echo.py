@@ -19,6 +19,9 @@ def run_step(context):
     assert context, ("context must be set for echo. Did you set "
                      "--context 'echoMe=text here'?")
 
-    logger.info(context['echoMe'])
+    val = context['echoMe'] if isinstance(
+        context['echoMe'], str) else repr(context['echoMe'])
+
+    logger.info(context.get_formatted_string(val))
 
     logger.debug("done")
