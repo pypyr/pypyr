@@ -16,8 +16,6 @@ class Context(dict):
 
     This class only adds functionality on top of dictionary, it should not
     override anything in dict.
-
-    Attributes:
     """
 
     def assert_key_has_value(self, key, caller):
@@ -126,6 +124,10 @@ class Context(dict):
         Returns:
             tuple (bool) where bool indicates the key does exist in context,
             same order as *keys.
+
+        Sample:
+            k1, = context.keys_exist('k1')
+            k1, k2, k3 = context.keys_exist('k1', 'k2', 'k3')
         """
         return tuple(key in self.keys() for key in keys)
 
@@ -134,7 +136,7 @@ class Context(dict):
 
         Args:
             *keys: *args for keys to check in context.
-                Each arg is a tuple (str, type)
+                   Each arg is a tuple (str, type)
 
         Returns:
             Tuple of namedtuple ContextItemInfo, same order as *keys.

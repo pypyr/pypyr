@@ -211,7 +211,7 @@ def test_input_string_not_a_string_throw():
 def test_key_in_context():
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
-    k1 = context.keys_exist('k1')
+    k1, = context.keys_exist('k1')
     assert k1
     k1, k2, k3 = context.keys_exist('k1', 'k2', 'k3')
     assert k1 and k2 and k3
