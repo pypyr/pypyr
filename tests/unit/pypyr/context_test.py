@@ -111,7 +111,7 @@ def test_assert_key_has_value_passes():
 def test_assert_keys_have_values_passes():
     """Pass if list of keys all found in context dictionary."""
     context = Context({'key1': 'value1', 'key2': 'value2', 'key3': 'value3'})
-    context.asserts_keys_have_values(['key1', 'key3'], None)
+    context.assert_keys_have_values(None, 'key1', 'key3')
 
 
 def test_assert_keys_have_values_fails():
@@ -120,10 +120,11 @@ def test_assert_keys_have_values_fails():
         context = Context({'key1': 'value1',
                            'key2': 'value2',
                            'key3': 'value3'})
-        context.asserts_keys_have_values(['key1',
-                                          'key4',
-                                          'key2'],
-                                         None)
+        context.assert_keys_have_values(None,
+                                        'key1',
+                                        'key4',
+                                        'key2',
+                                        )
 
 # ------------------- asserts ------------------------------------------------#
 

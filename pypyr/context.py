@@ -38,17 +38,17 @@ class Context(dict):
         assert self[key], (
             f"context['{key}'] must have a value for {caller}.")
 
-    def asserts_keys_have_values(self, keys, caller):
+    def assert_keys_have_values(self, caller, *keys):
         """Check that keys list are all in context and all have values.
 
         Args:
-            keys: list. Will check each of these keys in context
+            *keys: Will check each of these keys in context
             caller: string. Calling function name - just used for informational
                     messages
 
         Raises:
-            AssertionError: if dictionary is None, key doesn't exist in
-                            dictionary, or dictionary[key] is None.
+            AssertionError: if context is None, key doesn't exist in
+                            context, or context[key] is None.
         """
         for key in keys:
             self.assert_key_has_value(key, caller)
