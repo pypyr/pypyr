@@ -6,6 +6,7 @@ import argparse
 import os
 import pypyr.pipelinerunner
 import pypyr.version
+import sys
 
 
 def get_args():
@@ -33,9 +34,27 @@ def get_args():
 
 
 def main():
+    """Entry point for pypyr cli.
+
+    The setup_py entry_point wraps this in sys.exit already so this effectively
+    becomes sys.exit(main()).
+    The __main__ entry point similarly wraps sys.exit().
+    """
     args = get_args()
-    return pypyr.pipelinerunner.main(
-        pipeline_name=args.pipeline_name,
-        pipeline_context_input=args.pipeline_context,
-        working_dir=args.working_dir,
-        log_level=args.log_level)
+
+    try:
+        return pypyr.pipelinerunner.main(
+            pipeline_name=args.pipeline_name,
+            pipeline_context_input=args.pipeline_context,
+            working_dir=args.working_dir,
+            log_level=args.log_level)
+    except KeyboardInterrupt:
+        # Shell standard is 128 + signum = 130 (SIGINT = 2)
+        sys.stdout.write("\n")
+        return 128 + signal.SIGINT
+    except Exception as e:
+        # stderr and exit code 255
+        sys.stderr.write("\n")
+        sys.stderr.write(f"{type(e).__name__}: {str(e)}")
+        sys.stderr.write("\n")
+        return 255
