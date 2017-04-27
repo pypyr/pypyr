@@ -34,10 +34,19 @@ def get_module(module_abs_import):
         return imported_module
     except ModuleNotFoundError as err:
         msg = ("The module doesn't exist. Looking for a file like this: "
-               f"{module_abs_import}. This .py file should be in your working "
-               "dir or it should be in installed to the python path.")
+               f"{module_abs_import}.")
+
+        extended_msg = ("{module_abs_import}.py should be in your working "
+                        "dir or it should be in installed to the python path."
+                        "\nIf you have 'package.sub.mod' your current working "
+                        "dir should contain ./package/sub/mod.py\n"
+                        "If you specified 'mymodulename', your current "
+                        "working dir should contain ./mymodulename.py\n"
+                        "If the module is not in your current working dir, it "
+                        "must exist in your current python path - so you "
+                        "should have run pip install or setup.py")
         logger.error(msg)
-        raise PyModuleNotFoundError(msg) from err
+        raise PyModuleNotFoundError(extended_msg) from err
 
 
 def get_pipeline_path(pipeline_name, working_directory):
