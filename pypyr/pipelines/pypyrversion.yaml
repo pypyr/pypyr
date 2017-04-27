@@ -1,4 +1,4 @@
 # To execute this pipeline, shell something like:
-# pypyr --name pypyrversion
+# pypyr pypyrversion
 steps:
   - pypyr.steps.pypyrversion

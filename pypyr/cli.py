@@ -20,7 +20,7 @@ def get_parser():
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
         description='pypyr pipeline runner')
-    parser.add_argument('--name', dest='pipeline_name', required=True,
+    parser.add_argument('pipeline_name',
                         help='Name of pipeline to run. It should exist in the '
                         '/pipelines directory.')
     parser.add_argument('--context', dest='pipeline_context',
