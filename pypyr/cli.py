@@ -12,6 +12,11 @@ import sys
 
 def get_args(args):
     """Parse arguments passed in from shell."""
+    return get_parser().parse_args(args)
+
+
+def get_parser():
+    """Return ArgumentParser for pypyr cli."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
         description='pypyr pipeline runner')
@@ -30,8 +35,7 @@ def get_args(args):
     parser.add_argument('--version', action='version',
                         help='Echo version number.',
                         version=f'{pypyr.version.get_version()}')
-
-    return parser.parse_args(args)
+    return parser
 
 
 def main(args=None):
