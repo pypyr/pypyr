@@ -63,6 +63,6 @@ def main(args=None):
     except Exception as e:
         # stderr and exit code 255
         sys.stderr.write("\n")
-        sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}")
+        sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}\033[0;0m")
         sys.stderr.write("\n")
         return 255
