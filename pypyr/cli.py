@@ -22,10 +22,10 @@ def get_parser():
         description='pypyr pipeline runner')
     parser.add_argument('pipeline_name',
                         help='Name of pipeline to run. It should exist in the '
-                        '/pipelines directory.')
+                        './pipelines directory.')
     parser.add_argument('--context', dest='pipeline_context',
-                        help='String for context values. Parsed by '
-                        'pipeline''s context_parser function.')
+                        help='String for context values. Parsed by the '
+                        'pipeline\'s context_parser function.')
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
