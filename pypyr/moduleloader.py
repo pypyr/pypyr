@@ -34,10 +34,10 @@ def get_module(module_abs_import):
         return imported_module
     except ModuleNotFoundError as err:
         msg = ("The module doesn't exist. Looking for a file like this: "
-               f"{module_abs_import}.")
+               f"{module_abs_import}")
 
-        extended_msg = ("{module_abs_import}.py should be in your working "
-                        "dir or it should be in installed to the python path."
+        extended_msg = (f"{module_abs_import}.py should be in your working "
+                        "dir or it should be installed to the python path."
                         "\nIf you have 'package.sub.mod' your current working "
                         "dir should contain ./package/sub/mod.py\n"
                         "If you specified 'mymodulename', your current "
