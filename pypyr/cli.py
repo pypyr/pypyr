@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
-    parser.add_argument('--loglevel', dest='log_level', type=int, default=10,
+    parser.add_argument('--loglevel', dest='log_level', type=int, default=20,
                         help='Integer log level. Defaults to 10 (Debug). '
                         '10=DEBUG 20=INFO 30=WARNING 40=ERROR 50=CRITICAL')
     parser.add_argument('--version', action='version',
