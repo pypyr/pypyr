@@ -43,14 +43,14 @@ Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
 
-  $ pypyr --name echo --context "echoMe=Ceci n'est pas une pipe" --log 20
+  $ pypyr --name echo --context "echoMe=Ceci n'est pas une pipe"
 
 You can achieve the same thing by running a pipeline where the context is set
 in the pipeline yaml rather than as a --context argument:
 
 .. code-block:: bash
 
-  $ pypyr --name magritte --log 20
+  $ pypyr --name magritte
 
 Check here `pypyr.steps.echo`_ to see yaml that does this.
 
@@ -61,10 +61,13 @@ pypyr assumes a pipelines directory in your current working directory.
 .. code-block:: bash
 
   # run pipelines/mypipelinename.yaml with DEBUG logging level
-  $ pypyr --name mypipelinename
+  $ pypyr --name mypipelinename --log 10
 
-  # run pipelines/mypipelinename.yaml with INFO logging level
+  # run pipelines/mypipelinename.yaml with INFO logging level.
   $ pypyr --name mypipelinename --log 20
+
+  # If you don't specify --log it defaults to 20 - INFO logging level.
+  $ pypyr --name mypipelinename
 
   # run pipelines/mypipelinename.yaml with an input context. For this input to
   # be available to your pipeline you need to specify a context_parser in your
@@ -131,13 +134,13 @@ Built-in pipelines
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |`pypyr --name echo --context "echoMe=text goes here" --log 20`                       |
+| echo                        | Echos context value echoMe to output.           |`pypyr --name echo --context "echoMe=text goes here"`                       |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyrversion                | Prints the python cli version number.           |`pypyr --name pypyrversion --log 20`                                                 |
+| pypyrversion                | Prints the python cli version number.           |`pypyr --name pypyrversion`                                                 |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| magritte                    | Thoughts about pipes.                           |`pypyr --name magritte --log 20`                                                     |
+| magritte                    | Thoughts about pipes.                           |`pypyr --name magritte`                                                     |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -367,7 +370,7 @@ You can run:
 
 .. code-block:: bash
 
-  $ pypyr --name look-ma-no-params --log 20
+  $ pypyr --name look-ma-no-params
 
 pypyr.steps.env
 ^^^^^^^^^^^^^^^
