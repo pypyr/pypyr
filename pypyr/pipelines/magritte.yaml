@@ -1,5 +1,7 @@
-  steps:
-    - name: pypyr.steps.echo
-      description: Output echoMe
-      in:
-        echoMe: Ceci n'est pas une pipe
+# To execute this pipeline, shell something like:
+# pypyr magritte
+steps:
+  - name: pypyr.steps.echo
+    description: Output echoMe
+    in:
+      echoMe: Ceci n'est pas une pipe

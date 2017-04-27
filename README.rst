@@ -43,14 +43,14 @@ Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
 
-  $ pypyr --name echo --context "echoMe=Ceci n'est pas une pipe" --log 20
+  $ pypyr echo --context "echoMe=Ceci n'est pas une pipe"
 
 You can achieve the same thing by running a pipeline where the context is set
 in the pipeline yaml rather than as a --context argument:
 
 .. code-block:: bash
 
-  $ pypyr --name magritte --log 20
+  $ pypyr magritte
 
 Check here `pypyr.steps.echo`_ to see yaml that does this.
 
@@ -61,15 +61,18 @@ pypyr assumes a pipelines directory in your current working directory.
 .. code-block:: bash
 
   # run pipelines/mypipelinename.yaml with DEBUG logging level
-  $ pypyr --name mypipelinename
+  $ pypyr mypipelinename --log 10
 
-  # run pipelines/mypipelinename.yaml with INFO logging level
-  $ pypyr --name mypipelinename --log 20
+  # run pipelines/mypipelinename.yaml with INFO logging level.
+  $ pypyr mypipelinename --log 20
+
+  # If you don't specify --log it defaults to 20 - INFO logging level.
+  $ pypyr mypipelinename
 
   # run pipelines/mypipelinename.yaml with an input context. For this input to
   # be available to your pipeline you need to specify a context_parser in your
   # pipeline yaml.
-  $ pypyr --name mypipelinename --context 'mykey=value'
+  $ pypyr mypipelinename --context 'mykey=value'
 
 Get cli help
 ============
@@ -96,7 +99,7 @@ working directory.
 
   # This is an example showing the anatomy of a pypyr pipeline
   # A pipeline should be saved as {working dir}/pipelines/mypipelinename.yaml.
-  # Run the pipeline from {working dir} like this: pypyr --name mypipelinename
+  # Run the pipeline from {working dir} like this: pypyr mypipelinename
 
   # optional
   context_parser: my.custom.parser
@@ -126,18 +129,18 @@ Built-in pipelines
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **pipeline**                | **description**                                 | **how to run**                                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| donothing                   | Does what it says. Nothing.                     |`pypyr --name donothing`                                                             |
+| donothing                   | Does what it says. Nothing.                     |`pypyr donothing`                                                                    |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |`pypyr --name echo --context "echoMe=text goes here" --log 20`                       |
+| echo                        | Echos context value echoMe to output.           |`pypyr echo --context "echoMe=text goes here"`                                       |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyrversion                | Prints the python cli version number.           |`pypyr --name pypyrversion --log 20`                                                 |
+| pypyrversion                | Prints the python cli version number.           |`pypyr pypyrversion`                                                                 |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| magritte                    | Thoughts about pipes.                           |`pypyr --name magritte --log 20`                                                     |
+| magritte                    | Thoughts about pipes.                           |`pypyr magritte`                                                                     |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -159,7 +162,7 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.commas         | Takes a comma delimited string and returns a    |`pypyr --name pipelinename --context "param1,param2,param3"`                         |
+| pypyr.parser.commas         | Takes a comma delimited string and returns a    |`pypyr pipelinename --context "param1,param2,param3"`                                |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
 |                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
@@ -167,11 +170,11 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.json           | Takes a json string and returns a dictionary.   |`pypyr --name pipelinename --context \'{"key1":"value1","key2":"value2"}\'`          |
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |`pypyr pipelinename --context \'{"key1":"value1","key2":"value2"}\'`                 |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |`pypyr --name pipelinename --context \'./path/sample.json'`                          |
+| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |`pypyr pipelinename --context \'./path/sample.json'`                                 |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |`pypyr --name pipelinename --context "param1=value1,param2=value2,param3=value3"`    |
+| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |`pypyr pipelinename --context "param1=value1,param2=value2,param3=value3"`           |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
 |                             |                                                 |                                                                                     |
@@ -179,7 +182,7 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |`pypyr --name pipelinename --context \'./path/sample.yaml'`                          |
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |`pypyr pipelinename --context \'./path/sample.yaml'`                                 |
 |                             | the pypyr context dictionary.                   |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             | The top (or root) level yaml should describe a  |                                                                                     |
@@ -349,7 +352,7 @@ You can run:
 
 .. code-block:: bash
 
-  pypyr --name mypipeline --context "echoMe=Ceci n'est pas une pipe"
+  pypyr mypipeline --context "echoMe=Ceci n'est pas une pipe"
 
 
 Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
@@ -367,7 +370,7 @@ You can run:
 
 .. code-block:: bash
 
-  $ pypyr --name look-ma-no-params --log 20
+  $ pypyr look-ma-no-params
 
 pypyr.steps.env
 ^^^^^^^^^^^^^^^
