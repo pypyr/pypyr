@@ -131,7 +131,7 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
         pypyr.stepsrunner.run_failure_step_group(
             pipeline=pipeline_definition,
             context=parsed_context)
-        logger.error("Raising original exception to caller.")
+        logger.debug("Raising original exception to caller.")
         raise
 
     logger.debug("pipeline runner done")
