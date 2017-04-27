@@ -5,6 +5,7 @@ Load modules dynamically, find things on file-system.
 
 import importlib
 import os
+from pypyr.errors import PipelineNotFoundError, PyModuleNotFoundError
 import pypyr.log.logger
 import sys
 
@@ -18,6 +19,12 @@ def get_module(module_abs_import):
 
     Get instance of the module specified by the module_abs_import.
     This means that module_abs_import must be resolvable from this package.
+
+    Args:
+        module_abs_import: string. Absolute name of module to import.
+
+    Raises:
+        PyModuleNotFoundError: if module not found.
     """
     logger.debug("starting")
     logger.debug(f"loading module {module_abs_import}")
@@ -25,17 +32,29 @@ def get_module(module_abs_import):
         imported_module = importlib.import_module(module_abs_import)
         logger.debug("done")
         return imported_module
-    except ModuleNotFoundError:
-        logger.error(
-            "The module doesn't exist. Looking for a file like this: "
-            f"{module_abs_import}")
-        raise
+    except ModuleNotFoundError as err:
+        msg = ("The module doesn't exist. Looking for a file like this: "
+               f"{module_abs_import}. This .py file should be in your working "
+               "dir or it should be in installed to the python path.")
+        logger.error(msg)
+        raise PyModuleNotFoundError(msg) from err
 
 
 def get_pipeline_path(pipeline_name, working_directory):
     """Look for the pipeline in the various places it could be.
 
     First checks the cwd. Then checks pypyr/pipelines dir.
+
+    Args:
+        pipeline_name: string. Name of pipeline to find
+        pipeline_name: string. Path in which to look for pipeline_name.yaml
+
+    Returns:
+        Absolute path to the pipeline_name.yaml file
+
+    Raises:
+        PipelineNotFoundError: if pipeline_name.yaml not found in working_dir
+                               or in {pypyr install dir}/pipelines.
     """
     logger.debug("starting")
 
@@ -64,9 +83,10 @@ def get_pipeline_path(pipeline_name, working_directory):
         if os.path.isfile(pipeline_path):
             logger.debug(f"Found {pipeline_path}")
         else:
-            raise FileNotFoundError(f"{pipeline_name}.yaml not found in "
-                                    f"either {working_directory}/pipelines or "
-                                    f"{pypyr_dir}/pipelines")
+            raise PipelineNotFoundError(f"{pipeline_name}.yaml not found in "
+                                        f"either "
+                                        f"{working_directory}/pipelines "
+                                        f"or {pypyr_dir}/pipelines")
 
     logger.debug("done")
     return pipeline_path
@@ -76,6 +96,9 @@ def set_working_directory(working_directory):
     """Add working_directory to sys.paths.
 
     This allows dynamic loading of arbitrary python modules in cwd.
+
+    Args:
+        working_directory: string. path to add to sys.paths
     """
     logger.debug("starting")
 
