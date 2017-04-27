@@ -134,13 +134,13 @@ Built-in pipelines
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |`pypyr --name echo --context "echoMe=text goes here"`                       |
+| echo                        | Echos context value echoMe to output.           |`pypyr --name echo --context "echoMe=text goes here"`                                |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyrversion                | Prints the python cli version number.           |`pypyr --name pypyrversion`                                                 |
+| pypyrversion                | Prints the python cli version number.           |`pypyr --name pypyrversion`                                                          |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| magritte                    | Thoughts about pipes.                           |`pypyr --name magritte`                                                     |
+| magritte                    | Thoughts about pipes.                           |`pypyr --name magritte`                                                              |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+

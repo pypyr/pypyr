@@ -10,7 +10,7 @@ import signal
 import sys
 
 
-def get_args():
+def get_args(args):
     """Parse arguments passed in from shell."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
@@ -31,24 +31,27 @@ def get_args():
                         help='Echo version number.',
                         version=f'{pypyr.version.get_version()}')
 
-    return parser.parse_args()
+    return parser.parse_args(args)
 
 
-def main():
+def main(args=None):
     """Entry point for pypyr cli.
 
     The setup_py entry_point wraps this in sys.exit already so this effectively
     becomes sys.exit(main()).
     The __main__ entry point similarly wraps sys.exit().
     """
-    args = get_args()
+    if args is None:
+        args = sys.argv[1:]
+
+    parsed_args = get_args(args)
 
     try:
         return pypyr.pipelinerunner.main(
-            pipeline_name=args.pipeline_name,
-            pipeline_context_input=args.pipeline_context,
-            working_dir=args.working_dir,
-            log_level=args.log_level)
+            pipeline_name=parsed_args.pipeline_name,
+            pipeline_context_input=parsed_args.pipeline_context,
+            working_dir=parsed_args.working_dir,
+            log_level=parsed_args.log_level)
     except KeyboardInterrupt:
         # Shell standard is 128 + signum = 130 (SIGINT = 2)
         sys.stdout.write("\n")
