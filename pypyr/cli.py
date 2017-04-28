@@ -8,6 +8,7 @@ import pypyr.pipelinerunner
 import pypyr.version
 import signal
 import sys
+import traceback
 
 
 def get_args(args):
@@ -30,8 +31,9 @@ def get_parser():
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
     parser.add_argument('--loglevel', dest='log_level', type=int, default=20,
-                        help='Integer log level. Defaults to 10 (Debug). '
-                        '10=DEBUG 20=INFO 30=WARNING 40=ERROR 50=CRITICAL')
+                        help='Integer log level. Defaults to 20 (INFO). '
+                        '10=DEBUG\n20=INFO\n30=WARNING\n40=ERROR\n50=CRITICAL'
+                        '.\n Log Level < 10 gives full traceback on errors.')
     parser.add_argument('--version', action='version',
                         help='Echo version number.',
                         version=f'{pypyr.version.get_version()}')
@@ -65,4 +67,9 @@ def main(args=None):
         sys.stderr.write("\n")
         sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}\033[0;0m")
         sys.stderr.write("\n")
+        # at this point, you're guaranteed to have args and thus log_level
+        if parsed_args.log_level < 10:
+            # traceback prints to stderr by default
+            traceback.print_exc()
+
         return 255
