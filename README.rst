@@ -426,26 +426,29 @@ Set $ENVs from the pypyr context.
 
 ``context['envSet']`` must exist. It's a dictionary.
 
-Values are the keys of the pypyr context values to write to $ENV.
+Values are strings to write to $ENV. You can use {key} substitutions to format
+the string from context.
 Keys are the names of the $ENV values to which to write.
 
 For example, say input context is:
 
 .. code-block:: yaml
 
-    key1: value1
-    key2: value2
-    key3: value3
-    envSet:
-        MYVAR1: key1
-        MYVAR2: key3
+  key1: value1
+  key2: value2
+  key3: value3
+  envSet:
+      MYVAR1: {key1}
+      MYVAR2: before_{key3}_after
+      MYVAR3: arbtexthere
 
 This will result in the following $ENVs:
 
 .. code-block:: yaml
 
   $MYVAR1 = value1
-  $MYVAR2 = value3
+  $MYVAR2 = before_value3_after
+  $MYVAR3 = arbtexthere
 
 Note that the $ENVs are not persisted system-wide, they only exist for the
 pypyr sub-processes, and as such for the subsequent steps during this pypyr

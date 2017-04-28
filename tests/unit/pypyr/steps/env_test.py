@@ -150,8 +150,8 @@ def test_env_all_operations():
             'key4': 'ARB_GET_ME2'
         },
         'envSet': {
-            'ARB_SET_ME1': 'key2',
-            'ARB_SET_ME2': 'key1'
+            'ARB_SET_ME1': 'value 4',
+            'ARB_SET_ME2': 'go go {key2} end end'
         },
         'envUnset': [
             'ARB_DELETE_ME1',
@@ -165,8 +165,9 @@ def test_env_all_operations():
     assert context['key2'] == 'arb value from $ENV ARB_GET_ME1'
     assert context['key3'] == 'value3'
     assert context['key4'] == 'arb value from $ENV ARB_GET_ME2'
-    assert os.environ['ARB_SET_ME1'] == 'arb value from $ENV ARB_GET_ME1'
-    assert os.environ['ARB_SET_ME2'] == 'value1'
+    assert os.environ['ARB_SET_ME1'] == 'value 4'
+    assert os.environ['ARB_SET_ME2'] == ('go go arb value from '
+                                         '$ENV ARB_GET_ME1 end end')
     assert 'ARB_DELETE_ME1' not in os.environ
     assert 'ARB_DELETE_ME2' not in os.environ
 
@@ -241,18 +242,47 @@ def test_envset_pass():
         'key2': 'value2',
         'key3': 'value3',
         'envSet': {
-            'ARB_DELETE_ME1': 'key2',
-            'ARB_DELETE_ME2': 'key1'
+            'ARB_DELETE_ME1': 'text value 2',
+            'ARB_DELETE_ME2': 'text value 1'
         }
     })
 
     pypyr.steps.env.env_set(context)
 
-    assert os.environ['ARB_DELETE_ME1'] == 'value2'
-    assert os.environ['ARB_DELETE_ME2'] == 'value1'
+    assert os.environ['ARB_DELETE_ME1'] == 'text value 2'
+    assert os.environ['ARB_DELETE_ME2'] == 'text value 1'
 
     del os.environ['ARB_DELETE_ME1']
     del os.environ['ARB_DELETE_ME2']
+
+
+def test_envset_with_string_interpolation():
+    """envset success case"""
+    # Deliberately have 1 pre-existing $ENV to update, and 1 unset so can
+    # create it anew as part of test
+    os.environ['ARB_DELETE_ME2'] = 'arb from pypyr context ARB_DELETE_ME2'
+
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'envSet': {
+            'ARB_DELETE_ME1': 'blah blah {key2} and {key1} goes here.',
+            'ARB_DELETE_ME2': 'plain old string',
+            'ARB_DELETE_ME3': '{key3}'
+        }
+    })
+
+    pypyr.steps.env.env_set(context)
+
+    assert os.environ['ARB_DELETE_ME1'] == ('blah blah value2 and value1 goes '
+                                            'here.')
+    assert os.environ['ARB_DELETE_ME2'] == 'plain old string'
+    assert os.environ['ARB_DELETE_ME3'] == 'value3'
+
+    del os.environ['ARB_DELETE_ME1']
+    del os.environ['ARB_DELETE_ME2']
+    del os.environ['ARB_DELETE_ME3']
 
 # ------------------------- envSet -------------------------------------------#
 

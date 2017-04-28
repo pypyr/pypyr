@@ -80,25 +80,27 @@ def env_get(context):
 
 
 def env_set(context):
-    """Set $ENVs from the pypyr context.
+    """Set $ENVs to specified string. from the pypyr context.
 
-    Context is a dictionary or dictionary-like. context is mandatory.
-
-    context['envSet'] must exist. It's a dictionary.
-    Values are the keys of the pypyr context values to write to $ENV.
-    Keys are the names of the $ENV values to which to write.
+    Args:
+        context: is dictionary-like. context is mandatory.
+                 context['envSet'] must exist. It's a dictionary.
+                 Values are strings to write to $ENV.
+                 Keys are the names of the $ENV values to which to write.
 
     For example, say input context is:
         key1: value1
         key2: value2
         key3: value3
         envSet:
-            MYVAR1: key1
-            MYVAR2: key3
+            MYVAR1: {key1}
+            MYVAR2: before_{key3}_after
+            MYVAR3: arbtexthere
 
     This will result in the following $ENVs:
     $MYVAR1 = value1
-    $MYVAR2 = value3
+    $MYVAR2 = before_value3_after
+    $MYVAR3 = arbtexthere
 
     Note that the $ENVs are not persisted system-wide, they only exist for
     pypyr sub-processes, and as such for the following steps during this pypyr
@@ -109,7 +111,7 @@ def env_set(context):
 
     for k, v in context['envSet'].items():
         logger.debug(f"setting ${k} to context[{v}]")
-        os.environ[k] = context[v]
+        os.environ[k] = context.get_formatted_string(v)
 
     logger.debug("done")
 
