@@ -80,3 +80,20 @@ def test_arb_error():
         mock_pipeline_main.side_effect = AssertionError('Test Error Mock')
         val = pypyr.cli.main(arg_list)
         assert val == 255
+
+
+def test_trace_log_level():
+    """Log Level < 10 produces traceback on error."""
+    arg_list = ['blah',
+                '--context',
+                'ctx string',
+                '--log',
+                '5']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        with patch('traceback.print_exc') as mock_traceback:
+            mock_pipeline_main.side_effect = AssertionError('Test Error Mock')
+            val = pypyr.cli.main(arg_list)
+            assert val == 255
+
+    mock_traceback.assert_called_once()
