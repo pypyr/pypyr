@@ -108,6 +108,18 @@ def test_assert_key_has_value_passes():
     context.assert_key_has_value('key1', None)
 
 
+def test_assert_key_has_bool_true_passes():
+    """Pass if key_in_dict_has_value dictionary key has bool True value."""
+    context = Context({'key1': True})
+    context.assert_key_has_value('key1', None)
+
+
+def test_assert_key_has_bool_false_passes():
+    """Pass if key_in_dict_has_value dictionary key has bool False value."""
+    context = Context({'key1': False})
+    context.assert_key_has_value('key1', None)
+
+
 def test_assert_keys_have_values_passes():
     """Pass if list of keys all found in context dictionary."""
     context = Context({'key1': 'value1', 'key2': 'value2', 'key3': 'value3'})

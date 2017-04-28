@@ -35,7 +35,7 @@ class Context(dict):
         assert key in self, (
             f"context['{key}'] doesn't exist. It must have a value for "
             f"{caller}.")
-        assert self[key], (
+        assert self[key] is not None, (
             f"context['{key}'] must have a value for {caller}.")
 
     def assert_keys_have_values(self, caller, *keys):
