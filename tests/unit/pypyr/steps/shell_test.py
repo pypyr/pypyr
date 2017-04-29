@@ -1,5 +1,6 @@
 """shell.py unit tests."""
 from pypyr.context import Context
+from pypyr.errors import KeyNotInContextError
 import pypyr.steps.shell
 import pytest
 import subprocess
@@ -57,10 +58,10 @@ def test_shell_error_throws():
 
 def test_empty_context_cmd_throw():
     """Empty cmd in context should throw assert error."""
-    with pytest.raises(AssertionError) as err_info:
+    with pytest.raises(KeyNotInContextError) as err_info:
         context = Context({'blah': 'blah blah'})
         pypyr.steps.shell.run_step(context)
 
-    assert repr(err_info.value) == ("AssertionError(\"context['cmd'] "
-                                    "doesn't exist. It must have a value for "
+    assert repr(err_info.value) == ("KeyNotInContextError(\"context['cmd'] "
+                                    "doesn't exist. It must exist for "
                                     "pypyr.steps.shell.\",)")

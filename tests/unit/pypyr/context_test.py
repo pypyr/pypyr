@@ -1,6 +1,7 @@
 """context.py unit tests."""
 from collections.abc import MutableMapping
 from pypyr.context import Context
+from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pytest
 
 # ------------------- behaves like a dictionary-------------------------------#
@@ -58,15 +59,61 @@ def test_context_is_dictionary_like():
     d.update(mergedic)
     assert d['k1'] == 'NEWVALUE'
 
+
+def test_context_missing_override():
+    """Subclass of dict should override __missing__ on KeyNotFound"""
+    context = Context({'arbkey': 'arbvalue'})
+
+    with pytest.raises(KeyNotInContextError):
+        context['notindict']
 # ------------------- behaves like a dictionary-------------------------------#
 
 # ------------------- asserts ------------------------------------------------#
 
 
+def test_assert_key_exists_raises():
+    """KeyNotInContextError if key doesn't exist."""
+    context = Context({'key1': 'value1'})
+    with pytest.raises(KeyNotInContextError):
+        context.assert_key_exists('notindict', None)
+
+
+def test_assert_key_exists_passes_value_none():
+    """assert_key_has_value passes if context dictionary key value is None."""
+    context = Context({'key1': None})
+    context.assert_key_exists('key1', None)
+
+
+def test_assert_key_exists_passes_string_values():
+    """assert_key_has_value passes if context dictionary key value is None."""
+    context = Context({'key1': 'something', 'key2': 'other', 'key3': False})
+    context.assert_key_exists('key2', None)
+    context.assert_key_exists('key3', None)
+
+
+def test_assert_keys_exist_passes():
+    """Pass if list of keys all found in context dictionary."""
+    context = Context({'key1': 'value1', 'key2': 'value2', 'key3': 'value3'})
+    context.assert_keys_exist(None, 'key1', 'key3')
+
+
+def test_assert_keys_exists_with_values_fails():
+    """KeyNotInContextError if list of keys not all found in context."""
+    with pytest.raises(KeyNotInContextError):
+        context = Context({'key1': 'value1',
+                           'key2': 'value2',
+                           'key3': 'value3'})
+        context.assert_keys_exist(None,
+                                  'key1',
+                                  'key4',
+                                  'key2',
+                                  )
+
+
 def test_assert_key_has_value_fails_on_context_empty():
-    """Expect AssertionError if context empty."""
+    """Expect KeyNotInContextError if context empty."""
     context = Context()
-    with pytest.raises(AssertionError):
+    with pytest.raises(KeyNotInContextError):
         context.assert_key_has_value('key', 'desc')
 
 
@@ -78,27 +125,28 @@ def test_assert_key_has_value_fails_on_key_none():
 
 
 def test_assert_key_has_value_fails_key_not_found():
-    """AssertionError if context doesn't have key on assert."""
+    """KeyNotInContextError if context doesn't have key on assert."""
     context = Context({'key1': 'value1'})
-    with pytest.raises(AssertionError):
+    with pytest.raises(KeyNotInContextError):
         context.assert_key_has_value('notindict', None)
 
 
 def test_assert_key_has_value_fails_key_error_message():
-    """AssertionError if context missing key and assert message correct."""
+    """KeyNotInContextError if context missing key, assert message correct."""
     context = Context({'key1': 'value1'})
-    with pytest.raises(AssertionError) as err_info:
+    with pytest.raises(KeyNotInContextError) as err_info:
         context.assert_key_has_value('notindict', 'mydesc')
 
-    assert repr(err_info.value) == ("AssertionError(\"context['notindict'] "
-                                    "doesn't exist. It must have a value for "
-                                    "mydesc.\",)")
+    assert repr(err_info.value) == (
+        "KeyNotInContextError(\"context['notindict'] "
+        "doesn't exist. It must exist for "
+        "mydesc.\",)")
 
 
 def test_assert_key_has_value_fails_key_empty():
-    """AssertionError if context dictionary key value is None."""
+    """KeyInContextHasNoValueError if context dictionary key value is None."""
     context = Context({'key1': None})
-    with pytest.raises(AssertionError):
+    with pytest.raises(KeyInContextHasNoValueError):
         context.assert_key_has_value('key1', None)
 
 
@@ -127,8 +175,8 @@ def test_assert_keys_have_values_passes():
 
 
 def test_assert_keys_have_values_fails():
-    """AssertionError if list of keys not all found in context."""
-    with pytest.raises(AssertionError):
+    """KeyNotInContextError if list of keys not all in context with values."""
+    with pytest.raises(KeyNotInContextError):
         context = Context({'key1': 'value1',
                            'key2': 'value2',
                            'key3': 'value3'})
@@ -183,10 +231,15 @@ def test_single_curly_should_throw():
 
 
 def test_tag_not_in_context_should_throw():
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyNotInContextError) as err:
         context = Context({'key1': 'value1'})
         context['input_string'] = '{key1} this is {key2} string'
         context.get_formatted('input_string')
+
+    assert repr(err.value) == (
+        "KeyNotInContextError(\"Unable to format '{key1} this is "
+        "{key2} string' at context['input_string'] with {key2}, because "
+        "context['key2'] doesn't exist\",)")
 
 
 def test_context_item_not_a_string_should_throw():
@@ -205,10 +258,15 @@ def test_input_string_interpolate_works():
 
 
 def test_input_string_tag_not_in_context_should_throw():
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyNotInContextError) as err_info:
         context = Context({'key1': 'value1'})
         input_string = '{key1} this is {key2} string'
         context.get_formatted_string(input_string)
+
+    assert repr(err_info.value) == (
+        "KeyNotInContextError(\"Unable to format '{key1} this is "
+        "{key2} string' with {key2}, because context['key2'] doesn't "
+        "exist\",)")
 
 
 def test_input_string_not_a_string_throw():

@@ -1,5 +1,6 @@
 """echo.py unit tests."""
 from pypyr.context import Context
+from pypyr.errors import KeyNotInContextError
 import pypyr.log.logger
 import pypyr.steps.echo
 import pytest
@@ -69,9 +70,19 @@ def test_echo_missing_echo_me_raises():
     """context must contain echoMe."""
     context = Context({
         'blah': 'blah blah'})
-    with pytest.raises(AssertionError) as err_info:
+    with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.echo.run_step(context)
 
-    assert repr(err_info.value) == ("AssertionError(\"context['echoMe'] "
-                                    "doesn't exist. It must have a value for "
+    assert repr(err_info.value) == ("KeyNotInContextError(\"context['echoMe'] "
+                                    "doesn't exist. It must exist for "
                                     "pypyr.steps.echo.\",)")
+
+
+def test_echo_echo_me_none_pass():
+    """Echo can output None."""
+    context = Context({'echoMe': None})
+    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.steps.echo.run_step(context)
+
+    mock_logger_info.assert_called_once_with(None)

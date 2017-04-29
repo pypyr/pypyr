@@ -22,7 +22,7 @@ def run_step(context):
     assert context, ("context must be set for echo. Did you set "
                      "--context 'echoMe=text here'?")
 
-    context.assert_key_has_value('echoMe', __name__)
+    context.assert_key_exists('echoMe', __name__)
 
     if isinstance(context['echoMe'], str):
         val = context.get_formatted('echoMe')
