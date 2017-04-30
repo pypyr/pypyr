@@ -274,6 +274,9 @@ Built-in steps
 +-----------------------------+-------------------------------------------------+------------------------------+
 | **step**                    | **description**                                 | **input context properties** |
 +-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextclear`_ | Remove specified items from context.            | contextClear (list)          |
+|                             |                                                 |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dict)            |
 |                             | context values.                                 |                              |
 +-----------------------------+-------------------------------------------------+------------------------------+
@@ -300,6 +303,34 @@ Built-in steps
 |                             | compression. Supports gzip, bzip2, lzma.        |                              |
 |                             |                                                 | tarArchive (dict)            |
 +-----------------------------+-------------------------------------------------+------------------------------+
+
+pypyr.steps.contextclear
+^^^^^^^^^^^^^^^^^^^^^^^^
+Remove the specified items from the context.
+
+Will iterate ``contextClear`` and remove those keys from context.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+      key1: value1
+      key2: value2
+      key3: value3
+      key4: value4
+      contextClear:
+          - key2
+          - key4
+          - contextClear
+
+This will result in return context:
+
+.. code-block:: yaml
+
+      key1: value1
+      key3: value3
+
+Notice how contextClear also cleared itself in this example.
 
 pypyr.steps.contextset
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -634,7 +665,9 @@ This will:
 
 - Extract *path/to/my.tar.xs* to */path/extract/here*
 - Extract *another/tar.xs* to the current execution directory
-  - This is the directory you're running pypyr from, not the pypyr pipeline working directory you set with the ``--dir`` flag.
+
+  - This is the directory you're running pypyr from, not the pypyr pipeline
+    working directory you set with the ``--dir`` flag.
 
 tarArchive
 """"""""""
