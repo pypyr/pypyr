@@ -274,14 +274,14 @@ Built-in steps
 +-----------------------------+-------------------------------------------------+------------------------------+
 | **step**                    | **description**                                 | **input context properties** |
 +-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dictionary)      |
+| `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dict)            |
 |                             | context values.                                 |                              |
 +-----------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.echo`_         | Echo the context value `echoMe` to the output.  | echoMe (string)              |
 +-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.env`_          | Get, set or unset $ENVs.                        | envGet (dictionary)          |
+| `pypyr.steps.env`_          | Get, set or unset $ENVs.                        | envGet (dict)                |
 |                             |                                                 |                              |
-|                             |                                                 | envSet (dictionary)          |
+|                             |                                                 | envSet (dict)                |
 |                             |                                                 |                              |
 |                             |                                                 | envUnset (list)              |
 +-----------------------------+-------------------------------------------------+------------------------------+
@@ -295,6 +295,10 @@ Built-in steps
 +-----------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.shell`_        | Runs the context value `cmd` in the default     | cmd (string)                 |
 |                             | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
++-----------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.tar`_          | Archive and/or extract tars with or without     | tarExtract (dict)            |
+|                             | compression. Supports gzip, bzip2, lzma.        |                              |
+|                             |                                                 | tarArchive (dict)            |
 +-----------------------------+-------------------------------------------------+------------------------------+
 
 pypyr.steps.contextset
@@ -579,6 +583,82 @@ Example pipeline yaml using a pipe:
 
 See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
+
+pypyr.steps.tar
+^^^^^^^^^^^^^^^
+Archive and/or extract tars with or without compression.
+
+At least one of these context keys must exist:
+
+- tarExtract
+- tarArchive
+
+Optionally, you can also specify the tar compression format with
+``context['tarFormat']``. If not specified, defaults to *lzma/xz*
+Available options:
+
+- '' - no compression
+- gz (gzip)
+- bz2 (bzip2)
+- xz (lzma)
+
+This step will run whatever combination of Extract and Archive you specify.
+Regardless of combination, execution order is Extract, Archive.
+
+Never extract archives from untrusted sources without prior inspection. It is
+possible that files are created outside of path, e.g. members that have
+absolute filenames starting with "/" or filenames with two dots "..".
+
+See a worked example `for tar here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/tar.yaml>`__.
+
+tarExtract
+""""""""""
+``context['tarExtract']`` must exist. It's a dictionary.
+
+keys are the path to the tar to extract.
+
+values are the destination paths.
+
+You can use {key} substitutions to format the string from context.
+
+.. code-block:: yaml
+
+  key1: here
+  key2: tar.xs
+  tarExtract:
+    path/to/my.tar.xs: /path/extract/{key1}
+    another/{key2}: .
+
+This will:
+
+- Extract *path/to/my.tar.xs* to */path/extract/here*
+- Extract *another/tar.xs* to the current execution directory
+  - This is the directory you're running pypyr from, not the pypyr pipeline working directory you set with the ``--dir`` flag.
+
+tarArchive
+""""""""""
+``context['tarArchive']`` must exist. It's a dictionary.
+
+keys are the paths to archive.
+
+values are the destination output paths.
+
+You can use {key} substitutions to format the string from context.
+
+.. code-block:: yaml
+
+  key1: destination.tar.xs
+  key2: value2
+  tarArchive:
+    path/{key2}/dir: path/to/{key1}
+    another/my.file: ./my.tar.xs
+
+This will:
+
+- Archive directory *path/value2/dir* to *path/to/destination.tar.xs*,
+- Archive file *another/my.file* to *./my.tar.xs*
+
 
 Roll your own step
 ------------------

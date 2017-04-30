@@ -1,6 +1,6 @@
 """context.py unit tests."""
 from collections.abc import MutableMapping
-from pypyr.context import Context
+from pypyr.context import Context, ContextItemInfo
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pytest
 
@@ -185,6 +185,195 @@ def test_assert_keys_have_values_fails():
                                         'key4',
                                         'key2',
                                         )
+
+
+def test_assert_key_type_value_passes():
+    """assert_key_type_value passes if key exists, has value and type right."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=True,
+                           expected_type=str,
+                           is_expected_type=True,
+                           has_value=True)
+
+    Context().assert_key_type_value(info, None)
+
+
+def test_assert_key_type_value_no_key_raises():
+    """assert_key_type_value fails if key doesn't exist."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=False,
+                           expected_type=str,
+                           is_expected_type=True,
+                           has_value=True)
+
+    with pytest.raises(KeyNotInContextError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc')
+
+    assert repr(err_info.value) == (
+        "KeyNotInContextError(\"mydesc couldn't find key1 in context.\",)")
+
+
+def test_assert_key_type_value_no_key_raises_extra_text():
+    """assert_key_type_value fails if key doesn't exist."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=False,
+                           expected_type=str,
+                           is_expected_type=True,
+                           has_value=True)
+
+    with pytest.raises(KeyNotInContextError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc', 'extra text here')
+
+    assert repr(err_info.value) == (
+        "KeyNotInContextError(\"mydesc couldn't find key1 in context. extra "
+        "text here\",)")
+
+
+def test_assert_key_type_value_no_value_raises():
+    """assert_key_type_value fails if no value."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=True,
+                           expected_type=str,
+                           is_expected_type=True,
+                           has_value=False)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc')
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key1 in context but it "
+        "doesn\'t have a value.\",)")
+
+
+def test_assert_key_type_value_no_value_raises_extra_text():
+    """assert_key_type_value fails if no value."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=True,
+                           expected_type=str,
+                           is_expected_type=True,
+                           has_value=False)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc', 'extra text here')
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key1 in context but it "
+        "doesn\'t have a value. extra text here\",)")
+
+
+def test_assert_key_type_value_wrong_type_raises():
+    """assert_key_type_value fails if wrong type."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=True,
+                           expected_type=str,
+                           is_expected_type=False,
+                           has_value=True)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc')
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key1 in context, but "
+        "it\'s not a <class 'str'>.\",)")
+
+
+def test_assert_key_type_value_wrong_type_raises_with_extra_error_text():
+    """assert_key_type_value fails if wrong type."""
+    info = ContextItemInfo(key='key1',
+                           key_in_context=True,
+                           expected_type=str,
+                           is_expected_type=False,
+                           has_value=True)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_key_type_value(info, 'mydesc', 'extra text here')
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key1 in context, but "
+        "it\'s not a <class 'str'>. extra text here\",)")
+
+
+def test_assert_keys_type_value_passes():
+    """assert_keys_type_value passes if all keys, types, values correct."""
+    info1 = ContextItemInfo(key='key1',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    info2 = ContextItemInfo(key='key2',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    info3 = ContextItemInfo(key='key3',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    Context().assert_keys_type_value(None, '', info1, info2, info3)
+
+
+def test_assert_keys_type_value_raises():
+    """assert_keys_type_value raises if issue with one in the middle."""
+    info1 = ContextItemInfo(key='key1',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    info2 = ContextItemInfo(key='key2',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=False)
+
+    info3 = ContextItemInfo(key='key3',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_keys_type_value('mydesc', None, info1, info2, info3)
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key2 in context but it "
+        "doesn\'t have a value.\",)")
+
+
+def test_assert_keys_type_value_raises_with_extra_error_text():
+    """assert_keys_type_value raises if issue with one in the middle."""
+    info1 = ContextItemInfo(key='key1',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    info2 = ContextItemInfo(key='key2',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=False)
+
+    info3 = ContextItemInfo(key='key3',
+                            key_in_context=True,
+                            expected_type=str,
+                            is_expected_type=True,
+                            has_value=True)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        Context().assert_keys_type_value('mydesc',
+                                         'extra text here',
+                                         info1,
+                                         info2,
+                                         info3)
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError(\"mydesc found key2 in context but it "
+        "doesn\'t have a value. extra text here\",)")
 
 # ------------------- asserts ------------------------------------------------#
 

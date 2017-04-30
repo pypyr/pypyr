@@ -6,7 +6,8 @@ ContextItemInfo = namedtuple('ContextItemInfo',
                              ['key',
                               'key_in_context',
                               'expected_type',
-                              'is_expected_type'])
+                              'is_expected_type',
+                              'has_value'])
 
 
 class Context(dict):
@@ -43,6 +44,70 @@ class Context(dict):
             raise KeyNotInContextError(
                 f"context['{key}'] doesn't exist. It must exist for {caller}.")
 
+    def assert_key_has_value(self, key, caller):
+        """Assert that context contains key which also has a value.
+
+        Args:
+            key: validate this key exists in context AND has a value that isn't
+                 None.
+            caller: string. calling function name - this used to construct
+                    error messages
+
+        Raises:
+            KeyNotInContextError: Key doesn't exist
+            KeyInContextHasNoValueError: context[key] is None
+            AssertionError: if key is None
+
+        """
+        assert key, ("key parameter must be specified.")
+        self.assert_key_exists(key, caller)
+
+        if self[key] is None:
+            raise KeyInContextHasNoValueError(
+                f"context['{key}'] must have a value for {caller}.")
+
+    def assert_key_type_value(self,
+                              context_item,
+                              caller,
+                              extra_error_text=''):
+        """Assert that keys exist of right type and has a value.
+
+        Args:
+             context_item: ContextItemInfo tuple
+             caller: string. calling function name - this used to construct
+                     error messages
+             extra_error_text: append to end of error message.
+
+        Raises:
+            AssertionError: if context_item None.
+            KeyNotInContextError: Key doesn't exist
+            KeyInContextHasNoValueError: context[key] is None or the wrong
+                                         type.
+         """
+        assert context_item, ("context_item parameter must be specified.")
+
+        if extra_error_text is None or extra_error_text == '':
+            append_error_text = ''
+        else:
+            append_error_text = f' {extra_error_text}'
+
+        if not context_item.key_in_context:
+            raise KeyNotInContextError(f'{caller} couldn\'t find '
+                                       f'{context_item.key} in context.'
+                                       f'{append_error_text}')
+
+        if not context_item.has_value:
+            raise KeyInContextHasNoValueError(
+                f'{caller} found {context_item.key} in '
+                f'context but it doesn\'t have a value.'
+                f'{append_error_text}')
+
+        if not context_item.is_expected_type:
+            raise KeyInContextHasNoValueError(
+                f'{caller} found {context_item.key} in context, but it\'s '
+                f'not a {context_item.expected_type}.'
+                f'{append_error_text}')
+
     def assert_keys_exist(self, caller, *keys):
         """Assert that context contains keys.
 
@@ -58,28 +123,6 @@ class Context(dict):
         for key in keys:
             self.assert_key_exists(key, caller)
 
-    def assert_key_has_value(self, key, caller):
-        """Assert that context contains key which also has a value.
-
-        Args:
-            key: validate this key exists in context AND has a value that isn't
-                 None.
-            caller: string. calling function name - this used to construct
-                    error messages
-
-        Raises:
-            KeyNotInContextError: Key doesn't exist
-            KeyInContextHasNoValueError: context[key] is None
-            AssertionError: if context is None
-
-        """
-        assert key, ("key parameter must be specified.")
-        self.assert_key_exists(key, caller)
-
-        if self[key] is None:
-            raise KeyInContextHasNoValueError(
-                f"context['{key}'] must have a value for {caller}.")
-
     def assert_keys_have_values(self, caller, *keys):
         """Check that keys list are all in context and all have values.
 
@@ -91,10 +134,34 @@ class Context(dict):
         Raises:
             KeyNotInContextError: Key doesn't exist
             KeyInContextHasNoValueError: context[key] is None
-            AssertionError: if context is None
+            AssertionError: if *keys is None
         """
         for key in keys:
             self.assert_key_has_value(key, caller)
+
+    def assert_keys_type_value(self,
+                               caller,
+                               extra_error_text,
+                               *context_items):
+        """Assert that keys exist of right type and has a value.
+
+        Args:
+             caller: string. calling function name - this used to construct
+                     error messages
+             extra_error_text: append to end of error message. This can happily
+                               be None or ''.
+            *context_items: ContextItemInfo tuples
+
+        Raises:
+            AssertionError: if context_items None.
+            KeyNotInContextError: Key doesn't exist
+            KeyInContextHasNoValueError: context[key] is None or the wrong
+                                         type.
+        """
+        assert context_items, ("context_items parameter must be specified.")
+
+        for context_item in context_items:
+            self.assert_key_type_value(context_item, caller, extra_error_text)
 
     def get_formatted(self, key):
         """Returns formatted value for context[key].
@@ -223,5 +290,6 @@ class Context(dict):
             key_in_context=k[1],
             expected_type=k[2],
             is_expected_type=isinstance(self[k[0]], k[2])
-            if k[1] else None
+            if k[1] else None,
+            has_value=k[1] and not self[k[0]] is None
         ) for k in keys_exist)
