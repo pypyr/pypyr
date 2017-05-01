@@ -37,7 +37,7 @@ def get_pipeline_steps(pipeline, steps_group):
                      "pipeline definition.")
 
         logger.debug("done")
-        return pipeline[steps_group]
+        return steps
     else:
         logger.debug(
             f"pipeline doesn't have a {steps_group} collection. Add a "

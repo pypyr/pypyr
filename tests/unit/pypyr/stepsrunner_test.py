@@ -24,6 +24,20 @@ def get_test_context():
         'key7': 77
     })
 
+
+def get_test_pipeline():
+    """Return an arbitrary pipeline definition"""
+    return {
+        'sg1': [
+            'step1',
+            'step2',
+            {'step3key1': 'values3k1', 'step3key2': 'values3k2'},
+            'step4'
+        ],
+        'sg2': False,
+        'sg3': 77,
+        'sg4': None
+    }
 # ------------------------- test context--------------------------------------#
 
 # ------------------------- step mocks ---------------------------------------#
@@ -45,8 +59,99 @@ def mock_run_step_none_context(context):
     context = None  # noqa: F841
 # ------------------------- step mocks ---------------------------------------#
 
+# ------------------------- get_pipeline_steps -------------------------------#
+
+
+def test_get_pipeline_steps_pass():
+    """Return named step group from pipeline"""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        steps = pypyr.stepsrunner.get_pipeline_steps(
+            get_test_pipeline(), 'sg1')
+
+    assert len(steps) == 4
+    assert steps[0] == 'step1'
+    assert steps[1] == 'step2'
+    assert steps[2] == {'step3key1': 'values3k1', 'step3key2': 'values3k2'}
+    assert steps[3] == 'step4'
+
+    mock_logger_debug.assert_any_call("4 steps found under sg1 in "
+                                      "pipeline definition.")
+
+
+def test_get_pipeline_steps_not_found():
+    """Can't find step group in pipeline"""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        steps = pypyr.stepsrunner.get_pipeline_steps(
+            get_test_pipeline(), 'arb')
+        assert steps is None
+
+    mock_logger_debug.assert_any_call(
+        "pipeline doesn't have a arb collection. Add a arb: sequence to the "
+        "yaml if you want arb actually to do something.")
+
+
+def test_get_pipeline_steps_none():
+    """Find step group in pipeline but it has no steps"""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'warn') as mock_logger_warn:
+        steps = pypyr.stepsrunner.get_pipeline_steps(
+            get_test_pipeline(), 'sg4')
+        assert steps is None
+
+    mock_logger_warn.assert_called_once_with(
+        "sg4: sequence has no elements. So it won't do anything.")
+# ------------------------- get_pipeline_steps--------------------------------#
+
+# ------------------------- get_step_input_context----------------------------#
+
+
+def test_get_step_input_context_no_in():
+    """Get step context does nothing if no in key found."""
+    context = get_test_context()
+    pypyr.stepsrunner.get_step_input_context(None, context)
+
+    assert context == get_test_context()
+
+
+def test_get_step_input_context_in_empty():
+    """Get step context does nothing if in key found but it's empty."""
+    context = get_test_context()
+    pypyr.stepsrunner.get_step_input_context({}, context)
+
+    assert context == get_test_context()
+
+
+def test_get_step_input_context_with_in():
+    """Get step context adds in to context."""
+    context = get_test_context()
+    original_len = len(context)
+    in_args = {'newkey1': 'v1',
+               'newkey2': 'v2',
+               'key3': 'updated in',
+               'key4': [0, 1, 2, 3],
+               'key5': True,
+               'key6': False,
+               'key7': 88}
+    pypyr.stepsrunner.get_step_input_context(in_args, context)
+
+    assert len(context) - 2 == original_len
+    assert context['newkey1'] == 'v1'
+    assert context['newkey2'] == 'v2'
+    assert context['key1'] == 'value1'
+    assert context['key2'] == 'value2'
+    assert context['key3'] == 'updated in'
+    assert context['key4'] == [0, 1, 2, 3]
+    assert context['key5']
+    assert not context['key6']
+    assert context['key7'] == 88
+
+# ------------------------- get_step_input_context----------------------------#
 
 # ------------------------- run_pipeline_step---------------------------------#
+
+
 @patch('pypyr.moduleloader.get_module')
 def test_run_pipeline_step_pass(mocked_moduleloader):
     """run_pipeline_step test pass."""
