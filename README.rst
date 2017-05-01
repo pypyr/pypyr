@@ -656,15 +656,15 @@ You can use {key} substitutions to format the string from context.
 .. code-block:: yaml
 
   key1: here
-  key2: tar.xs
+  key2: tar.xz
   tarExtract:
-    path/to/my.tar.xs: /path/extract/{key1}
+    path/to/my.tar.xz: /path/extract/{key1}
     another/{key2}: .
 
 This will:
 
-- Extract *path/to/my.tar.xs* to */path/extract/here*
-- Extract *another/tar.xs* to the current execution directory
+- Extract *path/to/my.tar.xz* to */path/extract/here*
+- Extract *another/tar.xz* to the current execution directory
 
   - This is the directory you're running pypyr from, not the pypyr pipeline
     working directory you set with the ``--dir`` flag.
@@ -681,16 +681,16 @@ You can use {key} substitutions to format the string from context.
 
 .. code-block:: yaml
 
-  key1: destination.tar.xs
+  key1: destination.tar.xz
   key2: value2
   tarArchive:
     path/{key2}/dir: path/to/{key1}
-    another/my.file: ./my.tar.xs
+    another/my.file: ./my.tar.xz
 
 This will:
 
-- Archive directory *path/value2/dir* to *path/to/destination.tar.xs*,
-- Archive file *another/my.file* to *./my.tar.xs*
+- Archive directory *path/value2/dir* to *path/to/destination.tar.xz*,
+- Archive file *another/my.file* to *./my.tar.xz*
 
 
 Roll your own step
