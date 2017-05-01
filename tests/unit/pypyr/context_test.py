@@ -441,10 +441,14 @@ def test_tag_not_in_context_should_throw():
 
 
 def test_context_item_not_a_string_should_throw():
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as err_info:
         context = Context({'key1': 'value1'})
         context['input_string'] = 77
         context.get_formatted('input_string')
+
+    assert repr(err_info.value) == (
+        "TypeError(\"can only format on strings. 77 is a <class 'int'> "
+        "instead.\",)")
 
 
 def test_input_string_interpolate_works():
@@ -468,10 +472,14 @@ def test_input_string_tag_not_in_context_should_throw():
 
 
 def test_input_string_not_a_string_throw():
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as err_info:
         context = Context({'key1': 'value1'})
         input_string = 77
         context.get_formatted_string(input_string)
+
+    assert repr(err_info.value) == (
+        "TypeError(\"can only format on strings. 77 is a <class 'int'> "
+        "instead.\",)")
 # ------------------- formats ------------------------------------------------#
 
 # ------------------- key info -----------------------------------------------#

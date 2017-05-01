@@ -200,8 +200,8 @@ class Context(dict):
                     f'context[\'{missing_key}\'] doesn\'t exist'
                 ) from err
         else:
-            raise TypeError("can only format on strings. {val} is a "
-                            "{type(val)} instead.")
+            raise TypeError(f"can only format on strings. {val} is a "
+                            f"{type(val)} instead.")
 
     def get_formatted_string(self, input_string):
         """Returns formatted value for input_string.
@@ -241,8 +241,8 @@ class Context(dict):
                     f'{{{missing_key}}}, because '
                     f'context[\'{missing_key}\'] doesn\'t exist') from err
         else:
-            raise TypeError("can only format on strings. {input_string} is a "
-                            "{type(input_string)} instead.")
+            raise TypeError(f"can only format on strings. {input_string} is a "
+                            f"{type(input_string)} instead.")
 
     def keys_exist(self, *keys):
         """Check if keys exist in context.
