@@ -156,7 +156,6 @@ def tar_extract(context):
     mode = get_file_mode_for_reading(context)
 
     for item in context['tarExtract']:
-        print(item)
         # in is the path to the tar to extract. Allows string interpolation.
         source = context.get_formatted_string(item['in'])
         # out is the outdir, dhur. Allows string interpolation.
