@@ -123,7 +123,8 @@ def run_pipeline_steps(steps, context):
                 logger.debug(f"{step} is complex.")
                 step_name = step['name']
 
-                get_step_input_context(step['in'], context)
+                if 'in' in step:
+                    get_step_input_context(step['in'], context)
             else:
                 logger.debug(f"{step} is a simple string.")
                 step_name = step

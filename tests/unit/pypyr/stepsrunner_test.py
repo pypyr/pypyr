@@ -1,5 +1,6 @@
 """stepsrunner.py unit tests."""
 from pypyr.context import Context
+from pypyr.errors import ContextError
 import pypyr.stepsrunner
 import pytest
 from unittest.mock import patch
@@ -32,6 +33,23 @@ def get_test_pipeline():
             'step1',
             'step2',
             {'step3key1': 'values3k1', 'step3key2': 'values3k2'},
+            'step4'
+        ],
+        'sg2': False,
+        'sg3': 77,
+        'sg4': None
+    }
+
+
+def get_valid_test_pipeline():
+    """Return an arbitrary pipeline definition"""
+    return {
+        'sg1': [
+            'step1',
+            'step2',
+            {'name': 'step3key1',
+             'in':
+                {'in3k1_1': 'v3k1', 'in3k1_2': 'v3k2'}},
             'step4'
         ],
         'sg2': False,
@@ -149,6 +167,38 @@ def test_get_step_input_context_with_in():
 
 # ------------------------- get_step_input_context----------------------------#
 
+# ------------------------- run_failure_step_group----------------------------#
+
+
+def test_run_failure_step_group_pass():
+    """Failure step group runner passes on_failure to step group runner."""
+    with patch('pypyr.stepsrunner.run_step_group') as mock_run_group:
+        pypyr.stepsrunner.run_failure_step_group({'pipe': 'val'}, Context())
+
+    mock_run_group.assert_called_once_with(pipeline_definition={'pipe': 'val'},
+                                           step_group_name='on_failure',
+                                           context=Context())
+
+
+def test_run_failure_step_group_swallows():
+    """Failure step group runner swallows errors."""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+
+    with patch('pypyr.stepsrunner.run_step_group') as mock_run_group:
+        with patch.object(logger, 'error') as mock_logger_error:
+            mock_run_group.side_effect = ContextError('arb error')
+            pypyr.stepsrunner.run_failure_step_group(
+                {'pipe': 'val'}, Context())
+
+        mock_logger_error.assert_any_call(
+            "Failure handler also failed. Swallowing.")
+
+    mock_run_group.assert_called_once_with(pipeline_definition={'pipe': 'val'},
+                                           step_group_name='on_failure',
+                                           context=Context())
+
+# ------------------------- run_failure_step_group----------------------------#
+
 # ------------------------- run_pipeline_step---------------------------------#
 
 
@@ -226,3 +276,96 @@ def test_run_pipeline_step_none_context(mocked_moduleloader):
                        'key6': True,
                        'key7': 77}
 # ------------------------- run_pipeline_step---------------------------------#
+
+# ------------------------- run_pipeline_steps--------------------------------#
+
+
+def test_run_pipeline_steps_none():
+    """If steps None does nothing"""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(None, {'k1': 'v1'})
+
+    mock_logger_debug.assert_any_call("No steps found to execute.")
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex(mock_run_step):
+    """Complex step run with no in args."""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps([{'name': 'step1'}], {'k1': 'v1'})
+
+    mock_logger_debug.assert_any_call("{'name': 'step1'} is complex.")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'k1': 'v1'})
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_in(mock_run_step):
+    """Complex step run with in args. In args added to context for run_step."""
+    steps = [{
+        'name': 'step1',
+        'in': {'newkey1': 'v1',
+               'newkey2': 'v2',
+               'key3': 'updated in',
+               'key4': [0, 1, 2, 3],
+               'key5': True,
+               'key6': False,
+               'key7': 88}
+    }]
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'updated in',
+                                    'key4': [0, 1, 2, 3],
+                                    'key5': True,
+                                    'key6': False,
+                                    'key7': 88,
+                                    'newkey1': 'v1',
+                                    'newkey2': 'v2'})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) - 2 == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_simple(mock_run_step):
+    """Simple step run."""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(['step1'], {'k1': 'v1'})
+
+    mock_logger_debug.assert_any_call('step1 is a simple string.')
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'k1': 'v1'})
+# ------------------------- run_pipeline_steps--------------------------------#
+
+# ------------------------- run_step_group------------------------------------#
+
+
+@patch('pypyr.stepsrunner.run_pipeline_steps')
+def test_run_step_group_pass(mock_run_steps):
+    """run_step_groups gets and runs steps for group."""
+    pypyr.stepsrunner.run_step_group(
+        pipeline_definition=get_valid_test_pipeline(),
+        step_group_name='sg1',
+        context=Context())
+
+    mock_run_steps.assert_called_once_with(steps=[
+        'step1',
+        'step2',
+        {'name': 'step3key1',
+         'in':
+            {'in3k1_1': 'v3k1', 'in3k1_2': 'v3k2'}},
+        'step4'
+    ], context=Context())
+# ------------------------- run_step_group------------------------------------#
