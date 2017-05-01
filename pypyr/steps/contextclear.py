@@ -13,9 +13,11 @@ logger = pypyr.log.logger.get_logger(__name__)
 def run_step(context):
     """Remove specified keys from context.
 
-    Context is a dictionary or dictionary-like.
-    context['contextClear'] must exist. It's a dictionary.
-    Will iterate context['contextClear'] and remove those keys from context.
+    Args:
+        Context is a dictionary or dictionary-like.
+        context['contextClear'] must exist. It's a dictionary.
+        Will iterate context['contextClear'] and remove those keys from
+        context.
 
     For example, say input context is:
         key1: value1
@@ -38,5 +40,6 @@ def run_step(context):
         # slightly unorthodox pop returning None means you don't get a KeyError
         # if key doesn't exist
         context.pop(k, None)
+        logger.info(f"removed {k} from context")
 
     logger.debug("done")

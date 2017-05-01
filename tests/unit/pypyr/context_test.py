@@ -59,6 +59,15 @@ def test_context_is_dictionary_like():
     d.update(mergedic)
     assert d['k1'] == 'NEWVALUE'
 
+    # del and clear
+    original_length = len(d)
+    del d['k1']
+    assert 'k1' not in d
+    assert len(d) == original_length - 1
+
+    d.clear()
+    assert len(d) == 0
+
 
 def test_context_missing_override():
     """Subclass of dict should override __missing__ on KeyNotFound"""

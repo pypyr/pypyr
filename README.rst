@@ -271,38 +271,40 @@ You can specify a step in the pipeline yaml in two ways:
 Built-in steps
 --------------
 
-+-----------------------------+-------------------------------------------------+------------------------------+
-| **step**                    | **description**                                 | **input context properties** |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.contextclear`_ | Remove specified items from context.            | contextClear (list)          |
-|                             |                                                 |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.contextset`_   | Sets context values from already existing       | contextSet (dict)            |
-|                             | context values.                                 |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.echo`_         | Echo the context value `echoMe` to the output.  | echoMe (string)              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.env`_          | Get, set or unset $ENVs.                        | envGet (dict)                |
-|                             |                                                 |                              |
-|                             |                                                 | envSet (dict)                |
-|                             |                                                 |                              |
-|                             |                                                 | envUnset (list)              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.py`_           | Executes the context value `pycode` as python   | pycode (string)              |
-|                             | code.                                           |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.pypyrversion`_ | Writes installed pypyr version to output.       |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.safeshell`_    | Runs the program and args specified in the      | cmd (string)                 |
-|                             | context value `cmd` as a subprocess.            |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.shell`_        | Runs the context value `cmd` in the default     | cmd (string)                 |
-|                             | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
-+-----------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.tar`_          | Archive and/or extract tars with or without     | tarExtract (dict)            |
-|                             | compression. Supports gzip, bzip2, lzma.        |                              |
-|                             |                                                 | tarArchive (dict)            |
-+-----------------------------+-------------------------------------------------+------------------------------+
++-------------------------------+-------------------------------------------------+------------------------------+
+| **step**                      | **description**                                 | **input context properties** |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
+|                               |                                                 |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextset`_     | Sets context values from already existing       | contextSet (dict)            |
+|                               | context values.                                 |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.echo`_           | Echo the context value `echoMe` to the output.  | echoMe (string)              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | envGet (dict)                |
+|                               |                                                 |                              |
+|                               |                                                 | envSet (dict)                |
+|                               |                                                 |                              |
+|                               |                                                 | envUnset (list)              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
+|                               | code.                                           |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.pypyrversion`_   | Writes installed pypyr version to output.       |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.safeshell`_      | Runs the program and args specified in the      | cmd (string)                 |
+|                               | context value `cmd` as a subprocess.            |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.shell`_          | Runs the context value `cmd` in the default     | cmd (string)                 |
+|                               | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tarExtract (dict)            |
+|                               | compression. Supports gzip, bzip2, lzma.        |                              |
+|                               |                                                 | tarArchive (dict)            |
++-------------------------------+-------------------------------------------------+------------------------------+
 
 pypyr.steps.contextclear
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -314,23 +316,37 @@ For example, say input context is:
 
 .. code-block:: yaml
 
-      key1: value1
-      key2: value2
-      key3: value3
-      key4: value4
-      contextClear:
-          - key2
-          - key4
-          - contextClear
+    key1: value1
+    key2: value2
+    key3: value3
+    key4: value4
+    contextClear:
+        - key2
+        - key4
+        - contextClear
 
 This will result in return context:
 
 .. code-block:: yaml
 
-      key1: value1
-      key3: value3
+    key1: value1
+    key3: value3
 
 Notice how contextClear also cleared itself in this example.
+
+pypyr.steps.contextclearall
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Wipe the entire context. No input context arguments required.
+
+You can always use *contextclearall* as a simple step. Sample pipeline yaml:
+
+.. code-block:: yaml
+
+    steps:
+      - my.arb.step
+      - pypyr.steps.contextclearall
+      - another.arb.step
+
 
 pypyr.steps.contextset
 ^^^^^^^^^^^^^^^^^^^^^^
