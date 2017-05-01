@@ -61,7 +61,7 @@ def test_tar_throws_if_tar_context_wrong_type():
 
     assert repr(err_info.value) == (
         "KeyInContextHasNoValueError(\"pypyr.steps.tar found tarExtract in "
-        "context, but it's not a <class 'dict'>. "
+        "context, but it's not a <class 'list'>. "
         "This step needs any combination of "
         "tarExtract or tarArchive in context.\",)")
 
@@ -86,10 +86,12 @@ def test_tar_only_calls_extract():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': {
-            'key2': 'ARB_GET_ME1',
-            'key4': 'ARB_GET_ME2'
-        }
+        'tarExtract': [
+            {'in': 'key2',
+             'out': 'ARB_GET_ME1'},
+            {'in': 'key4',
+             'out': 'ARB_GET_ME2'}
+        ]
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -108,10 +110,12 @@ def test_tar_only_calls_archive():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': {
-            'key2': 'ARB_GET_ME1',
-            'key4': 'ARB_GET_ME2'
-        }
+        'tarArchive': [
+            {'in': 'key2',
+             'out': 'ARB_GET_ME1'},
+            {'in': 'key4',
+             'out': 'ARB_GET_ME2'}
+        ]
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -130,14 +134,18 @@ def test_tar_calls_archive_and_extract():
         'key2': 'value2',
         'key1': 'value1',
         'key3': 'value3',
-        'tarArchive': {
-            'key2': 'ARB_GET_ME1',
-            'key4': 'ARB_GET_ME2'
-        },
-        'tarExtract': {
-            'key2': 'ARB_GET_ME1',
-            'key4': 'ARB_GET_ME2'
-        }
+        'tarArchive': [
+            {'in': 'key2',
+             'out': 'ARB_GET_ME1'},
+            {'in': 'key4',
+             'out': 'ARB_GET_ME2'}
+        ],
+        'tarExtract': [
+            {'in': 'key2',
+             'out': 'ARB_GET_ME1'},
+            {'in': 'key4',
+             'out': 'ARB_GET_ME2'}
+        ]
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -160,9 +168,10 @@ def test_tar_extract_one_pass():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': {
-            './blah.tar.xz': 'path/to/dir'
-        }
+        'tarExtract': [
+            {'in': './blah.tar.xz',
+             'out': 'path/to/dir'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -179,9 +188,10 @@ def test_tar_extract_one_pass_uncompressed():
         'key1': 'value1',
         'key2': 'value2',
         'tarFormat': '',
-        'tarExtract': {
-            './blah.tar.xz': 'path/to/dir'
-        }
+        'tarExtract': [
+            {'in': './blah.tar.xz',
+             'out': 'path/to/dir'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -198,9 +208,10 @@ def test_tar_extract_one_with_interpolation():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': {
-            './{key3}.tar.xz': 'path/{key2}/dir'
-        }
+        'tarExtract': [
+            {'in': './{key3}.tar.xz',
+             'out': 'path/{key2}/dir'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -217,10 +228,12 @@ def test_tar_extract_pass():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': {
-            './blah.tar.xz': 'path/to/dir',
-            '/tra/la/la.tar.xz': '.'
-        }
+        'tarExtract': [
+            {'in': './blah.tar.xz',
+             'out': 'path/to/dir'},
+            {'in': '/tra/la/la.tar.xz',
+             'out': '.'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -247,9 +260,10 @@ def test_tar_archive_one_pass():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': {
-            'path/to/dir': './blah.tar.xz'
-        }
+        'tarArchive': [
+            {'in': 'path/to/dir',
+             'out': './blah.tar.xz'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -266,9 +280,10 @@ def test_tar_archive_one_pass_with_interpolation():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': {
-            '{key2}/to/dir': './blah.tar.{key1}'
-        }
+        'tarArchive': [
+            {'in': '{key2}/to/dir',
+             'out': './blah.tar.{key1}'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -285,9 +300,10 @@ def test_tar_archive_one_pass_without_compression():
         'key1': 'value1',
         'key2': 'value2',
         'tarFormat': '',
-        'tarArchive': {
-            'path/to/dir': './blah.tar.xz'
-        }
+        'tarArchive': [
+            {'in': 'path/to/dir',
+             'out': './blah.tar.xz'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -304,9 +320,10 @@ def test_tar_archive_one_pass_with_gz():
         'key1': 'value1',
         'key2': 'value2',
         'tarFormat': 'gz',
-        'tarArchive': {
-            'path/to/dir': './blah.tar.gz'
-        }
+        'tarArchive': [
+            {'in': 'path/to/dir',
+             'out': './blah.tar.gz'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -323,10 +340,12 @@ def test_tar_archive_pass():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': {
-            'path/to/dir': './blah.tar.xz',
-            '.': '/tra/la/la.tar.xz'
-        }
+        'tarArchive': [
+            {'in': 'path/to/dir',
+             'out': './blah.tar.xz'},
+            {'in': '.',
+             'out': '/tra/la/la.tar.xz'}
+        ]
     })
 
     with patch('tarfile.open') as mock_tarfile:

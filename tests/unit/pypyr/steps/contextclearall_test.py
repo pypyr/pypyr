@@ -21,6 +21,14 @@ def test_context_clear_all_pass():
 
     assert len(context) == 0
 
+    assert context is not None
+
+    assert isinstance(context, Context)
+
+    context['k1'] = 'value1'
+
+    assert context['k1'] == 'value1'
+
 
 def test_context_clear_all_context_empty_already():
     """Context Clear All removes everything from context from empty."""

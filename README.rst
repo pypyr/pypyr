@@ -674,8 +674,10 @@ You can use {key} substitutions to format the string from context.
   key1: here
   key2: tar.xz
   tarExtract:
-    path/to/my.tar.xz: /path/extract/{key1}
-    another/{key2}: .
+    - in: path/to/my.tar.xz
+      out: /path/extract/{key1}
+    - in: another/{key2}
+      out: .
 
 This will:
 
@@ -700,8 +702,10 @@ You can use {key} substitutions to format the string from context.
   key1: destination.tar.xz
   key2: value2
   tarArchive:
-    path/{key2}/dir: path/to/{key1}
-    another/my.file: ./my.tar.xz
+    - in: path/{key2}/dir
+      out: path/to/{key1}
+    - in: another/my.file
+      out: ./my.tar.xz
 
 This will:
 

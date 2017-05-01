@@ -40,8 +40,8 @@ def run_step(context):
 
     # at least 1 of tarExtract or tarArchive must exist in context
     tarExtract, tarArchive = context.keys_of_type_exist(
-        ('tarExtract', dict),
-        ('tarArchive', dict)
+        ('tarExtract', list),
+        ('tarArchive', list)
     )
     found_at_least_one = False
 
@@ -106,8 +106,10 @@ def tar_archive(context):
 
     Example:
         tarArchive:
-            path/to/dir: path/to/destination.tar.xs
-            another/my.file: ./my.tar.xs
+            - in: path/to/dir
+              out: path/to/destination.tar.xs
+            - in: another/my.file
+              out: ./my.tar.xs
 
         This will archive directory path/to/dir to path/to/destination.tar.xs,
         and also archive file another/my.file to ./my.tar.xs
@@ -116,11 +118,11 @@ def tar_archive(context):
 
     mode = get_file_mode_for_writing(context)
 
-    for k, v in context['tarArchive'].items():
+    for item in context['tarArchive']:
         # value is the destination tar. Allow string interpolation.
-        destination = context.get_formatted_string(v)
+        destination = context.get_formatted_string(item['out'])
         # key is the source to archive
-        source = context.get_formatted_string(k)
+        source = context.get_formatted_string(item['in'])
         with tarfile.open(destination, mode) as archive_me:
             logger.debug(f"Archiving '{source}' to '{destination}'")
 
@@ -141,8 +143,10 @@ def tar_extract(context):
 
     Example:
         tarExtract:
-            path/to/my.tar.xs: /path/extract/here
-            another/tar.xs: .
+            - in: path/to/my.tar.xs
+              out: /path/extract/here
+            - in: another/tar.xs
+              out: .
 
         This will extract path/to/my.tar.xs to /path/extract/here, and also
         extract another/tar.xs to $PWD.
@@ -151,11 +155,12 @@ def tar_extract(context):
 
     mode = get_file_mode_for_reading(context)
 
-    for k, v in context['tarExtract'].items():
-        # key is the path to the tar to extract
-        source = context.get_formatted_string(k)
-        # value is the outdir
-        destination = context.get_formatted_string(v)
+    for item in context['tarExtract']:
+        print(item)
+        # in is the path to the tar to extract. Allows string interpolation.
+        source = context.get_formatted_string(item['in'])
+        # out is the outdir, dhur. Allows string interpolation.
+        destination = context.get_formatted_string(item['out'])
         with tarfile.open(source, mode) as extract_me:
             logger.debug(f"Extracting '{source}' to '{destination}'")
 
