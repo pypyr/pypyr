@@ -490,6 +490,7 @@ def test_keys_of_type_exist_single():
     assert k1.key_in_context
     assert k1.expected_type is str
     assert k1.is_expected_type
+    assert k1.has_value
 
 
 def test_keys_of_type_exist_triple():
@@ -506,18 +507,21 @@ def test_keys_of_type_exist_triple():
     assert k1.key_in_context
     assert k1.expected_type is str
     assert k1.is_expected_type
+    assert k1.has_value
 
     assert k2
     assert k2.key == 'k2'
     assert k2.key_in_context
     assert k2.expected_type is list
     assert not k2.is_expected_type
+    assert k2.has_value
 
     assert k3
     assert k3.key == 'k3'
     assert k3.key_in_context
     assert k3.expected_type is list
     assert k3.is_expected_type
+    assert k3.has_value
 
 
 def test_keys_none_exist():
@@ -537,18 +541,20 @@ def test_keys_none_exist():
     assert not k4.key_in_context
     assert k4.expected_type is list
     assert k4.is_expected_type is None
+    assert not k4.has_value
 
     assert k5
     assert k5.key == 'k5'
     assert not k5.key_in_context
     assert k5.expected_type is bool
-    assert k4.is_expected_type is None
+    assert k5.is_expected_type is None
+    assert not k5.has_value
 
     assert k6
     assert k6.key == 'k6'
     assert not k6.key_in_context
     assert k6.expected_type is list
     assert k6.is_expected_type is None
-
+    assert not k6.has_value
 
 # ------------------- key info -----------------------------------------------#
