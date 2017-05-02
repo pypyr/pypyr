@@ -27,6 +27,7 @@ def run_step(context):
         contextClear:
             - key2
             - key4
+            - contextClear
 
     This will result in return context:
         key1: value1
