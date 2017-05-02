@@ -26,16 +26,10 @@ def run_step(context):
     locals_dictionary = locals()
     exec(context['pycode'], globals(), locals_dictionary)
 
-    try:
-        # It looks like this dance might be unnecessary in python 3.6
-        logger.debug("looking for context update in exec")
-        exec_context = locals_dictionary['context']
-        context.update(exec_context)
-        logger.debug("exec output context merged with pipeline context")
-    except KeyError:
-        # there wouldn't be a context key if the yaml didn't do anything with
-        # it
-        logger.debug("exec didn't alter context")
-        pass
+    # It looks like this dance might be unnecessary in python 3.6
+    logger.debug("looking for context update in exec")
+    exec_context = locals_dictionary['context']
+    context.update(exec_context)
+    logger.debug("exec output context merged with pipeline context")
 
     logger.debug("done")

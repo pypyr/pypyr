@@ -8,20 +8,27 @@ logger = pypyr.log.logger.get_logger(__name__)
 def run_step(context):
     """Simple echo. Outputs context['echoMe'].
 
-    Context is a dictionary or dictionary-like.
-    If context contains 'echoMe' will echo the value to logger. This could well
-    be stdout.
+    Args:
+        context: dictionary-like. context is mandatory.
+                 context must contain key 'echoMe'
+                 context['echoMe'] will echo the value to logger.
+                 This logger could well be stdout.
 
-    context is mandatory. When you execute the pipeline, it should look
-    something like this: pipeline-runner [name here] --context 'echoMe=test'.
+    When you execute the pipeline, it should look something like this:
+    pypyr [name here] --context 'echoMe=test'.
     """
     logger.debug("started")
+
     assert context, ("context must be set for echo. Did you set "
                      "--context 'echoMe=text here'?")
 
-    val = context['echoMe'] if isinstance(
-        context['echoMe'], str) else repr(context['echoMe'])
+    context.assert_key_exists('echoMe', __name__)
 
-    logger.info(context.get_formatted_string(val))
+    if isinstance(context['echoMe'], str):
+        val = context.get_formatted('echoMe')
+    else:
+        val = context['echoMe']
+
+    logger.info(val)
 
     logger.debug("done")

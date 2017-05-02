@@ -1,8 +1,12 @@
 """errors.py unit tests."""
 from pypyr.errors import Error as PypyrError
-from pypyr.errors import (PlugInError,
-                          PipelineNotFoundError,
-                          PyModuleNotFoundError)
+from pypyr.errors import (
+    ContextError,
+    KeyInContextHasNoValueError,
+    KeyNotInContextError,
+    PlugInError,
+    PipelineNotFoundError,
+    PyModuleNotFoundError)
 import pytest
 
 
@@ -17,16 +21,42 @@ def test_base_error_raises():
                                     "right here',)")
 
 
-def test_plugin_error_raises():
-    """Pypyr plugin error raises with correct message."""
-    # confirm subclassed from pypyr root error
-    assert isinstance(PlugInError(), PypyrError)
+def test_context_error_raises():
+    """ContextError raises with correct message"""
+    assert isinstance(ContextError(), PypyrError)
 
-    with pytest.raises(PlugInError) as err_info:
-        raise PlugInError("this is error text right here")
+    with pytest.raises(ContextError) as err_info:
+        raise ContextError("this is error text right here")
 
-    assert repr(err_info.value) == ("PlugInError('this is error "
+    assert repr(err_info.value) == ("ContextError('this is error "
                                     "text right here',)")
+
+
+def test_key_not_in_context_error_raises():
+    """Key not in context error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(KeyNotInContextError(), PypyrError)
+    assert isinstance(KeyNotInContextError(), ContextError)
+
+    with pytest.raises(KeyNotInContextError) as err_info:
+        raise KeyNotInContextError("this is error text right here")
+
+    assert repr(err_info.value) == ("KeyNotInContextError('this is error "
+                                    "text right here',)")
+
+
+def test_key_in_context_has_no_value_error_raises():
+    """Key not in context value error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(KeyInContextHasNoValueError(), PypyrError)
+    assert isinstance(KeyNotInContextError(), ContextError)
+
+    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+        raise KeyInContextHasNoValueError("this is error text right here")
+
+    assert repr(err_info.value) == (
+        "KeyInContextHasNoValueError('this is error "
+        "text right here',)")
 
 
 def test_pipeline_not_found_error_raises():
@@ -38,6 +68,18 @@ def test_pipeline_not_found_error_raises():
         raise PipelineNotFoundError("this is error text right here")
 
     assert repr(err_info.value) == ("PipelineNotFoundError('this is error "
+                                    "text right here',)")
+
+
+def test_plugin_error_raises():
+    """Pypyr plugin error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(PlugInError(), PypyrError)
+
+    with pytest.raises(PlugInError) as err_info:
+        raise PlugInError("this is error text right here")
+
+    assert repr(err_info.value) == ("PlugInError('this is error "
                                     "text right here',)")
 
 

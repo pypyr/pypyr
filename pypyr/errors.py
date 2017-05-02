@@ -8,6 +8,18 @@ class Error(Exception):
     """Base class for all pypyr exceptions."""
 
 
+class ContextError(Error):
+    """Error in the pypyr context."""
+
+
+class KeyInContextHasNoValueError(ContextError):
+    """pypyr context[key] doesn't have a value."""
+
+
+class KeyNotInContextError(ContextError):
+    """Key not found in the pypyr context."""
+
+
 class PipelineNotFoundError(Error):
     """Pipeline not found in working dir or in pypyr install dir."""
 

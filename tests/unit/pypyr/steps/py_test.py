@@ -1,5 +1,6 @@
 """py.py unit tests."""
 from pypyr.context import Context
+from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.py
 import pytest
 
@@ -51,17 +52,17 @@ def test_pycode_error_throws():
 
 def test_no_pycode_context_throw():
     """No pycode in context should throw assert error."""
-    with pytest.raises(AssertionError) as err_info:
+    with pytest.raises(KeyNotInContextError) as err_info:
         context = Context({'blah': 'blah blah'})
         pypyr.steps.py.run_step(context)
 
-    assert repr(err_info.value) == ("AssertionError(\"context['pycode'] "
-                                    "doesn't exist. It must have a value for "
+    assert repr(err_info.value) == ("KeyNotInContextError(\"context['pycode'] "
+                                    "doesn't exist. It must exist for "
                                     "pypyr.steps.py.\",)")
 
 
 def test_empty_pycode_context_throw():
     """Empty pycode in context should throw assert error."""
-    with pytest.raises(AssertionError):
+    with pytest.raises(KeyInContextHasNoValueError):
         context = Context({'pycode': None})
         pypyr.steps.py.run_step(context)

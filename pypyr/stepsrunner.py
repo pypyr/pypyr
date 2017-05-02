@@ -37,7 +37,7 @@ def get_pipeline_steps(pipeline, steps_group):
                      "pipeline definition.")
 
         logger.debug("done")
-        return pipeline[steps_group]
+        return steps
     else:
         logger.debug(
             f"pipeline doesn't have a {steps_group} collection. Add a "
@@ -97,16 +97,9 @@ def run_pipeline_step(step_name, context):
 
     try:
         logger.debug(f"running step {step}")
-        in_context_is_set = bool(context)
+
         step.run_step(context)
 
-        if in_context_is_set:
-            # only ensure result is not empty if input wasn't empty. This is to
-            # make sure step doesn't kill the context for downstream.
-            assert (context), (
-                f"{step_name} returned None context. At the very least it must"
-                " return an empty dictionary. Is the step super-sure it really"
-                " wants to nuke the context for all subsequent steps?")
         logger.debug(f"step {step} done")
     except AttributeError:
         logger.error(f"The step {step_name} doesn't have a run_step(context) "
@@ -130,7 +123,8 @@ def run_pipeline_steps(steps, context):
                 logger.debug(f"{step} is complex.")
                 step_name = step['name']
 
-                get_step_input_context(step['in'], context)
+                if 'in' in step:
+                    get_step_input_context(step['in'], context)
             else:
                 logger.debug(f"{step} is a simple string.")
                 step_name = step
