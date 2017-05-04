@@ -1,5 +1,6 @@
 """pypyr context class. Dictionary ahoy."""
 from collections import namedtuple
+from collections.abc import Mapping, Set, Sequence
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 
 ContextItemInfo = namedtuple('ContextItemInfo',
@@ -166,8 +167,14 @@ class Context(dict):
     def get_formatted(self, key):
         """Returns formatted value for context[key].
 
-        Only valid if context[key] is a type string.
-        Return a string interpolated from the context dictionary.
+        If context[key] is a type string, will just format and return the
+        string.
+        If context[key] is not a string, specifically an iterable type like a
+        dict, list, tuple, set, it will use get_formatted_iterable under the
+        covers to loop through and handle the entire structure contained in
+        context[key].
+
+        Returns a string interpolated from the context dictionary.
 
         If context[key]='Piping {key1} the {key2} wild'
         And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
@@ -181,9 +188,8 @@ class Context(dict):
             Formatted string.
 
         Raises:
-            KeyError: context[key] value contains {somekey} where somekey does
-                      not exist in context dictionary.
-            TypeError: Attempt operation on a non-string type.
+            KeyNotInContextError: context[key] value contains {somekey} where
+                                  somekey does not exist in context dictionary.
         """
         val = self[key]
 
@@ -200,8 +206,71 @@ class Context(dict):
                     f'context[\'{missing_key}\'] doesn\'t exist'
                 ) from err
         else:
-            raise TypeError(f"can only format on strings. {val} is a "
-                            f"{type(val)} instead.")
+            # any sort of complex type will work with get_formatted_iterable.
+            return self.get_formatted_iterable(val)
+
+    def get_formatted_iterable(self, obj, memo=None):
+        """Recursively loop through obj, formatting as it goes.
+
+        Interpolates strings from the context dictionary.
+
+        This is not a full on deepcopy, and it's on purpose not a full on
+        deepcopy. It will handle dict, list, set, tuple for iteration, without
+        any especial cuteness for other types or types not derived from these.
+
+        For lists: if value is a string, format it.
+        For dicts: format key. If value str, format it.
+        For sets/tuples: if type str, format it.
+
+        This is what formatting or interpolating a string means:
+        So where a string like this 'Piping {key1} the {key2} wild'
+        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+
+        Then this will return string: "Piping down the valleys wild"
+
+        Args:
+            obj: iterable. Recurse through and format strings found in
+                           dicts, lists, tuples. Does not mutate the input
+                           iterable.
+            memo: dict. Don't use. Used internally on recursion to optimize
+                        recursive loops.
+
+        Returns:
+            Iterable identical in structure to the input iterable.
+        """
+
+        if memo is None:
+            memo = {}
+
+        obj_id = id(obj)
+        already_done = memo.get(obj_id, None)
+        if already_done is not None:
+            return already_done
+
+        if isinstance(obj, str):
+            new = self.get_formatted_string(obj)
+        elif isinstance(obj, (bytes, bytearray)):
+            new = obj
+        elif isinstance(obj, Mapping):
+            # dicts
+            new = obj.__class__()
+            for k, v in obj.items():
+                new[self.get_formatted_string(
+                    k)] = self.get_formatted_iterable(v, memo)
+        elif isinstance(obj, (Sequence, Set)):
+            # list, set, tuple. Bytes and str won't fall into this branch coz
+            # they're expicitly checked further up in the if.
+            new = obj.__class__(self.get_formatted_iterable(v, memo)
+                                for v in obj)
+        else:
+            # int, float, bool, function, et.
+            return obj
+
+        # If is its own copy, don't memoize.
+        if new is not obj:
+            memo[obj_id] = new
+
+        return new
 
     def get_formatted_string(self, input_string):
         """Returns formatted value for input_string.

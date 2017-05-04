@@ -440,15 +440,18 @@ def test_tag_not_in_context_should_throw():
         "context['key2'] doesn't exist\",)")
 
 
-def test_context_item_not_a_string_should_throw():
-    with pytest.raises(TypeError) as err_info:
-        context = Context({'key1': 'value1'})
-        context['input_string'] = 77
-        context.get_formatted('input_string')
+def test_context_item_not_a_string_should_return_as_is():
+    context = Context({'key1': 'value1'})
+    context['input_string'] = 77
+    val = context.get_formatted('input_string')
+    assert val == 77
 
-    assert repr(err_info.value) == (
-        "TypeError(\"can only format on strings. 77 is a <class 'int'> "
-        "instead.\",)")
+
+def test_context_item_list_should_iterate():
+    context = Context({'key1': 'value1'})
+    context['input_string'] = ['string1', '{key1}', 'string3']
+    val = context.get_formatted('input_string')
+    assert val == ['string1', 'value1', 'string3']
 
 
 def test_input_string_interpolate_works():
@@ -480,6 +483,249 @@ def test_input_string_not_a_string_throw():
     assert repr(err_info.value) == (
         "TypeError(\"can only format on strings. 77 is a <class 'int'> "
         "instead.\",)")
+
+
+def test_get_formatted_iterable_list():
+    """Simple list"""
+    input_obj = ['k1', 'k2', '{ctx3}', True, False, 44]
+
+    context = Context(
+        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output is not input_obj
+    assert output[0] == 'k1'
+    assert output[1] == 'k2'
+    assert output[2] == 'ctxvalue3'
+    assert output[3]
+    assert not output[4]
+    assert output[5] == 44
+
+
+def test_get_formatted_iterable_tuple():
+    """Simple tuple"""
+    input_obj = ('k1', 'k2', '{ctx3}', True, False, 44)
+
+    context = Context(
+        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output is not input_obj
+    assert output[0] == 'k1'
+    assert output[1] == 'k2'
+    assert output[2] == 'ctxvalue3'
+    assert output[3]
+    assert not output[4]
+    assert output[5] == 44
+
+
+def test_get_formatted_iterable_set():
+    """Simple set"""
+    input_obj = {'k1', 'k2', '{ctx3}', True, False, 44}
+
+    context = Context(
+        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output is not input_obj
+    assert len(output) == len(input_obj)
+    diffs = output - input_obj
+    assert len(diffs) == 1
+    assert 'ctxvalue3' in diffs
+
+
+def test_get_formatted_iterable_nested():
+    """Straight deepish copy with no formatting."""
+    # dict containing dict, list, dict-list-dict, tuple, dict-tuple-list
+    input_obj = {'k1': 'v1',
+                 'k2': 'v2',
+                 'k3': 'v3',
+                 'k4': [
+                     1,
+                     2,
+                     '3here',
+                     {'key4.1': 'value4.1',
+                      'key4.2': 'value4.2',
+                      'key4.3': {
+                          '4.3.1': '4.3.1value',
+                          '4.3.2': '4.3.2value'}}
+                 ],
+                 'k5': {'key5.1': 'value5.1', 'key5.2': 'value5.2'},
+                 'k6': ('six6.1', False, [0, 1, 2], 77, 'sixend'),
+                 'k7': 'simple string to close 7'
+                 }
+
+    context = Context(
+        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output == input_obj
+    assert output is not context
+    # verify this was a deep copy - obj refs has to be different for nested
+    assert id(output['k4']) != id(input_obj['k4'])
+    assert id(output['k4'][3]['key4.3']) != id(input_obj['k4'][3]['key4.3'])
+    assert id(output['k5']) != id(input_obj['k5'])
+    assert id(output['k6']) != id(input_obj['k6'])
+    assert id(output['k6'][2]) != id(input_obj['k6'][2])
+    assert id(output['k7']) == id(input_obj['k7'])
+
+    # and proving the theory: mutating output does not touch input
+    assert output['k4'][1] == 2
+    output['k4'][1] = 88
+    assert input_obj['k4'][1] == 2
+    assert output['k4'][1] == 88
+
+
+def test_get_formatted_iterable_nested_with_formatting():
+    """Straight deepish copy with formatting."""
+    # dict containing dict, list, dict-list-dict, tuple, dict-tuple-list, bytes
+    input_obj = {'k1': 'v1',
+                 'k2': 'v2_{ctx1}',
+                 'k3': bytes('v3{ctx1}', encoding='utf-8'),
+                 'k4': [
+                     1,
+                     2,
+                     '3_{ctx4}here',
+                     {'key4.1': 'value4.1',
+                      '{ctx2}_key4.2': 'value_{ctx3}_4.2',
+                      'key4.3': {
+                          '4.3.1': '4.3.1value',
+                          '4.3.2': '4.3.2_{ctx1}_value'}}
+                 ],
+                 'k5': {'key5.1': 'value5.1', 'key5.2': 'value5.2'},
+                 'k6': ('six6.1', False, [0, 1, 2], 77, 'six_{ctx1}_end'),
+                 'k7': 'simple string to close 7'
+                 }
+
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output != input_obj
+
+    # verify formatted strings
+    assert input_obj['k2'] == 'v2_{ctx1}'
+    assert output['k2'] == 'v2_ctxvalue1'
+
+    assert input_obj['k3'] == b'v3{ctx1}'
+    assert output['k3'] == b'v3{ctx1}'
+
+    assert input_obj['k4'][2] == '3_{ctx4}here'
+    assert output['k4'][2] == '3_ctxvalue4here'
+
+    assert input_obj['k4'][3]['{ctx2}_key4.2'] == 'value_{ctx3}_4.2'
+    assert output['k4'][3]['ctxvalue2_key4.2'] == 'value_ctxvalue3_4.2'
+
+    assert input_obj['k4'][3]['key4.3']['4.3.2'] == '4.3.2_{ctx1}_value'
+    assert output['k4'][3]['key4.3']['4.3.2'] == '4.3.2_ctxvalue1_value'
+
+    assert input_obj['k6'][4] == 'six_{ctx1}_end'
+    assert output['k6'][4] == 'six_ctxvalue1_end'
+
+    # verify this was a deep copy - obj refs has to be different for nested
+    assert id(output['k4']) != id(input_obj['k4'])
+    assert id(output['k4'][3]['key4.3']) != id(input_obj['k4'][3]['key4.3'])
+    assert id(output['k5']) != id(input_obj['k5'])
+    assert id(output['k6']) != id(input_obj['k6'])
+    assert id(output['k6'][2]) != id(input_obj['k6'][2])
+    # strings are interned in python, so id is the same
+    assert id(output['k7']) == id(input_obj['k7'])
+    output['k7'] = 'mutate 7 on new'
+    assert input_obj['k7'] == 'simple string to close 7'
+    assert output['k7'] == 'mutate 7 on new'
+
+
+def test_get_formatted_iterable_with_memo():
+    """Straight deepish copy with formatting."""
+
+    arb_dict = {'key4.1': 'value4.1',
+                '{ctx2}_key4.2': 'value_{ctx3}_4.2',
+                'key4.3': {
+                    '4.3.1': '4.3.1value',
+                    '4.3.2': '4.3.2_{ctx1}_value'}}
+
+    arb_list = [0, 1, 2]
+
+    arb_string = 'arb string'
+
+    arb_string_with_formatting = 'a {ctx1} string'
+
+    input_obj = {'k1': arb_string,
+                 'k2': 'v2_{ctx1}',
+                 'k3': arb_list,
+                 'k4': [
+                     arb_dict,
+                     2,
+                     '3_{ctx4}here',
+                     arb_dict
+                 ],
+                 'k5': {'key5.1': arb_string,
+                        'key5.2': arb_string_with_formatting},
+                 'k6': ('six6.1', False, arb_list, 77, 'six_{ctx1}_end'),
+                 'k7': 'simple string to close 7',
+                 'k8': arb_string_with_formatting
+                 }
+
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    # same obj re-used at different levels of the hierarchy
+    assert id(input_obj['k3']) == id(input_obj['k6'][2])
+    assert id(input_obj['k4'][0]) == id(input_obj['k4'][3])
+
+    assert output != input_obj
+
+    # verify formatted strings
+    assert input_obj['k2'] == 'v2_{ctx1}'
+    assert output['k2'] == 'v2_ctxvalue1'
+
+    assert input_obj['k4'][2] == '3_{ctx4}here'
+    assert output['k4'][2] == '3_ctxvalue4here'
+
+    assert input_obj['k4'][3]['{ctx2}_key4.2'] == 'value_{ctx3}_4.2'
+    assert output['k4'][3]['ctxvalue2_key4.2'] == 'value_ctxvalue3_4.2'
+
+    assert input_obj['k4'][3]['key4.3']['4.3.2'] == '4.3.2_{ctx1}_value'
+    assert output['k4'][3]['key4.3']['4.3.2'] == '4.3.2_ctxvalue1_value'
+
+    assert input_obj['k6'][4] == 'six_{ctx1}_end'
+    assert output['k6'][4] == 'six_ctxvalue1_end'
+
+    # verify this was a deep copy - obj refs has to be different for nested
+    assert id(output['k4']) != id(input_obj['k4'])
+    assert id(output['k4'][3]['key4.3']) != id(input_obj['k4'][3]['key4.3'])
+    assert id(output['k5']) != id(input_obj['k5'])
+    assert id(output['k6']) != id(input_obj['k6'])
+    assert id(output['k6'][2]) != id(input_obj['k6'][2])
+    assert id(output['k7']) == id(input_obj['k7'])
+    output['k7'] = 'mutate 7 on new'
+    assert input_obj['k7'] == 'simple string to close 7'
+    assert input_obj['k8'] == arb_string_with_formatting
+    assert output['k8'] == 'a ctxvalue1 string'
+
+    # memo did object re-use so same obj re-used at different levels of the
+    # hierarchy
+    assert id(output['k3']) == id(output['k6'][2])
+    assert id(output['k4'][0]) == id(output['k4'][3])
+    assert output['k5']['key5.1'] == input_obj['k5']['key5.1'] == arb_string
+    assert id(output['k5']['key5.1']) == id(
+        input_obj['k5']['key5.1']) == id(arb_string)
+    assert id(output['k8']) == id(output['k5']['key5.2'])
+    assert id(output['k8']) != id(arb_string_with_formatting)
+
 # ------------------- formats ------------------------------------------------#
 
 # ------------------- key info -----------------------------------------------#
