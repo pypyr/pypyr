@@ -440,15 +440,18 @@ def test_tag_not_in_context_should_throw():
         "context['key2'] doesn't exist\",)")
 
 
-def test_context_item_not_a_string_should_throw():
-    with pytest.raises(TypeError) as err_info:
-        context = Context({'key1': 'value1'})
-        context['input_string'] = 77
-        context.get_formatted('input_string')
+def test_context_item_not_a_string_should_return_as_is():
+    context = Context({'key1': 'value1'})
+    context['input_string'] = 77
+    val = context.get_formatted('input_string')
+    assert val == 77
 
-    assert repr(err_info.value) == (
-        "TypeError(\"can only format on strings. 77 is a <class 'int'> "
-        "instead.\",)")
+
+def test_context_item_list_should_iterate():
+    context = Context({'key1': 'value1'})
+    context['input_string'] = ['string1', '{key1}', 'string3']
+    val = context.get_formatted('input_string')
+    assert val == ['string1', 'value1', 'string3']
 
 
 def test_input_string_interpolate_works():

@@ -167,8 +167,14 @@ class Context(dict):
     def get_formatted(self, key):
         """Returns formatted value for context[key].
 
-        Only valid if context[key] is a type string.
-        Return a string interpolated from the context dictionary.
+        If context[key] is a type string, will just format and return the
+        string.
+        If context[key] is not a string, specifically an iterable type like a
+        dict, list, tuple, set, it will use get_formatted_iterable under the
+        covers to loop through and handle the entire structure contained in
+        context[key].
+
+        Returns a string interpolated from the context dictionary.
 
         If context[key]='Piping {key1} the {key2} wild'
         And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
@@ -182,9 +188,8 @@ class Context(dict):
             Formatted string.
 
         Raises:
-            KeyError: context[key] value contains {somekey} where somekey does
-                      not exist in context dictionary.
-            TypeError: Attempt operation on a non-string type.
+            KeyNotInContextError: context[key] value contains {somekey} where
+                                  somekey does not exist in context dictionary.
         """
         val = self[key]
 
@@ -201,8 +206,8 @@ class Context(dict):
                     f'context[\'{missing_key}\'] doesn\'t exist'
                 ) from err
         else:
-            raise TypeError(f"can only format on strings. {val} is a "
-                            f"{type(val)} instead.")
+            # any sort of complex type will work with get_formatted_iterable.
+            return self.get_formatted_iterable(val)
 
     def get_formatted_iterable(self, obj, memo=None):
         """Recursively loop through obj, formatting as it goes.
