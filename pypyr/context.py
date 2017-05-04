@@ -249,7 +249,6 @@ class Context(dict):
 
         if isinstance(obj, str):
             new = self.get_formatted_string(obj)
-            # return self.get_formatted_string(obj)
         elif isinstance(obj, (bytes, bytearray)):
             new = obj
         elif isinstance(obj, Mapping):
