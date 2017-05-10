@@ -18,7 +18,6 @@ def mock_parser(context_arg):
 
 def mock_parser_none(context_arg):
     """Return None, mocking get_parsed_context"""
-    print('FUCK YOU CUNT')
     return None
 # ------------------------- parser mocks -------------------------------------#
 

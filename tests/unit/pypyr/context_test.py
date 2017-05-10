@@ -719,6 +719,7 @@ def test_get_formatted_iterable_with_memo():
     # memo did object re-use so same obj re-used at different levels of the
     # hierarchy
     assert id(output['k3']) == id(output['k6'][2])
+    assert id(output['k4']) != id(input_obj['k4'])
     assert id(output['k4'][0]) == id(output['k4'][3])
     assert output['k5']['key5.1'] == input_obj['k5']['key5.1'] == arb_string
     assert id(output['k5']['key5.1']) == id(
