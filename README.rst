@@ -913,8 +913,8 @@ huge amount of code - you never know, something might already be in the works,
 or maybe it's not quite right for the core-cli (you're still welcome to fork
 and go wild regardless, of course, it just mightn't get merged back in here).
 
-Plug-Ins
-========
+Roll your own plug-in
+=====================
 You've probably noticed by now that pypyr is built to be pretty extensible.
 You've probably also noticed that the core pypyr cli is deliberately kept light.
 The core cli is philosophically only a way of running a sequence of steps.
@@ -949,6 +949,6 @@ https://www.345.systems/contact.
                 :target: https://pypi.python.org/pypi/pypyr/
                 :align: bottom
 
-.. |pypyr-aws| replace:: `pypyr-aws<https://github.com/pypyr/pypyr-aws/>`__
+.. |pypyr-aws| replace:: `pypyr-aws <https://github.com/pypyr/pypyr-aws/>`__
 
-.. |pypyr-slack| replace:: `pypyr-slack<https://github.com/pypyr/pypyr-slack/>`__
+.. |pypyr-slack| replace:: `pypyr-slack <https://github.com/pypyr/pypyr-slack/>`__
