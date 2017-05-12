@@ -290,6 +290,10 @@ Built-in steps
 |                               |                                                 |                              |
 |                               |                                                 | envUnset (list)              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJsonPath (path-like)    |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -532,6 +536,62 @@ This will result in the following $ENVs being unset:
 
   $MYVAR1
   $MYVAR2
+
+pypyr.steps.fetchjson
+^^^^^^^^^^^^^^^^^^^^^
+Loads a json file into the pypyr context.
+
+This step requires the following key in the pypyr context to succeed:
+
+- fetchJsonPath.
+  - path-like. Path to file on disk. Can be relative.
+
+Json parsed from the file will be merged into the pypyr context. This will
+overwrite existing values if the same keys are already in there.
+
+I.e if file json has ``{'eggs' : 'boiled'}``, but context ``{'eggs': 'fried'}``
+already exists, returned ``context['eggs']`` will be 'boiled'.
+
+The json should not be an array [] at the top level, but rather an Object.
+
+pypyr.steps.fetchyaml
+^^^^^^^^^^^^^^^^^^^^^
+Loads a yaml file into the pypyr context.
+
+This step requires the following key in the pypyr context to succeed:
+
+- fetchYamlPath.
+  - path-like. Path to file on disk. Can be relative.
+
+Yaml parsed from the file will be merged into the pypyr context. This will
+overwrite existing values if the same keys are already in there.
+
+I.e if file yaml has
+
+.. code-block:: yaml
+
+  eggs: boiled
+
+but context ``{'eggs': 'fried'}`` already exists, returned ``context['eggs']``
+will be 'boiled'.
+
+The yaml should not be a list at the top level, but rather a mapping.
+
+So the top-level yaml should not look like this:
+
+.. code-block:: yaml
+
+  - eggs
+  - ham
+
+but rather like this:
+
+.. code-block:: yaml
+
+  breakfastOfChampions:
+    - eggs
+    - ham
+
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
