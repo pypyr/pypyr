@@ -835,6 +835,7 @@ use clogging up the system.
 Where other libraries are requisite, you can selectively choose to add this
 functionality by installing a pypyr plug-in.
 
+.. tabularcolumns:: |l|l|
 +----------------------------+-------------------------------------------------+
 | **plug-in**                | **description**                                 |
 +----------------------------+-------------------------------------------------+
@@ -844,8 +845,6 @@ functionality by installing a pypyr plug-in.
 +----------------------------+-------------------------------------------------+
 | |pypyr-slack|              | Send messages to Slack                          |
 +----------------------------+-------------------------------------------------+
-
-
 
 **********************************
 Testing (for pypyr-cli developers)
