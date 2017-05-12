@@ -825,6 +825,28 @@ both that exception and the original cause exception will be logged.
 You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
 
+********
+Plug-Ins
+********
+The pypyr core is deliberately kept light so the dependencies are down to the
+minimum. I loathe installs where there\'re a raft of extra deps that I don\'t
+use clogging up the system.
+
+Where other libraries are requisite, you can selectively choose to add this
+functionality by installing a pypyr plug-in.
+
++----------------------------+-------------------------------------------------+
+| **plug-in**                | **description**                                 |
++----------------------------+-------------------------------------------------+
+| |pypyr-aws|                | Interact with the AWS sdk api. Supports all AWS |
+|                            | Client functions, such as S3, EC2, ECS & co.    |
+|                            | via the AWS low-level Client API.               |
++----------------------------+-------------------------------------------------+
+| |pypyr-slack|              | Send messages to Slack                          |
++----------------------------+-------------------------------------------------+
+
+
+
 **********************************
 Testing (for pypyr-cli developers)
 **********************************
@@ -926,3 +948,7 @@ https://www.345.systems/contact.
                 :alt: pypi version
                 :target: https://pypi.python.org/pypi/pypyr/
                 :align: bottom
+
+.. |pypyr-aws| replace:: `pypyr-aws<https://github.com/pypyr/pypyr-aws/>`__
+
+.. |pypyr-slack| replace:: `pypyr-slack<https://github.com/pypyr/pypyr-slack/>`__
