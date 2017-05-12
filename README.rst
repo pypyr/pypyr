@@ -835,9 +835,8 @@ use clogging up the system.
 Where other libraries are requisite, you can selectively choose to add this
 functionality by installing a pypyr plug-in.
 
-.. tabularcolumns:: |l|l|
 +----------------------------+-------------------------------------------------+
-| **plug-in**                | **description**                                 |
+| **boss pypyr plug-ins**    | **description**                                 |
 +----------------------------+-------------------------------------------------+
 | |pypyr-aws|                | Interact with the AWS sdk api. Supports all AWS |
 |                            | Client functions, such as S3, EC2, ECS & co.    |
