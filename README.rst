@@ -295,16 +295,21 @@ Built-in steps
 | `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormatIn (path-like)     |
-|                               | context.                                        | fileFormatOut (path-like)    |
+|                               | context.                                        |                              |
+|                               |                                                 | fileFormatOut (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJsonIn (path-like) |
-|                               | context.                                        | fileFormatJsonOut (path-like)|
+|                               | context.                                        |                              |
+|                               |                                                 | fileFormatJsonOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYamlIn (path-like) |
-|                               | context.                                        | fileFormatYamlOut (path-like)|
+|                               | context.                                        |                              |
+|                               |                                                 | fileFormatYamlOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filereplace`_    | Parse input file and replace search strings.    | fileReplaceIn (path-like)    |
+|                               |                                                 |                              |
 |                               |                                                 | fileReplaceOut (path-like)   |
+|                               |                                                 |                              |
 |                               |                                                 | fileReplacePairs (dict)      |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
