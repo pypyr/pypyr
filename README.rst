@@ -603,7 +603,7 @@ from the pypyr context.
 
 The following context keys expected:
 
-- fileFormatIn.
+- fileFormatIn
 
   - Path to source file on disk.
 
