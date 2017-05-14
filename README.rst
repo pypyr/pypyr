@@ -297,6 +297,9 @@ Built-in steps
 | `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormatIn (path-like)     |
 |                               | context.                                        | fileFormatOut (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJsonIn (path-like) |
+|                               | context.                                        | fileFormatJsonOut (path-like)|
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -632,6 +635,27 @@ You would end up with an output file like this:
 
   pypyr sit thee down and write
   In a book that all may read
+
+pypyr.steps.fileformatjson
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Parses input json file and substitutes {tokens} from the pypyr context.
+
+Pretty much does the same thing as `pypyr.steps.fileformat`_, only it makes it
+easier to work with curly braces for substitutions without tripping over the
+json's structural braces.
+
+The following context keys expected:
+
+- fileFormatJsonIn
+
+  - Path to source file on disk.
+
+- fileFormatJsonOut
+
+  - Write output file to here. Will create directories in path if these do not
+    exist already.
+
+Substitutions enabled for keys and values in the source json.
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
