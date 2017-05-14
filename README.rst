@@ -303,6 +303,10 @@ Built-in steps
 | `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYamlIn (path-like) |
 |                               | context.                                        | fileFormatYamlOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.filereplace`_    | Parse input file and replace search strings.    | fileReplaceIn (path-like)    |
+|                               |                                                 | fileReplaceOut (path-like)   |
+|                               |                                                 | fileReplacePairs (dict)      |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -667,7 +671,7 @@ Parses input yaml file and substitutes {tokens} from the pypyr context.
 Pretty much does the same thing as `pypyr.steps.fileformat`_, only it makes it
 easier to work with curly braces for substitutions without tripping over the
 yaml's structural braces. If your yaml doesn't use curly braces that aren't
-meant for {token} substitutions, you can happpily use `pypyr.steps.fileformat`_
+meant for {token} substitutions, you can happily use `pypyr.steps.fileformat`_
 instead - it's more memory efficient.
 
 This step does not preserve comments. Use `pypyr.steps.fileformat`_ if you need
@@ -683,6 +687,59 @@ The following context keys expected:
 
   - Write output file to here. Will create directories in path if these do not
     exist already.
+
+pypyr.steps.filereplace
+^^^^^^^^^^^^^^^^^^^^^^^
+Parses input text file and replaces a search string.
+
+The other *fileformat* steps, by way of contradistinction, uses string
+formatting expressions inside {braces} to format values against the pypyr
+context. This step, however, let's you specify any search string and replace it
+with any replace string. This is handy if you are in a file where curly braces
+aren't helpful for a formatting expression - e.g inside a .js file.
+
+The following context keys expected:
+
+- fileReplaceIn
+
+  - Path to source file on disk.
+
+- fileReplaceOut
+
+  - Write output file to here. Will create directories in path if these do not
+    exist already.
+
+- fileReplacePairs
+
+  - dictionary where format is:
+
+    - 'find_string': 'replace_string'
+
+Example input context:
+
+.. code-block:: yaml
+
+  fileReplaceIn: ./infile.txt
+  fileReplaceOut: ./outfile.txt
+  fileReplacePairs:
+    findmestring: replacewithme
+    findanotherstring: replacewithanotherstring
+    alaststring: alastreplacement
+
+This also does string substitutions from context on the fileReplacePairs. It
+does this before it search & replaces the *fileReplaceIn* file.
+
+Be careful of order. The last string replacement expression could well replace
+a replacement that an earlier replacement made in the sequence.
+
+If fileReplacePairs is not an ordered collection,
+replacements could evaluate in any given order. If you are creating your *in*
+parameters in the pipeline yaml, don't worry about it, it will be an ordered
+dictionary already, so life is good.
+
+See a worked
+`example here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/filereplace.yaml>`_.
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
