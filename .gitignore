@@ -90,3 +90,6 @@ ENV/
 
 # Shippable
 shippable/
+
+# ephemeral test output files
+tests/testfiles/out

@@ -294,6 +294,9 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormatIn (path-like)     |
+|                               | context.                                        | fileFormatOut (path-like)    |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -592,6 +595,43 @@ but rather like this:
     - eggs
     - ham
 
+
+pypyr.steps.fileformat
+^^^^^^^^^^^^^^^^^^^^^^
+Parses input text file and substitutes {tokens} in the text of the file
+from the pypyr context.
+
+The following context keys expected:
+
+- fileFormatIn.
+
+  - Path to source file on disk.
+
+- fileFormatOut
+
+  - Write output file to here. Will create directories in path if these do not
+    exist already.
+
+So if you had a text file like this:
+
+.. code-block:: text
+
+  {k1} sit thee down and write
+  In a book that all may {k2}
+
+And your pypyr context were:
+
+.. code-block:: yaml
+
+  k1: pypyr
+  k2: reed
+
+You would end up with an output file like this:
+
+.. code-block:: text
+
+  pypyr sit thee down and write
+  In a book that all may read
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
