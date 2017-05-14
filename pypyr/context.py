@@ -313,6 +313,23 @@ class Context(dict):
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
 
+    def iter_formatted_strings(self, iterable_strings):
+        """Generator that yields a formatted string from iterable_strings
+
+        If iterable_strings[0]='Piping {key1} the {key2} wild'
+        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+
+        Then the 1st yield is: "Piping down the valleys wild"
+
+        Args:
+            iterable: Iterable containing strings. E.g a file-like object.
+
+        Returns:
+            Yields formatted line.
+        """
+        for string in iterable_strings:
+            yield self.get_formatted_string(string)
+
     def keys_exist(self, *keys):
         """Check if keys exist in context.
 

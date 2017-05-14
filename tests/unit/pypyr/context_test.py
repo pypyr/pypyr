@@ -727,6 +727,31 @@ def test_get_formatted_iterable_with_memo():
     assert id(output['k8']) == id(output['k5']['key5.2'])
     assert id(output['k8']) != id(arb_string_with_formatting)
 
+
+def test_iter_formatted():
+    """iter_formatted yields a formatted string on each loop."""
+
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4'})
+
+    input_strings = [
+        "this {ctx1} is {ctx2} line 1",
+        "this is {ctx3} line 2",
+        "this is line 3",
+        "this {ctx4} is line 4"
+    ]
+
+    output = list(context.iter_formatted_strings(input_strings))
+
+    assert output[0] == "this ctxvalue1 is ctxvalue2 line 1"
+    assert output[1] == "this is ctxvalue3 line 2"
+    assert output[2] == "this is line 3"
+    assert output[3] == "this ctxvalue4 is line 4"
+
+
 # ------------------- formats ------------------------------------------------#
 
 # ------------------- key info -----------------------------------------------#
