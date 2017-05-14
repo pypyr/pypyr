@@ -300,6 +300,9 @@ Built-in steps
 | `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJsonIn (path-like) |
 |                               | context.                                        | fileFormatJsonOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYamlIn (path-like) |
+|                               | context.                                        | fileFormatYamlOut (path-like)|
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -656,6 +659,30 @@ The following context keys expected:
     exist already.
 
 Substitutions enabled for keys and values in the source json.
+
+pypyr.steps.fileformatyaml
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Parses input yaml file and substitutes {tokens} from the pypyr context.
+
+Pretty much does the same thing as `pypyr.steps.fileformat`_, only it makes it
+easier to work with curly braces for substitutions without tripping over the
+yaml's structural braces. If your yaml doesn't use curly braces that aren't
+meant for {token} substitutions, you can happpily use `pypyr.steps.fileformat`_
+instead - it's more memory efficient.
+
+This step does not preserve comments. Use `pypyr.steps.fileformat`_ if you need
+to preserve comments on output.
+
+The following context keys expected:
+
+- fileFormatYamlIn
+
+  - Path to source file on disk.
+
+- fileFormatYamlOut
+
+  - Write output file to here. Will create directories in path if these do not
+    exist already.
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
