@@ -624,7 +624,7 @@ And your pypyr context were:
 .. code-block:: yaml
 
   k1: pypyr
-  k2: reed
+  k2: read
 
 You would end up with an output file like this:
 
