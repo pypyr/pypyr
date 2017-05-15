@@ -1,0 +1,12 @@
+key: "{k1}value1 !£$%# *"
+"key2{k2}": blah
+# there is a comment here
+key3:
+- l1
+  # and another
+- '!£$% * {k3}'
+- l2
+- - l31{k4}
+  - l32:
+    - l321
+    - l322{k5}

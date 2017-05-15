@@ -1,0 +1,5 @@
+this {k1} X1 is line 1
+this is line 2 REPLACEME2
+this is line 3
+this rm3 RM3 is  RM4 line 4
+this !£$% * is rm5 line 5
