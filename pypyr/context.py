@@ -195,7 +195,7 @@ class Context(dict):
 
         if isinstance(val, str):
             try:
-                return val.format(**self)
+                return self.get_processed_string(val)
             except KeyError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
@@ -300,7 +300,7 @@ class Context(dict):
         """
         if isinstance(input_string, str):
             try:
-                return input_string.format(**self)
+                return self.get_processed_string(input_string)
             except KeyError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
@@ -312,6 +312,49 @@ class Context(dict):
         else:
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
+
+    def get_processed_string(self, input_string):
+        """Runs token substitution on input_string against context.
+
+        You probably don't want to call this directly yourself - rather use
+        get_formatted, get_formatted_iterable, or get_formatted_string because
+        these contain more friendly error handling plumbing and context logic.
+
+        If you do want to call it yourself, go for it, it doesn't touch state.
+
+        If input_string='Piping {key1} the {key2} wild'
+        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+
+        Then this will return string: "Piping down the valleys wild"
+
+        If a string is NOT to have {substitutions} run on it, it's sic erat
+        scriptum, i.e literal.
+
+        A sic string looks like this:
+        input_string=[sic]"<<your string literal here>>"
+
+        For example:
+            [sic]"piping {key} the valleys wild"
+
+        Will return "piping {key} the valleys wild" without attempting to
+        substitute {key} from context.
+
+        Args:
+            input_string: string to Parse
+
+        Returns:
+            str: Formatted string with {substitutions} made from context. If
+            it's a [sic] string, x from [sic]"x", with no substitutions made on
+            x.
+
+        Raises:
+            KeyError: input_string is not a sic string and has {somekey} where
+                      somekey does not exist in context dictionary.
+        """
+        if input_string[:6] == '[sic]"':
+            return input_string[6: -1]
+        else:
+            return input_string.format(**self)
 
     def iter_formatted_strings(self, iterable_strings):
         """Generator that yields a formatted string from iterable_strings

@@ -499,8 +499,8 @@ Set $ENVs from the pypyr context.
 
 ``context['envSet']`` must exist. It's a dictionary.
 
-Values are strings to write to $ENV. You can use {key} substitutions to format
-the string from context.
+Values are strings to write to $ENV. You can use {key} `Substitutions`_ to
+format the string from context.
 Keys are the names of the $ENV values to which to write.
 
 For example, say input context is:
@@ -667,7 +667,7 @@ The following context keys expected:
   - Write output file to here. Will create directories in path if these do not
     exist already.
 
-Substitutions enabled for keys and values in the source json.
+`Substitutions`_ enabled for keys and values in the source json.
 
 pypyr.steps.fileformatyaml
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -793,12 +793,7 @@ wildcards, environment variable expansion, and expansion of ~ to a user’s
 home directory. Use pypyr.steps.shell for this instead. Safeshell runs a
 program, it does not invoke the shell.
 
-You can use context variable substitutions with curly braces. See a worked
-example `for substitions here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
-
-Escape literal curly braces with doubles: {{ for {, }} for }
-
+Supports string `Substitutions`_.
 
 Example pipeline yaml:
 
@@ -826,11 +821,7 @@ Friendly reminder of the difference between separating your commands with ; or
   It won't exit with an error code if it wasn't the last statement.
 - && stops and exits reporting error on first error.
 
-You can use context variable substitutions with curly braces. See a worked
-example `for substitions here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
-
-Escape literal curly braces with doubles: {{ for {, }} for }
+Supports string `Substitutions`_.
 
 Example pipeline yaml using a pipe:
 
@@ -880,7 +871,8 @@ keys are the path to the tar to extract.
 
 values are the destination paths.
 
-You can use {key} substitutions to format the string from context.
+You can use {key} substitutions to format the string from context. See
+`Substitutions`_.
 
 .. code-block:: yaml
 
@@ -908,7 +900,8 @@ keys are the paths to archive.
 
 values are the destination output paths.
 
-You can use {key} substitutions to format the string from context.
+You can use {key} substitutions to format the string from context. See
+`Substitutions`_.
 
 .. code-block:: yaml
 
@@ -977,6 +970,59 @@ both that exception and the original cause exception will be logged.
 
 You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
+
+*************
+Substitutions
+*************
+string interpolation
+====================
+You can use substitution tokens, aka string interpolation, where specified for
+context items. This substitutes anything between {curly braces} with the
+context value for that key. This also works where you have dictionaries/lists
+inside dictionaries/lists. For example, if your context looked like this:
+
+.. code-block:: yaml
+
+  key1: down
+  key2: valleys
+  key3: value3
+  key4: "Piping {key1} the {key2} wild"
+
+The value for ``key4`` will be "Piping down the valleys wild".
+
+Escape literal curly braces with doubles: {{ for {, }} for }
+
+In json & yaml, curlies need to be inside quotes to make sure they parse as
+strings. Especially watch in .yaml, where { as the first character of a key or
+value will throw a formatting error if it's not in double quotes like this:
+*"{key}"*
+
+sic strings
+===========
+If a string is NOT to have {substitutions} run on it, it's *sic erat scriptum*,
+or *sic* for short. This is handy especially when you are dealing with json
+as a string, rather than an actual json object, so you don't have to double
+curly all the structural braces.
+
+A *sic* string looks like this:
+
+.. code-block:: text
+
+  [sic]"<<your string literal here>>"
+
+For example:
+
+.. code-block:: text
+
+  [sic]"piping {key} the valleys wild"
+
+Will return "piping {key} the valleys wild" without attempting to substitute
+{key} from context. You can happily use ", ' or {} inside a ``[sic]""`` string
+without escaping these any further. This makes sic strings ideal for strings
+containing json.
+
+See a worked example `for substitutions here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.
 
 ********
 Plug-Ins
