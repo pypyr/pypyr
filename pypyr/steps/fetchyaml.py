@@ -32,7 +32,7 @@ def run_step(context):
     logger.debug("started")
     context.assert_key_has_value(key='fetchYamlPath', caller=__name__)
 
-    file_path = context['fetchYamlPath']
+    file_path = context.get_formatted('fetchYamlPath')
 
     logger.debug(f"attempting to open file: {file_path}")
     with open(file_path) as yaml_file:

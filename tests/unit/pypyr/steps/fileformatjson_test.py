@@ -138,6 +138,53 @@ def test_fileformatjson_pass_with_substitutions():
     os.remove('./tests/testfiles/out/outsubst.json')
 
 
+def test_fileformatjson_pass_with_path_substitutions():
+    """Relative path to file should succeed with path subsitutions.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'k1': 'v1',
+        'k2': 'v2',
+        'k3': 'v3',
+        'k4': 'v4',
+        'k5': 'v5',
+        'pathIn': 'testsubst',
+        'pathOut': 'outsubst',
+        'fileFormatJsonIn': './tests/testfiles/{pathIn}.json',
+        'fileFormatJsonOut': './tests/testfiles/out/{pathOut}.json'})
+
+    fileformat.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 9, "context should have 9 items"
+    assert context['k1'] == 'v1'
+    assert context['fileFormatJsonIn'] == './tests/testfiles/{pathIn}.json'
+    assert context['fileFormatJsonOut'] == ('./tests/testfiles/out/'
+                                            '{pathOut}.json')
+
+    with open('./tests/testfiles/out/outsubst.json') as outfile:
+        outcontents = json.load(outfile)
+
+    expected = {
+        "key1": "v1value !£$% *",
+        "key2_v2": {
+            "k21": "value",
+            "abc": "v3 def v4",
+            "def": [
+                "l1",
+                "l2 v5",
+                "l3"
+            ]
+        }
+    }
+
+    assert outcontents == expected
+
+    # atrociously lazy test clean-up
+    os.remove('./tests/testfiles/out/outsubst.json')
+
+
 def teardown_module(module):
     """Teardown"""
     os.rmdir('./tests/testfiles/out/')

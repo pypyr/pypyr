@@ -44,9 +44,33 @@ def test_fetchyaml_pass():
     filefetcher.run_step(context)
 
     assert context, "context shouldn't be None"
-    assert len(context) == 7, "context should have 5 items"
+    assert len(context) == 7, "context should have 7 items"
     assert context['ok1'] == 'ov1'
     assert context['fetchYamlPath'] == './tests/testfiles/dict.yaml'
+    assert context['key2'] == 'value2', "key2 should be value2"
+    assert len(context['key4']['k42']) == 3, "3 items in k42"
+    assert 'k42list2' in context['key4']['k42'], "k42 containts k42list2"
+    assert context['key4']['k43'], "k43 is True"
+    assert context['key4']['k44'] == 77, "k44 is 77"
+    assert len(context['key5']) == 2, "2 items in key5"
+
+
+def test_fetchyaml_pass_with_substitution():
+    """Relative path to yaml should succeed with path subsitution.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'ok1': 'ov1',
+        'fileName': 'dict',
+        'fetchYamlPath': './tests/testfiles/{fileName}.yaml'})
+
+    filefetcher.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 8, "context should have 8 items"
+    assert context['ok1'] == 'ov1'
+    assert context['fetchYamlPath'] == './tests/testfiles/{fileName}.yaml'
     assert context['key2'] == 'value2', "key2 should be value2"
     assert len(context['key4']['k42']) == 3, "3 items in k42"
     assert 'k42list2' in context['key4']['k42'], "k42 containts k42list2"

@@ -43,8 +43,8 @@ def run_step(context):
                                     'fileReplaceOut',
                                     'fileReplacePairs')
 
-    in_path = context['fileReplaceIn']
-    out_path = context['fileReplaceOut']
+    in_path = context.get_formatted('fileReplaceIn')
+    out_path = context.get_formatted('fileReplaceOut')
 
     logger.debug("Running subsitutions from context on fileReplacePairs")
     formatted_replacements = context.get_formatted_iterable(

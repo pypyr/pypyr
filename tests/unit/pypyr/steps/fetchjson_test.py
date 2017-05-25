@@ -50,3 +50,24 @@ def test_json_pass():
     assert context["key1"] == "value1", "key1 should be value2"
     assert context["key2"] == "value2", "key2 should be value2"
     assert context["key3"] == "value3", "key3 should be value2"
+
+
+def test_json_pass_with_path_substitution():
+    """Relative path to json should succeed, with string subsitution on path.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'ok1': 'ov1',
+        'fileName': 'test',
+        'fetchJsonPath': './tests/testfiles/{fileName}.json'})
+
+    filefetcher.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 6, "context should have 6 items"
+    assert context['ok1'] == 'ov1'
+    assert context['fetchJsonPath'] == './tests/testfiles/{fileName}.json'
+    assert context["key1"] == "value1", "key1 should be value2"
+    assert context["key2"] == "value2", "key2 should be value2"
+    assert context["key3"] == "value3", "key3 should be value2"

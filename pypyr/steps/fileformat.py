@@ -30,8 +30,8 @@ def run_step(context):
     logger.debug("started")
     context.assert_keys_have_values(__name__, 'fileFormatIn', 'fileFormatOut')
 
-    in_path = context['fileFormatIn']
-    out_path = context['fileFormatOut']
+    in_path = context.get_formatted('fileFormatIn')
+    out_path = context.get_formatted('fileFormatOut')
 
     logger.debug(f"opening source file: {in_path}")
     with open(in_path) as infile:
