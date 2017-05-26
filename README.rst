@@ -562,7 +562,7 @@ Loads a json file into the pypyr context.
 This step requires the following key in the pypyr context to succeed:
 
 - fetchJsonPath.
-  - path-like. Path to file on disk. Can be relative.
+  - path-like. Path to file on disk. Can be relative. Supports `Substitutions`_.
 
 Json parsed from the file will be merged into the pypyr context. This will
 overwrite existing values if the same keys are already in there.
@@ -579,7 +579,7 @@ Loads a yaml file into the pypyr context.
 This step requires the following key in the pypyr context to succeed:
 
 - fetchYamlPath.
-  - path-like. Path to file on disk. Can be relative.
+  - path-like. Path to file on disk. Can be relative. Supports `Substitutions`_.
 
 Yaml parsed from the file will be merged into the pypyr context. This will
 overwrite existing values if the same keys are already in there.
@@ -648,6 +648,8 @@ You would end up with an output file like this:
   pypyr sit thee down and write
   In a book that all may read
 
+The file in and out paths support `Substitutions`_.
+
 pypyr.steps.fileformatjson
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 Parses input json file and substitutes {tokens} from the pypyr context.
@@ -668,6 +670,8 @@ The following context keys expected:
     exist already.
 
 `Substitutions`_ enabled for keys and values in the source json.
+
+The file in and out paths also support `Substitutions`_.
 
 pypyr.steps.fileformatyaml
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -692,6 +696,8 @@ The following context keys expected:
 
   - Write output file to here. Will create directories in path if these do not
     exist already.
+
+The file in and out paths support `Substitutions`_.
 
 pypyr.steps.filereplace
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -741,6 +747,8 @@ If fileReplacePairs is not an ordered collection,
 replacements could evaluate in any given order. If you are creating your *in*
 parameters in the pipeline yaml, don't worry about it, it will be an ordered
 dictionary already, so life is good.
+
+The file in and out paths support `Substitutions`_.
 
 See a worked
 `example here

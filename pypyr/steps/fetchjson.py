@@ -33,7 +33,7 @@ def run_step(context):
     logger.debug("started")
     context.assert_key_has_value(key='fetchJsonPath', caller=__name__)
 
-    file_path = context['fetchJsonPath']
+    file_path = context.get_formatted('fetchJsonPath')
 
     logger.debug(f"attempting to open file: {file_path}")
     with open(file_path) as json_file:

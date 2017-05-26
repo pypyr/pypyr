@@ -854,6 +854,22 @@ def test_get_processed_string_with_interpolation():
         "string interpolation incorrect")
 
 
+def test_get_processed_string_shorter_than_6_with_interpolation():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '{k}'
+    output = context.get_processed_string(input_string)
+    assert output == 'down', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_shorter_than_6_no_interpolation():
+    context = Context()
+    input_string = 'k'
+    output = context.get_processed_string(input_string)
+    assert output == 'k', (
+        "string interpolation incorrect")
+
+
 def test_get_processed_string_sic_skips_interpolation():
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = '[sic]"Piping {key1} the {key2} wild"'

@@ -128,6 +128,44 @@ def test_fileformat_pass_with_substitutions():
     os.remove('./tests/testfiles/out/outsubst.txt')
 
 
+def test_fileformat_pass_with_path_substitutions():
+    """Relative path to file should succeed with path subsitutions.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'k1': 'v1',
+        'k2': 'v2',
+        'k3': 'v3',
+        'k4': 'v4',
+        'k5': 'v5',
+        'inFileName': 'testsubst',
+        'outFileName': 'outsubst',
+        'fileFormatIn': './tests/testfiles/{inFileName}.txt',
+        'fileFormatOut': './tests/testfiles/out/{outFileName}.txt'})
+
+    fileformat.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 9, "context should have 9 items"
+    assert context['k1'] == 'v1'
+    assert context['fileFormatIn'] == './tests/testfiles/{inFileName}.txt'
+    assert context['fileFormatOut'] == (
+        './tests/testfiles/out/{outFileName}.txt')
+
+    with open('./tests/testfiles/out/outsubst.txt') as outfile:
+        outcontents = list(outfile)
+
+    assert outcontents[0] == "this v1 is line 1\n"
+    assert outcontents[1] == "this is line 2 v2\n"
+    assert outcontents[2] == "this is line 3\n"
+    assert outcontents[3] == "this v3 is  v4 line 4\n"
+    assert outcontents[4] == "this !£$% * is v5 line 5\n"
+
+    # atrociously lazy test clean-up
+    os.remove('./tests/testfiles/out/outsubst.txt')
+
+
 def teardown_module(module):
     """Teardown"""
     os.rmdir('./tests/testfiles/out/')
