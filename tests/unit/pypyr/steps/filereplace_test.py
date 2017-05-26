@@ -170,6 +170,46 @@ def test_filereplace_pass_with_replacements():
     # atrociously lazy test clean-up
     os.remove('./tests/testfiles/out/outreplace.txt')
 
+
+def test_filereplace_pass_with_path_replacements():
+    """Relative path to file should succeed with path replacements.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'k1': 'X1',
+        'inFile': 'testreplace',
+        'outFile': 'outreplace',
+        'fileReplaceIn': './tests/testfiles/{inFile}.txt',
+        'fileReplaceOut': './tests/testfiles/out/{outFile}.txt',
+        'fileReplacePairs': {
+            '{k1}': 'v1',
+            'REPLACEME2': 'v2',
+            'RM3': 'v3',
+            'RM4': 'v4',
+            'rm5': 'v5',
+        }})
+
+    filereplace.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 6, "context should have 6 items"
+    assert context['k1'] == 'X1'
+    assert context['fileReplaceIn'] == './tests/testfiles/{inFile}.txt'
+    assert context['fileReplaceOut'] == './tests/testfiles/out/{outFile}.txt'
+
+    with open('./tests/testfiles/out/outreplace.txt') as outfile:
+        outcontents = list(outfile)
+
+    assert outcontents[0] == "this {k1} v1 is line 1\n"
+    assert outcontents[1] == "this is line 2 v2\n"
+    assert outcontents[2] == "this is line 3\n"
+    assert outcontents[3] == "this rm3 v3 is  v4 line 4\n"
+    assert outcontents[4] == "this !£$% * is v5 line 5\n"
+
+    # atrociously lazy test clean-up
+    os.remove('./tests/testfiles/out/outreplace.txt')
+
 # ------------------------ run_step -------------------------------------------
 
 # ------------------------ iter_replace_strings--------------------------------

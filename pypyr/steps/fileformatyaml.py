@@ -35,8 +35,8 @@ def run_step(context):
                                     'fileFormatYamlIn',
                                     'fileFormatYamlOut')
 
-    in_path = context['fileFormatYamlIn']
-    out_path = context['fileFormatYamlOut']
+    in_path = context.get_formatted('fileFormatYamlIn')
+    out_path = context.get_formatted('fileFormatYamlOut')
 
     logger.debug(f"opening yaml source file: {in_path}")
     with open(in_path) as infile:

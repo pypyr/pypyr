@@ -35,8 +35,8 @@ def run_step(context):
                                     'fileFormatJsonIn',
                                     'fileFormatJsonOut')
 
-    in_path = context['fileFormatJsonIn']
-    out_path = context['fileFormatJsonOut']
+    in_path = context.get_formatted('fileFormatJsonIn')
+    out_path = context.get_formatted('fileFormatJsonOut')
 
     logger.debug(f"opening json source file: {in_path}")
     with open(in_path) as infile:

@@ -421,6 +421,14 @@ def test_string_interpolate_escapes_double_curly_pair():
         "string interpolation incorrect")
 
 
+def test_string_interpolate_sic():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    context['input_string'] = '[sic]"Piping {key1} the {key2} wild"'
+    output = context.get_formatted('input_string')
+    assert output == 'Piping {key1} the {key2} wild', (
+        "string interpolation incorrect")
+
+
 def test_single_curly_should_throw():
     with pytest.raises(ValueError):
         context = Context({'key1': 'value1'})
@@ -472,6 +480,14 @@ def test_input_string_tag_not_in_context_should_throw():
         "KeyNotInContextError(\"Unable to format '{key1} this is "
         "{key2} string' with {key2}, because context['key2'] doesn't "
         "exist\",)")
+
+
+def test_input_string_interpolate_sic():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '[sic]"Piping {key1} the {key2} wild"'
+    output = context.get_formatted_string(input_string)
+    assert output == "Piping {key1} the {key2} wild", (
+        "string interpolation incorrect")
 
 
 def test_input_string_not_a_string_throw():
@@ -643,6 +659,69 @@ def test_get_formatted_iterable_nested_with_formatting():
     assert output['k7'] == 'mutate 7 on new'
 
 
+def test_get_formatted_iterable_nested_with_sic():
+    """Straight deepish copy with formatting."""
+    # dict containing dict, list, dict-list-dict, tuple, dict-tuple-list, bytes
+    input_obj = {'k1': 'v1',
+                 'k2': 'v2_{ctx1}',
+                 'k3': bytes('v3{ctx1}', encoding='utf-8'),
+                 'k4': [
+                     1,
+                     2,
+                     '3_{ctx4}here',
+                     {'key4.1': 'value4.1',
+                      '{ctx2}_key4.2': '[sic]"value_{ctx3}_4.2"',
+                      'key4.3': {
+                          '4.3.1': '4.3.1value',
+                          '4.3.2': '4.3.2_{ctx1}_value'}}
+                 ],
+                 'k5': {'key5.1': 'value5.1', 'key5.2': 'value5.2'},
+                 'k6': ('six6.1', False, [0, 1, 2], 77, 'six_{ctx1}_end'),
+                 'k7': 'simple string to close 7'
+                 }
+
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4'})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output != input_obj
+
+    # verify formatted strings
+    assert input_obj['k2'] == 'v2_{ctx1}'
+    assert output['k2'] == 'v2_ctxvalue1'
+
+    assert input_obj['k3'] == b'v3{ctx1}'
+    assert output['k3'] == b'v3{ctx1}'
+
+    assert input_obj['k4'][2] == '3_{ctx4}here'
+    assert output['k4'][2] == '3_ctxvalue4here'
+
+    assert input_obj['k4'][3]['{ctx2}_key4.2'] == '[sic]"value_{ctx3}_4.2"'
+    assert output['k4'][3]['ctxvalue2_key4.2'] == 'value_{ctx3}_4.2'
+
+    assert input_obj['k4'][3]['key4.3']['4.3.2'] == '4.3.2_{ctx1}_value'
+    assert output['k4'][3]['key4.3']['4.3.2'] == '4.3.2_ctxvalue1_value'
+
+    assert input_obj['k6'][4] == 'six_{ctx1}_end'
+    assert output['k6'][4] == 'six_ctxvalue1_end'
+
+    # verify this was a deep copy - obj refs has to be different for nested
+    assert id(output['k4']) != id(input_obj['k4'])
+    assert id(output['k4'][3]['key4.3']) != id(input_obj['k4'][3]['key4.3'])
+    assert id(output['k5']) != id(input_obj['k5'])
+    assert id(output['k6']) != id(input_obj['k6'])
+    assert id(output['k6'][2]) != id(input_obj['k6'][2])
+    # strings are interned in python, so id is the same
+    assert id(output['k7']) == id(input_obj['k7'])
+    output['k7'] = 'mutate 7 on new'
+    assert input_obj['k7'] == 'simple string to close 7'
+    assert output['k7'] == 'mutate 7 on new'
+
+
 def test_get_formatted_iterable_with_memo():
     """Straight deepish copy with formatting."""
 
@@ -751,6 +830,52 @@ def test_iter_formatted():
     assert output[2] == "this is line 3"
     assert output[3] == "this ctxvalue4 is line 4"
 
+
+def test_get_processed_string_no_interpolation():
+    """get_processed_string on plain string returns plain."""
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4'})
+
+    input_string = 'test string here'
+
+    output = context.get_processed_string(input_string)
+
+    assert input_string == output
+
+
+def test_get_processed_string_with_interpolation():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'Piping {key1} the {key2} wild'
+    output = context.get_processed_string(input_string)
+    assert output == 'Piping down the valleys wild', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_shorter_than_6_with_interpolation():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '{k}'
+    output = context.get_processed_string(input_string)
+    assert output == 'down', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_shorter_than_6_no_interpolation():
+    context = Context()
+    input_string = 'k'
+    output = context.get_processed_string(input_string)
+    assert output == 'k', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_sic_skips_interpolation():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '[sic]"Piping {key1} the {key2} wild"'
+    output = context.get_processed_string(input_string)
+    assert output == 'Piping {key1} the {key2} wild', (
+        "string interpolation incorrect")
 
 # ------------------- formats ------------------------------------------------#
 

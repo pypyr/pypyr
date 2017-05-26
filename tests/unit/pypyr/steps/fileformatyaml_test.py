@@ -148,6 +148,56 @@ def test_fileformatyaml_pass_with_substitutions():
     os.remove('./tests/testfiles/out/outsubst.yaml')
 
 
+def test_fileformatyaml_pass_with_path_substitutions():
+    """Relative path to file should succeed with path subsitutions.
+
+     Strictly speaking not a unit test.
+    """
+    context = Context({
+        'k1': 'v1',
+        'k2': 'v2',
+        'k3': 'v3',
+        'k4': 'v4',
+        'k5': 'v5',
+        'pathIn': 'testsubst',
+        'pathOut': 'outsubst',
+        'fileFormatYamlIn': './tests/testfiles/{pathIn}.yaml',
+        'fileFormatYamlOut': './tests/testfiles/out/{pathOut}.yaml'})
+
+    fileformat.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 9, "context should have 9 items"
+    assert context['k1'] == 'v1'
+    assert context['fileFormatYamlIn'] == './tests/testfiles/{pathIn}.yaml'
+    assert context['fileFormatYamlOut'] == ('./tests/testfiles/out/'
+                                            '{pathOut}.yaml')
+
+    with open('./tests/testfiles/out/outsubst.yaml') as outfile:
+        outcontents = yaml.load(outfile, Loader=yaml.RoundTripLoader)
+
+    expected = {
+        'key': 'v1value1 !£$%# *',
+        'key2v2': 'blah',
+        # there is a comment here
+        'key3': [
+            'l1',
+            # and another
+            '!£$% * v3',
+            'l2', ['l31v4',
+                   {'l32': ['l321',
+                            'l322v5']
+                    }
+                   ]
+        ]
+    }
+
+    assert outcontents == expected
+
+    # atrociously lazy test clean-up
+    os.remove('./tests/testfiles/out/outsubst.yaml')
+
+
 def teardown_module(module):
     """Teardown"""
     os.rmdir('./tests/testfiles/out/')
