@@ -15,7 +15,7 @@ def test_wait_until_true_with_static_decorator():
         'test string 5'
     ]
 
-    @poll.wait_until_true(interval=0.1, max_attempts=10)
+    @poll.wait_until_true(interval=0.01, max_attempts=10)
     def decorate_me(arg1, arg2):
         """Test static decorator syntax"""
         assert arg1 == 'v1'
@@ -50,7 +50,7 @@ def test_wait_until_true_invoke_inline():
         else:
             return False
 
-    assert poll.wait_until_true(interval=0.1, max_attempts=10)(
+    assert poll.wait_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
     assert mock.call_count == 4
     mock.assert_called_with('v1')
@@ -82,7 +82,7 @@ def test_wait_until_true_with_timeout():
         else:
             return False
 
-    assert not poll.wait_until_true(interval=0.1, max_attempts=10)(
+    assert not poll.wait_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
     assert mock.call_count == 10
     mock.assert_called_with('v1')
