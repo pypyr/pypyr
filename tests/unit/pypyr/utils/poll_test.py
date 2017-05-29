@@ -1,10 +1,11 @@
 """poll.py unit tests."""
 import pypyr.utils.poll as poll
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 # ----------------- wait_until_true -------------------------------------------
-def test_wait_until_true_with_static_decorator():
+@patch('time.sleep')
+def test_wait_until_true_with_static_decorator(mock_time_sleep):
     """wait_until_true with static decorator"""
     mock = MagicMock()
     mock.side_effect = [
@@ -28,9 +29,12 @@ def test_wait_until_true_with_static_decorator():
     assert decorate_me('v1', 'v2')
     assert mock.call_count == 4
     mock.assert_called_with('v1')
+    assert mock_time_sleep.call_count == 3
+    mock_time_sleep.assert_called_with(0.01)
 
 
-def test_wait_until_true_invoke_inline():
+@patch('time.sleep')
+def test_wait_until_true_invoke_inline(mock_time_sleep):
     """wait_until_true with dynamic invocation."""
     mock = MagicMock()
     mock.side_effect = [
@@ -54,9 +58,12 @@ def test_wait_until_true_invoke_inline():
         decorate_me)('v1', 'v2')
     assert mock.call_count == 4
     mock.assert_called_with('v1')
+    assert mock_time_sleep.call_count == 3
+    mock_time_sleep.assert_called_with(0.01)
 
 
-def test_wait_until_true_with_timeout():
+@patch('time.sleep')
+def test_wait_until_true_with_timeout(mock_time_sleep):
     """wait_until_true with dynamic invocation, exhaust wait attempts."""
     mock = MagicMock()
     mock.side_effect = [
@@ -86,5 +93,7 @@ def test_wait_until_true_with_timeout():
         decorate_me)('v1', 'v2')
     assert mock.call_count == 10
     mock.assert_called_with('v1')
+    assert mock_time_sleep.call_count == 10
+    mock_time_sleep.assert_called_with(0.01)
 
 # ----------------- wait_until_true -------------------------------------------
