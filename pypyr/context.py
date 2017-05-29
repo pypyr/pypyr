@@ -316,7 +316,9 @@ class Context(dict):
     def get_formatted_as_type(self, value, default=None, out_type=str):
         """Returns formatted value for input value, returns as out_type.
 
-        Caveat emptor: if out_type is bool, return will always be True.
+        Caveat emptor: if out_type is bool and value a string,
+        return will always be True. Be sure to pass in a bool and have out_type
+        also bool if working with booleans.
 
         Args:
             value: the value to format
