@@ -831,13 +831,31 @@ def test_iter_formatted():
     assert output[3] == "this ctxvalue4 is line 4"
 
 
-def test_get_formatted_as_type_bool_no_subst():
-    """get_formatted_as_type returns int no formatting"""
+def test_get_formatted_as_type_string_to_bool_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
     context = Context()
     result = context.get_formatted_as_type('false', out_type=bool)
 
     assert isinstance(result, bool)
     # bools always true
+    assert result
+
+
+def test_get_formatted_as_type_bool_false_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type(False, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
+def test_get_formatted_as_type_bool_true_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type(None, True, out_type=bool)
+
+    assert isinstance(result, bool)
     assert result
 
 
