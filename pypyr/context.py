@@ -313,6 +313,35 @@ class Context(dict):
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
 
+    def get_formatted_as_type(self, value, default=None, out_type=str):
+        """Returns formatted value for input value, returns as out_type.
+
+        Caveat emptor: if out_type is bool and value a string,
+        return will always be True. Be sure to pass in a bool and have out_type
+        also bool if working with booleans.
+
+        Args:
+            value: the value to format
+            default: if value is None, set to this
+            out_type: cast return as this type
+
+        Returns:
+            Formatted value of type out_type
+        """
+        if value is None:
+            value = default
+
+        if isinstance(value, str):
+            result = self.get_formatted_string(value)
+
+            # get_formatted_string result is already a string
+            if out_type is str:
+                return result
+            else:
+                return out_type(result)
+        else:
+            return value
+
     def get_processed_string(self, input_string):
         """Runs token substitution on input_string against context.
 

@@ -831,6 +831,90 @@ def test_iter_formatted():
     assert output[3] == "this ctxvalue4 is line 4"
 
 
+def test_get_formatted_as_type_string_to_bool_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type('false', out_type=bool)
+
+    assert isinstance(result, bool)
+    # bools always true
+    assert result
+
+
+def test_get_formatted_as_type_bool_false_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type(False, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
+def test_get_formatted_as_type_bool_true_no_subst():
+    """get_formatted_as_type returns bool no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type(None, True, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_int_no_subst():
+    """get_formatted_as_type returns int no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type('10', out_type=int)
+
+    assert isinstance(result, int)
+    assert result == 10
+
+
+def test_get_formatted_as_type_int_with_subst():
+    """get_formatted_as_type returns int no formatting"""
+    context = Context({'k1': 10})
+    result = context.get_formatted_as_type('{k1}', out_type=int)
+
+    assert isinstance(result, int)
+    assert result == 10
+
+
+def test_get_formatted_as_type_float_no_subst():
+    """get_formatted_as_type returns float no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type('10.1', out_type=float)
+
+    assert isinstance(result, float)
+    assert result == 10.1
+
+
+def test_get_formatted_as_type_default_no_subst():
+    """get_formatted_as_type returns default no formatting"""
+    context = Context()
+    result = context.get_formatted_as_type(None, default=10, out_type=int)
+
+    assert isinstance(result, int)
+    assert result == 10
+
+
+def test_get_formatted_as_type_default_with_subst():
+    """get_formatted_as_type returns default with formatting"""
+    context = Context({'k1': 10})
+    result = context.get_formatted_as_type(
+        None, default='{k1}', out_type=int)
+
+    assert isinstance(result, int)
+    assert result == 10
+
+
+def test_get_formatted_as_type_default_with_subst_str():
+    """get_formatted_as_type returns default with formatting"""
+    context = Context({'k1': 10})
+    result = context.get_formatted_as_type(
+        None, default='xx{k1}xx')
+
+    assert isinstance(result, str)
+    assert result == 'xx10xx'
+
+
 def test_get_processed_string_no_interpolation():
     """get_processed_string on plain string returns plain."""
     context = Context(
