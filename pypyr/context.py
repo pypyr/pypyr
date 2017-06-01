@@ -317,8 +317,8 @@ class Context(dict):
         """Returns formatted value for input value, returns as out_type.
 
         Caveat emptor: if out_type is bool and value a string,
-        return will always be True. Be sure to pass in a bool and have out_type
-        also bool if working with booleans.
+        return will be True if str is 'True'. It will be False for all other
+        cases.
 
         Args:
             value: the value to format
@@ -334,9 +334,14 @@ class Context(dict):
         if isinstance(value, str):
             result = self.get_formatted_string(value)
 
-            # get_formatted_string result is already a string
             if out_type is str:
+                # get_formatted_string result is already a string
                 return result
+            elif out_type is bool:
+                # casting a str to bool is always True, hence special case. If
+                # the str value is 'False'/'false', presumably user can
+                # reasonably expect a bool False response.
+                return result == 'True'
             else:
                 return out_type(result)
         else:
