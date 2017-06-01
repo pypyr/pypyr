@@ -93,7 +93,54 @@ def test_wait_until_true_with_timeout(mock_time_sleep):
         decorate_me)('v1', 'v2')
     assert mock.call_count == 10
     mock.assert_called_with('v1')
-    assert mock_time_sleep.call_count == 10
+    assert mock_time_sleep.call_count == 9
     mock_time_sleep.assert_called_with(0.01)
 
+
+@patch('time.sleep')
+def test_wait_until_true_once_not_found(mock_time_sleep):
+    """wait_until_true max_attempts 1."""
+    mock = MagicMock()
+    mock.side_effect = [
+        'test string 1',
+        'test string 2',
+    ]
+
+    def decorate_me(arg1, arg2):
+        """Test static decorator syntax"""
+        assert arg1 == 'v1'
+        assert arg2 == 'v2'
+        if mock(arg1) == 'expected value':
+            return True
+        else:
+            return False
+
+    assert not poll.wait_until_true(interval=0.01, max_attempts=1)(
+        decorate_me)('v1', 'v2')
+    mock.assert_called_once_with('v1')
+    mock_time_sleep.assert_not_called()
+
+
+@patch('time.sleep')
+def test_wait_until_true_once_found(mock_time_sleep):
+    """wait_until_true max_attempts 1."""
+    mock = MagicMock()
+    mock.side_effect = [
+        'expected value',
+        'test string 2',
+    ]
+
+    def decorate_me(arg1, arg2):
+        """Test static decorator syntax"""
+        assert arg1 == 'v1'
+        assert arg2 == 'v2'
+        if mock(arg1) == 'expected value':
+            return True
+        else:
+            return False
+
+    assert poll.wait_until_true(interval=0.01, max_attempts=1)(
+        decorate_me)('v1', 'v2')
+    mock.assert_called_once_with('v1')
+    mock_time_sleep.assert_not_called()
 # ----------------- wait_until_true -------------------------------------------

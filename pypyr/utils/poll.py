@@ -33,8 +33,9 @@ def wait_until_true(interval, max_attempts):
                 if result:
                     logger.debug(f"iteration {i}. Desired state reached.")
                     return True
-                logger.debug(f"iteration {i}. Still waiting. . .")
-                time.sleep(interval)
+                if i < max_attempts:
+                    logger.debug(f"iteration {i}. Still waiting. . .")
+                    time.sleep(interval)
             return False
         return sleep_looper
 
