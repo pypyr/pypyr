@@ -152,15 +152,14 @@ def test_get_main_pass(mocked_work_dir,
 
 
 @patch('pypyr.stepsrunner.run_step_group')
-@patch('pypyr.pipelinerunner.get_parsed_context',
-       return_value='parsed context')
+@patch('pypyr.pipelinerunner.get_parsed_context')
 @patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_get_main_parse_context_error(mocked_work_dir,
                                       mocked_get_pipe_def,
                                       mocked_get_parsed_context,
                                       mocked_run_step_group):
-    """main runs on_failure with {} dict if context parse fails."""
+    """main runs on_failure with empty Context if context parse fails."""
     mocked_get_parsed_context.side_effect = ContextError
 
     with pytest.raises(ContextError):
@@ -177,11 +176,16 @@ def test_get_main_parse_context_error(mocked_work_dir,
         context_in_string='arb context input')
 
     # No called steps, just on_failure since err on parse context already
-    expected_run_step_groups = [call(context={},
+    expected_run_step_groups = [call(context=Context(),
                                      pipeline_definition='pipe def',
                                      step_group_name='on_failure')]
 
     mocked_run_step_group.assert_has_calls(expected_run_step_groups)
+
+    print(mocked_run_step_group.call_args)
+    call_args_tuple = mocked_run_step_group.call_args
+    args, kwargs = call_args_tuple
+    assert isinstance(kwargs['context'], Context)
 
 
 @patch('pypyr.stepsrunner.run_step_group')

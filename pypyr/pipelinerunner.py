@@ -125,7 +125,7 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
             # before assignment err.
             parsed_context
         except NameError:
-            parsed_context = {}
+            parsed_context = pypyr.context.Context()
 
         # failure_step_group will log but swallow any errors
         pypyr.stepsrunner.run_failure_step_group(
