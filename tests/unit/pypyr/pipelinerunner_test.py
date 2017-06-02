@@ -182,7 +182,6 @@ def test_get_main_parse_context_error(mocked_work_dir,
 
     mocked_run_step_group.assert_has_calls(expected_run_step_groups)
 
-    print(mocked_run_step_group.call_args)
     call_args_tuple = mocked_run_step_group.call_args
     args, kwargs = call_args_tuple
     assert isinstance(kwargs['context'], Context)
