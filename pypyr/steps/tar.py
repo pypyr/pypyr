@@ -126,7 +126,7 @@ def tar_archive(context):
         with tarfile.open(destination, mode) as archive_me:
             logger.debug(f"Archiving '{source}' to '{destination}'")
 
-            archive_me.add(source)
+            archive_me.add(source, arcname='.')
             logger.info(f"Archived '{source}' to '{destination}'")
 
     logger.debug("end")

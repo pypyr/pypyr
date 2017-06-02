@@ -271,7 +271,7 @@ def test_tar_archive_one_pass():
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:xz')
     (mock_tarfile.return_value.
-     __enter__().add.assert_called_once_with('path/to/dir'))
+     __enter__().add.assert_called_once_with('path/to/dir', arcname='.'))
 
 
 def test_tar_archive_one_pass_with_interpolation():
@@ -291,7 +291,7 @@ def test_tar_archive_one_pass_with_interpolation():
 
     mock_tarfile.assert_called_once_with('./blah.tar.value1', 'w:xz')
     (mock_tarfile.return_value.
-     __enter__().add.assert_called_once_with('value2/to/dir'))
+     __enter__().add.assert_called_once_with('value2/to/dir', arcname='.'))
 
 
 def test_tar_archive_one_pass_without_compression():
@@ -311,7 +311,7 @@ def test_tar_archive_one_pass_without_compression():
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:')
     (mock_tarfile.return_value.
-     __enter__().add.assert_called_once_with('path/to/dir'))
+     __enter__().add.assert_called_once_with('path/to/dir', arcname='.'))
 
 
 def test_tar_archive_one_pass_with_gz():
@@ -331,7 +331,7 @@ def test_tar_archive_one_pass_with_gz():
 
     mock_tarfile.assert_called_once_with('./blah.tar.gz', 'w:gz')
     (mock_tarfile.return_value.
-     __enter__().add.assert_called_once_with('path/to/dir'))
+     __enter__().add.assert_called_once_with('path/to/dir', arcname='.'))
 
 
 def test_tar_archive_pass():
@@ -357,8 +357,8 @@ def test_tar_archive_pass():
     (mock_tarfile.return_value.
      __enter__().add.call_count == 2)
     (mock_tarfile.return_value.
-     __enter__().add.assert_any_call('path/to/dir'))
+     __enter__().add.assert_any_call('path/to/dir', arcname='.'))
     (mock_tarfile.return_value.
-     __enter__().add.assert_any_call('.'))
+     __enter__().add.assert_any_call('.', arcname='.'))
 
 # ------------------------- tar archive --------------------------------------#
