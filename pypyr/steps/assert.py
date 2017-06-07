@@ -25,7 +25,7 @@ def run_step(context):
         None
 
     Raises:
-        ContextError: if assert evalues to False.
+        ContextError: if assert evaluates to False.
     """
     logger.debug("started")
     assert context, f"context must have value for {__name__}"
