@@ -1128,7 +1128,7 @@ other lists/dictionaries and so forth.
 Given the context above, you can use formatting expressions to access nested
 values like this:
 
-.. code-block:: python
+.. code-block:: text
 
   '{root}[0]' = list index 0
   '{root[1][key1]}' = this is a value from a dict containing a list, which contains a dict at index 1
