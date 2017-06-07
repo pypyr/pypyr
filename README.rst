@@ -1214,7 +1214,7 @@ Day-to-day testing
 Thank yous
 **********
 pypyr is fortunate to stand on the shoulders of a giant in the shape of the
-excellent `ruamel.yaml<https://pypi.python.org/pypi/ruamel.yaml>`_ library by
+excellent `ruamel.yaml <https://pypi.python.org/pypi/ruamel.yaml>`_ library by
 Anthon van der Neut for all yaml parsing and validation.
 
 **********
