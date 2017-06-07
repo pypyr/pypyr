@@ -430,6 +430,8 @@ Complex types:
   assertThis: '{complexOne}'
   assertEquals: '{complexTwo}' # substituted types equal. Continue pipeline.
 
+See a worked example `for assert here
+  <https://github.com/pypyr/pypyr-example/tree/master/pipelines/assert.yaml>`__.
 
 pypyr.steps.contextclear
 ^^^^^^^^^^^^^^^^^^^^^^^^
