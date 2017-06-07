@@ -1110,8 +1110,31 @@ Escape literal curly braces with doubles: {{ for {, }} for }
 
 In json & yaml, curlies need to be inside quotes to make sure they parse as
 strings. Especially watch in .yaml, where { as the first character of a key or
-value will throw a formatting error if it's not in double quotes like this:
+value will throw a formatting error if it's not in quotes like this:
 *"{key}"*
+
+You can also reference keys nested deeper in the context hierarchy, in cases
+where you have a dictionary that contains lists/dictionaries that might contain
+other lists/dictionaries and so forth.
+
+.. code-block:: yaml
+
+  root:
+    - list index 0
+    - key1: this is a value from a dict containing a list, which contains a dict at index 1
+      key2: key 2 value
+    - list index 1
+
+Given the context above, you can use formatting expressions to access nested
+values like this:
+
+.. code-block:: python
+
+  '{root}[0]' = list index 0
+  '{root[1][key1]}' = this is a value from a dict containing a list, which contains a dict at index 1
+  '{root[1][key2]}' = key 2 value
+  '{root}[2]' = list index 1
+
 
 sic strings
 ===========
