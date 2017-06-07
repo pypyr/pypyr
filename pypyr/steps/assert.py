@@ -31,19 +31,17 @@ def run_step(context):
     assert context, f"context must have value for {__name__}"
     context.assert_key_has_value('assertThis', __name__)
 
-    assert_equals = context.get('assertEquals', None)
-
-    if assert_equals is None:
-        # nothing to compare to means treat assertThis as a bool.
-        logger.debug("Evaluating assertThis as a boolean.")
-        assert_result = context.get_formatted_as_type(context['assertThis'],
-                                                      out_type=bool)
-    else:
+    if 'assertEquals' in context:
         # compare assertThis to assertEquals
         logger.debug("Comparing assertThis to assertEquals.")
         assert_result = (context.get_formatted('assertThis')
                          ==
                          context.get_formatted('assertEquals'))
+    else:
+        # nothing to compare to means treat assertThis as a bool.
+        logger.debug("Evaluating assertThis as a boolean.")
+        assert_result = context.get_formatted_as_type(context['assertThis'],
+                                                      out_type=bool)
 
     logger.info(f"assert evaluated to {assert_result}")
 
