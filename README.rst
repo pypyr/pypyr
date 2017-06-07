@@ -275,6 +275,9 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | **step**                      | **description**                                 | **input context properties** |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assertThis (any)             |
+|                               | expected.                                       | assertEquals (any)           |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
@@ -328,6 +331,105 @@ Built-in steps
 |                               | compression. Supports gzip, bzip2, lzma.        |                              |
 |                               |                                                 | tarArchive (dict)            |
 +-------------------------------+-------------------------------------------------+------------------------------+
+
+pypyr.steps.assert
+^^^^^^^^^^^^^^^^^^
+Assert that something is True or equal to something else.
+
+Uses these context keys:
+
+- ``assertThis``
+
+  - mandatory
+  - If assertEquals not specified, evaluates as a boolean.
+
+- ``assertEquals``
+
+  - optional
+  - If specified, compares ``assertThis`` to ``assertEquals``
+
+If ``assertThis`` evaluates to False raises error.
+
+If ``assertEquals`` is specified, raises error if ``assertThis != assertEquals``.
+
+Supports `Substitutions`_.
+
+Examples:
+
+.. code-block:: yaml
+
+    # continue pipeline
+    assertThis: True
+    # stop pipeline
+    assertThis: False
+
+or with substitutions:
+
+.. code-block:: yaml
+
+    interestingValue: True
+    assertThis: '{interestingValue}' # continue with pipeline
+
+Non-0 numbers evalute to True:
+
+.. code-block:: yaml
+
+    assertThis: 1 # non-0 numbers assert to True. continue with pipeline
+
+String equality:
+
+.. code-block:: yaml
+
+    assertThis: 'up the valleys wild'
+    assertEquals: 'down the valleys wild' # strings not equal. stop pipeline.
+
+String equality with substitutions:
+
+.. code-block:: yaml
+
+    k1: 'down'
+    k2: 'down'
+    assertThis: '{k1} the valleys wild'
+    assertEquals: '{k2} the valleys wild' # substituted strings equal. continue pipeline.
+
+
+Number equality:
+
+.. code-block:: yaml
+
+    assertThis: 123.45
+    assertEquals: 123.45 # numbers equal. continue with pipeline.
+
+Number equality with substitutions:
+
+.. code-block:: yaml
+
+    numberOne: 123.45
+    numberTwo: 678.9
+    assertThis: '{numberOne}'
+    assertEquals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
+
+Complex types:
+
+.. code-block:: yaml
+
+  complexOne:
+    - thing1
+    - k1: value1
+      k2: value2
+      k3:
+        - sub list 1
+        - sub list 2
+  complexTwo:
+    - thing1
+    - k1: value1
+      k2: value2
+      k3:
+        - sub list 1
+        - sub list 2
+  assertThis: '{complexOne}'
+  assertEquals: '{complexTwo}' # substituted types equal. Continue pipeline.
+
 
 pypyr.steps.contextclear
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -445,6 +547,8 @@ You can run:
 .. code-block:: bash
 
   $ pypyr look-ma-no-params
+
+Supports `Substitutions`_.
 
 pypyr.steps.env
 ^^^^^^^^^^^^^^^
