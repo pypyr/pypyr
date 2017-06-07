@@ -92,8 +92,9 @@ Anatomy of a pypyr pipeline
 ***************************
 Pipeline yaml structure
 =======================
-A pipeline is a .yaml file. Save pipelines to a `pipelines` directory in your
-working directory.
+A pipeline is a .yaml file. pypyr uses YAML version 1.2.
+
+Save pipelines to a `pipelines` directory in your working directory.
 
 .. code-block:: yaml
 
@@ -1101,6 +1102,13 @@ Day-to-day testing
   .. code-block:: bash
 
     pytest tests/unit/arb_test_file.py
+
+**********
+Thank yous
+**********
+pypyr is fortunate to stand on the shoulders of a giant in the shape of the
+excellent `ruamel.yaml<https://pypi.python.org/pypi/ruamel.yaml>`_ library by
+Anthon van der Neut for all yaml parsing and validation.
 
 **********
 Contribute
