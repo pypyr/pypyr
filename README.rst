@@ -92,8 +92,9 @@ Anatomy of a pypyr pipeline
 ***************************
 Pipeline yaml structure
 =======================
-A pipeline is a .yaml file. Save pipelines to a `pipelines` directory in your
-working directory.
+A pipeline is a .yaml file. pypyr uses YAML version 1.2.
+
+Save pipelines to a `pipelines` directory in your working directory.
 
 .. code-block:: yaml
 
@@ -274,6 +275,9 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | **step**                      | **description**                                 | **input context properties** |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assertThis (any)             |
+|                               | expected.                                       | assertEquals (any)           |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
@@ -327,6 +331,108 @@ Built-in steps
 |                               | compression. Supports gzip, bzip2, lzma.        |                              |
 |                               |                                                 | tarArchive (dict)            |
 +-------------------------------+-------------------------------------------------+------------------------------+
+
+pypyr.steps.assert
+^^^^^^^^^^^^^^^^^^
+Assert that something is True or equal to something else.
+
+Uses these context keys:
+
+- ``assertThis``
+
+  - mandatory
+  - If assertEquals not specified, evaluates as a boolean.
+
+- ``assertEquals``
+
+  - optional
+  - If specified, compares ``assertThis`` to ``assertEquals``
+
+If ``assertThis`` evaluates to False raises error.
+
+If ``assertEquals`` is specified, raises error if ``assertThis != assertEquals``.
+
+Supports `Substitutions`_.
+
+Examples:
+
+.. code-block:: yaml
+
+    # continue pipeline
+    assertThis: True
+    # stop pipeline
+    assertThis: False
+
+or with substitutions:
+
+.. code-block:: yaml
+
+    interestingValue: True
+    assertThis: '{interestingValue}' # continue with pipeline
+
+Non-0 numbers evalute to True:
+
+.. code-block:: yaml
+
+    assertThis: 1 # non-0 numbers assert to True. continue with pipeline
+
+String equality:
+
+.. code-block:: yaml
+
+    assertThis: 'up the valleys wild'
+    assertEquals: 'down the valleys wild' # strings not equal. stop pipeline.
+
+String equality with substitutions:
+
+.. code-block:: yaml
+
+    k1: 'down'
+    k2: 'down'
+    assertThis: '{k1} the valleys wild'
+    assertEquals: '{k2} the valleys wild' # substituted strings equal. continue pipeline.
+
+
+Number equality:
+
+.. code-block:: yaml
+
+    assertThis: 123.45
+    assertEquals: 123.45 # numbers equal. continue with pipeline.
+
+Number equality with substitutions:
+
+.. code-block:: yaml
+
+    numberOne: 123.45
+    numberTwo: 678.9
+    assertThis: '{numberOne}'
+    assertEquals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
+
+Complex types:
+
+.. code-block:: yaml
+
+  complexOne:
+    - thing1
+    - k1: value1
+      k2: value2
+      k3:
+        - sub list 1
+        - sub list 2
+  complexTwo:
+    - thing1
+    - k1: value1
+      k2: value2
+      k3:
+        - sub list 1
+        - sub list 2
+  assertThis: '{complexOne}'
+  assertEquals: '{complexTwo}' # substituted types equal. Continue pipeline.
+
+
+See a worked example `for assert here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/assert.yaml>`__.
 
 pypyr.steps.contextclear
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -444,6 +550,8 @@ You can run:
 .. code-block:: bash
 
   $ pypyr look-ma-no-params
+
+Supports `Substitutions`_.
 
 pypyr.steps.env
 ^^^^^^^^^^^^^^^
@@ -1002,8 +1110,31 @@ Escape literal curly braces with doubles: {{ for {, }} for }
 
 In json & yaml, curlies need to be inside quotes to make sure they parse as
 strings. Especially watch in .yaml, where { as the first character of a key or
-value will throw a formatting error if it's not in double quotes like this:
+value will throw a formatting error if it's not in quotes like this:
 *"{key}"*
+
+You can also reference keys nested deeper in the context hierarchy, in cases
+where you have a dictionary that contains lists/dictionaries that might contain
+other lists/dictionaries and so forth.
+
+.. code-block:: yaml
+
+  root:
+    - list index 0
+    - key1: this is a value from a dict containing a list, which contains a dict at index 1
+      key2: key 2 value
+    - list index 1
+
+Given the context above, you can use formatting expressions to access nested
+values like this:
+
+.. code-block:: text
+
+  '{root[0]}' = list index 0
+  '{root[1][key1]}' = this is a value from a dict containing a list, which contains a dict at index 1
+  '{root[1][key2]}' = key 2 value
+  '{root[2]}' = list index 1
+
 
 sic strings
 ===========
@@ -1101,6 +1232,13 @@ Day-to-day testing
   .. code-block:: bash
 
     pytest tests/unit/arb_test_file.py
+
+**********
+Thank yous
+**********
+pypyr is fortunate to stand on the shoulders of a giant in the shape of the
+excellent `ruamel.yaml <https://pypi.python.org/pypi/ruamel.yaml>`_ library by
+Anthon van der Neut for all yaml parsing and validation.
 
 **********
 Contribute
