@@ -283,8 +283,12 @@ Built-in steps
 | `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
 |                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.contextset`_     | Sets context values from already existing       | contextSet (dict)            |
+| `pypyr.steps.contextset`_     | Set context values from already existing        | contextSet (dict)            |
 |                               | context values.                                 |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextsetf`_    | Set context keys from formatting                | contextSetf (dict)           |
+|                               | expressions with {token} substitutions.         |                              |
+|                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.echo`_           | Echo the context value `echoMe` to the output.  | echoMe (string)              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -409,6 +413,26 @@ Number equality with substitutions:
     assertThis: '{numberOne}'
     assertEquals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
 
+GOTCHA:
+  A string formatting expression like ``{numberOne}`` will always return
+  a string. This means a comparison to a number type will fail even if it looks
+  like the same number.
+
+  .. code-block:: yaml
+
+    meaningOfLife: 42
+    assertThis: '{meaningOfLife}'
+    assertEquals: 42 # stop pipeline. '42' != 42 (str vs int)
+
+  vs
+
+  .. code-block:: yaml
+
+    meaningOfLife: 42
+    assertThis: '{meaningOfLife}'
+    assertEquals: '42' # continue pipeline. '42' == '42' (str vs str)
+
+
 Complex types:
 
 .. code-block:: yaml
@@ -514,6 +538,52 @@ This will result in context like this:
     key2: value1
     key3: value3
     key4: value3
+
+See a worked example `for contextset here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/contextset.yaml>`__.
+
+pypyr.steps.contextsetf
+^^^^^^^^^^^^^^^^^^^^^^^
+Set context keys from formatting expressions with `Substitutions`_.
+
+Requires the following context:
+
+.. code-block:: yaml
+
+  contextsetf:
+    newkey: '{format expression}'
+    newkey2: '{format expression}'
+
+For example, say your context looks like this:
+
+.. code-block:: yaml
+
+      key1: value1
+      key2: value2
+      answer: 42
+
+and your pipeline yaml looks like this:
+
+.. code-block:: yaml
+
+  steps:
+    - name: pypyr.steps.contextsetf
+      in:
+        contextSetf:
+          key2: any old value without a substitution - it will be a string now.
+          key4: 'What do you get when you multiply six by nine? {answer}'
+
+This will result in context like this:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: any old value without a substitution - it will be a string now.
+    answer: 42
+    key4: 'What do you get when you multiply six by nine? 42'
+
+See a worked example `for contextsetf here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/contextset.yaml>`__.
 
 pypyr.steps.echo
 ^^^^^^^^^^^^^^^^
