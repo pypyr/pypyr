@@ -33,12 +33,12 @@ def run_step(context):
 
     if 'assertEquals' in context:
         # compare assertThis to assertEquals
-        logger.debug("Comparing assertThis to assertEquals.")
+        logger.debug("comparing assertThis to assertEquals.")
         assert_result = (context.get_formatted('assertThis')
                          ==
                          context.get_formatted('assertEquals'))
     else:
-        # nothing to compare to means treat assertThis as a bool.
+        # nothing to compare means treat assertThis as a bool.
         logger.debug("Evaluating assertThis as a boolean.")
         assert_result = context.get_formatted_as_type(context['assertThis'],
                                                       out_type=bool)
@@ -46,6 +46,19 @@ def run_step(context):
     logger.info(f"assert evaluated to {assert_result}")
 
     if not assert_result:
-        raise ContextError("assert evaluated to False.")
+        assert_equals = context.get('assertEquals', None)
+
+        if assert_equals is None:
+            # if it's a bool it's presumably not a sensitive value.
+            error_text = (
+                f"assert {context['assertThis']} evaluated to False.")
+        else:
+            # emit type to help user, but not the actual field contents.
+            error_text = (
+                f"assert context['assertThis'] is of type "
+                f"{type(context.get_formatted('assertThis')).__name__} "
+                f"and does not equal context['assertEquals'] of type "
+                f"{type(context.get_formatted('assertEquals')).__name__}.")
+        raise ContextError(error_text)
 
     logger.debug("done")

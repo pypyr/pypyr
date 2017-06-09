@@ -43,7 +43,7 @@ def test_assert_raises_on_assertthis_false():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert False evaluated to False.',)")
 
 
 def test_assert_passes_on_assertthis_true():
@@ -83,7 +83,7 @@ def test_assert_raises_on_assertthis_false_string():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert arb string evaluated to False.',)")
 
 
 def test_assert_raises_on_assertthis_false_int():
@@ -93,7 +93,7 @@ def test_assert_raises_on_assertthis_false_int():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert 0 evaluated to False.',)")
 
 
 def test_assert_passes_on_assertthis_true_string():
@@ -110,7 +110,8 @@ def test_assert_raises_on_assertthis_not_equals():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type "
+        "str and does not equal context['assertEquals'] of type str.\",)")
 
 
 def test_assert_passes_on_assertthis_equals():
@@ -142,7 +143,8 @@ def test_assert_raises_on_assertthis_not_equals_bools():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type bool and does "
+        "not equal context['assertEquals'] of type bool.\",)")
 
 
 def test_assert_passes_on_assertthis_equals_ints():
@@ -160,7 +162,8 @@ def test_assert_raises_on_assertthis_not_equals_ints():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type int and does "
+        "not equal context['assertEquals'] of type int.\",)")
 
 
 def test_assert_passes_on_assertthis_equals_floats():
@@ -178,7 +181,8 @@ def test_assert_raises_on_assertthis_not_equals_floats():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type float and "
+        "does not equal context['assertEquals'] of type float.\",)")
 
 
 def test_assert_raises_on_assertthis_not_equals_string_to_int():
@@ -189,7 +193,8 @@ def test_assert_raises_on_assertthis_not_equals_string_to_int():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type str and does "
+        "not equal context['assertEquals'] of type int.\",)")
 
 
 def test_assert_raises_on_assertthis_not_equals_string_to_bool():
@@ -200,7 +205,8 @@ def test_assert_raises_on_assertthis_not_equals_string_to_bool():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type bool and does "
+        "not equal context['assertEquals'] of type str.\",)")
 
 
 def test_assert_passes_on_assertthis_equals_lists():
@@ -218,7 +224,8 @@ def test_assert_raises_on_assertthis_not_equals_lists():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type list and does "
+        "not equal context['assertEquals'] of type list.\",)")
 
 
 def test_assert_passes_on_assertthis_equals_dicts():
@@ -236,7 +243,8 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_list():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type dict and does "
+        "not equal context['assertEquals'] of type list.\",)")
 
 
 def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
@@ -247,7 +255,8 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type dict and does "
+        "not equal context['assertEquals'] of type dict.\",)")
 
 # ---------------------- substitutions ----------------------------------------
 
@@ -271,7 +280,8 @@ def test_assert_raises_on_assertthis_not_equals_ints_substitutions():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type str and does "
+        "not equal context['assertEquals'] of type str.\",)")
 
 
 def test_assert_passes_on_assertthis_not_equals_bools_substitutions():
@@ -319,7 +329,7 @@ def test_assert_raises_on_assertthis_bool_substitutions():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert {k1} evaluated to False.',)")
 
 
 def test_assert_raises_on_assertthis_substitutions_int():
@@ -332,7 +342,7 @@ def test_assert_raises_on_assertthis_substitutions_int():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert {k1} evaluated to False.',)")
 
 
 def test_assert_raises_on_assertthis_none_substitutions():
@@ -344,7 +354,7 @@ def test_assert_raises_on_assertthis_none_substitutions():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError('assert {k1} evaluated to False.',)")
 
 
 def test_assert_passes_on_assertthis_equals_dicts_substitutions():
@@ -389,4 +399,5 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict_substitutions():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError('assert evaluated to False.',)")
+        "ContextError(\"assert context['assertThis'] is of type dict and does "
+        "not equal context['assertEquals'] of type dict.\",)")
