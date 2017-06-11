@@ -204,10 +204,12 @@ def test_run_pipeline_pass(mocked_work_dir,
                            mocked_run_step_group):
     """run_pipeline passes correct params to all methods."""
 
-    pypyr.pipelinerunner.run_pipeline(
-        pipeline_name='arb pipe',
-        pipeline_context_input='arb context input',
-        working_dir='arb/dir')
+    with patch('pypyr.context.Context') as mock_context:
+        mock_context.return_value = Context()
+        pypyr.pipelinerunner.run_pipeline(
+            pipeline_name='arb pipe',
+            pipeline_context_input='arb context input',
+            working_dir='arb/dir')
 
     mocked_work_dir.assert_not_called()
     mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
@@ -215,6 +217,41 @@ def test_run_pipeline_pass(mocked_work_dir,
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
         context_in_string='arb context input')
+
+    # assure that freshly created context instance does have working dir set
+    assert mock_context.return_value.working_dir == 'arb/dir'
+
+    # 1st called steps, then on_success
+    expected_run_step_groups = [call(context={},
+                                     pipeline_definition='pipe def',
+                                     step_group_name='steps'),
+                                call(context={},
+                                     pipeline_definition='pipe def',
+                                     step_group_name='on_success')]
+
+    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
+
+
+@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.get_parsed_context',
+       return_value=Context())
+@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.moduleloader.set_working_directory')
+def test_run_pipeline_pass_skip_parse_context(mocked_work_dir,
+                                              mocked_get_pipe_def,
+                                              mocked_get_parsed_context,
+                                              mocked_run_step_group):
+    """run_pipeline passes correct params to all methods."""
+
+    pypyr.pipelinerunner.run_pipeline(
+        pipeline_name='arb pipe',
+        working_dir='arb/dir',
+        parse_input=False)
+
+    mocked_work_dir.assert_not_called()
+    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
+                                                working_dir='arb/dir')
+    mocked_get_parsed_context.assert_not_called()
 
     # 1st called steps, then on_success
     expected_run_step_groups = [call(context={},
@@ -361,6 +398,7 @@ def test_run_pipeline_with_existing_context_pass(mocked_work_dir,
         working_dir='arb/dir',
         context=existing_context)
 
+    existing_context.working_dir == 'from/context'
     mocked_work_dir.assert_not_called()
     mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
                                                 working_dir='from/context')

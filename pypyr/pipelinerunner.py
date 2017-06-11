@@ -167,7 +167,7 @@ def prepare_context(pipeline, context_in_string, context):
 
 
 def run_pipeline(pipeline_name,
-                 pipeline_context_input,
+                 pipeline_context_input=None,
                  working_dir=None,
                  context=None,
                  parse_input=True):
@@ -192,7 +192,7 @@ def run_pipeline(pipeline_name,
                  within a pipeline and you want to re-use the same context
                  object for the child pipeline. Any mutations of the context by
                  the pipeline will be against this instance of it.
-         parse_input (bool): run context_parser in pipeline.
+        parse_input (bool): run context_parser in pipeline.
 
     Returns:
         None
