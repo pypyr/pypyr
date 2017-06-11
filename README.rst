@@ -1303,6 +1303,15 @@ Day-to-day testing
 
     pytest tests/unit/arb_test_file.py
 
+Coverage
+========
+pypyr has 100% test coverage. Shippable CI enforces this on all branches.
+
+.. code-block:: bash
+
+  # run coverage tests with terminal output
+  tox -e ci -- --cov=pypyr --cov-report term tests
+
 **********
 Thank yous
 **********

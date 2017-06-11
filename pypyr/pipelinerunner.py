@@ -169,7 +169,8 @@ def prepare_context(pipeline, context_in_string, context):
 def run_pipeline(pipeline_name,
                  pipeline_context_input,
                  working_dir=None,
-                 context=None):
+                 context=None,
+                 parse_input=True):
     """Run the specified pypyr pipeline.
 
     This function runs the actual pipeline. If you are running another
@@ -179,17 +180,19 @@ def run_pipeline(pipeline_name,
     pipeline_name.yaml should be in the working_dir/pipelines/ directory.
 
     Args:
-        pipeline_name: string. Name of pipeline, sans .yaml at end.
-        pipeline_context_input: string. Initialize the pypyr context with this
+        pipeline_name (str): Name of pipeline, sans .yaml at end.
+        pipeline_context_input (str): Initialize the pypyr context with this
                                  string.
-        working_dir: path. Look for pipelines and modules in this directory. If
-                     context arg passed, will use context.working_dir and
-                     ignore this argument.
-        context: pypyr.context.Context. Use if you already have a
+        working_dir (path): Look for pipelines and modules in this directory.
+                     If context arg passed, will use context.working_dir and
+                     ignore this argument. If context is None, working_dir
+                     must be specified.
+        context (pypyr.context.Context): Use if you already have a
                  Context object, such as if you are running a pipeline from
                  within a pipeline and you want to re-use the same context
                  object for the child pipeline. Any mutations of the context by
                  the pipeline will be against this instance of it.
+         parse_input (bool): run context_parser in pipeline.
 
     Returns:
         None
@@ -213,9 +216,13 @@ def run_pipeline(pipeline_name,
                                                   working_dir=working_dir)
 
     try:
-        prepare_context(pipeline=pipeline_definition,
-                        context_in_string=pipeline_context_input,
-                        context=context)
+        if parse_input:
+            logger.debug("executing context_parser")
+            prepare_context(pipeline=pipeline_definition,
+                            context_in_string=pipeline_context_input,
+                            context=context)
+        else:
+            logger.debug("skipping context_parser")
 
         # run main steps
         pypyr.stepsrunner.run_step_group(
