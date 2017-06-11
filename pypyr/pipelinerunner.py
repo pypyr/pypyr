@@ -234,13 +234,6 @@ def run_pipeline(pipeline_name,
         # handler. Also, it does raise it back up.
         logger.error("Something went wrong. Will now try to run on_failure.")
 
-        if context is None:
-            # context at the very least has to be defined before
-            # run_failure_step_group will work and not cause another ref
-            # before assignment err.
-            context = pypyr.context.Context()
-            context.working_dir = working_dir
-
         # failure_step_group will log but swallow any errors
         pypyr.stepsrunner.run_failure_step_group(
             pipeline=pipeline_definition,
