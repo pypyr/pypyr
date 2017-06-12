@@ -323,6 +323,9 @@ Built-in steps
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.pype`_           | Run another pipeline from within the current    | pype (dict)                  |
+|                               | pipeline.                                       |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pypyrversion`_   | Writes installed pypyr version to output.       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.safeshell`_      | Runs the program and args specified in the      | cmd (string)                 |
@@ -952,6 +955,87 @@ For example, this will invoke python print and print 2:
       in:
         pycode: print(1+1)
 
+pypyr.steps.pype
+^^^^^^^^^^^^^^^^
+Overview
+""""""""
+Run another pipeline from this step. This allows pipelines to invoke other
+pipelines. Why pype? Because the pypyr can pipe that song again.
+
+*pype* is handy if you want to split a larger, cumbersome pipeline into smaller
+units. This helps testing, in that you can test smaller units as
+separate pipelines without having to re-run the whole pipeline each time. This
+gets pretty useful for longer running sequences where the first steps are not
+idempotent but you do want to iterate over the last steps in the pipeline.
+Provisioning or deployment scripts frequently have this sort of pattern: where
+the first steps provision expensive resources in the environment and later steps
+just tweak settings on the existing environment.
+
+The parent pipeline is the current, executing pipeline. The invoked, or child,
+pipeline is the pipeline you are calling from this step.
+
+See here for worked example of `pype
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/pype.yaml>`_.
+
+Context properties
+""""""""""""""""""
+Example input context:
+
+.. code-block:: yaml
+
+  pype:
+    name: 'pipeline name' # mandatory. string.
+    pipeArg: 'argument here' # optional. string.
+    raiseError: True # optional. bool. Defaults True.
+    skipParse: True # optional. bool. Defaults True.
+    useParentContext: True  # optional. bool. Defaults True.
+
++-----------------------+------------------------------------------------------+
+| **pype property**     | **description**                                      |
++-----------------------+------------------------------------------------------+
+| name                  | Name of child pipeline to execute. This {name}.yaml  |
+|                       | must exist in the *working directory/pipelines* dir. |
++-----------------------+------------------------------------------------------+
+| pipeArg               | String to pass to the child pipeline context_parser. |
+|                       | Equivalent to *--context* arg on the pypyr cli. Only |
+|                       | used if skipParse==False                             |
++-----------------------+------------------------------------------------------+
+| raiseError            | If True, errors in child raised up to parent.        |
+|                       |                                                      |
+|                       | If False, log and swallow any errors that happen     |
+|                       | during the invoked pipeline's execution. Swallowing  |
+|                       | means that the current/parent pipeline will carry on |
+|                       | with the next step even if an error occurs in the    |
+|                       | invoked pipeline.                                    |
++-----------------------+------------------------------------------------------+
+| skipParse             | If True, skip the context_parser on the invoked      |
+|                       | pipeline.                                            |
+|                       |                                                      |
+|                       | This is relevant if your child-pipeline uses a       |
+|                       | context_parser to initialize context when you test   |
+|                       | it in isolation by running it directly from the cli, |
+|                       | but when calling from a parent pipeline the parent   |
+|                       | is responsible for creating the appropriate context. |
++-----------------------+------------------------------------------------------+
+| useParentContext      | If True, passes the parent's context to the child.   |
+|                       | Any changes to the context by the child will be      |
+|                       | available to the parent when the child completes.    |
+|                       |                                                      |
+|                       | If False, the child creates its own, fresh context   |
+|                       | that does not contain any of the parent's keys. The  |
+|                       | child's context is destroyed upon completion of the  |
+|                       | child pipeline and updates to the child context do   |
+|                       | not reach the parent context.                        |
++-----------------------+------------------------------------------------------+
+
+Recursion
+"""""""""
+Yes, you can pype recursively - i.e a child pipeline can call its antecedents.
+It's up to you to avoid infinite recursion, though. Since we're all responsible
+adults here, pypyr does not protect you from infinite recursion other than the
+default python recursion limit. So don't come crying if you blew your stack. Or
+a seal.
+
 pypyr.steps.pypyrversion
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Outputs the same as:
@@ -1302,6 +1386,15 @@ Day-to-day testing
   .. code-block:: bash
 
     pytest tests/unit/arb_test_file.py
+
+Coverage
+========
+pypyr has 100% test coverage. Shippable CI enforces this on all branches.
+
+.. code-block:: bash
+
+  # run coverage tests with terminal output
+  tox -e ci -- --cov=pypyr --cov-report term tests
 
 **********
 Thank yous

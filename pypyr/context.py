@@ -19,6 +19,10 @@ class Context(dict):
 
     This class only adds functionality on top of dictionary, it should not
     override anything in dict.
+
+    Attributes:
+        working_dir (path-like): working directory path. Either CWD or
+                                 initialized from the cli --dir arg.
     """
 
     def __missing__(self, key):
