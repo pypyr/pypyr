@@ -1036,6 +1036,9 @@ adults here, pypyr does not protect you from infinite recursion other than the
 default python recursion limit. So don't come crying if you blew your stack. Or
 a seal.
 
+Here is a worked example of `pype recursion
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/pype-recursion.yaml>`_.
+
 pypyr.steps.pypyrversion
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Outputs the same as:
