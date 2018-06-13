@@ -82,7 +82,8 @@ def test_fileformatyaml_pass_no_substitutions():
     assert context['fileFormatYamlOut'] == './tests/testfiles/out/out.yaml'
 
     with open('./tests/testfiles/out/out.yaml') as outfile:
-        outcontents = yaml.load(outfile, Loader=yaml.RoundTripLoader)
+        yaml_loader = yaml.YAML(typ='rt', pure=True)
+        outcontents = yaml_loader.load(outfile)
 
     assert len(outcontents) == 3
     assert outcontents['key'] == 'value1 !£$%# *'
@@ -124,7 +125,8 @@ def test_fileformatyaml_pass_with_substitutions():
                                             'outsubst.yaml')
 
     with open('./tests/testfiles/out/outsubst.yaml') as outfile:
-        outcontents = yaml.load(outfile, Loader=yaml.RoundTripLoader)
+        yaml_loader = yaml.YAML(typ='rt', pure=True)
+        outcontents = yaml_loader.load(outfile)
 
     expected = {
         'key': 'v1value1 !£$%# *',
@@ -174,7 +176,8 @@ def test_fileformatyaml_pass_with_path_substitutions():
                                             '{pathOut}.yaml')
 
     with open('./tests/testfiles/out/outsubst.yaml') as outfile:
-        outcontents = yaml.load(outfile, Loader=yaml.RoundTripLoader)
+        yaml_loader = yaml.YAML(typ='rt', pure=True)
+        outcontents = yaml_loader.load(outfile)
 
     expected = {
         'key': 'v1value1 !£$%# *',

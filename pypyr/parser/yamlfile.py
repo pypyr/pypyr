@@ -16,7 +16,8 @@ def get_parsed_context(context_arg):
     logger.debug("starting")
     logger.debug(f"attempting to open file: {context_arg}")
     with open(context_arg) as yaml_file:
-        payload = yaml.safe_load(yaml_file)
+        yaml_loader = yaml.YAML(typ='safe', pure=True)
+        payload = yaml_loader.load(yaml_file)
 
     logger.debug(f"yaml file parsed. Count: {len(payload)}")
 

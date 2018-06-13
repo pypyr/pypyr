@@ -38,19 +38,17 @@ def run_step(context):
     in_path = context.get_formatted('fileFormatYamlIn')
     out_path = context.get_formatted('fileFormatYamlOut')
 
+    yaml_loader = yaml.YAML(typ='rt', pure=True)
+
     logger.debug(f"opening yaml source file: {in_path}")
     with open(in_path) as infile:
-        payload = yaml.load(infile, Loader=yaml.RoundTripLoader)
+        payload = yaml_loader.load(infile)
 
     logger.debug(f"opening destination file for writing: {out_path}")
     os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
     with open(out_path, 'w') as outfile:
         formatted_iterable = context.get_formatted_iterable(payload)
-        yaml.dump(formatted_iterable,
-                  outfile,
-                  Dumper=yaml.RoundTripDumper,
-                  allow_unicode=True,
-                  width=50)
+        yaml_loader.dump(formatted_iterable, outfile)
 
     logger.info(
         f"Read {in_path} yaml, formatted contents and wrote to {out_path}")

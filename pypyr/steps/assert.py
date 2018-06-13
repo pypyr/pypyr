@@ -34,8 +34,7 @@ def run_step(context):
     if 'assertEquals' in context:
         # compare assertThis to assertEquals
         logger.debug("comparing assertThis to assertEquals.")
-        assert_result = (context.get_formatted('assertThis')
-                         ==
+        assert_result = (context.get_formatted('assertThis') ==
                          context.get_formatted('assertEquals'))
     else:
         # nothing to compare means treat assertThis as a bool.

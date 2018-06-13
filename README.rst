@@ -880,6 +880,10 @@ The following context keys expected:
 
 The file in and out paths support `Substitutions`_.
 
+See a worked example of
+`fileformatyaml
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/fileformatyaml.yaml>`_.
+
 pypyr.steps.filereplace
 ^^^^^^^^^^^^^^^^^^^^^^^
 Parses input text file and replaces a search string.
