@@ -85,7 +85,7 @@ def test_get_parser_context_signature_wrong(mocked_moduleloader):
 # ------------------------- get_pipeline_definition --------------------------#
 
 
-@patch('ruamel.yaml.safe_load', return_value='mocked pipeline def')
+@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
 @patch('pypyr.moduleloader.get_pipeline_path', return_value='arb/path/x.yaml')
 def test_get_pipeline_definition_pass(mocked_get_path,
                                       mocked_yaml):

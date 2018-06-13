@@ -36,7 +36,8 @@ def run_step(context):
 
     logger.debug(f"attempting to open file: {file_path}")
     with open(file_path) as yaml_file:
-        payload = yaml.safe_load(yaml_file)
+        yaml_loader = yaml.YAML(typ='safe', pure=True)
+        payload = yaml_loader.load(yaml_file)
 
     if not isinstance(payload, MutableMapping):
         raise TypeError("yaml input should describe a dictionary at the top "

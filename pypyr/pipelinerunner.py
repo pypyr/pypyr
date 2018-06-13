@@ -92,7 +92,8 @@ def get_pipeline_definition(pipeline_name, working_dir):
     logger.debug(f"Trying to open pipeline at path {pipeline_path}")
     try:
         with open(pipeline_path) as yaml_file:
-            pipeline_definition = yaml.safe_load(yaml_file)
+            yaml_loader = yaml.YAML(typ='safe', pure=True)
+            pipeline_definition = yaml_loader.load(yaml_file)
             logger.debug(
                 f"found {len(pipeline_definition)} stages in pipeline.")
     except FileNotFoundError:
