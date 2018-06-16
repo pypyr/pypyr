@@ -885,6 +885,87 @@ def test_get_formatted_as_type_bool_true_with_subst():
     assert result
 
 
+def test_get_formatted_as_type_bool_true_with_list_input():
+    """get_formatted_as_type returns bool True with arbitrary input"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type([0, 1, 2], out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_false_with_empty_list_input():
+    """get_formatted_as_type returns bool false with empty input"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type([], out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
+def test_get_formatted_as_type_bool_false_with_0_input():
+    """get_formatted_as_type returns bool False with 0 input"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type(0, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
+def test_get_formatted_as_type_bool_false_with_string_capital_false():
+    """get_formatted_as_type returns bool False with string FALSE"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type('FALSE', out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
+def test_get_formatted_as_type_bool_true_with_1_input():
+    """get_formatted_as_type returns bool True with int 1 input"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type(1, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_true_with_decimal_input():
+    """get_formatted_as_type returns bool True with decimal input"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type(1.1, out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_true_with_str_true():
+    """get_formatted_as_type returns bool True with string true"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type('true', out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_true_with_str_capital_true():
+    """get_formatted_as_type returns bool True with string TRUE"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type('TRUE', out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_true_with_str_1_true():
+    """get_formatted_as_type returns bool True with string 1"""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type('1', out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
 def test_get_formatted_as_type_int_no_subst():
     """get_formatted_as_type returns int no formatting"""
     context = Context()
