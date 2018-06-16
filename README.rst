@@ -327,7 +327,7 @@ Simply put, this means that 1, TRUE, True and true will be True.
 None/Empty, 0,'', [], {} will be False.
 
 See a worked example for `step decorators here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/stepdecorators.yaml>`__.
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__.
 
 Built-in steps
 --------------
