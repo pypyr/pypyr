@@ -121,10 +121,11 @@ def run_pipeline_steps(steps, context):
         for step in steps:
             run_me = True
             skip_me = False
+            swallow_me = False
 
             if isinstance(step, dict):
-                logger.debug(f"{step} is complex.")
                 step_name = step['name']
+                logger.debug(f"{step_name} is complex.")
 
                 if 'in' in step:
                     get_step_input_context(step['in'], context)
@@ -136,13 +137,26 @@ def run_pipeline_steps(steps, context):
                 # skip: optional value, false by default. Allow substitution.
                 skip_me = context.get_formatted_as_type(
                     step.get('skip', False), out_type=bool)
+
+                # swallow: optional, defaults false. Allow substitution.
+                swallow_me = context.get_formatted_as_type(
+                    step.get('swallow', False), out_type=bool)
             else:
                 logger.debug(f"{step} is a simple string.")
                 step_name = step
 
             if run_me:
                 if not skip_me:
-                    run_pipeline_step(step_name=step_name, context=context)
+                    try:
+                        run_pipeline_step(step_name=step_name, context=context)
+                    except Exception as ex_info:
+                        if swallow_me:
+                            logger.error(
+                                f"{step_name} Ignoring error because swallow "
+                                "is True for this step.\n"
+                                f"{type(ex_info).__name__}: {ex_info}")
+                        else:
+                            raise
                 else:
                     logger.info(
                         f"{step_name} not running because skip is True.")

@@ -116,6 +116,7 @@ Save pipelines to a `pipelines` directory in your working directory.
         parameter2: value2
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
+      swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
 
   # optional.
   on_success:
@@ -288,7 +289,7 @@ Don't bother specifying these unless you want to deviate from the default values
         parameter2: value2
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
-
+      swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
 
 +---------------+----------+---------------------------------------------+----------------+
 | **decorator** | **type** | **description**                             | **default**    |
@@ -309,6 +310,11 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | combine *run* and *skip* in the same        |                |
 |               |          | pipeline to toggle at runtime which steps   |                |
 |               |          | you want to execute.                        |                |
++---------------+--------------------------------------------------------+----------------+
+| swallow       | bool     | If True, ignore any errors raised by the    | False          |
+|               |          | step and continue to the next step.         |                |
+|               |          | pypyr logs the error, so you'll know what   |                |
+|               |          | happened, but processing continues.         |                |
 +---------------+--------------------------------------------------------+----------------+
 
 All step decorators support `Substitutions`_.

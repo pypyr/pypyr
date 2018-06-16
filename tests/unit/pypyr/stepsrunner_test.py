@@ -298,7 +298,7 @@ def test_run_pipeline_steps_complex(mock_run_step):
         pypyr.stepsrunner.run_pipeline_steps(
             [{'name': 'step1'}], Context({'k1': 'v1'}))
 
-    mock_logger_debug.assert_any_call("{'name': 'step1'} is complex.")
+    mock_logger_debug.assert_any_call("step1 is complex.")
     mock_run_step.assert_called_once_with(
         step_name='step1', context={'k1': 'v1'})
 
@@ -1219,6 +1219,292 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(
 
 # -----------------------  END run_pipeline_steps: skip ----------------------#
 
+# -----------------------  END run_pipeline_steps: swallow--------------------#
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_swallow_true(
+        mock_run_step):
+    """Complex step with swallow true runs normally even without error."""
+    steps = [{
+        'name': 'step1',
+        'swallow': True
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_swallow_false(
+        mock_run_step):
+    """Complex step with swallow false runs normally even without error."""
+    steps = [{
+        'name': 'step1',
+        'swallow': False
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step',
+       side_effect=ValueError('arb error here'))
+def test_run_pipeline_steps_complex_swallow_true_error(
+        mock_run_step):
+    """Complex step with swallow true swallows error."""
+    steps = [{
+        'name': 'step1',
+        'swallow': 1
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with patch.object(logger, 'error') as mock_logger_error:
+            pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_logger_error.assert_called_once_with(
+        "step1 Ignoring error because swallow is True "
+        "for this step.\n"
+        "ValueError: arb error here")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step',
+       side_effect=ValueError('arb error here'))
+def test_run_pipeline_steps_complex_swallow_false_error(
+        mock_run_step):
+    """Complex step with swallow false raises error."""
+    steps = [{
+        'name': 'step1',
+        'swallow': 0
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with pytest.raises(ValueError) as err_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+        assert repr(err_info.value) == ("ValueError(\'arb error here',)")
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step',
+       side_effect=ValueError('arb error here'))
+def test_run_pipeline_steps_complex_swallow_defaults_false_error(
+        mock_run_step):
+    """Complex step with swallow not specified still raises error."""
+    steps = [{
+        'name': 'step1'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with pytest.raises(ValueError) as err_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+        assert repr(err_info.value) == ("ValueError(\'arb error here',)")
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_swallow_sequence(
+        mock_run_step):
+    """Complex steps, some run some don't, some swallow, some don't."""
+    # 1 & 2 don't run,
+    # 3 runs, no error
+    # 4 runs, error and swallows
+    # 5 skips
+    # 6 runs, error and raises
+    # 7 doesn't run because execution stopped at 6 because of error
+    mock_run_step.side_effect = [
+        None,  # 3
+        ValueError('arb error here 4'),  # 4
+        ValueError('arb error here 6'),  # 6
+    ]
+
+    steps = [{
+        'name': 'step1',
+        'run': False
+    },
+        {
+        'name': 'step2',
+        'skip': True
+    },
+        {
+        'name': 'step3',
+    },
+        {
+        'name': 'step4',
+        'run': True,
+        'skip': False,
+        'swallow': 1
+    },
+        {
+        'name': 'step5',
+        'run': True,
+        'skip': True,
+        'swallow': True
+    },
+        'step6',
+        'step7',
+    ]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with patch.object(logger, 'info') as mock_logger_info:
+            with patch.object(logger, 'error') as mock_logger_error:
+                with pytest.raises(ValueError) as err_info:
+                    pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+                    assert repr(err_info.value) == (
+                        "ValueError(\'arb error here 6',)")
+
+    assert mock_logger_debug.mock_calls == [call('starting'),
+                                            call('step1 is complex.'),
+                                            call('step2 is complex.'),
+                                            call('step3 is complex.'),
+                                            call('step4 is complex.'),
+                                            call('step5 is complex.'),
+                                            call('step6 is a simple string.')]
+
+    mock_logger_info.mock_calls == [
+        call('step1 not running because run is False.'),
+        call('step2 not running because skip is True.'),
+        call('step5 not running because skip is True.')]
+
+    mock_logger_error.assert_called_once_with(
+        "step4 Ignoring error because swallow is True "
+        "for this step.\n"
+        "ValueError: arb error here 4")
+
+    assert mock_run_step.call_count == 3
+    assert mock_run_step.mock_calls == [call(context={
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3', 'key4':
+        [
+            {
+                'k4lk1': 'value4',
+                'k4lk2': 'value5'},
+            {
+                'k4lk1': 'value6',
+                'k4lk2': 'value7'
+            }],
+        'key5': False,
+        'key6': True,
+        'key7': 77},
+        step_name='step3'),
+        call(context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3', 'key4':
+            [
+                {
+                    'k4lk1': 'value4',
+                    'k4lk2': 'value5'},
+                {
+                    'k4lk1': 'value6',
+                    'k4lk2': 'value7'
+                }],
+            'key5': False,
+            'key6': True,
+            'key7': 77},
+            step_name='step4'),
+        call(context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3', 'key4':
+            [
+                {
+                    'k4lk1': 'value4',
+                    'k4lk2': 'value5'},
+                {
+                    'k4lk1': 'value6',
+                    'k4lk2': 'value7'
+                }],
+            'key5': False,
+            'key6': True,
+            'key7': 77},
+            step_name='step6')]
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+# -----------------------  END run_pipeline_steps: swallow------------------#
+
 
 @patch('pypyr.stepsrunner.run_pipeline_step')
 def test_run_pipeline_steps_simple(mock_run_step):
@@ -1231,6 +1517,22 @@ def test_run_pipeline_steps_simple(mock_run_step):
     mock_run_step.assert_called_once_with(
         step_name='step1', context={'k1': 'v1'})
 
+
+@patch('pypyr.stepsrunner.run_pipeline_step',
+       side_effect=ValueError('arb error here'))
+def test_run_pipeline_steps_simple_with_error(mock_run_step):
+    """Simple step run with error should not swallow."""
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with pytest.raises(ValueError) as err_info:
+            pypyr.stepsrunner.run_pipeline_steps(['step1'], {'k1': 'v1'})
+
+            assert repr(err_info.value) == (
+                "ValueError(\'arb error here',)")
+
+    mock_logger_debug.assert_any_call('step1 is a simple string.')
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'k1': 'v1'})
 
 # ------------------------- run_pipeline_steps--------------------------------#
 
