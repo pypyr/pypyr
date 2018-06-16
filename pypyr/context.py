@@ -345,11 +345,11 @@ class Context(dict):
                 # casting a str to bool is always True, hence special case. If
                 # the str value is 'False'/'false', presumably user can
                 # reasonably expect a bool False response.
-                return result == 'True'
+                return result.lower() in ['true', '1', '1.0']
             else:
                 return out_type(result)
         else:
-            return value
+            return out_type(value)
 
     def get_processed_string(self, input_string):
         """Runs token substitution on input_string against context.
@@ -389,7 +389,7 @@ class Context(dict):
             KeyError: input_string is not a sic string and has {somekey} where
                       somekey does not exist in context dictionary.
         """
-        if input_string[:6] == '[sic]"':
+        if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
         else:
             return input_string.format(**self)

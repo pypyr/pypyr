@@ -111,9 +111,10 @@ Save pipelines to a `pipelines` directory in your working directory.
     - mymodule # simple step pointing at a python file
     - name: my.package.another.module # complex step. It contains a description and in parameters.
       description: Optional description is for humans. It's any text that makes your life easier.
-      in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+      in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
+      run: True # optional. Runs this step if True, skips steps if false. Defaults to True if not specified.
 
   # optional.
   on_success:
@@ -268,6 +269,47 @@ You can specify a step in the pipeline yaml in two ways:
 
 * Frankly, the only reason simple steps are there is because I'm lazy and I dislike redundant typing.
 
+Step decorators
+---------------
+
+Complex steps have various optional step decorators that change how or if a step is run.
+
+Don't bother specifying these unless you want to deviate from the default values.
+
+
+.. code-block:: yaml
+
+  steps:
+    - name: my.package.another.module
+      description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
+      in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+        parameter1: value1
+        parameter2: value2
+      run: True # optional. Runs this step if True, skips steps if false. Defaults to True if not specified.
+
+
++---------------+----------+---------------------------------------------+----------------+
+| **decorator** | **type** | **description**                             | **default**    |
++---------------+--------------------------------------------------------+----------------+
+| in            | dict     | Add this to the context so that this        | None           |
+|               |          | step and subsequent steps can use these     |                |
+|               |          | key-value pairs.                            |                |
++---------------+--------------------------------------------------------+----------------+
+| run           | bool     | Runs this step if True, skips steps if      | True           |
+|               |          | false.                                      |                |
++---------------+--------------------------------------------------------+----------------+
+
+All step decorators support `Substitutions`_.
+
+Note that for all bool values, the standard Python truth value testing rules apply.
+https://docs.python.org/3/library/stdtypes.html#truth-value-testing
+
+Simply put, this means that 1, TRUE, True and true will be True.
+
+None/Empty, 0,'', [], {} will be False.
+
+See a worked example for `step decorators here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/stepdecorators.yaml>`__.
 
 Built-in steps
 --------------

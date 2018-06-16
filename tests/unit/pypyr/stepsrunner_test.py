@@ -3,7 +3,7 @@ from pypyr.context import Context
 from pypyr.errors import ContextError
 import pypyr.stepsrunner
 import pytest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 # ------------------------- test context--------------------------------------#
 
@@ -275,6 +275,7 @@ def test_run_pipeline_step_none_context(mocked_moduleloader):
                        'key5': False,
                        'key6': True,
                        'key7': 77}
+
 # ------------------------- run_pipeline_step---------------------------------#
 
 # ------------------------- run_pipeline_steps--------------------------------#
@@ -284,7 +285,7 @@ def test_run_pipeline_steps_none():
     """If steps None does nothing"""
     logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
     with patch.object(logger, 'debug') as mock_logger_debug:
-        pypyr.stepsrunner.run_pipeline_steps(None, {'k1': 'v1'})
+        pypyr.stepsrunner.run_pipeline_steps(None, Context({'k1': 'v1'}))
 
     mock_logger_debug.assert_any_call("No steps found to execute.")
 
@@ -294,7 +295,8 @@ def test_run_pipeline_steps_complex(mock_run_step):
     """Complex step run with no in args."""
     logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
     with patch.object(logger, 'debug') as mock_logger_debug:
-        pypyr.stepsrunner.run_pipeline_steps([{'name': 'step1'}], {'k1': 'v1'})
+        pypyr.stepsrunner.run_pipeline_steps(
+            [{'name': 'step1'}], Context({'k1': 'v1'}))
 
     mock_logger_debug.assert_any_call("{'name': 'step1'} is complex.")
     mock_run_step.assert_called_once_with(
@@ -335,6 +337,449 @@ def test_run_pipeline_steps_complex_with_in(mock_run_step):
 
     # validate all the in params ended up in context as intended
     assert len(context) - 2 == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_true(mock_run_step):
+    """Complex step with run decorator set true will run step."""
+    steps = [{
+        'name': 'step1',
+        'run': True
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_false(mock_run_step):
+    """Complex step with run decorator set false doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        'run': False
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_str_formatting_false(
+        mock_run_step):
+    """Complex step with run formatting expression false doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # name will evaluate False because it's a string and it's not 'True'.
+        'run': '{key1}'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_str_false(
+        mock_run_step):
+    """Complex step with run set to string False doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # name will evaluate False because it's a string and it's not 'True'.
+        'run': 'False'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_str_lower_false(
+        mock_run_step):
+    """Complex step with run set to string false doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # name will evaluate False because it's a string and it's not 'True'.
+        'run': 'false'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
+        mock_run_step):
+    """Complex step with run formatting expression false doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # key5 will evaluate False because it's a bool and it's False
+        'run': '{key5}'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
+        mock_run_step):
+    """Complex step with run formatting expression true runs step."""
+    steps = [{
+        'name': 'step1',
+        # key6 will evaluate True because it's a bool and it's True
+        'run': '{key6}'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_string_true(
+        mock_run_step):
+    """Complex step with run formatting expression True runs step."""
+    steps = [{
+        'name': 'step1',
+        # 'True' will evaluate bool True
+        'run': 'True'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_1_true(
+        mock_run_step):
+    """Complex step with run 1 runs step."""
+    steps = [{
+        'name': 'step1',
+        # 1 will evaluate True because it's an int and 1
+        'run': 1
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_99_true(
+        mock_run_step):
+    """Complex step with run 99 runs step."""
+    steps = [{
+        'name': 'step1',
+        # 1 will evaluate True because it's an int and > 0
+        'run': 99
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_neg1_true(
+        mock_run_step):
+    """Complex step with run -1 runs step."""
+    steps = [{
+        'name': 'step1',
+        # 1 will evaluate True because it's an int and > 0
+        'run': -1
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_mix_run_and_not_run(
+        mock_run_step):
+    """Complex steps, some run some don't."""
+    # Step 1 & 3 runs, 2 should not.
+    steps = [{
+        'name': 'step1',
+        'run': True
+    },
+        {
+        'name': 'step2',
+        'run': False
+    },
+        {
+        'name': 'step3',
+    },
+    ]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with patch.object(logger, 'info') as mock_logger_info:
+            pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 3 steps")
+    mock_logger_info.assert_any_call(
+        "step2 not running because run is False.")
+
+    assert mock_run_step.call_count == 2
+    assert mock_run_step.mock_calls == [call(context={
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3', 'key4':
+        [
+            {
+                'k4lk1': 'value4',
+                'k4lk2': 'value5'},
+            {
+                'k4lk1': 'value6',
+                'k4lk2': 'value7'
+            }],
+        'key5': False,
+        'key6': True,
+        'key7': 77},
+        step_name='step1'),
+        call(context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3', 'key4':
+            [
+                {
+                    'k4lk1': 'value4',
+                    'k4lk2': 'value5'},
+                {
+                    'k4lk1': 'value6',
+                    'k4lk2': 'value7'
+                }],
+            'key5': False,
+            'key6': True,
+            'key7': 77},
+            step_name='step3')]
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_multistep_none_run(
+        mock_run_step):
+    """Multiple steps and none run."""
+    # None of these should run - various shades of python false
+    steps = [{
+        'name': 'step1',
+        'run': False
+    },
+        {
+        'name': 'step2',
+        'run': 0
+    },
+        {
+        'name': 'step3',
+        'run': None,
+    },
+    ]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call(
+        "step2 not running because run is False.")
+    mock_logger_info.assert_any_call(
+        "step3 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
 
 
 @patch('pypyr.stepsrunner.run_pipeline_step')

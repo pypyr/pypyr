@@ -119,18 +119,27 @@ def run_pipeline_steps(steps, context):
         step_count = 0
 
         for step in steps:
+            run_me = True
+
             if isinstance(step, dict):
                 logger.debug(f"{step} is complex.")
                 step_name = step['name']
 
                 if 'in' in step:
                     get_step_input_context(step['in'], context)
+
+                # run: optional value, true by default. Allow substitution.
+                run_me = context.get_formatted_as_type(
+                    step.get('run', True), out_type=bool)
             else:
                 logger.debug(f"{step} is a simple string.")
                 step_name = step
 
-            run_pipeline_step(step_name=step_name,
-                              context=context)
+            if run_me:
+                run_pipeline_step(step_name=step_name, context=context)
+            else:
+                logger.info(f"{step_name} not running because run is False.")
+
             step_count += 1
 
         logger.debug(f"executed {step_count} steps")

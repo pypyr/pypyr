@@ -333,8 +333,8 @@ def test_assert_raises_on_assertthis_bool_substitutions():
 
 
 def test_assert_raises_on_assertthis_substitutions_int():
-    """Format expressions doesn't equivocates int 1 and bool True."""
-    context = Context({'k1': 1,
+    """Format expressions doesn't equivocates int 0 and bool True."""
+    context = Context({'k1': 0,
                        'k2': 'True',
                        'assertThis': '{k1}'})
 
@@ -343,6 +343,15 @@ def test_assert_raises_on_assertthis_substitutions_int():
 
     assert repr(err_info.value) == (
         "ContextError('assert {k1} evaluated to False.',)")
+
+
+def test_assert_assertthis_int_1_is_true():
+    """Format expressions equivocates int 1 and bool True."""
+    context = Context({'k1': 1,
+                       'k2': 'True',
+                       'assertThis': '{k1}'})
+
+    assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_none_substitutions():
