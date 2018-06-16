@@ -315,7 +315,7 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | step and continue to the next step.         |                |
 |               |          | pypyr logs the error, so you'll know what   |                |
 |               |          | happened, but processing continues.         |                |
-+---------------+--------------------------------------------------------+----------------+
++---------------+----------+---------------------------------------------+----------------+
 
 All step decorators support `Substitutions`_.
 
