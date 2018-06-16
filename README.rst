@@ -114,7 +114,8 @@ Save pipelines to a `pipelines` directory in your working directory.
       in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
-      run: True # optional. Runs this step if True, skips steps if false. Defaults to True if not specified.
+      run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
+      skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
 
   # optional.
   on_success:
@@ -285,7 +286,8 @@ Don't bother specifying these unless you want to deviate from the default values
       in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
-      run: True # optional. Runs this step if True, skips steps if false. Defaults to True if not specified.
+      run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
+      skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
 
 
 +---------------+----------+---------------------------------------------+----------------+
@@ -295,8 +297,18 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | step and subsequent steps can use these     |                |
 |               |          | key-value pairs.                            |                |
 +---------------+--------------------------------------------------------+----------------+
-| run           | bool     | Runs this step if True, skips steps if      | True           |
-|               |          | false.                                      |                |
+| run           | bool     | Runs this step if True, skips step if       | True           |
+|               |          | False.                                      |                |
++---------------+--------------------------------------------------------+----------------+
+| skip          | bool     | Skips this step if True, runs step if       | False          |
+|               |          | False. Evaluates after the *run* decorator. |                |
+|               |          |                                             |                |
+|               |          | If this looks like it's merely the inverse  |                |
+|               |          | of *run*, that's because it is. Use         |                |
+|               |          | whichever suits your pipeline better, or    |                |
+|               |          | combine *run* and *skip* in the same        |                |
+|               |          | pipeline to toggle at runtime which steps   |                |
+|               |          | you want to execute.                        |                |
 +---------------+--------------------------------------------------------+----------------+
 
 All step decorators support `Substitutions`_.

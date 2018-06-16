@@ -338,6 +338,8 @@ def test_run_pipeline_steps_complex_with_in(mock_run_step):
     # validate all the in params ended up in context as intended
     assert len(context) - 2 == original_len
 
+# -----------------------  run_pipeline_steps: run -----------------------#
+
 
 @patch('pypyr.stepsrunner.run_pipeline_step')
 def test_run_pipeline_steps_complex_with_run_true(mock_run_step):
@@ -610,7 +612,7 @@ def test_run_pipeline_steps_complex_with_run_99_true(
     """Complex step with run 99 runs step."""
     steps = [{
         'name': 'step1',
-        # 1 will evaluate True because it's an int and > 0
+        # 99 will evaluate True because it's an int and > 0
         'run': 99
     }]
 
@@ -646,7 +648,7 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(
     """Complex step with run -1 runs step."""
     steps = [{
         'name': 'step1',
-        # 1 will evaluate True because it's an int and > 0
+        # -1 will evaluate True because it's an int and != 0
         'run': -1
     }]
 
@@ -781,6 +783,442 @@ def test_run_pipeline_steps_complex_with_multistep_none_run(
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
 
+# -----------------------  END run_pipeline_steps: run -----------------------#
+
+# -----------------------  run_pipeline_steps: skip --------------------------#
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_false(mock_run_step):
+    """Complex step with skip decorator set false will run step."""
+    steps = [{
+        'name': 'step1',
+        'skip': False
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_true(mock_run_step):
+    """Complex step with skip decorator set true runa step."""
+    steps = [{
+        'name': 'step1',
+        'skip': True
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
+        mock_run_step):
+    """Complex step with skip formatting expression false doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # name will evaluate True
+        'skip': '{key6}'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_str_true(
+        mock_run_step):
+    """Complex step with skip set to string False doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # skip evaluates True because it's a string and TRUE parses to True.
+        'skip': 'TRUE'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_str_lower_true(
+        mock_run_step):
+    """Complex step with run set to string true doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # skip will evaluate true because it's a string and true is True.
+        'skip': 'true'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
+        mock_run_step):
+    """Complex step with run doesn't run step, evals before skip."""
+    steps = [{
+        'name': 'step1',
+        # key5 will evaluate False because it's a bool and it's False
+        'run': '{key5}',
+        'skip': True
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
+        mock_run_step):
+    """Complex step with skip formatting expression true runs step."""
+    steps = [{
+        'name': 'step1',
+        # key5 will evaluate False because it's a bool and it's False
+        'skip': '{key5}'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_string_false(
+        mock_run_step):
+    """Complex step with skip formatting expression False runs step."""
+    steps = [{
+        'name': 'step1',
+        # 'False' will evaluate bool False
+        'skip': 'False'
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_0_true(
+        mock_run_step):
+    """Complex step with run 1 runs step."""
+    steps = [{
+        'name': 'step1',
+        # 0 will evaluate False because it's an int and 0
+        'skip': 0
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 1 steps")
+    mock_run_step.assert_called_once_with(
+        step_name='step1', context={'key1': 'value1',
+                                    'key2': 'value2',
+                                    'key3': 'value3',
+                                    'key4': [
+                                        {'k4lk1': 'value4',
+                                         'k4lk2': 'value5'},
+                                        {'k4lk1': 'value6',
+                                         'k4lk2': 'value7'}
+                                    ],
+                                    'key5': False,
+                                    'key6': True,
+                                    'key7': 77})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_99_true(
+        mock_run_step):
+    """Complex step with skip 99 doesn't run step."""
+    steps = [{
+        'name': 'step1',
+        # 99 will evaluate True because it's an int and > 0
+        'skip': 99
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_skip_neg1_true(
+        mock_run_step):
+    """Complex step with run -1 runs step."""
+    steps = [{
+        'name': 'step1',
+        # -1 will evaluate True because it's an int and != 0
+        'skip': -1
+    }]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_mix_skip_and_not_skip(
+        mock_run_step):
+    """Complex steps, some run some don't."""
+    # Step 1 & 3 runs, 2 should not.
+    steps = [{
+        'name': 'step1',
+        'skip': False
+    },
+        {
+        'name': 'step2',
+        'skip': True
+    },
+        {
+        'name': 'step3',
+    },
+    ]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with patch.object(logger, 'info') as mock_logger_info:
+            pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_debug.assert_any_call("executed 3 steps")
+    mock_logger_info.assert_any_call(
+        "step2 not running because skip is True.")
+
+    assert mock_run_step.call_count == 2
+    assert mock_run_step.mock_calls == [call(context={
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3', 'key4':
+        [
+            {
+                'k4lk1': 'value4',
+                'k4lk2': 'value5'},
+            {
+                'k4lk1': 'value6',
+                'k4lk2': 'value7'
+            }],
+        'key5': False,
+        'key6': True,
+        'key7': 77},
+        step_name='step1'),
+        call(context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3', 'key4':
+            [
+                {
+                    'k4lk1': 'value4',
+                    'k4lk2': 'value5'},
+                {
+                    'k4lk1': 'value6',
+                    'k4lk2': 'value7'
+                }],
+            'key5': False,
+            'key6': True,
+            'key7': 77},
+            step_name='step3')]
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.stepsrunner.run_pipeline_step')
+def test_run_pipeline_steps_complex_with_multistep_all_skip(
+        mock_run_step):
+    """Multiple steps and none run."""
+    # None of these should run - various shades of python true
+    steps = [{
+        'name': 'step1',
+        'skip': [1, 2, 3]
+    },
+        {
+        'name': 'step2',
+        'skip': 1
+    },
+        {
+        'name': 'step3',
+        'skip': True,
+    },
+        {
+        'name': 'step4',
+        # run evals before skip
+        'run': False,
+        'skip': False
+    },
+    ]
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = pypyr.log.logger.get_logger('pypyr.stepsrunner')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.stepsrunner.run_pipeline_steps(steps, context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call(
+        "step2 not running because skip is True.")
+    mock_logger_info.assert_any_call(
+        "step3 not running because skip is True.")
+    mock_logger_info.assert_any_call(
+        "step4 not running because run is False.")
+    mock_run_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+# -----------------------  END run_pipeline_steps: skip ----------------------#
+
 
 @patch('pypyr.stepsrunner.run_pipeline_step')
 def test_run_pipeline_steps_simple(mock_run_step):
@@ -792,6 +1230,8 @@ def test_run_pipeline_steps_simple(mock_run_step):
     mock_logger_debug.assert_any_call('step1 is a simple string.')
     mock_run_step.assert_called_once_with(
         step_name='step1', context={'k1': 'v1'})
+
+
 # ------------------------- run_pipeline_steps--------------------------------#
 
 # ------------------------- run_step_group------------------------------------#
