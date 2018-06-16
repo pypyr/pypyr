@@ -293,14 +293,14 @@ Don't bother specifying these unless you want to deviate from the default values
 
 +---------------+----------+---------------------------------------------+----------------+
 | **decorator** | **type** | **description**                             | **default**    |
-+---------------+--------------------------------------------------------+----------------+
++---------------+----------+---------------------------------------------+----------------+
 | in            | dict     | Add this to the context so that this        | None           |
 |               |          | step and subsequent steps can use these     |                |
 |               |          | key-value pairs.                            |                |
-+---------------+--------------------------------------------------------+----------------+
++---------------+----------+---------------------------------------------+----------------+
 | run           | bool     | Runs this step if True, skips step if       | True           |
 |               |          | False.                                      |                |
-+---------------+--------------------------------------------------------+----------------+
++---------------+----------+---------------------------------------------+----------------+
 | skip          | bool     | Skips this step if True, runs step if       | False          |
 |               |          | False. Evaluates after the *run* decorator. |                |
 |               |          |                                             |                |
@@ -310,7 +310,7 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | combine *run* and *skip* in the same        |                |
 |               |          | pipeline to toggle at runtime which steps   |                |
 |               |          | you want to execute.                        |                |
-+---------------+--------------------------------------------------------+----------------+
++---------------+----------+---------------------------------------------+----------------+
 | swallow       | bool     | If True, ignore any errors raised by the    | False          |
 |               |          | step and continue to the next step.         |                |
 |               |          | pypyr logs the error, so you'll know what   |                |
