@@ -2,6 +2,7 @@
 from collections import namedtuple
 from collections.abc import Mapping, Set, Sequence
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.utils import types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
                              ['key',
@@ -460,3 +461,84 @@ class Context(dict):
             if k[1] else None,
             has_value=k[1] and not self[k[0]] is None
         ) for k in keys_exist)
+
+    def merge(self, add_me):
+        """Merge add_me into context and applies interpolation.
+
+        Bottom-up merge where add_me merges into context. Applies string
+        interpolation where the type is a string. Where a key exists in
+        context already, add_me's value will overwrite what's in context
+        already.
+
+        Supports nested hierarchy. add_me can contains dicts/lists/enumerables
+        that contain other enumerables et. It doesn't restrict levels of
+        nesting, so if you really want to go crazy with the levels you can, but
+        you might blow your stack.
+
+        If something from add_me exists in context already, but add_me's value
+        is of a different type, add_me will overwrite context. Do note this.
+        i.e if you had context['int_key'] == 1 and
+        add_me['int_key'] == 'clearly not a number', the end result would be
+        context['int_key'] == 'clearly not a number'
+
+        If add_me contains lists/sets/tuples, this merges these
+        additively, meaning it appends values from add_me to the existing
+        sequence.
+
+        Args:
+            add_me: dict. Merge this dict into context.
+
+        Returns:
+            None. All operations mutate this instance of context.
+        """
+        def merge_recurse(current, add_me):
+            """This inner function exists to walk the current context tree.
+
+            On 1st iteration, current = self (i.e root of context)
+            On subsequent recursive iterations, current is wherever you're at
+            in the nested context hierarchy.
+
+            Args:
+                current: dict. Destination of merge.
+                add_me: dict. Merge this to current.
+            """
+            for k, v in add_me.items():
+                # key supports interpolation
+                k = self.get_formatted_string(k)
+
+                # str not mergable, so it doesn't matter if it exists in dest
+                if isinstance(v, str):
+                    # just overwrite dest - str adds/edits indiscriminately
+                    current[k] = self.get_formatted_string(v)
+                elif isinstance(v, (bytes, bytearray)):
+                    # bytes aren't mergable or formattable
+                    # only here to prevent the elif on enumerables catching it
+                    current[k] = v
+                # deal with things that are mergable - exists already in dest
+                elif k in current:
+                    if types.are_all_this_type(Mapping, current[k], v):
+                        # it's dict-y, thus recurse through it to merge since
+                        # it exists in dest
+                        merge_recurse(current[k], v)
+                    elif types.are_all_this_type(list, current[k], v):
+                        # it's list-y. Extend mutates existing list since it
+                        # exists in dest
+                        current[k].extend(
+                            self.get_formatted_iterable(v))
+                    elif types.are_all_this_type(tuple, current[k], v):
+                        # concatenate tuples
+                        current[k] = (current[k] +
+                                      self.get_formatted_iterable(v))
+                    elif types.are_all_this_type(Set, current[k], v):
+                        # join sets
+                        current[k] = (current[k] |
+                                      self.get_formatted_iterable(v))
+                    else:
+                        # at this point it's not mergable nor a known iterable
+                        current[k] = v
+                else:
+                    # at this point it's not mergable, nor in context
+                    current[k] = self.get_formatted_iterable(v)
+
+        # first iteration starts at context dict root
+        merge_recurse(self, add_me)

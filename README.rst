@@ -343,6 +343,9 @@ Built-in steps
 | `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
 |                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.contextmerge`_   | Merges values into context, preserving the      | contextMerge (dict)          |
+|                               | existing context hierarchy.                     |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextset`_     | Set context values from already existing        | contextSet (dict)            |
 |                               | context values.                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -563,6 +566,55 @@ You can always use *contextclearall* as a simple step. Sample pipeline yaml:
       - another.arb.step
 
 
+pypyr.steps.contextmerge
+^^^^^^^^^^^^^^^^^^^^^^^^
+Merges values into context, preserving the existing hierarchy while only
+updating the differing values as specified in the contextmerge input.
+
+By comparison, *contextset* and *contextsetf* overwrite the destination
+hierarchy that is in context already,
+
+This step merges the contents of the context key *contextMerge* into context.
+The contents of the *contextMerge* key must be a dictionary.
+
+For example, say input context is:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: value2
+    key3:
+        k31: value31
+        k32: value32
+    contextMerge:
+        key2: 'aaa_{key1}_zzz'
+        key3:
+            k33: value33_{key1}
+        key4: 'bbb_{key2}_yyy'
+
+This will result in return context:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2: aaa_value1_zzz
+    key3:
+        k31: value31
+        k32: value32
+        k33: value33_value1
+    key4: bbb_aaa_value1_zzz_yyy
+
+List, Set and Tuple merging is purely additive, with no checks for uniqueness
+or already existing list items. E.g context `[0,1,2]` with
+contextMerge `[2,3,4]` will result in `[0,1,2,2,3,4]`.
+
+Keep this in mind especially where complex types like dicts nest inside a list
+- a merge will always add a new dict list item, not merge it into whatever dicts
+might exist on the list already.
+
+See a worked example for `contextmerge here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/contextmerge.yaml>`__.
+
 pypyr.steps.contextset
 ^^^^^^^^^^^^^^^^^^^^^^
 Sets context values from already existing context values.
@@ -570,6 +622,10 @@ Sets context values from already existing context values.
 This is handy if you need to prepare certain keys in context where a next step
 might need a specific key. If you already have the value in context, you can
 create a new key (or update existing key) with that value.
+
+*contextset* and *contextsetf* overwrite existing keys. If you want to merge
+new values into an existing destination hierarchy, use
+`pypyr.steps.contextmerge`_ instead.
 
 So let's say you already have `context['currentKey'] = 'eggs'`.
 If you run newKey: currentKey, you'll end up with `context['newKey'] == 'eggs'`
@@ -616,6 +672,10 @@ Requires the following context:
   contextsetf:
     newkey: '{format expression}'
     newkey2: '{format expression}'
+
+*contextset* and *contextsetf* overwrite existing keys. If you want to merge
+new values into an existing destination hierarchy, use
+`pypyr.steps.contextmerge`_ instead.
 
 For example, say your context looks like this:
 
