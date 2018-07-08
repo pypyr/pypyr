@@ -1,4 +1,2 @@
---index-url https://pypi.python.org/simple/
-
 ###### Install local application in development mode. This will grab install_requires from setup.py.
 -e .

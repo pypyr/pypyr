@@ -28,7 +28,7 @@ echo "----------Done with twine upload-------------------------------------"
 echo "----------Deploy to pypi complete. Testing in new virtual env.-------"
 
 # maybe need deactivate here, and then manually create new virtual env?
-pip install --upgrade --no-cache-dir pypyr
+pip install --upgrade --no-cache-dir pypyr==${NEW_VERSION}
 # pypyr --v will return "pypyr x.y.z" - get everything after the space for the
 # bare version number.
 TEST_DEPLOY_VERSION=`pypyr --v | cut -d " " -f2`

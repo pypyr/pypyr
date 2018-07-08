@@ -166,7 +166,7 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.commas         | Takes a comma delimited string and returns a    |`pypyr pipelinename --context "param1,param2,param3"`                                |
+| pypyr.parser.commas         | Takes a comma delimited string and returns a    |``pypyr pipelinename --context "param1,param2,param3"``                              |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
 |                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
@@ -174,11 +174,11 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.json           | Takes a json string and returns a dictionary.   |`pypyr pipelinename --context \'{"key1":"value1","key2":"value2"}\'`                 |
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename --context '{"key1":"value1","key2":"value2"}'``                 |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |`pypyr pipelinename --context \'./path/sample.json'`                                 |
+| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |``pypyr pipelinename --context './path/sample.json'``                                |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |`pypyr pipelinename --context "param1=value1,param2=value2,param3=value3"`           |
+| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |``pypyr pipelinename --context "param1=value1,param2=value2,param3=value3"``         |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
 |                             |                                                 |                                                                                     |
@@ -186,7 +186,14 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |`pypyr pipelinename --context \'./path/sample.yaml'`                                 |
+| pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename --context "param1,param2,param3"``                              |
+|                             | list in context with name *argList*.            |                                                                                     |
+|                             |                                                 |This will create a context dictionary like this:                                     |
+|                             | Don't have spaces between commas unless you     |{'argList': ['param1', 'param2', 'param3']}                                          |
+|                             | really mean it. \"v1, v2\" will result in       |                                                                                     |
+|                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename --context './path/sample.yaml'``                                |
 |                             | the pypyr context dictionary.                   |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             | The top (or root) level yaml should describe a  |                                                                                     |
@@ -1527,7 +1534,7 @@ pypyr has 100% test coverage. Shippable CI enforces this on all branches.
 Thank yous
 **********
 pypyr is fortunate to stand on the shoulders of a giant in the shape of the
-excellent `ruamel.yaml <https://pypi.python.org/pypi/ruamel.yaml>`_ library by
+excellent `ruamel.yaml <https://pypi.org/project/ruamel.yaml>`_ library by
 Anthon van der Neut for all yaml parsing and validation.
 
 **********

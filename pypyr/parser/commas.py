@@ -15,9 +15,9 @@ logger = pypyr.log.logger.get_logger(__name__)
 def get_parsed_context(context_arg):
     """Parse input context string and returns context as dictionary."""
     assert context_arg, ("pipeline must be invoked with --context set. For "
-                         "this commastolist parser you're looking for "
-                         "something like--context 'spam,eggs' "
-                         "or --context 'spam'.")
+                         "this commas parser you're looking for something "
+                         "like--context 'spam,eggs' or --context 'spam'."
+                         )
     logger.debug("starting")
     # for each comma-delimited element, project (element-name, true)
     return dict((element, True) for element in context_arg.split(','))
