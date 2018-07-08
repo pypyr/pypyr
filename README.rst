@@ -30,9 +30,22 @@ pip
 
   $ pip install --upgrade pypyr
 
-Python version
+python version
 ==============
 Tested against Python 3.6
+
+docker
+======
+Stuck with an older version of python? Want to run pypyr in an environment that
+you don't control, like a CI server somewhere?
+
+You can use the official pypyr docker image as a drop-in replacement for the
+pypyr executable. https://hub.docker.com/r/pypyr/pypyr/
+
+.. code-block:: bash
+
+  $ docker run pypyr/pypyr echo --context "echoMe=Ceci n'est pas une pipe"
+
 
 *****
 Usage
