@@ -188,9 +188,8 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename --context "param1,param2,param3"``                              |
 |                             | list in context with name *argList*.            |                                                                                     |
-|                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             |                                                 |{'argList': ['param1', 'param2', 'param3']}                                          |
-|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             |                                                 |This will create a context dictionary like this:                                     |
+|                             | Don't have spaces between commas unless you     |{'argList': ['param1', 'param2', 'param3']}                                          |
 |                             | really mean it. \"v1, v2\" will result in       |                                                                                     |
 |                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
