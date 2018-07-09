@@ -5,7 +5,7 @@ import pytest
 from unittest.mock import patch
 
 
-def test_main_pass_with_sysargv():
+def test_main_pass_with_sysargv_context_flag():
     """Invoke from cli sets sys.argv, check assigns correctly to args."""
     arg_list = ['pypyr',
                 'blah',
@@ -28,7 +28,51 @@ def test_main_pass_with_sysargv():
         )
 
 
-def test_main_pass_with_defaults():
+def test_main_pass_with_sysargv_context_positional():
+    """Invoke from cli sets sys.argv, check assigns correctly to args."""
+    arg_list = ['pypyr',
+                'blah',
+                'ctx string',
+                '--log',
+                '50',
+                '--dir',
+                'dir here']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            pypyr.cli.main()
+
+        mock_pipeline_main.assert_called_once_with(
+            pipeline_name='blah',
+            pipeline_context_input='ctx string',
+            working_dir='dir here',
+            log_level=50
+        )
+
+
+def test_main_pass_with_sysargv_context_positional_flags_last():
+    """Check assigns correctly to args when positional last not first."""
+    arg_list = ['pypyr',
+                '--log',
+                '50',
+                '--dir',
+                'dir here',
+                'blah',
+                'ctx string', ]
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            pypyr.cli.main()
+
+        mock_pipeline_main.assert_called_once_with(
+            pipeline_name='blah',
+            pipeline_context_input='ctx string',
+            working_dir='dir here',
+            log_level=50
+        )
+
+
+def test_main_pass_with_defaults_context_flag():
     """Default values assigned - log 20 and cwd"""
     arg_list = ['blah',
                 '--context',
@@ -42,6 +86,76 @@ def test_main_pass_with_defaults():
         pipeline_context_input='ctx string',
         working_dir=os.getcwd(),
         log_level=20
+    )
+
+
+def test_main_pass_with_defaults_context_positional():
+    """Default values assigned - log 20 and cwd"""
+    arg_list = ['blah',
+                'ctx string']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        pypyr.cli.main(arg_list)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input='ctx string',
+        working_dir=os.getcwd(),
+        log_level=20
+    )
+
+
+def test_main_pass_with_context_flag_overrides_positional():
+    """Default values assigned - log 22 and dir set"""
+    arg_list = ['blah',
+                'ctx string',
+                '--log',
+                '22',
+                '--dir',
+                'arb',
+                '--context',
+                'from flag']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        pypyr.cli.main(arg_list)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input='from flag',
+        working_dir='arb',
+        log_level=22
+    )
+
+
+def test_main_pass_with_no_context():
+    """No context is None."""
+    arg_list = ['blah']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        pypyr.cli.main(arg_list)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=None,
+        working_dir=os.getcwd(),
+        log_level=20
+    )
+
+
+def test_main_pass_with_no_context_other_flags_set():
+    """No context is None and other flag still work."""
+    arg_list = ['blah',
+                '--log',
+                '11']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        pypyr.cli.main(arg_list)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=None,
+        working_dir=os.getcwd(),
+        log_level=11
     )
 
 

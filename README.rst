@@ -44,7 +44,7 @@ pypyr executable. https://hub.docker.com/r/pypyr/pypyr/
 
 .. code-block:: bash
 
-  $ docker run pypyr/pypyr echo --context "echoMe=Ceci n'est pas une pipe"
+  $ docker run pypyr/pypyr echo "echoMe=Ceci n'est pas une pipe"
 
 
 *****
@@ -56,10 +56,10 @@ Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
 
-  $ pypyr echo --context "echoMe=Ceci n'est pas une pipe"
+  $ pypyr echo "echoMe=Ceci n'est pas une pipe"
 
 You can achieve the same thing by running a pipeline where the context is set
-in the pipeline yaml rather than as a --context argument:
+in the pipeline yaml rather than passed in as the 2nd positional argument:
 
 .. code-block:: bash
 
@@ -82,10 +82,16 @@ pypyr assumes a pipelines directory in your current working directory.
   # If you don't specify --log it defaults to 20 - INFO logging level.
   $ pypyr mypipelinename
 
-  # run pipelines/mypipelinename.yaml with an input context. For this input to
-  # be available to your pipeline you need to specify a context_parser in your
+  # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary string,
+  # known as the input context argument. For this input argument to be available
+  # to your pipeline you need to specify a context parser in your pipeline yaml.
+  $ pypyr mypipelinename arbitrary_string_here
+
+  # run pipelines/mypipelinename.yaml with an input context in key-value
+  # pair format. For this input to be available to your pipeline you need to
+  # specify a context_parser like pypyr.parser.keyvaluepairs in your
   # pipeline yaml.
-  $ pypyr mypipelinename --context 'mykey=value'
+  $ pypyr mypipelinename "mykey=value"
 
 Get cli help
 ============
@@ -146,18 +152,18 @@ Built-in pipelines
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **pipeline**                | **description**                                 | **how to run**                                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| donothing                   | Does what it says. Nothing.                     |`pypyr donothing`                                                                    |
+| donothing                   | Does what it says. Nothing.                     |``pypyr donothing``                                                                  |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |`pypyr echo --context "echoMe=text goes here"`                                       |
+| echo                        | Echos context value echoMe to output.           |``pypyr echo "echoMe=text goes here"``                                               |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyrversion                | Prints the python cli version number.           |`pypyr pypyrversion`                                                                 |
+| pypyrversion                | Prints the python cli version number.           |``pypyr pypyrversion``                                                               |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| magritte                    | Thoughts about pipes.                           |`pypyr magritte`                                                                     |
+| magritte                    | Thoughts about pipes.                           |``pypyr magritte``                                                                   |
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -166,9 +172,11 @@ context_parser
 ==============
 Optional.
 
-A context_parser parses the pypyr --context input argument. The chances are
-pretty good that it will take the --context argument and put in into the pypyr
-context.
+A context_parser parses the pypyr command's context input argument. This is the
+second positional argument from the command line.
+
+The chances are pretty good that the context_parser will take the context
+command argument and put in into the pypyr context.
 
 The pypyr context is a dictionary that is in scope for the duration of the entire
 pipeline. The context_parser can initialize the context. Any step in the pipeline
@@ -179,7 +187,7 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.commas         | Takes a comma delimited string and returns a    |``pypyr pipelinename --context "param1,param2,param3"``                              |
+| pypyr.parser.commas         | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
 |                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
@@ -187,11 +195,11 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename --context '{"key1":"value1","key2":"value2"}'``                 |
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename '{"key1":"value1","key2":"value2"}'``                           |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |``pypyr pipelinename --context './path/sample.json'``                                |
+| pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |``pypyr pipelinename "./path/sample.json"``                                          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |``pypyr pipelinename --context "param1=value1,param2=value2,param3=value3"``         |
+| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
 |                             | a dictionary element.                           |                                                                                     |
 |                             |                                                 |                                                                                     |
@@ -199,14 +207,14 @@ Built-in context parsers
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename --context "param1,param2,param3"``                              |
+| pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
 |                             | list in context with name *argList*.            |                                                                                     |
 |                             |                                                 |This will create a context dictionary like this:                                     |
 |                             | Don't have spaces between commas unless you     |{'argList': ['param1', 'param2', 'param3']}                                          |
 |                             | really mean it. \"v1, v2\" will result in       |                                                                                     |
 |                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename --context './path/sample.yaml'``                                |
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename "./path/sample.yaml"``                                          |
 |                             | the pypyr context dictionary.                   |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             | The top (or root) level yaml should describe a  |                                                                                     |
@@ -241,11 +249,20 @@ Roll your own context_parser
 
 
   def get_parsed_context(context_arg):
-      """This is the signature for a context parser. Input context is the string received from pypyr --context 'value here'"""
-      assert context_arg, ("pipeline must be invoked with --context set.")
+      """This is the signature for a context parser.
+
+      Args:
+        context_arg: string. Passed from command-line invocation where
+                     pypyr pipelinename 'this is the context_arg'
+
+      Returns:
+        dict. This dict will initialize the context for the pipeline run.
+      """
+      assert context_arg, ("pipeline must be invoked with context set.")
       logger.debug("starting")
 
-      # your clever code here. Chances are pretty good you'll be doing things with the input context string to create a dictionary.
+      # your clever code here. Chances are pretty good you'll be doing things
+      # with the input context_arg string to create a dictionary.
 
       # function signature returns a dictionary
       return {'key1': 'value1', 'key2':'value2'}
@@ -744,7 +761,7 @@ You can run:
 
 .. code-block:: bash
 
-  pypyr mypipeline --context "echoMe=Ceci n'est pas une pipe"
+  pypyr mypipeline "echoMe=Ceci n'est pas une pipe"
 
 
 Alternatively, if you had pipelines/look-ma-no-params.yaml like this:
@@ -1141,7 +1158,7 @@ Example input context:
 |                       | must exist in the *working directory/pipelines* dir. |
 +-----------------------+------------------------------------------------------+
 | pipeArg               | String to pass to the child pipeline context_parser. |
-|                       | Equivalent to *--context* arg on the pypyr cli. Only |
+|                       | Equivalent to *context* arg on the pypyr cli. Only   |
 |                       | used if skipParse==False                             |
 +-----------------------+------------------------------------------------------+
 | raiseError            | If True, errors in child raised up to parent.        |
