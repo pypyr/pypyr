@@ -44,7 +44,7 @@ pypyr executable. https://hub.docker.com/r/pypyr/pypyr/
 
 .. code-block:: bash
 
-  $ docker run pypyr/pypyr echo "echoMe=Ceci n'est pas une pipe"
+  $ docker run pypyr/pypyr echo "Ceci n'est pas une pipe"
 
 
 *****
@@ -56,7 +56,7 @@ Run one of the built-in pipelines to get a feel for it:
 
 .. code-block:: bash
 
-  $ pypyr echo "echoMe=Ceci n'est pas une pipe"
+  $ pypyr echo "Ceci n'est pas une pipe"
 
 You can achieve the same thing by running a pipeline where the context is set
 in the pipeline yaml rather than passed in as the 2nd positional argument:
@@ -157,7 +157,7 @@ Built-in pipelines
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |``pypyr echo "echoMe=text goes here"``                                               |
+| echo                        | Echos context value echoMe to output.           |``pypyr echo "text goes here"``                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyrversion                | Prints the python cli version number.           |``pypyr pypyrversion``                                                               |
 |                             |                                                 |                                                                                     |
@@ -213,6 +213,11 @@ Built-in context parsers
 |                             | Don't have spaces between commas unless you     |{'argList': ['param1', 'param2', 'param3']}                                          |
 |                             | really mean it. \"v1, v2\" will result in       |                                                                                     |
 |                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.string         | Takes any arbitrary string and returns a        |``pypyr pipelinename "arbitrary string here"``                                       |
+|                             | string in context with name *argString*.        |                                                                                     |
+|                             |                                                 |This will create a context dictionary like this:                                     |
+|                             |                                                 |{'argString': 'arbitrary string here'}                                               |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename "./path/sample.yaml"``                                          |
 |                             | the pypyr context dictionary.                   |                                                                                     |
