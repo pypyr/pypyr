@@ -15,12 +15,12 @@ def run_step(context):
                  This logger could well be stdout.
 
     When you execute the pipeline, it should look something like this:
-    pypyr [name here] --context 'echoMe=test'.
+    pypyr [name here] 'echoMe=test', assuming a keyvaluepair context parser.
     """
     logger.debug("started")
 
     assert context, ("context must be set for echo. Did you set "
-                     "--context 'echoMe=text here'?")
+                     "'echoMe=text here'?")
 
     context.assert_key_exists('echoMe', __name__)
 

@@ -24,10 +24,12 @@ def test_empty_string_throw():
     with pytest.raises(AssertionError) as err_info:
         pypyr.parser.list.get_parsed_context(None)
 
+    print(repr(err_info.value))
     assert repr(err_info.value) == (
-        "AssertionError(\"pipeline must be invoked with --context set. For "
-        "this list parser you're looking for something like--context "
-        "'spam,eggs' or --context 'spam'.\",)")
+        "AssertionError(\"pipeline must be invoked with context arg set. For "
+        "this list parser you're looking for something like: "
+        "pypyr pipelinename 'spam,eggs' "
+        "OR: pypyr pipelinename 'spam'.\",)")
 
 
 def test_builtin_list_still_works():

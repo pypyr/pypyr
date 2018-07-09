@@ -21,7 +21,7 @@ def run_step(context):
                   {name}.yaml must exist in the working directory/pipelines
                   dir.
                 - pipeArg. string. optional. String to pass to the
-                  context_parser - the equivalent to --context arg on the
+                  context_parser - the equivalent to context arg on the
                   pypyr cli. Only used if skipParse==False.
                 - raiseError. bool. optional. Defaults to True. If False, log,
                   but swallow any errors that happen during the invoked

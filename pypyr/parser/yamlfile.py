@@ -10,9 +10,10 @@ logger = pypyr.log.logger.get_logger(__name__)
 
 def get_parsed_context(context_arg):
     """Parse input context string and returns context as dictionary."""
-    assert context_arg, ("pipeline must be invoked with --context set. For "
+    assert context_arg, ("pipeline must be invoked with context arg set. For "
                          "this yaml parser you're looking for something "
-                         "like --context './myyamlfile.yaml'")
+                         "like: "
+                         "pypyr pipelinename './myyamlfile.yaml'")
     logger.debug("starting")
     logger.debug(f"attempting to open file: {context_arg}")
     with open(context_arg) as yaml_file:
