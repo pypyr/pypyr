@@ -9,10 +9,10 @@ logger = pypyr.log.logger.get_logger(__name__)
 
 def get_parsed_context(context_arg):
     """Parse input context string and returns context as dictionary."""
-    assert context_arg, ("pipeline must be invoked with --context set. For "
+    assert context_arg, ("pipeline must be invoked with context arg set. For "
                          "this json parser you're looking for something "
-                         "like "
-                         "--context '{\"key1\":\"value1\","
+                         "like: "
+                         "pypyr pipelinename '{\"key1\":\"value1\","
                          "\"key2\":\"value2\"}'")
     logger.debug("starting")
     # deserialize the input context string into json

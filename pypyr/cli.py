@@ -24,7 +24,8 @@ def get_parser():
     parser.add_argument('pipeline_name',
                         help='Name of pipeline to run. It should exist in the '
                         './pipelines directory.')
-    parser.add_argument('--context', dest='pipeline_context',
+    parser.add_argument(dest='pipeline_context',
+                        nargs='?',
                         help='String for context values. Parsed by the '
                         'pipeline\'s context_parser function.')
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),

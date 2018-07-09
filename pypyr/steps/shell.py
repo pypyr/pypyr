@@ -24,7 +24,7 @@ def run_step(context):
     curly brace, double it like {{ or }}.
 
     context is mandatory. When you execute the pipeline, it should look
-    something like this: pipeline-runner [name here] --context 'cmd=ls -a'.
+    something like this: pipeline-runner [name here] 'cmd=ls -a'.
 
     context['cmd'] will interpolate anything in curly braces for values
     found in context. So if your context looks like this:

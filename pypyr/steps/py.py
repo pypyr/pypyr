@@ -17,7 +17,7 @@ def run_step(context):
 
     context is mandatory. When you execute the pipeline, it should look
     something like this:
-        pipeline-runner [name here] --context 'pycode=print(1+1)'.
+        pipeline-runner [name here] 'pycode=print(1+1)'.
     """
     logger.debug("started")
     context.assert_key_has_value(key='pycode', caller=__name__)

@@ -62,7 +62,7 @@ def test_echo_empty_context_fails():
         pypyr.steps.echo.run_step(None)
 
     assert repr(err_info.value) == ("AssertionError(\"context must be set for "
-                                    "echo. Did you set --context 'echoMe=text "
+                                    "echo. Did you set 'echoMe=text "
                                     "here'?\",)")
 
 
