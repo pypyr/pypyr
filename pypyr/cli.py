@@ -28,9 +28,6 @@ def get_parser():
                         nargs='?',
                         help='String for context values. Parsed by the '
                         'pipeline\'s context_parser function.')
-    parser.add_argument('--context', dest='pipeline_context',
-                        help='Deprecated. Same thing as the pipeline_context '
-                             'positional arg.')
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
