@@ -395,6 +395,9 @@ Built-in steps
 |                               | expressions with {token} substitutions.         |                              |
 |                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.default`_        | Set default values in context. Only set values  | defaults (dict)              |
+|                               | if they do not exist already.                   |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.echo`_           | Echo the context value `echoMe` to the output.  | echoMe (string)              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | envGet (dict)                |
@@ -749,6 +752,62 @@ This will result in context like this:
 
 See a worked example `for contextsetf here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/contextset.yaml>`__.
+
+pypyr.steps.default
+^^^^^^^^^^^^^^^^^^^
+Sets values in context if they do not exist already. Does not overwrite
+existing values. Supports nested hierarchies.
+
+This is especially useful for setting default values in context, for example
+when using `optional arguments
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/defaultarg.yaml>`__.
+from the shell.
+
+This step sets the contents of the context key *defaults* into context where
+keys in *defaults* do not exist in context already.
+The contents of the *defaults* key must be a dictionary.
+
+Example:
+Given a context like this:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2:
+        key2.1: value2.1
+    key3: None
+
+And *defaults* input like this:
+
+.. code-block:: yaml
+
+    key1: updated value here won't overwrite since it already exists
+    key2:
+        key2.2: value2.2
+    key3: key 3 exists so I won't overwrite
+
+Will result in context:
+
+.. code-block:: yaml
+
+    key1: value1
+    key2:
+        key2.1: value2.1
+        key2.2: value2.2
+    key3: None
+
+By comparison, the *in* step decorator, and the steps *contextset*,
+*contextsetf* and *contextmerge* overwrite values that are in context already.
+
+The recursive if-not-exists-then-set check happens for dictionaries, but not
+for items in Lists, Sets and Tuples. You can set default values of type List,
+Set or Tuple if their keys don't exist in context already, but this step will
+not recurse through the List, Set or Tuple itself.
+
+Supports `Substitutions`_. String interpolation applies to keys and values.
+
+See a worked example for `default here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/default.yaml>`__.
 
 pypyr.steps.echo
 ^^^^^^^^^^^^^^^^

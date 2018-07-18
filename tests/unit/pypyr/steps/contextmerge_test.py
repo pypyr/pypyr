@@ -1,9 +1,9 @@
 """contextmerge.py unit tests."""
 import logging
 import pytest
+from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
-from unittest.mock import patch
 import pypyr.steps.contextmerge
 
 
