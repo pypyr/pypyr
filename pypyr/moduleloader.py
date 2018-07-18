@@ -4,14 +4,13 @@ Load modules dynamically, find things on file-system.
 """
 
 import importlib
+import logging
 import os
-from pypyr.errors import PipelineNotFoundError, PyModuleNotFoundError
-import pypyr.log.logger
 import sys
-
+from pypyr.errors import PipelineNotFoundError, PyModuleNotFoundError
 
 # use pypyr logger to ensure loglevel is set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_module(module_abs_import):

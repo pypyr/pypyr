@@ -1,10 +1,10 @@
 """Archive and extract tars."""
-import pypyr.log.logger
-from pypyr.errors import KeyNotInContextError
+import logging
 import tarfile
+from pypyr.errors import KeyNotInContextError
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

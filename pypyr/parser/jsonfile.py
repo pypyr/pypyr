@@ -1,10 +1,10 @@
 """Context parser that returns a dictionary from a local json file."""
 
-import pypyr.log.logger
+import logging
 import json
 
 # use pypyr logger to ensure loglevel is set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_parsed_context(context_arg):

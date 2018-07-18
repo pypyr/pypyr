@@ -1,9 +1,9 @@
 """echo.py unit tests."""
+import logging
+import pytest
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
-import pypyr.log.logger
 import pypyr.steps.echo
-import pytest
 from unittest.mock import patch
 
 
@@ -12,7 +12,7 @@ def test_echo_pass():
     context = Context({
         'echoMe': 'test value here'})
 
-    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    logger = logging.getLogger('pypyr.steps.echo')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.echo.run_step(context)
 
@@ -25,7 +25,7 @@ def test_echo_substitutions_pass():
         'key1': 'down the',
         'echoMe': 'piping {key1} valleys wild'})
 
-    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    logger = logging.getLogger('pypyr.steps.echo')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.echo.run_step(context)
 
@@ -37,7 +37,7 @@ def test_echo_number_pass():
     context = Context({
         'echoMe': 77})
 
-    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    logger = logging.getLogger('pypyr.steps.echo')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.echo.run_step(context)
 
@@ -49,7 +49,7 @@ def test_echo_bool_pass():
     context = Context({
         'echoMe': False})
 
-    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    logger = logging.getLogger('pypyr.steps.echo')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.echo.run_step(context)
 
@@ -81,7 +81,7 @@ def test_echo_missing_echo_me_raises():
 def test_echo_echo_me_none_pass():
     """Echo can output None."""
     context = Context({'echoMe': None})
-    logger = pypyr.log.logger.get_logger('pypyr.steps.echo')
+    logger = logging.getLogger('pypyr.steps.echo')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.echo.run_step(context)
 

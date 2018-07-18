@@ -1,9 +1,9 @@
 """pypyr step that parses file for string substitutions and writes output."""
 import os
-import pypyr.log.logger
+import logging
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

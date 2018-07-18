@@ -1,10 +1,10 @@
 """contextmerge.py unit tests."""
+import logging
+import pytest
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
-import pypyr.log.logger
 from unittest.mock import patch
 import pypyr.steps.contextmerge
-import pytest
 
 
 def test_contextmerge_throws_on_empty_context():
@@ -57,7 +57,7 @@ def test_contextmerge_pass_different_types_with_log():
         }
     })
 
-    logger = pypyr.log.logger.get_logger('pypyr.steps.contextmerge')
+    logger = logging.getLogger('pypyr.steps.contextmerge')
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.contextmerge.run_step(context)
 

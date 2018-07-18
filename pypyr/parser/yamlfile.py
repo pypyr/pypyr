@@ -1,11 +1,11 @@
 """Context parser that returns a dictionary from a local yaml file."""
 
 from collections.abc import MutableMapping
-import pypyr.log.logger
+import logging
 import ruamel.yaml as yaml
 
 # use pypyr logger to ensure loglevel is set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_parsed_context(context_arg):

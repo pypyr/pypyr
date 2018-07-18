@@ -4,11 +4,11 @@ You cannot use things like exit, return, shell pipes, filename wildcards,
 environment,variable expansion, and expansion of ~ to a user’s home
 directory.
 """
-import pypyr.log.logger
+import logging
 import subprocess
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):
