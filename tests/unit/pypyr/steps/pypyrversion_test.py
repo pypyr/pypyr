@@ -12,9 +12,10 @@ def test_pypyr_version():
     with patch.object(logger, 'info') as mock_logger_info:
         pypyr.steps.pypyrversion.run_step({})
 
-    mock_logger_info.assert_any_call('pypyr version is: '
-                                     f'pypyr {pypyr.version.__version__} '
-                                     f'python {platform.python_version()}')
+    mock_logger_info.assert_called_once_with(
+        'pypyr version is: '
+        f'pypyr {pypyr.version.__version__} '
+        f'python {platform.python_version()}')
 
 
 def test_pypyr_version_context_out_same_as_in():
