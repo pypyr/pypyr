@@ -5,12 +5,6 @@ Configuration for the python logging library.
 import logging
 
 
-def get_logger(logger_name):
-    """Create a logger with the log_level set."""
-    logger = logging.getLogger(logger_name)
-    return logger
-
-
 def set_logging_config(log_level):
     """Set python logging library config.
 

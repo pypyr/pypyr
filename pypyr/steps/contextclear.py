@@ -4,10 +4,10 @@ This is handy if you run the same step multiple times in a pipeline and you
 don't want the previously assigned context settings for that step to impact the
 next iteration.
 """
-import pypyr.log.logger
+import logging
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

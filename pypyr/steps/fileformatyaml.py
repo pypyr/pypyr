@@ -1,10 +1,10 @@
 """pypyr step that parses yaml for string substitutions, writes output."""
 import os
-import pypyr.log.logger
+import logging
 import ruamel.yaml as yaml
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

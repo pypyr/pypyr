@@ -1,10 +1,10 @@
 """pypyr step that parses file, does string replacement and writes output."""
 from functools import reduce
 import os
-import pypyr.log.logger
+import logging
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

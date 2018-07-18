@@ -4,11 +4,11 @@ The context['cmd'] string must be formatted exactly as it would be when typed
 at the shell prompt. This includes, for example, quoting or backslash escaping
 filenames with spaces in them. The shell defaults to /bin/sh.
 """
-import pypyr.log.logger
+import logging
 import subprocess
 
 # logger means the log level will be set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def run_step(context):

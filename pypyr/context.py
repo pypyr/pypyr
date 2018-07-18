@@ -542,3 +542,63 @@ class Context(dict):
 
         # first iteration starts at context dict root
         merge_recurse(self, add_me)
+
+    def set_defaults(self, defaults):
+        """Set defaults in context if keys do not exist already.
+
+        Adds the input dict (defaults) into the context, only where keys in
+        defaults do not already exist in context. Supports nested hierarchies.
+
+        Example:
+        Given a context like this:
+            key1: value1
+            key2:
+                key2.1: value2.1
+            key3: None
+
+        And defaults input like this:
+            key1: 'updated value here won't overwrite since it already exists'
+            key2:
+                key2.2: value2.2
+            key3: 'key 3 exists so I won't overwrite
+
+        Will result in context:
+            key1: value1
+            key2:
+                key2.1: value2.1
+                key2.2: value2.2
+            key3: None
+
+        Args:
+            defaults: dict. Add this dict into context.
+
+        Returns:
+            None. All operations mutate this instance of context.
+        """
+        def defaults_recurse(current, defaults):
+            """This inner function exists to walk the current context tree.
+
+            On 1st iteration, current = self (i.e root of context)
+            On subsequent recursive iterations, current is wherever you're at
+            in the nested context hierarchy.
+
+            Args:
+                current: dict. Destination of merge.
+                defaults: dict. Add this to current if keys don't exist
+                                already.
+            """
+            for k, v in defaults.items():
+                # key supports interpolation
+                k = self.get_formatted_string(k)
+
+                if k in current:
+                    if types.are_all_this_type(Mapping, current[k], v):
+                        # it's dict-y, thus recurse through it to check if it
+                        # contains child items that don't exist in dest
+                        defaults_recurse(current[k], v)
+                else:
+                    # since it's not in context already, add the default
+                    current[k] = self.get_formatted_iterable(v)
+
+        # first iteration starts at context dict root
+        defaults_recurse(self, defaults)

@@ -5,10 +5,10 @@ Takes a comma delimited string and returns a list named argList.
 So a string like this "ham,eggs,bacon", will yield context:
 { 'argList': ['ham', 'eggs', 'bacon']}
 """
-import pypyr.log.logger
+import logging
 
 # use pypyr logger to ensure loglevel is set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_parsed_context(context_arg):

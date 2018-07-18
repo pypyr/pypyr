@@ -1400,3 +1400,180 @@ def test_merge_pass_nested_with_types():
 
 
 # ------------------- merge --------------------------------------------------#
+
+# ------------------- set_defaults -------------------------------------------#
+def test_set_defaults_pass_no_substitutions():
+    """defaults success case with no substitutions."""
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+    })
+
+    add_me = {
+        'key2': 'value4',
+        'key4': 'value5'
+    }
+
+    context.set_defaults(add_me)
+
+    assert context['key1'] == 'value1'
+    # since key2 exists already, shouldn't update
+    assert context['key2'] == 'value2'
+    assert context['key3'] == 'value3'
+    assert context['key4'] == 'value5'
+
+
+def test_set_defaults_pass_nested_with_substitutions():
+    """merge success case with nested hierarchy and substitutions."""
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': {
+            'k31': 'value31',
+            'k32': 'value32',
+        }})
+
+    add_me = {
+        'key2': 'value4',
+        'key3': {
+            'k33': 'value33'
+        },
+        'key4': '444_{key1}_444'
+    }
+
+    context.set_defaults(add_me)
+
+    assert context == {
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': {
+            'k31': 'value31',
+            'k32': 'value32',
+            'k33': 'value33'
+        },
+        'key4': '444_value1_444'
+    }
+
+
+def test_set_defaults_pass_nested_with_types():
+    """defaults with nested hierarchy, substitutions, diff types."""
+    context = Context({
+        'k1': 'v1',
+        'k2': 'v2_{ctx1}',
+        'k3': bytes('v3{ctx1}', encoding='utf-8'),
+        'k4': [
+            1,
+            2,
+            '3_{ctx4}here',
+            {'key4.1': 'value4.1',
+             '{ctx2}_key4.2': 'value_{ctx3}_4.2',
+             'key4.3': {
+                              '4.3.1': '4.3.1value',
+                              '4.3.2': '4.3.2_{ctx1}_value'}}
+        ],
+        'k5': {'key5.1': {'kv511': 'value5.1'}, 'key5.2': 'value5.2'},
+        'k6': ('six6.1', False, [0, 1, 2], 77, 'six_{ctx1}_end'),
+        'k7': 'simple string to close 7',
+        'k8': ('tuple1', 'tuple2'),
+        'k9': {'set1', 'set2'},
+        'k10': (
+            1,
+            2,
+            {'10.1': '10.1v',
+             '10.2': '{10.2v}',
+             },
+            3),
+        'k11': {
+            'k11.1': '11.1v',
+            'k11.2': {
+                'k11.2.1': '11.2.1v',
+                'k11.2.2': {
+                    'k11.2.2.1': '11.2.2.1v'
+                },
+            },
+        },
+        'k12': 'end'
+    }
+    )
+
+    add_me = {
+        'k4': [
+            4.4,
+            {'key4.3': {
+                '4.3.1': 'merged value for 4.3.1'
+            }
+            }
+        ],
+        'k5': {
+            'key5.1': {
+                'kv522': 'kv522 from merge {k1}'
+            }},
+        'k8': ('tuple3', ),
+        'k9': {'set3', },
+        'k10': ({
+            '{k1}': [0,
+                     1,
+                     2,
+                     (
+                         'tuple in list in dict in tuple in dict',
+                         'hello {k2}',
+                         {'k1': '{k1}'}
+                     ),
+                     [0, 1, 2, '{k1}', 3, (True, False), ['00', '{k1}']],
+                     4]
+        },
+            4),
+        'k11': {
+            'k11.2': {
+                'k11.2.2': {
+                    'add me': '{k1}'
+                },
+            },
+        },
+    }
+
+    context.set_defaults(add_me)
+
+    assert context == {
+        'k1': 'v1',
+        'k2': 'v2_{ctx1}',
+        'k3': bytes('v3{ctx1}', encoding='utf-8'),
+        'k4': [
+            1,
+            2,
+            '3_{ctx4}here',
+            {'key4.1': 'value4.1',
+             '{ctx2}_key4.2': 'value_{ctx3}_4.2',
+             'key4.3': {
+                              '4.3.1': '4.3.1value',
+                              '4.3.2': '4.3.2_{ctx1}_value'}}
+        ],
+        'k5': {'key5.1': {'kv511': 'value5.1',
+                          'kv522': 'kv522 from merge v1'},
+               'key5.2': 'value5.2'},
+        'k6': ('six6.1', False, [0, 1, 2], 77, 'six_{ctx1}_end'),
+        'k7': 'simple string to close 7',
+        'k8': ('tuple1', 'tuple2'),
+        'k9': {'set1', 'set2'},
+        'k10': (
+            1,
+            2,
+            {'10.1': '10.1v',
+             '10.2': '{10.2v}',
+             },
+            3),
+        'k11': {
+            'k11.1': '11.1v',
+            'k11.2': {
+                'k11.2.1': '11.2.1v',
+                'k11.2.2': {
+                    'k11.2.2.1': '11.2.2.1v',
+                    'add me': 'v1'
+                },
+            },
+        },
+        'k12': 'end'
+    }
+
+# ------------------- set_defaults -------------------------------------------#

@@ -3,6 +3,7 @@
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
 """
+import logging
 import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
@@ -10,7 +11,7 @@ import pypyr.stepsrunner
 import ruamel.yaml as yaml
 
 # use pypyr logger to ensure loglevel is set correctly
-logger = pypyr.log.logger.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def get_parsed_context(pipeline, context_in_string):
