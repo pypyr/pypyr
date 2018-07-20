@@ -21,7 +21,7 @@ class Step(object):
     Attributes:
         name: (string) this is the step-name. equivalent to the module name of
               of the step. this module is the one dynamically loaded to
-              step_module.
+              the module attribute.
         module: (importlib module) the dynamically loaded module that the
                 step will execute. this module will have the run_step
                 function that implements the actual step execution.
@@ -41,7 +41,7 @@ class Step(object):
 
         Args:
             step: a string or a dict. This is the actual step as it exists in
-                  the pipeline yaml - which is to say it can jsut be a string
+                  the pipeline yaml - which is to say it can just be a string
                   for a simple step, or a dict for a complex step.
         """
         logger.debug("starting")
