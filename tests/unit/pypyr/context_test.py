@@ -444,8 +444,8 @@ def test_tag_not_in_context_should_throw():
 
     assert repr(err.value) == (
         "KeyNotInContextError(\"Unable to format '{key1} this is "
-        "{key2} string' at context['input_string'] with {key2}, because "
-        "context['key2'] doesn't exist\",)")
+        "{key2} string' at context['input_string'], because "
+        "key2 not found in the pypyr context.\",)")
 
 
 def test_context_item_not_a_string_should_return_as_is():
@@ -477,9 +477,8 @@ def test_input_string_tag_not_in_context_should_throw():
         context.get_formatted_string(input_string)
 
     assert repr(err_info.value) == (
-        "KeyNotInContextError(\"Unable to format '{key1} this is "
-        "{key2} string' with {key2}, because context['key2'] doesn't "
-        "exist\",)")
+        "KeyNotInContextError(\"Unable to format '{key1} this is {key2} "
+        "string' because key2 not found in the pypyr context.\",)")
 
 
 def test_input_string_interpolate_sic():

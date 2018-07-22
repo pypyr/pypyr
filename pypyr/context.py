@@ -201,14 +201,12 @@ class Context(dict):
         if isinstance(val, str):
             try:
                 return self.get_processed_string(val)
-            except KeyError as err:
+            except KeyNotInContextError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
-                missing_key = err.args[0]
                 raise KeyNotInContextError(
-                    f'Unable to format \'{val}\' at context[\'{key}\'] with '
-                    f'{{{missing_key}}}, because '
-                    f'context[\'{missing_key}\'] doesn\'t exist'
+                    f'Unable to format \'{val}\' at context[\'{key}\'], '
+                    f'because {err}'
                 ) from err
         else:
             # any sort of complex type will work with get_formatted_iterable.
@@ -306,14 +304,12 @@ class Context(dict):
         if isinstance(input_string, str):
             try:
                 return self.get_processed_string(input_string)
-            except KeyError as err:
+            except KeyNotInContextError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
-                missing_key = err.args[0]
                 raise KeyNotInContextError(
-                    f'Unable to format \'{input_string}\' with '
-                    f'{{{missing_key}}}, because '
-                    f'context[\'{missing_key}\'] doesn\'t exist') from err
+                    f'Unable to format \'{input_string}\' because {err}'
+                ) from err
         else:
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
@@ -393,7 +389,7 @@ class Context(dict):
         if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
         else:
-            return input_string.format(**self)
+            return input_string.format_map(self)
 
     def iter_formatted_strings(self, iterable_strings):
         """Generator that yields a formatted string from iterable_strings
