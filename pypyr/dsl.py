@@ -18,6 +18,9 @@ class Step(object):
     decorators that modify step execution, and runs the actual step with
     appropriate error handling.
 
+    External class consumers should probably use the run_step method. run_step
+    serves as the blackbox entrypoint for this class' other methods.
+
     Attributes:
         name: (string) this is the step-name. equivalent to the module name of
               of the step. this module is the one dynamically loaded to
@@ -25,6 +28,8 @@ class Step(object):
         module: (importlib module) the dynamically loaded module that the
                 step will execute. this module will have the run_step
                 function that implements the actual step execution.
+        foreach_items: (list) defaults None. Execute step once for each item in
+                    list, using iterator i.
         in_parameters: (dict) defaults None. The in step decorator - i.e dict
                        to add to context before step execution.
         run_me: (bool) defaults True. step runs if this is true.
@@ -47,6 +52,7 @@ class Step(object):
         logger.debug("starting")
 
         # defaults for decorators
+        self.foreach_items = None
         self.in_parameters = None
         self.run_me = True
         self.skip_me = False
@@ -58,6 +64,9 @@ class Step(object):
             logger.debug(f"{self.name} is complex.")
 
             self.in_parameters = step.get('in', None)
+
+            # foreach: optional value. None by default.
+            self.foreach_items = step.get('foreach', None)
 
             # run: optional value, true by default. Allow substitution.
             self.run_me = step.get('run', True)
@@ -78,10 +87,41 @@ class Step(object):
 
         logger.debug("done")
 
+    def foreach_loop(self, context):
+        """Run step once for each item in foreach_items.
+
+        On each iteration, the invoked step can use context['i'] to get the
+        current iterator value.
+
+        Args:
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate.
+        """
+        logger.debug("starting")
+        foreach_length = len(self.foreach_items)
+        logger.info(f"foreach decorator will loop {foreach_length} times.")
+
+        # Loop decorators only evaluated once, not for every step repeat
+        # execution.
+        foreach = context.get_formatted_iterable(self.foreach_items)
+
+        for i in foreach:
+            logger.info(f"foreach: running step {i}")
+            # the iterator must be available to the step when it executes
+            context['i'] = i
+            # conditional operators apply to each iteration, so might be an
+            # iteration run, skips or swallows.
+            self.run_conditional_decorators(context)
+            logger.debug(f"foreach: done step {i}")
+
+        logger.debug(f"foreach decorator looped {foreach_length} times.")
+        logger.debug("done")
+
     def invoke_step(self, context):
         """Invoke 'run_step' in the dynamically loaded step module.
 
-        Don't invoke this from outside the Step class. Use run_step instead.
+        Don't invoke this from outside the Step class. Use
+        pypyr.dsl.Step.run_step instead.
         invoke_step just does the bare module step invocation, it does not
         evaluate any of the decorator logic surrounding the step. So unless
         you really know what you're doing, use run_step if you intend on
@@ -104,16 +144,17 @@ class Step(object):
                          "run_step(context) function.")
             raise
 
-    def run_step(self, context):
-        """Run a single pipeline step.
+    def run_conditional_decorators(self, context):
+        """Evaluate the step decorators to decide whether to run step or not.
+
+        Use pypyr.dsl.Step.run_step if you intend on executing the step the
+        same way pypyr does.
 
         Args:
             context: (pypyr.context.Context) The pypyr context. This arg will
-                     mutate."""
+                     mutate.
+        """
         logger.debug("starting")
-        # First things first, add the in params to context before step
-        # execution.
-        self.set_step_input_context(context)
 
         # The decorator attributes might contain formatting expressions that
         # change whether they evaluate True or False, thus apply formatting at
@@ -140,6 +181,26 @@ class Step(object):
                     f"{self.name} not running because skip is True.")
         else:
             logger.info(f"{self.name} not running because run is False.")
+
+        logger.debug("done")
+
+    def run_step(self, context):
+        """Run a single pipeline step.
+
+        Args:
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate.
+        """
+        logger.debug("starting")
+        # the in params should be added to context before step execution.
+        self.set_step_input_context(context)
+
+        # friendly reminder [] list obj (i.e empty) evals False
+        if self.foreach_items:
+            self.foreach_loop(context)
+        else:
+            # since no looping required, don't pollute output with looping info
+            self.run_conditional_decorators(context)
 
         logger.debug("done")
 

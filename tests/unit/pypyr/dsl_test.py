@@ -1,9 +1,31 @@
 """dsl.py unit tests."""
 import logging
 import pytest
-from unittest.mock import patch
+from unittest.mock import call, patch, MagicMock
 from pypyr.context import Context
 from pypyr.dsl import Step
+
+from copy import deepcopy
+
+
+class DeepCopyMagicMock(MagicMock):
+    """Derive a new MagicMock doing a deepcopy of args to calls.
+
+    MagicMocks store a reference to a mutable object - so on multiple calls to
+    the mock the call history isn't maintained if the same obj mutates as an
+    arg to those calls. https://bugs.python.org/issue33667
+
+    It's probably not sensible to deepcopy all mock calls. So this little class
+    is for patching the MagicMock class specifically, where it will do the
+    deepcopy only where specifically patched.
+
+    See here:
+    https://docs.python.org/3/library/unittest.mock-examples.html#coping-with-mutable-arguments
+    """
+
+    def __call__(self, *args, **kwargs):
+        return super(DeepCopyMagicMock, self).__call__(*deepcopy(args),
+                                                       **deepcopy(kwargs))
 
 # ------------------- test context -------------------------------------------#
 
@@ -61,6 +83,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
 
     assert step.name == 'blah'
     assert step.module == 'iamamodule'
+    assert step.foreach_items is None
     assert step.in_parameters is None
     assert step.run_me
     assert not step.skip_me
@@ -80,6 +103,7 @@ def test_complex_step_init_defaults(mocked_moduleloader):
 
     assert step.name == 'blah'
     assert step.module == 'iamamodule'
+    assert step.foreach_items is None
     assert step.in_parameters is None
     assert step.run_me
     assert not step.skip_me
@@ -93,12 +117,14 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
     step = Step({'name': 'blah',
                  'in': {'k1': 'v1', 'k2': 'v2'},
+                 'foreach': [0],
                  'run': False,
                  'skip': True,
                  'swallow': True,
                  })
     assert step.name == 'blah'
     assert step.module == 'iamamodule'
+    assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
     assert not step.run_me
     assert step.skip_me
@@ -107,6 +133,270 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 # ------------------- Step: init ---------------------------------------------#
+
+# ------------------- Step: run_step: foreach --------------------------------#
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+@patch.object(Step, 'foreach_loop')
+def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
+    """Simple step with None foreach decorator doesn't loop."""
+    step = Step('step1')
+
+    context = get_test_context()
+    original_len = len(context)
+
+    step.run_step(context)
+
+    mock_foreach.assert_not_called()
+
+    mock_run.assert_called_once_with(get_test_context())
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+@patch.object(Step, 'foreach_loop')
+def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
+    """Complex step with empty foreach decorator doesn't loop."""
+    step = Step({'name': 'step1',
+                 'foreach': []})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    step.run_step(context)
+
+    mock_foreach.assert_not_called()
+    mock_run.assert_called_once_with(get_test_context())
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+def test_foreach_once(mock_run, mock_moduleloader):
+    """foreach loops once."""
+    step = Step({'name': 'step1',
+                 'foreach': ['one']})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 1 times.'),
+        call('foreach: running step one')]
+
+    assert mock_run.call_count == 1
+    mutated_context = get_test_context()
+    mutated_context['i'] = 'one'
+    mock_run.assert_called_once_with(mutated_context)
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    assert context['i'] == 'one'
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+def test_foreach_twice(mock_run, mock_moduleloader):
+    """foreach loops twice."""
+    step = Step({'name': 'step1',
+                 'foreach': ['one', 'two']})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 2 times.'),
+        call('foreach: running step one'),
+        call('foreach: running step two')]
+
+    assert mock_run.call_count == 2
+    mutated_context = get_test_context()
+    mutated_context['i'] = 'one'
+
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = 'two'
+    mock_run.assert_any_call(mutated_context)
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'two'
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
+    """foreach loops thrice with substitutions inside a list."""
+    step = Step({'name': 'step1',
+                 'foreach': ['{key1}', '{key2}', 'key3']})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 3 times.'),
+        call('foreach: running step value1'),
+        call('foreach: running step value2'),
+        call('foreach: running step key3')]
+
+    assert mock_run.call_count == 3
+    mutated_context = get_test_context()
+    mutated_context['i'] = 'value1'
+
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = 'value2'
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = 'key3'
+    mock_run.assert_any_call(mutated_context)
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'key3'
+
+
+def mock_step_mutating_run(context):
+    """Mock a step's run_step by setting a context value False"""
+    context['dynamic_run_expression'] = False
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
+def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
+    """foreach evaluates run_me expression on each loop iteration."""
+    step = Step({'name': 'step1',
+                 'run': '{dynamic_run_expression}',
+                 'foreach': ['{key1}', '{key2}', 'key3']})
+
+    context = get_test_context()
+    context['dynamic_run_expression'] = True
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 3 times.'),
+        call('foreach: running step value1'),
+        call('foreach: running step value2'),
+        call('step1 not running because run is False.'),
+        call('foreach: running step key3'),
+        call('step1 not running because run is False.')]
+
+    assert mock_invoke.call_count == 1
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'key3'
+
+
+def mock_step_mutating_skip(context):
+    """Mock a step's run_step by setting a context value False"""
+    context['dynamic_skip_expression'] = True
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_skip)
+def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
+    """foreach evaluates skip expression on each loop iteration."""
+    step = Step({'name': 'step1',
+                 'skip': '{dynamic_skip_expression}',
+                 'foreach': ['{key1}', '{key2}', 'key3']})
+
+    context = get_test_context()
+    context['dynamic_skip_expression'] = False
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 3 times.'),
+        call('foreach: running step value1'),
+        call('foreach: running step value2'),
+        call('step1 not running because skip is True.'),
+        call('foreach: running step key3'),
+        call('step1 not running because skip is True.')]
+
+    assert mock_invoke.call_count == 1
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'key3'
+
+
+def mock_step_deliberate_error(context):
+    """Mock step's run_step by setting swallow False and raising err."""
+    if context['i'] == 'value2':
+        context['dynamic_swallow_expression'] = True
+    elif context['i'] == 'key3':
+        raise ValueError('arb error')
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=mock_step_deliberate_error)
+def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
+    """foreach evaluates skip expression on each loop iteration."""
+    step = Step({'name': 'step1',
+                 'swallow': '{dynamic_swallow_expression}',
+                 'foreach': ['{key1}', '{key2}', 'key3']})
+
+    context = get_test_context()
+    context['dynamic_swallow_expression'] = False
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        with patch.object(logger, 'error') as mock_logger_error:
+            step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 3 times.'),
+        call('foreach: running step value1'),
+        call('foreach: running step value2'),
+        call('foreach: running step key3')]
+
+    assert mock_invoke.call_count == 3
+
+    assert mock_logger_error.call_count == 1
+    mock_logger_error.assert_called_once_with(
+        'step1 Ignoring error '
+        'because swallow is True for this step.\nValueError: arb error')
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'key3'
+
+# ------------------- Step: run_step: foreach --------------------------------#
 
 # ------------------- Step: invoke_step---------------------------------------#
 

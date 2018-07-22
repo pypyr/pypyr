@@ -329,12 +329,22 @@ Don't bother specifying these unless you want to deviate from the default values
       in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
+      foreach: [] # optional. Repeat the step once for each item in this list. By default step executes once.
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
       swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
 
 +---------------+----------+---------------------------------------------+----------------+
 | **decorator** | **type** | **description**                             | **default**    |
++---------------+----------+---------------------------------------------+----------------+
+| foreach       | list     | Run the step once for each item in the list.| None           |
+|               |          | The iterator is context['i'].               |                |
+|               |          |                                             |                |
+|               |          | The *run*, *skip* & *swallow* decorators    |                |
+|               |          | evaluate dynamically on each iteration.     |                |
+|               |          | So if during an iteration the step's logic  |                |
+|               |          | sets ``run=False``, the step will not       |                |
+|               |          | execute on the next iteration.              |                |
 +---------------+----------+---------------------------------------------+----------------+
 | in            | dict     | Add this to the context so that this        | None           |
 |               |          | step and subsequent steps can use these     |                |
@@ -370,6 +380,13 @@ None/Empty, 0,'', [], {} will be False.
 
 See a worked example for `step decorators here
 <https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__.
+
+See a worked example of the looping `foreach decorator here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreach.yaml>`__.
+
+Here is an example of `foreach dynamic decorator evaluation
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreachconditionals.yaml>`__.
+
 
 Built-in steps
 --------------
