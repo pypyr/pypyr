@@ -297,8 +297,8 @@ class Context(dict):
             Formatted string.
 
         Raises:
-            KeyError: context[key] has {somekey} where somekey does not exist
-                      in context dictionary.
+            KeyNotInContextError: context[key] has {somekey} where somekey does
+                                  not exist in context dictionary.
             TypeError: Attempt operation on a non-string type.
         """
         if isinstance(input_string, str):
@@ -383,8 +383,9 @@ class Context(dict):
             x.
 
         Raises:
-            KeyError: input_string is not a sic string and has {somekey} where
-                      somekey does not exist in context dictionary.
+            KeyNotInContextError: input_string is not a sic string and has
+                                  {somekey} where somekey does not exist in
+                                  context dictionary.
         """
         if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
