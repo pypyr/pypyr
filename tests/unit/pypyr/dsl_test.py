@@ -279,6 +279,51 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     assert context['i'] == 'key3'
 
 
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_conditional_decorators')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
+    """foreach gets list from string format expression."""
+    step = Step({'name': 'step1',
+                 'foreach': '{list}'})
+
+    context = get_test_context()
+    context['list'] = [99, True, 'string here', 'formatted {key1}']
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('foreach decorator will loop 4 times.'),
+        call('foreach: running step 99'),
+        call('foreach: running step True'),
+        call('foreach: running step string here'),
+        call('foreach: running step formatted value1')]
+
+    assert mock_run.call_count == 4
+    mutated_context = get_test_context()
+    mutated_context['list'] = [99, True, 'string here', 'formatted {key1}']
+
+    mutated_context['i'] = 99
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = True
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = 'string here'
+    mock_run.assert_any_call(mutated_context)
+
+    mutated_context['i'] = 'formatted value1'
+    mock_run.assert_any_call(mutated_context)
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['i'] == 'formatted value1'
+
+
 def mock_step_mutating_run(context):
     """Mock a step's run_step by setting a context value False"""
     context['dynamic_run_expression'] = False

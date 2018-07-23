@@ -98,12 +98,14 @@ class Step(object):
                      mutate.
         """
         logger.debug("starting")
-        foreach_length = len(self.foreach_items)
-        logger.info(f"foreach decorator will loop {foreach_length} times.")
 
         # Loop decorators only evaluated once, not for every step repeat
         # execution.
         foreach = context.get_formatted_iterable(self.foreach_items)
+
+        foreach_length = len(foreach)
+
+        logger.info(f"foreach decorator will loop {foreach_length} times.")
 
         for i in foreach:
             logger.info(f"foreach: running step {i}")
