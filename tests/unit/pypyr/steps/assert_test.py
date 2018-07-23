@@ -271,7 +271,7 @@ def test_assert_passes_on_assertthis_equals_ints_substitutions():
 
 
 def test_assert_raises_on_assertthis_not_equals_ints_substitutions():
-    """assertThis string does not equal assertEquals bool."""
+    """assertThis string does not equal assertEquals int."""
     context = Context({'k1': 33,
                        'k2': 34,
                        'assertThis': '{k1}',
@@ -280,17 +280,23 @@ def test_assert_raises_on_assertthis_not_equals_ints_substitutions():
         assert_step.run_step(context)
 
     assert repr(err_info.value) == (
-        "ContextError(\"assert context['assertThis'] is of type str and does "
-        "not equal context['assertEquals'] of type str.\",)")
+        "ContextError(\"assert context['assertThis'] is of type int and does "
+        "not equal context['assertEquals'] of type int.\",)")
 
 
 def test_assert_passes_on_assertthis_not_equals_bools_substitutions():
-    """Format expressions equivocates string True and bool True."""
+    """Format expressions doesn't equivocate string True and bool True."""
     context = Context({'k1': True,
                        'k2': 'True',
                        'assertThis': '{k1}',
                        'assertEquals': '{k2}'})
-    assert_step.run_step(context)
+
+    with pytest.raises(ContextError) as err_info:
+        assert_step.run_step(context)
+
+    assert repr(err_info.value) == (
+        "ContextError(\"assert context['assertThis'] is of type bool and does "
+        "not equal context['assertEquals'] of type str.\",)")
 
 
 def test_assert_passes_on_assertthis_not_equals_none_substitutions():

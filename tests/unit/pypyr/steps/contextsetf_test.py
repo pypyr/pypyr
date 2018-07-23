@@ -77,11 +77,12 @@ def test_contextsetf_pass_different_types():
 
     pypyr.steps.contextsetf.run_step(context)
 
-    assert context['kint'] == '33'
+    assert context['kint'] == 33
     assert context['k1'] == 33
-    assert context['kfloat'] == '123.45'
+    assert context['kfloat'] == 123.45
     assert context['k2'] == 123.45
-    assert context['kbool'] == 'False'
+    assert not context['kbool']
+    assert isinstance(context['kbool'], bool)
     assert not context['k3']
 
 

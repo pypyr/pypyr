@@ -541,26 +541,6 @@ Number equality with substitutions:
     assertThis: '{numberOne}'
     assertEquals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
 
-GOTCHA:
-  A string formatting expression like ``{numberOne}`` will always return
-  a string. This means a comparison to a number type will fail even if it looks
-  like the same number.
-
-  .. code-block:: yaml
-
-    meaningOfLife: 42
-    assertThis: '{meaningOfLife}'
-    assertEquals: 42 # stop pipeline. '42' != 42 (str vs int)
-
-  vs
-
-  .. code-block:: yaml
-
-    meaningOfLife: 42
-    assertThis: '{meaningOfLife}'
-    assertEquals: '42' # continue pipeline. '42' == '42' (str vs str)
-
-
 Complex types:
 
 .. code-block:: yaml

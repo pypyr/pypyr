@@ -1067,6 +1067,56 @@ def test_get_processed_string_sic_skips_interpolation():
     assert output == 'Piping {key1} the {key2} wild', (
         "string interpolation incorrect")
 
+
+def test_get_processed_string_single_expression_keeps_type():
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': [0, 1, 3],
+         'ctx4': 'ctxvalue4'})
+
+    input_string = '{ctx3}'
+
+    output = context.get_processed_string(input_string)
+
+    assert output == [0, 1, 3]
+    assert isinstance(output, list)
+
+
+def test_get_processed_string_single_expression_keeps_type_and_iterates():
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': [0,
+                  {'s1': 'v1',
+                   '{ctx1}': '{ctx2}',
+                   's3': [0, '{ctx4}']}, 3],
+         'ctx4': 'ctxvalue4'})
+
+    input_string = '{ctx3}'
+
+    output = context.get_processed_string(input_string)
+
+    assert output == [0,
+                      {'s1': 'v1',
+                       'ctxvalue1': 'ctxvalue2',
+                       's3': [0, 'ctxvalue4']}, 3]
+
+
+def test_get_processed_string_leading_literal():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'leading literal{k}'
+    output = context.get_processed_string(input_string)
+    assert output == 'leading literaldown', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_following_literal():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '{k}following literal'
+    output = context.get_processed_string(input_string)
+    assert output == 'downfollowing literal', (
+        "string interpolation incorrect")
 # ------------------- formats ------------------------------------------------#
 
 # ------------------- key info -----------------------------------------------#
