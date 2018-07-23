@@ -1,6 +1,7 @@
 """pypyr context class. Dictionary ahoy."""
 from collections import namedtuple
 from collections.abc import Mapping, Set, Sequence
+from string import Formatter
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 from pypyr.utils import types
 
@@ -10,6 +11,12 @@ ContextItemInfo = namedtuple('ContextItemInfo',
                               'expected_type',
                               'is_expected_type',
                               'has_value'])
+
+# I *think* instantiating formatter at module level is fine - far as I can see
+# the class methods are functional, not dependant on class state (also, no
+# __init__).
+# https://github.com/python/cpython/blob/master/Lib/string.py
+formatter = Formatter()
 
 
 class Context(dict):
@@ -201,14 +208,12 @@ class Context(dict):
         if isinstance(val, str):
             try:
                 return self.get_processed_string(val)
-            except KeyError as err:
+            except KeyNotInContextError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
-                missing_key = err.args[0]
                 raise KeyNotInContextError(
-                    f'Unable to format \'{val}\' at context[\'{key}\'] with '
-                    f'{{{missing_key}}}, because '
-                    f'context[\'{missing_key}\'] doesn\'t exist'
+                    f'Unable to format \'{val}\' at context[\'{key}\'], '
+                    f'because {err}'
                 ) from err
         else:
             # any sort of complex type will work with get_formatted_iterable.
@@ -299,21 +304,19 @@ class Context(dict):
             Formatted string.
 
         Raises:
-            KeyError: context[key] has {somekey} where somekey does not exist
-                      in context dictionary.
+            KeyNotInContextError: context[key] has {somekey} where somekey does
+                                  not exist in context dictionary.
             TypeError: Attempt operation on a non-string type.
         """
         if isinstance(input_string, str):
             try:
                 return self.get_processed_string(input_string)
-            except KeyError as err:
+            except KeyNotInContextError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
-                missing_key = err.args[0]
                 raise KeyNotInContextError(
-                    f'Unable to format \'{input_string}\' with '
-                    f'{{{missing_key}}}, because '
-                    f'context[\'{missing_key}\'] doesn\'t exist') from err
+                    f'Unable to format \'{input_string}\' because {err}'
+                ) from err
         else:
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
@@ -338,11 +341,11 @@ class Context(dict):
 
         if isinstance(value, str):
             result = self.get_formatted_string(value)
-
-            if out_type is str:
+            result_type = type(result)
+            if out_type is result_type:
                 # get_formatted_string result is already a string
                 return result
-            elif out_type is bool:
+            elif out_type is bool and result_type is str:
                 # casting a str to bool is always True, hence special case. If
                 # the str value is 'False'/'false', presumably user can
                 # reasonably expect a bool False response.
@@ -364,6 +367,16 @@ class Context(dict):
         If input_string='Piping {key1} the {key2} wild'
         And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
 
+        An input string with a single formatting expression and nothing else
+        will return the object at that context path: input_string='{key1}'.
+        This means that the return obj will be the same type as the source
+        object. This return object in itself has token substitions run on it
+        iteratively.
+
+        By comparison, multiple formatting expressions and/or the inclusion of
+        literal text will result in a string return type:
+        input_string='{key1} literal text {key2}'
+
         Then this will return string: "Piping down the valleys wild"
 
         If a string is NOT to have {substitutions} run on it, it's sic erat
@@ -382,18 +395,53 @@ class Context(dict):
             input_string: string to Parse
 
         Returns:
-            str: Formatted string with {substitutions} made from context. If
-            it's a [sic] string, x from [sic]"x", with no substitutions made on
-            x.
+            any given type: Formatted string with {substitutions} made from
+            context. If it's a [sic] string, x from [sic]"x", with no
+            substitutions made on x. If input_string was a single expression
+            (e.g '{field}'), then returns the object with {substitutions} made
+            for its attributes.
 
         Raises:
-            KeyError: input_string is not a sic string and has {somekey} where
-                      somekey does not exist in context dictionary.
+            KeyNotInContextError: input_string is not a sic string and has
+                                  {somekey} where somekey does not exist in
+                                  context dictionary.
         """
         if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
         else:
-            return input_string.format(**self)
+            # is this a special one field formatstring? i.e "{field}", with
+            # nothing else?
+            out = None
+            is_out_set = False
+            expr_count = 0
+            # parse finds field format expressions and/or literals in input
+            for expression in formatter.parse(input_string):
+                # parse tuple:
+                # (literal_text, field_name, format_spec, conversion)
+                # it's a single '{field}' if no literal_text but field_name
+                # no literal, field name exists, and no previous expr found
+                if (not expression[0] and expression[1] and not expr_count):
+                    # get_field tuple: (obj, used_key)
+                    out = formatter.get_field(expression[1], None, self)[0]
+                    # second flag necessary because a literal with no format
+                    # expression will still result in expr_count == 1
+                    is_out_set = True
+
+                expr_count += 1
+
+                # this is a little bit clumsy, but you have to consume the
+                # iterator to get the count. Interested in 1 and only 1 field
+                # expressions with no literal text: have to loop to see if
+                # there is >1.
+                if expr_count > 1:
+                    break
+
+            if is_out_set and expr_count == 1:
+                # found 1 and only 1. but this could be an iterable obj
+                # that needs formatting rules run on it in itself
+                return self.get_formatted_iterable(out)
+            else:
+                return input_string.format_map(self)
 
     def iter_formatted_strings(self, iterable_strings):
         """Generator that yields a formatted string from iterable_strings

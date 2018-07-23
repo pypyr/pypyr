@@ -4,7 +4,7 @@ pipelinerunner uses this to parse and run steps.
 """
 
 import logging
-import pypyr.moduleloader
+from pypyr.dsl import Step
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -47,27 +47,6 @@ def get_pipeline_steps(pipeline, steps_group):
         return None
 
 
-def get_step_input_context(in_parameters, context):
-    """Append step's 'in' parameters to context, if they exist.
-
-    Append the [in] dictionary to the context. This will overwrite
-    existing values if the same keys are already in there. I.e if
-    in_parameters has {'eggs' : 'boiled'} and key 'eggs' already
-    exists in context, context['eggs'] hereafter will be 'boiled'.
-
-    Returns the new context dictionary.
-    """
-    logger.debug("starting")
-    if in_parameters is not None:
-        parameter_count = len(in_parameters)
-        if parameter_count > 0:
-            logger.debug(
-                f"Updating context with {parameter_count} 'in' parameters.")
-            context.update(in_parameters)
-
-    logger.debug("done")
-
-
 def run_failure_step_group(pipeline, context):
     """Run the on_failure step group if it exists.
 
@@ -88,27 +67,13 @@ def run_failure_step_group(pipeline, context):
     logger.debug("done")
 
 
-def run_pipeline_step(step_name, context):
-    """Run a single pipeline step."""
-    logger.debug("starting")
-    logger.debug(f"running step {step_name}")
-
-    step = pypyr.moduleloader.get_module(step_name)
-
-    try:
-        logger.debug(f"running step {step}")
-
-        step.run_step(context)
-
-        logger.debug(f"step {step} done")
-    except AttributeError:
-        logger.error(f"The step {step_name} doesn't have a run_step(context) "
-                     "function.")
-        raise
-
-
 def run_pipeline_steps(steps, context):
-    """Run the run(context) method of each step in steps."""
+    """Run the run_step(context) method of each step in steps.
+
+    Args:
+        steps: list. Sequence of Steps to execute
+        context: pypyr.context.Context. The pypyr context. Will mutate.
+    """
     logger.debug("starting")
     assert isinstance(
         context, dict), "context must be a dictionary, even if empty {}."
@@ -119,50 +84,8 @@ def run_pipeline_steps(steps, context):
         step_count = 0
 
         for step in steps:
-            run_me = True
-            skip_me = False
-            swallow_me = False
-
-            if isinstance(step, dict):
-                step_name = step['name']
-                logger.debug(f"{step_name} is complex.")
-
-                if 'in' in step:
-                    get_step_input_context(step['in'], context)
-
-                # run: optional value, true by default. Allow substitution.
-                run_me = context.get_formatted_as_type(
-                    step.get('run', True), out_type=bool)
-
-                # skip: optional value, false by default. Allow substitution.
-                skip_me = context.get_formatted_as_type(
-                    step.get('skip', False), out_type=bool)
-
-                # swallow: optional, defaults false. Allow substitution.
-                swallow_me = context.get_formatted_as_type(
-                    step.get('swallow', False), out_type=bool)
-            else:
-                logger.debug(f"{step} is a simple string.")
-                step_name = step
-
-            if run_me:
-                if not skip_me:
-                    try:
-                        run_pipeline_step(step_name=step_name, context=context)
-                    except Exception as ex_info:
-                        if swallow_me:
-                            logger.error(
-                                f"{step_name} Ignoring error because swallow "
-                                "is True for this step.\n"
-                                f"{type(ex_info).__name__}: {ex_info}")
-                        else:
-                            raise
-                else:
-                    logger.info(
-                        f"{step_name} not running because skip is True.")
-            else:
-                logger.info(f"{step_name} not running because run is False.")
-
+            step_instance = Step(step)
+            step_instance.run_step(context)
             step_count += 1
 
         logger.debug(f"executed {step_count} steps")

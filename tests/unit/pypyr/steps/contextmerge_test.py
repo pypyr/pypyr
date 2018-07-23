@@ -63,11 +63,12 @@ def test_contextmerge_pass_different_types_with_log():
 
     mock_logger_info.assert_called_once_with('merged 3 context items.')
 
-    assert context['kint'] == '33'
+    assert context['kint'] == 33
     assert context['k1'] == 33
-    assert context['kfloat'] == '123.45'
+    assert context['kfloat'] == 123.45
     assert context['k2'] == 123.45
-    assert context['kbool'] == 'False'
+    assert not context['kbool']
+    assert isinstance(context['kbool'], bool)
     assert not context['k3']
 
 
@@ -166,7 +167,6 @@ def test_get_formatted_iterable_nested_with_formatting_merge():
     pypyr.steps.contextmerge.run_step(context)
 
     output = context['output']
-    print(context)
 
     # context values outside of merge key remain unmolested
     assert context['ctx1'] == 'ctxvalue1'

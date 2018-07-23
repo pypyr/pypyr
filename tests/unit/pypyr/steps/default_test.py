@@ -63,11 +63,12 @@ def test_contextdefault_pass_different_types_with_log():
 
     mock_logger_info.assert_called_once_with('set 3 context item defaults.')
 
-    assert context['kint'] == '33'
+    assert context['kint'] == 33
     assert context['k1'] == 33
-    assert context['kfloat'] == '123.45'
+    assert context['kfloat'] == 123.45
     assert context['k2'] == 123.45
-    assert context['kbool'] == 'False'
+    assert not context['kbool']
+    assert isinstance(context['kbool'], bool)
     assert not context['k3']
 
 

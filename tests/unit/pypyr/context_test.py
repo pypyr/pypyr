@@ -444,8 +444,8 @@ def test_tag_not_in_context_should_throw():
 
     assert repr(err.value) == (
         "KeyNotInContextError(\"Unable to format '{key1} this is "
-        "{key2} string' at context['input_string'] with {key2}, because "
-        "context['key2'] doesn't exist\",)")
+        "{key2} string' at context['input_string'], because "
+        "key2 not found in the pypyr context.\",)")
 
 
 def test_context_item_not_a_string_should_return_as_is():
@@ -477,9 +477,8 @@ def test_input_string_tag_not_in_context_should_throw():
         context.get_formatted_string(input_string)
 
     assert repr(err_info.value) == (
-        "KeyNotInContextError(\"Unable to format '{key1} this is "
-        "{key2} string' with {key2}, because context['key2'] doesn't "
-        "exist\",)")
+        "KeyNotInContextError(\"Unable to format '{key1} this is {key2} "
+        "string' because key2 not found in the pypyr context.\",)")
 
 
 def test_input_string_interpolate_sic():
@@ -1068,6 +1067,56 @@ def test_get_processed_string_sic_skips_interpolation():
     assert output == 'Piping {key1} the {key2} wild', (
         "string interpolation incorrect")
 
+
+def test_get_processed_string_single_expression_keeps_type():
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': [0, 1, 3],
+         'ctx4': 'ctxvalue4'})
+
+    input_string = '{ctx3}'
+
+    output = context.get_processed_string(input_string)
+
+    assert output == [0, 1, 3]
+    assert isinstance(output, list)
+
+
+def test_get_processed_string_single_expression_keeps_type_and_iterates():
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': [0,
+                  {'s1': 'v1',
+                   '{ctx1}': '{ctx2}',
+                   's3': [0, '{ctx4}']}, 3],
+         'ctx4': 'ctxvalue4'})
+
+    input_string = '{ctx3}'
+
+    output = context.get_processed_string(input_string)
+
+    assert output == [0,
+                      {'s1': 'v1',
+                       'ctxvalue1': 'ctxvalue2',
+                       's3': [0, 'ctxvalue4']}, 3]
+
+
+def test_get_processed_string_leading_literal():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'leading literal{k}'
+    output = context.get_processed_string(input_string)
+    assert output == 'leading literaldown', (
+        "string interpolation incorrect")
+
+
+def test_get_processed_string_following_literal():
+    context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = '{k}following literal'
+    output = context.get_processed_string(input_string)
+    assert output == 'downfollowing literal', (
+        "string interpolation incorrect")
 # ------------------- formats ------------------------------------------------#
 
 # ------------------- key info -----------------------------------------------#
