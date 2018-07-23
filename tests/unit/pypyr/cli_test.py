@@ -106,7 +106,6 @@ def test_pipeline_name_required():
         with pytest.raises(SystemExit) as exit_err:
             pypyr.cli.main(arg_list)
 
-        print(exit_err.value)
         assert exit_err.value.code == 2
 
 

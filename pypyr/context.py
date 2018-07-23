@@ -409,8 +409,6 @@ class Context(dict):
         if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
         else:
-            print(f"doing input: {input_string}")
-
             # is this a special one field formatstring? i.e "{field}", with
             # nothing else?
             out = None
@@ -428,7 +426,6 @@ class Context(dict):
                     # second flag necessary because a literal with no format
                     # expression will still result in expr_count == 1
                     is_out_set = True
-                    print(f"just set out: {out}")
 
                 expr_count += 1
 
@@ -439,7 +436,6 @@ class Context(dict):
                 if expr_count > 1:
                     break
 
-            print(f"expression count: {expr_count}")
             if is_out_set and expr_count == 1:
                 # found 1 and only 1. but this could be an iterable obj
                 # that needs formatting rules run on it in itself

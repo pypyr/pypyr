@@ -167,7 +167,6 @@ def test_get_formatted_iterable_nested_with_formatting_merge():
     pypyr.steps.contextmerge.run_step(context)
 
     output = context['output']
-    print(context)
 
     # context values outside of merge key remain unmolested
     assert context['ctx1'] == 'ctxvalue1'
