@@ -32,7 +32,7 @@ pip
 
 python version
 ==============
-Tested against Python 3.6
+Tested against Python >=3.6
 
 docker
 ======
