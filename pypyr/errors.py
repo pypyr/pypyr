@@ -20,6 +20,14 @@ class KeyNotInContextError(ContextError):
     """Key not found in the pypyr context."""
 
 
+class LoopMaxExhaustedError(Error):
+    """Max attempts reached during looping."""
+
+
+class PipelineDefinitionError(Error):
+    """Pipeline definition incorrect. Likely a yaml error."""
+
+
 class PipelineNotFoundError(Error):
     """Pipeline not found in working dir or in pypyr install dir."""
 
