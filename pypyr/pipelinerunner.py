@@ -109,7 +109,7 @@ def get_pipeline_definition(pipeline_name, working_dir):
     return pipeline_definition
 
 
-def main(pipeline_name, pipeline_context_input, working_dir, log_level):
+def main(pipeline_name, pipeline_context_input, working_dir, log_level, log_file):
     """Entry point for pypyr pipeline runner.
 
     Call this once per pypyr run. Call me if you want to run a pypyr pipeline
@@ -124,11 +124,12 @@ def main(pipeline_name, pipeline_context_input, working_dir, log_level):
                                 string.
         working_dir: path. looks for ./pipelines and modules in this directory.
         log_level: int. Standard python log level enumerated value.
+        log_file: str. File to which log should be appended.
 
     Returns:
         None
     """
-    pypyr.log.logger.set_root_logger(log_level)
+    pypyr.log.logger.set_root_logger(log_level, log_file)
 
     logger.debug("starting pypyr")
 
