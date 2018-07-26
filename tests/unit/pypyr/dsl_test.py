@@ -458,6 +458,172 @@ def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
 
 
 @patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_while_max(mock_invoke, mock_moduleloader):
+    """while runs to max."""
+    step = Step({'name': 'step1',
+                 'while': {'max': 3}})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop 3 times at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while: running step with counter 2'),
+        call('while: running step with counter 3')]
+
+    assert mock_invoke.call_count == 3
+
+    # validate all the in params ended up in context as intended, plus counter
+    assert len(context) == original_len + 1
+    # after the looping's done, the counter value will be the last iterator
+    assert context['whileCounter'] == 3
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
+def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
+    """while evaluates run_me expression on each loop iteration."""
+    step = Step({'name': 'step1',
+                 'run': '{dynamic_run_expression}',
+                 'while': {'max': '{whileMax}', 'stop': '{key5}'}})
+
+    context = get_test_context()
+    context['dynamic_run_expression'] = True
+    context['whileMax'] = 3
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop 3 times, or until {key5} evaluates to '
+             'True at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while: running step with counter 2'),
+        call('step1 not running because run is False.'),
+        call('while: running step with counter 3'),
+        call('step1 not running because run is False.'),
+        call('while decorator looped 3 times, and {key5} never evaluated to '
+             'True.')]
+
+    assert mock_invoke.call_count == 1
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['whileCounter'] == 3
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=[None, ValueError('whoops')])
+def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
+    """Error during while kicks loop."""
+    step = Step({'name': 'step1',
+                 'while': {'max': 3}})
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        with pytest.raises(ValueError) as err_info:
+            step.run_step(context)
+
+    assert repr(err_info.value) == ("ValueError('whoops',)")
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop 3 times at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while: running step with counter 2')]
+
+    assert mock_invoke.call_count == 2
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['whileCounter'] == 2
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_while_exhausts(mock_invoke, mock_moduleloader):
+    """while exhausts throws error on errorOnMax."""
+    step = Step({'name': 'step1',
+                 'while': {'max': '{whileMax}',
+                           'stop': '{key5}',
+                           'errorOnMax': '{key6}'}})
+
+    context = get_test_context()
+    context['whileMax'] = 3
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        with pytest.raises(LoopMaxExhaustedError) as err_info:
+            step.run_step(context)
+
+    assert repr(err_info.value) == (
+        "LoopMaxExhaustedError('while loop reached "
+        "3 and {key5} never evaluated to True.',)")
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop 3 times, or until {key5} evaluates to '
+             'True at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while: running step with counter 2'),
+        call('while: running step with counter 3')]
+
+    assert mock_invoke.call_count == 3
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['whileCounter'] == 3
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
+    """while evaluates run_me expression on each loop iteration, no format."""
+    step = Step({'name': 'step1',
+                 'while': {'max': '{whileMax}',
+                           'stop': False,
+                           'errorOnMax': True}})
+
+    context = get_test_context()
+    context['whileMax'] = 3
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        with pytest.raises(LoopMaxExhaustedError) as err_info:
+            step.run_step(context)
+
+    assert repr(err_info.value) == (
+        "LoopMaxExhaustedError('while loop reached 3.',)")
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop 3 times at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while: running step with counter 2'),
+        call('while: running step with counter 3')]
+
+    assert mock_invoke.call_count == 3
+
+    # validate all the in params ended up in context as intended, plus i
+    assert len(context) == original_len + 1
+    # after the looping's done, the i value will be the last iterator value
+    assert context['whileCounter'] == 3
+
+
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'run_conditional_decorators')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
