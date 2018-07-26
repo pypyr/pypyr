@@ -459,6 +459,8 @@ Decorator examples
 | while with error on reaching max or never      | |while-exhaust|             |
 | reaching a stop condition.                     |                             |
 +------------------------------------------------+-----------------------------+
+| while loop that runs infinitely                | |while-infinite|            |
++------------------------------------------------+-----------------------------+
 
 .. |step-decorators| replace:: `step decorators <https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__
 
@@ -473,6 +475,8 @@ Decorator examples
 .. |while-foreach| replace:: `while foreach <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-foreach.yaml>`__
 
 .. |while-exhaust| replace:: `while exhaust <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-exhaust.yaml>`__
+
+.. |while-infinite| replace:: `while infinite <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-infinite.yaml>`__
 
 Built-in steps
 --------------
