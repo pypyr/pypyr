@@ -12,7 +12,13 @@ pypyr cli pipeline runner
 
 
 pypyr is a command line interface to run pipelines defined in yaml. Think of
-pypyr as a simple task runner that lets you run sequential steps.
+pypyr as a simple task runner that lets you define and run sequential steps.
+Like a turbo-charged shell script, but less finicky.
+
+You can run loops, conditionally execute steps based on conditions you specify,
+wait for status changes before continuing, break on failure conditions or
+swallow errors. Pretty useful for orchestrating continuous integration,
+continuous deployment and devops operations.
 
 |build-status| |coverage| |pypi|
 
