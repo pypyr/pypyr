@@ -4,7 +4,9 @@ from pypyr.errors import (
     ContextError,
     KeyInContextHasNoValueError,
     KeyNotInContextError,
+    LoopMaxExhaustedError,
     PlugInError,
+    PipelineDefinitionError,
     PipelineNotFoundError,
     PyModuleNotFoundError)
 import pytest
@@ -57,6 +59,30 @@ def test_key_in_context_has_no_value_error_raises():
     assert repr(err_info.value) == (
         "KeyInContextHasNoValueError('this is error "
         "text right here',)")
+
+
+def test_loop_max_exhausted_error_raises():
+    """LoopMaxExhaustedError error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(LoopMaxExhaustedError(), PypyrError)
+
+    with pytest.raises(LoopMaxExhaustedError) as err_info:
+        raise LoopMaxExhaustedError("this is error text right here")
+
+    assert repr(err_info.value) == ("LoopMaxExhaustedError('this is error "
+                                    "text right here',)")
+
+
+def test_pipeline_definition_error_raises():
+    """PipelineDefinitionError error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(PipelineDefinitionError(), PypyrError)
+
+    with pytest.raises(PipelineDefinitionError) as err_info:
+        raise PipelineDefinitionError("this is error text right here")
+
+    assert repr(err_info.value) == ("PipelineDefinitionError('this is error "
+                                    "text right here',)")
 
 
 def test_pipeline_not_found_error_raises():

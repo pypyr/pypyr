@@ -12,7 +12,13 @@ pypyr cli pipeline runner
 
 
 pypyr is a command line interface to run pipelines defined in yaml. Think of
-pypyr as a simple task runner that lets you run sequential steps.
+pypyr as a simple task runner that lets you define and run sequential steps.
+Like a turbo-charged shell script, but less finicky.
+
+You can run loops, conditionally execute steps based on conditions you specify,
+wait for status changes before continuing, break on failure conditions or
+swallow errors. Pretty useful for orchestrating continuous integration,
+continuous deployment and devops operations.
 
 |build-status| |coverage| |pypi|
 
@@ -32,7 +38,7 @@ pip
 
 python version
 ==============
-Tested against Python 3.6
+Tested against Python >=3.6
 
 docker
 ======
@@ -315,7 +321,8 @@ You can specify a step in the pipeline yaml in two ways:
 
 Step decorators
 ---------------
-
+Decorators overview
+^^^^^^^^^^^^^^^^^^^
 Complex steps have various optional step decorators that change how or if a step is run.
 
 Don't bother specifying these unless you want to deviate from the default values.
@@ -329,16 +336,21 @@ Don't bother specifying these unless you want to deviate from the default values
       in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
-      foreach: [] # optional. Repeat the step once for each item in this list. By default step executes once.
+      foreach: [] # optional. Repeat the step once for each item in this list.
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
       swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
+      while: # optional. repeat step until stop is True or max iterations reached.
+        stop: '{keyhere}' # loop until this evaluates True.
+        max: 1 # max loop iterations to run. integer. Defaults None (infinite).
+        sleep: 0 # sleep between iterations, in seconds. Decimals allowed. Defaults 0.
+        errorOnMax: False # raise error if max reached. Defaults False.
 
 +---------------+----------+---------------------------------------------+----------------+
 | **decorator** | **type** | **description**                             | **default**    |
 +---------------+----------+---------------------------------------------+----------------+
 | foreach       | list     | Run the step once for each item in the list.| None           |
-|               |          | The iterator is context['i'].               |                |
+|               |          | The iterator is ``context['i']``.           |                |
 |               |          |                                             |                |
 |               |          | The *run*, *skip* & *swallow* decorators    |                |
 |               |          | evaluate dynamically on each iteration.     |                |
@@ -349,6 +361,11 @@ Don't bother specifying these unless you want to deviate from the default values
 | in            | dict     | Add this to the context so that this        | None           |
 |               |          | step and subsequent steps can use these     |                |
 |               |          | key-value pairs.                            |                |
+|               |          |                                             |                |
+|               |          | *in* evaluates once at the beginning of step|                |
+|               |          | execution, before the *foreach* and *while* |                |
+|               |          | decorators. It does not re-evaluate for each|                |
+|               |          | loop iteration.                             |                |
 +---------------+----------+---------------------------------------------+----------------+
 | run           | bool     | Runs this step if True, skips step if       | True           |
 |               |          | False.                                      |                |
@@ -368,9 +385,33 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | pypyr logs the error, so you'll know what   |                |
 |               |          | happened, but processing continues.         |                |
 +---------------+----------+---------------------------------------------+----------------+
+| while         | dict     | Repeat step until *stop* is True, or until  | None           |
+|               |          | *max* iterations reached. You have to       |                |
+|               |          | specify either *max* or *stop*. The loop    |                |
+|               |          | position counter is                         |                |
+|               |          | ``context['whileCounter']``                 |                |
+|               |          |                                             |                |
+|               |          | If you specify both *max* and *stop*, the   |                |
+|               |          | loop exits when *stop* is True as long as   |                |
+|               |          | it's still under *max* iterations. *max*    |                |
+|               |          | will exit the loop even if *stop* is still  |                |
+|               |          | False. If you want to error and stop        |                |
+|               |          | processing when *max* exhausts (maybe you   |                |
+|               |          | are waiting for *stop* to reach True but    |                |
+|               |          | want to timeout after *max*) set            |                |
+|               |          | *errorOnMax* to True.                       |                |
++---------------+----------+---------------------------------------------+----------------+
 
 All step decorators support `Substitutions`_.
 
+If no looping decorators are specified, the step will execute once (depending
+on the conditional decorators' settings).
+
+If all of this sounds complicated, don't panic! If you don't bother with any of
+these the step will just run once by default.
+
+decorator bool evaluation
+^^^^^^^^^^^^^^^^^^^^^^^^^
 Note that for all bool values, the standard Python truth value testing rules apply.
 https://docs.python.org/3/library/stdtypes.html#truth-value-testing
 
@@ -378,15 +419,70 @@ Simply put, this means that 1, TRUE, True and true will be True.
 
 None/Empty, 0,'', [], {} will be False.
 
-See a worked example for `step decorators here
-<https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__.
+Decorator order of precedence
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Decorators can interplay, meaning that the sequence of evaluation is important.
 
-See a worked example of the looping `foreach decorator here
-<https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreach.yaml>`__.
+- *run* or *skip* controls whether a step should execute on any
+  given loop iteration, without affecting continued loop iteration.
 
-Here is an example of `foreach dynamic decorator evaluation
-<https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreachconditionals.yaml>`__.
+- *run* could be True but *skip* True will still skip the step.
 
+- A step can run multiple times in a *foreach* loop for each iteration of a
+  *while* loop.
+
+- *swallow* can evaluate dynamically inside a loop to decide whether to swallow
+  an error or not on a particular iteration.
+
+.. code-block:: yaml
+
+  in # in evals once and only once at the beginning of step
+    -> while # everything below loops inside while
+      -> foreach # everything below loops inside foreach
+        -> run # evals dynamically on each loop iteration
+         -> skip # evals dynamically on each loop iteration after run
+            [>>>actual step execution here<<<]
+              -> swallow # evaluated dynamically on each loop iteration
+
+Decorator examples
+^^^^^^^^^^^^^^^^^^
++------------------------------------------------+-----------------------------+
+| **example**                                    | **link**                    |
++------------------------------------------------+-----------------------------+
+| conditional step decorators                    | |step-decorators|           |
++------------------------------------------------+-----------------------------+
+| foreach looping                                | |foreach-decorator|         |
++------------------------------------------------+-----------------------------+
+| foreach with dynamic conditional decorator     | |foreach-dynamic|           |
+| evaluation.                                    |                             |
++------------------------------------------------+-----------------------------+
+| while looping                                  | |while-decorator|           |
++------------------------------------------------+-----------------------------+
+| while with sleep intervals                     | |while-sleep|               |
++------------------------------------------------+-----------------------------+
+| while combined with foreach                    | |while-foreach|             |
++------------------------------------------------+-----------------------------+
+| while with error on reaching max or never      | |while-exhaust|             |
+| reaching a stop condition.                     |                             |
++------------------------------------------------+-----------------------------+
+| while loop that runs infinitely                | |while-infinite|            |
++------------------------------------------------+-----------------------------+
+
+.. |step-decorators| replace:: `step decorators <https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__
+
+.. |foreach-decorator| replace:: `foreach <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreach.yaml>`__
+
+.. |foreach-dynamic| replace:: `foreach dynamic conditionals <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreachconditionals.yaml>`__
+
+.. |while-decorator| replace:: `while decorator <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while.yaml>`__
+
+.. |while-sleep| replace:: `while with sleep <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-sleep.yaml>`__
+
+.. |while-foreach| replace:: `while foreach <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-foreach.yaml>`__
+
+.. |while-exhaust| replace:: `while exhaust <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-exhaust.yaml>`__
+
+.. |while-infinite| replace:: `while infinite <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while-infinite.yaml>`__
 
 Built-in steps
 --------------
