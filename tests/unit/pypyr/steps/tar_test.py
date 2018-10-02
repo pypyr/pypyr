@@ -38,8 +38,7 @@ def test_tar_throws_on_empty_context():
     with pytest.raises(AssertionError) as err_info:
         pypyr.steps.tar.run_step(None)
 
-    assert repr(err_info.value) == ("AssertionError('context must have value "
-                                    "for pypyr.steps.tar',)")
+    assert str(err_info.value) == "context must have value for pypyr.steps.tar"
 
 
 def test_tar_throws_if_all_tar_context_missing():
@@ -47,10 +46,10 @@ def test_tar_throws_if_all_tar_context_missing():
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.tar.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert repr(err_info.value) == ("KeyNotInContextError(\"pypyr.steps.tar "
-                                    "couldn\'t find tarExtract in context. "
-                                    "This step needs any combination of "
-                                    "tarExtract or tarArchive in context.\",)")
+    assert str(err_info.value) == ("pypyr.steps.tar "
+                                   "couldn\'t find tarExtract in context. "
+                                   "This step needs any combination of "
+                                   "tarExtract or tarArchive in context.")
 
 
 def test_tar_throws_if_tar_context_wrong_type():
@@ -59,11 +58,11 @@ def test_tar_throws_if_tar_context_wrong_type():
         pypyr.steps.tar.run_step(
             Context({'tarExtract': 'it shouldnt be a string'}))
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"pypyr.steps.tar found tarExtract in "
+    assert str(err_info.value) == (
+        "pypyr.steps.tar found tarExtract in "
         "context, but it's not a <class 'list'>. "
         "This step needs any combination of "
-        "tarExtract or tarArchive in context.\",)")
+        "tarExtract or tarArchive in context.")
 
 
 def test_tar_throws_if_tar_context_no_value():
@@ -73,11 +72,11 @@ def test_tar_throws_if_tar_context_no_value():
             Context({'tarExtract': None,
                      'tarArchive': None}))
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"pypyr.steps.tar found tarExtract in "
+    assert str(err_info.value) == (
+        "pypyr.steps.tar found tarExtract in "
         "context but it doesn't have a value. "
         "This step needs any combination of "
-        "tarExtract or tarArchive in context.\",)")
+        "tarExtract or tarArchive in context.")
 
 
 def test_tar_only_calls_extract():

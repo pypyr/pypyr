@@ -51,6 +51,6 @@ def test_empty_context_cmd_throw():
         context = Context({'blah': 'blah blah'})
         pypyr.steps.safeshell.run_step(context)
 
-    assert repr(err_info.value) == ("KeyNotInContextError(\"context['cmd'] "
-                                    "doesn't exist. It must exist for "
-                                    "pypyr.steps.safeshell.\",)")
+    assert str(err_info.value) == ("context['cmd'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.safeshell.")

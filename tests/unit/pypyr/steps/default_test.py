@@ -18,10 +18,9 @@ def test_contextdefault_throws_on_contextdefault_missing():
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.default.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['defaults'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.default.\",)")
+    assert str(err_info.value) == ("context['defaults'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.default.")
 
 
 def test_contextdefault_pass_no_substitutions():

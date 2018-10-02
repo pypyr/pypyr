@@ -15,10 +15,9 @@ def test_filereplace_no_inpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileReplaceIn'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplaceIn'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.filereplace.")
 
 
 def test_filereplace_empty_inpath_raises():
@@ -29,9 +28,8 @@ def test_filereplace_empty_inpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileReplaceIn'] must have a "
-        "value for pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplaceIn'] must have a "
+                                   "value for pypyr.steps.filereplace.")
 
 
 def test_filereplace_no_outpath_raises():
@@ -43,10 +41,9 @@ def test_filereplace_no_outpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileReplaceOut'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplaceOut'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.filereplace.")
 
 
 def test_filereplace_empty_outpath_raises():
@@ -58,9 +55,8 @@ def test_filereplace_empty_outpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileReplaceOut'] must have a "
-        "value for pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplaceOut'] must have a "
+                                   "value for pypyr.steps.filereplace.")
 
 
 def test_filereplace_no_replacepairs_raises():
@@ -73,10 +69,9 @@ def test_filereplace_no_replacepairs_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileReplacePairs'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplacePairs'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.filereplace.")
 
 
 def test_filereplace_empty_replacepairs_raises():
@@ -89,9 +84,8 @@ def test_filereplace_empty_replacepairs_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         filereplace.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileReplacePairs'] must have "
-        "a value for pypyr.steps.filereplace.\",)")
+    assert str(err_info.value) == ("context['fileReplacePairs'] must have "
+                                   "a value for pypyr.steps.filereplace.")
 
 # ------------------------ arg validation -------------------------------------
 

@@ -56,9 +56,9 @@ def test_no_pycode_context_throw():
         context = Context({'blah': 'blah blah'})
         pypyr.steps.py.run_step(context)
 
-    assert repr(err_info.value) == ("KeyNotInContextError(\"context['pycode'] "
-                                    "doesn't exist. It must exist for "
-                                    "pypyr.steps.py.\",)")
+    assert str(err_info.value) == ("context['pycode'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.py.")
 
 
 def test_empty_pycode_context_throw():

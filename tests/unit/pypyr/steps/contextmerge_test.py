@@ -18,10 +18,9 @@ def test_contextmerge_throws_on_contextset_missing():
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.contextmerge.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['contextMerge'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.contextmerge.\",)")
+    assert str(err_info.value) == ("context['contextMerge'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.contextmerge.")
 
 
 def test_contextmerge_pass_no_substitutions():

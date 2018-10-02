@@ -482,8 +482,7 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
                 with pytest.raises(ValueError) as err_info:
                     pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
-                    assert repr(err_info.value) == (
-                        "ValueError(\'arb error here 6',)")
+                    assert str(err_info.value) == "arb error here 6"
 
     mock_logger_debug.assert_has_calls == [call('step1 is complex.'),
                                            call('step2 is complex.'),

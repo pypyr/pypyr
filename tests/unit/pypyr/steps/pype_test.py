@@ -63,9 +63,9 @@ def test_pype_get_arguments_missing_pype():
     with pytest.raises(KeyNotInContextError) as err_info:
         pype.get_arguments(context)
 
-    assert repr(err_info.value) == ("KeyNotInContextError(\"context['pype'] "
-                                    "doesn't exist. It must exist for "
-                                    "pypyr.steps.pype.\",)")
+    assert str(err_info.value) == ("context['pype'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.pype.")
 
 
 def test_pype_get_arguments_missing_name():
@@ -75,10 +75,10 @@ def test_pype_get_arguments_missing_name():
     with pytest.raises(KeyNotInContextError) as err_info:
         pype.get_arguments(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"pypyr.steps.pype missing 'name' in the 'pype' "
+    assert str(err_info.value) == (
+        "pypyr.steps.pype missing 'name' in the 'pype' "
         "context item. You need to specify the pipeline name to run another "
-        "pipeline.\",)")
+        "pipeline.")
 
 
 def test_pype_get_arguments_name_empty():
@@ -88,9 +88,8 @@ def test_pype_get_arguments_name_empty():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         pype.get_arguments(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"pypyr.steps.pype ['pype']['name'] "
-        "exists but is empty.\",)")
+    assert str(err_info.value) == ("pypyr.steps.pype ['pype']['name'] exists "
+                                   "but is empty.")
 # ------------------------ get_arguments --------------------------------------
 
 # ------------------------ run_step -------------------------------------------
@@ -229,7 +228,7 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         with pytest.raises(RuntimeError) as err_info:
             pype.run_step(context)
 
-        assert repr(err_info.value) == "RuntimeError('whoops',)"
+        assert str(err_info.value) == "whoops"
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',

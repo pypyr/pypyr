@@ -61,9 +61,9 @@ def test_echo_empty_context_fails():
     with pytest.raises(AssertionError) as err_info:
         pypyr.steps.echo.run_step(None)
 
-    assert repr(err_info.value) == ("AssertionError(\"context must be set for "
-                                    "echo. Did you set 'echoMe=text "
-                                    "here'?\",)")
+    assert str(err_info.value) == ("context must be set for "
+                                   "echo. Did you set 'echoMe=text "
+                                   "here'?")
 
 
 def test_echo_missing_echo_me_raises():
@@ -73,9 +73,9 @@ def test_echo_missing_echo_me_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.echo.run_step(context)
 
-    assert repr(err_info.value) == ("KeyNotInContextError(\"context['echoMe'] "
-                                    "doesn't exist. It must exist for "
-                                    "pypyr.steps.echo.\",)")
+    assert str(err_info.value) == ("context['echoMe'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.echo.")
 
 
 def test_echo_echo_me_none_pass():

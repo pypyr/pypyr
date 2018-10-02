@@ -103,7 +103,7 @@ def test_get_pipeline_path_raises():
     expected_msg = (f'unlikelypipeherexyz.yaml not found in either '
                     f'{current_path} or {pypyr_path}')
 
-    assert repr(err.value) == f'PipelineNotFoundError(\'{expected_msg}\',)'
+    assert str(err.value) == f"{expected_msg}"
 
 
 # ------------------------- get_pipeline_path --------------------------------#

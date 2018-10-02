@@ -13,10 +13,9 @@ def test_fetchjson_no_path_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         filefetcher.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fetchJsonPath'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fetchjson.\",)")
+    assert str(err_info.value) == ("context['fetchJsonPath'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fetchjson.")
 
 
 def test_fetchjson_empty_path_raises():
@@ -27,9 +26,8 @@ def test_fetchjson_empty_path_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         filefetcher.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fetchJsonPath'] must have a "
-        "value for pypyr.steps.fetchjson.\",)")
+    assert str(err_info.value) == ("context['fetchJsonPath'] must have a "
+                                   "value for pypyr.steps.fetchjson.")
 
 
 def test_json_pass():
