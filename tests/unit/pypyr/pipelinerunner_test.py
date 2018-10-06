@@ -8,6 +8,7 @@ import pypyr.pipelinerunner
 import pytest
 from unittest.mock import call, mock_open, patch
 
+
 # ------------------------- parser mocks -------------------------------------#
 
 
@@ -124,7 +125,8 @@ def test_main_pass(mocked_work_dir, mocked_run_pipeline):
     pypyr.pipelinerunner.main(pipeline_name='arb pipe',
                               pipeline_context_input='arb context input',
                               working_dir='arb/dir',
-                              log_level=77)
+                              log_level=77,
+                              log_path=None)
 
     mocked_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
@@ -142,7 +144,8 @@ def test_main_fail(mocked_work_dir, mocked_run_pipeline):
         pypyr.pipelinerunner.main(pipeline_name='arb pipe',
                                   pipeline_context_input='arb context input',
                                   working_dir='arb/dir',
-                                  log_level=77)
+                                  log_level=77,
+                                  log_path=None)
 
     assert repr(err_info.value) == (
         "ContextError('arb',)")
@@ -434,5 +437,6 @@ def test_pipeline_runner_main():
     pypyr.pipelinerunner.main(pipeline_name='smoke',
                               pipeline_context_input=None,
                               working_dir=working_dir,
-                              log_level=50)
+                              log_level=50,
+                              log_path=None)
 # ------------------------- integration---------------------------------------#

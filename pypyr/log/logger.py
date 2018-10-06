@@ -5,7 +5,7 @@ Configuration for the python logging library.
 import logging
 
 
-def set_logging_config(log_level, handlers=[]):
+def set_logging_config(log_level, handlers):
     """Set python logging library config.
 
     Run this ONCE at the start of your process. It formats the python logging
@@ -19,18 +19,19 @@ def set_logging_config(log_level, handlers=[]):
         handlers=handlers)
 
 
-def set_root_logger(root_log_level, log_file=None):
+def set_root_logger(root_log_level, log_path=None):
     """Set the root logger 'pypyr'. Do this before you do anything else.
 
     Run once and only once at initialization.
     """
     handlers = []
-    # create console handler
-    ch = logging.StreamHandler()
-    handlers.append(ch)
-    if log_file:
-        fh = logging.FileHandler(log_file)
-        handlers.append(fh)
+
+    console_handler = logging.StreamHandler()
+    handlers.append(console_handler)
+    if log_path:
+        file_handler = logging.FileHandler(log_path)
+        handlers.append(file_handler)
+
     set_logging_config(root_log_level, handlers=handlers)
     root_logger = logging.getLogger("pypyr")
     root_logger.debug(

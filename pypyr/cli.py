@@ -35,9 +35,8 @@ def get_parser():
                         help='Integer log level. Defaults to 20 (INFO). '
                         '10=DEBUG\n20=INFO\n30=WARNING\n40=ERROR\n50=CRITICAL'
                         '.\n Log Level < 10 gives full traceback on errors.')
-    parser.add_argument('--logfile', dest='log_file', type=str,
-                        default='pypyr.log',
-                        help='File to which log is written.')
+    parser.add_argument('--logpath', dest='log_path',
+                        help='Log-file path. Append log output to this path')
     parser.add_argument('--version', action='version',
                         help='Echo version number.',
                         version=f'{pypyr.version.get_version()}')
@@ -62,7 +61,7 @@ def main(args=None):
             pipeline_context_input=parsed_args.pipeline_context,
             working_dir=parsed_args.working_dir,
             log_level=parsed_args.log_level,
-            log_file=parsed_args.log_file)
+            log_path=parsed_args.log_path)
     except KeyboardInterrupt:
         # Shell standard is 128 + signum = 130 (SIGINT = 2)
         sys.stdout.write("\n")
