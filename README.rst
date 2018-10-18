@@ -80,12 +80,12 @@ pypyr assumes a pipelines directory in your current working directory.
 .. code-block:: bash
 
   # run pipelines/mypipelinename.yaml with DEBUG logging level
-  $ pypyr mypipelinename --log 10
+  $ pypyr mypipelinename --loglevel 10
 
   # run pipelines/mypipelinename.yaml with INFO logging level.
-  $ pypyr mypipelinename --log 20
+  $ pypyr mypipelinename --logl 20
 
-  # If you don't specify --log it defaults to 20 - INFO logging level.
+  # If you don't specify --loglevel it defaults to 20 - INFO logging level.
   $ pypyr mypipelinename
 
   # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary string,
