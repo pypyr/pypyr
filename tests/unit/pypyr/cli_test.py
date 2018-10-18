@@ -10,7 +10,7 @@ def test_main_pass_with_sysargv_context_positional():
     arg_list = ['pypyr',
                 'blah',
                 'ctx string',
-                '--log',
+                '--loglevel',
                 '50',
                 '--dir',
                 'dir here']
@@ -23,14 +23,15 @@ def test_main_pass_with_sysargv_context_positional():
             pipeline_name='blah',
             pipeline_context_input='ctx string',
             working_dir='dir here',
-            log_level=50
+            log_level=50,
+            log_path=None
         )
 
 
 def test_main_pass_with_sysargv_context_positional_flags_last():
     """Check assigns correctly to args when positional last not first."""
     arg_list = ['pypyr',
-                '--log',
+                '--loglevel',
                 '50',
                 '--dir',
                 'dir here',
@@ -45,7 +46,8 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
             pipeline_name='blah',
             pipeline_context_input='ctx string',
             working_dir='dir here',
-            log_level=50
+            log_level=50,
+            log_path=None
         )
 
 
@@ -61,7 +63,8 @@ def test_main_pass_with_defaults_context_positional():
         pipeline_name='blah',
         pipeline_context_input='ctx string',
         working_dir=os.getcwd(),
-        log_level=20
+        log_level=20,
+        log_path=None
     )
 
 
@@ -76,14 +79,15 @@ def test_main_pass_with_no_context():
         pipeline_name='blah',
         pipeline_context_input=None,
         working_dir=os.getcwd(),
-        log_level=20
+        log_level=20,
+        log_path=None
     )
 
 
 def test_main_pass_with_no_context_other_flags_set():
     """No context is None and other flag still work."""
     arg_list = ['blah',
-                '--log',
+                '--loglevel',
                 '11']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
@@ -93,7 +97,8 @@ def test_main_pass_with_no_context_other_flags_set():
         pipeline_name='blah',
         pipeline_context_input=None,
         working_dir=os.getcwd(),
-        log_level=11
+        log_level=11,
+        log_path=None
     )
 
 
@@ -135,7 +140,7 @@ def test_trace_log_level():
     """Log Level < 10 produces traceback on error."""
     arg_list = ['blah',
                 'ctx string',
-                '--log',
+                '--loglevel',
                 '5']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
@@ -145,3 +150,21 @@ def test_trace_log_level():
             assert val == 255
 
     mock_traceback.assert_called_once()
+
+
+def test_main_pass_with_logpath():
+    """logpath set to tempfile"""
+    arg_list = ['blah',
+                '--logpath',
+                'tmp.log']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        pypyr.cli.main(arg_list)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=None,
+        working_dir=os.getcwd(),
+        log_level=20,
+        log_path='tmp.log'
+    )
