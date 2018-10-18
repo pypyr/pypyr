@@ -15,10 +15,9 @@ def test_fileformatjson_no_inpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatJsonIn'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformatjson.\",)")
+    assert str(err_info.value) == ("context['fileFormatJsonIn'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformatjson.")
 
 
 def test_fileformatjson_empty_inpath_raises():
@@ -29,9 +28,8 @@ def test_fileformatjson_empty_inpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatJsonIn'] must have "
-        "a value for pypyr.steps.fileformatjson.\",)")
+    assert str(err_info.value) == ("context['fileFormatJsonIn'] must have "
+                                   "a value for pypyr.steps.fileformatjson.")
 
 
 def test_fileformatjson_no_outpath_raises():
@@ -43,10 +41,9 @@ def test_fileformatjson_no_outpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatJsonOut'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformatjson.\",)")
+    assert str(err_info.value) == ("context['fileFormatJsonOut'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformatjson.")
 
 
 def test_fileformatjson_empty_outpath_raises():
@@ -58,9 +55,8 @@ def test_fileformatjson_empty_outpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatJsonOut'] must have "
-        "a value for pypyr.steps.fileformatjson.\",)")
+    assert str(err_info.value) == ("context['fileFormatJsonOut'] must have "
+                                   "a value for pypyr.steps.fileformatjson.")
 
 
 def test_fileformatjson_pass_no_substitutions():

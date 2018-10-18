@@ -13,8 +13,8 @@ def test_env_throws_on_empty_context():
     with pytest.raises(AssertionError) as err_info:
         pypyr.steps.env.run_step(None)
 
-    assert repr(err_info.value) == ("AssertionError('context must have value "
-                                    "for pypyr.steps.env',)")
+    assert str(err_info.value) == ("context must have value "
+                                   "for pypyr.steps.env")
 
 
 def test_env_throws_if_all_env_context_missing():
@@ -22,9 +22,9 @@ def test_env_throws_if_all_env_context_missing():
     with pytest.raises(AssertionError) as err_info:
         pypyr.steps.env.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert repr(err_info.value) == ("AssertionError('context must contain "
-                                    "any combination of envGet, envSet or "
-                                    "envUnset for pypyr.steps.env',)")
+    assert str(err_info.value) == ("context must contain "
+                                   "any combination of envGet, envSet or "
+                                   "envUnset for pypyr.steps.env")
 
 
 def test_env_throws_if_env_context_wrong_type():
@@ -33,9 +33,9 @@ def test_env_throws_if_env_context_wrong_type():
         pypyr.steps.env.run_step(
             Context({'envSet': 'it shouldnt be a string'}))
 
-    assert repr(err_info.value) == ("AssertionError('context must contain "
-                                    "any combination of envGet, envSet or "
-                                    "envUnset for pypyr.steps.env',)")
+    assert str(err_info.value) == ("context must contain "
+                                   "any combination of envGet, envSet or "
+                                   "envUnset for pypyr.steps.env")
 
 
 def test_env_only_calls_get():
@@ -224,7 +224,7 @@ def test_envget_env_doesnt_exist():
     with pytest.raises(KeyError) as err_info:
         pypyr.steps.env.env_get(context)
 
-    assert repr(err_info.value) == ("KeyError('ARB_DELETE_ME1',)")
+    assert str(err_info.value) == "'ARB_DELETE_ME1'"
     del os.environ['ARB_DELETE_ME2']
 # ------------------------- envGet -------------------------------------------#
 

@@ -80,12 +80,12 @@ pypyr assumes a pipelines directory in your current working directory.
 .. code-block:: bash
 
   # run pipelines/mypipelinename.yaml with DEBUG logging level
-  $ pypyr mypipelinename --log 10
+  $ pypyr mypipelinename --loglevel 10
 
   # run pipelines/mypipelinename.yaml with INFO logging level.
-  $ pypyr mypipelinename --log 20
+  $ pypyr mypipelinename --logl 20
 
-  # If you don't specify --log it defaults to 20 - INFO logging level.
+  # If you don't specify --loglevel it defaults to 20 - INFO logging level.
   $ pypyr mypipelinename
 
   # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary string,
@@ -1412,6 +1412,21 @@ Friendly reminder of the difference between separating your commands with ; or
   It won't exit with an error code if it wasn't the last statement.
 - && stops and exits reporting error on first error.
 
+You can change directory during this shell step using ``cd``, but dir changes
+are only in scope for subsequent commands in this step, not for subsequent
+steps:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.shell
+    description: hop one up from current working dir
+    in:
+      cmd: '[sic]"echo ${PWD}; cd ../; echo ${PWD}"'
+  - name: pypyr.steps.shell
+    description: back to your current working dir
+    in:
+      cmd: '[sic]"echo ${PWD}"'
+
 Supports string `Substitutions`_.
 
 Example pipeline yaml using a pipe:
@@ -1422,6 +1437,10 @@ Example pipeline yaml using a pipe:
     - name: pypyr.steps.shell
       in:
         cmd: ls | grep pipe; echo if you had something pipey it should show up;
+    - name: pypyr.steps.shell
+      description: if you want to pass curlies to the shell, use sic strings
+      in:
+        cmd: '[sic]"echo ${PWD};"'
 
 See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
@@ -1634,6 +1653,29 @@ Will return "piping {key} the valleys wild" without attempting to substitute
 {key} from context. You can happily use ", ' or {} inside a ``[sic]""`` string
 without escaping these any further. This makes sic strings ideal for strings
 containing json.
+
+In pipeline yaml, you need to have the ``[sic]`` in single quotes or as part
+of a literal block:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    description: >
+                use a sic string not to format any {values}. Do watch the
+                use of the yaml literal with block chomping indicator |- to
+                prevent the last character in the string from being a LF. If
+                you don't do this, you will end up with the trailing " in your
+                output, which in this case would be malformed json.
+    in:
+      echoMe: |-
+              [sic]"
+              {
+                "key1": "key1 value with a {curly}"
+              }"
+  - name: pypyr.steps.echo
+    description: put sic string in single quotes
+    in:
+      echoMe: '[sic]"string with a {curly} with ", '' and & and double quote at end:""'
 
 See a worked example `for substitutions here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.

@@ -14,10 +14,9 @@ def test_fileformat_no_inpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatIn'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformat.\",)")
+    assert str(err_info.value) == ("context['fileFormatIn'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformat.")
 
 
 def test_fileformat_empty_inpath_raises():
@@ -28,9 +27,8 @@ def test_fileformat_empty_inpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatIn'] must have a "
-        "value for pypyr.steps.fileformat.\",)")
+    assert str(err_info.value) == ("context['fileFormatIn'] must have a "
+                                   "value for pypyr.steps.fileformat.")
 
 
 def test_fileformat_no_outpath_raises():
@@ -42,10 +40,9 @@ def test_fileformat_no_outpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatOut'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformat.\",)")
+    assert str(err_info.value) == ("context['fileFormatOut'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformat.")
 
 
 def test_fileformat_empty_outpath_raises():
@@ -57,9 +54,8 @@ def test_fileformat_empty_outpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatOut'] must have a "
-        "value for pypyr.steps.fileformat.\",)")
+    assert str(err_info.value) == ("context['fileFormatOut'] must have a "
+                                   "value for pypyr.steps.fileformat.")
 
 
 def test_fileformat_pass_no_substitutions():

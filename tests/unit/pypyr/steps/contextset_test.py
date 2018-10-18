@@ -16,10 +16,9 @@ def test_context_set_throws_on_contextset_missing():
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.contextset.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['contextSet'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.contextset.\",)")
+    assert str(err_info.value) == ("context['contextSet'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.contextset.")
 
 
 def test_context_set_pass():

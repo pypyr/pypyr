@@ -77,9 +77,8 @@ def test_get_parser_context_signature_wrong(mocked_moduleloader):
         pypyr.pipelinerunner.get_parsed_context(
             {'context_parser': 'specifiedparserhere'}, 'in arg here')
 
-    assert repr(err_info.value) == (
-        "AttributeError(\"'int' object has no attribute "
-        "'get_parsed_context'\",)")
+    assert str(err_info.value) == ("'int' object has no attribute "
+                                   "'get_parsed_context'")
 
 # ------------------------- get_parsed_context--------------------------------#
 
@@ -147,8 +146,7 @@ def test_main_fail(mocked_work_dir, mocked_run_pipeline):
                                   log_level=77,
                                   log_path=None)
 
-    assert repr(err_info.value) == (
-        "ContextError('arb',)")
+    assert str(err_info.value) == "arb"
 
     mocked_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(

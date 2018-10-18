@@ -15,10 +15,9 @@ def test_fileformatyaml_no_inpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatYamlIn'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformatyaml.\",)")
+    assert str(err_info.value) == ("context['fileFormatYamlIn'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformatyaml.")
 
 
 def test_fileformatyaml_empty_inpath_raises():
@@ -29,9 +28,8 @@ def test_fileformatyaml_empty_inpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatYamlIn'] must have "
-        "a value for pypyr.steps.fileformatyaml.\",)")
+    assert str(err_info.value) == ("context['fileFormatYamlIn'] must have "
+                                   "a value for pypyr.steps.fileformatyaml.")
 
 
 def test_fileformatyaml_no_outpath_raises():
@@ -43,10 +41,9 @@ def test_fileformatyaml_no_outpath_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fileFormatYamlOut'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fileformatyaml.\",)")
+    assert str(err_info.value) == ("context['fileFormatYamlOut'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fileformatyaml.")
 
 
 def test_fileformatyaml_empty_outpath_raises():
@@ -58,9 +55,8 @@ def test_fileformatyaml_empty_outpath_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         fileformat.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fileFormatYamlOut'] must have "
-        "a value for pypyr.steps.fileformatyaml.\",)")
+    assert str(err_info.value) == ("context['fileFormatYamlOut'] must have "
+                                   "a value for pypyr.steps.fileformatyaml.")
 
 
 def test_fileformatyaml_pass_no_substitutions():

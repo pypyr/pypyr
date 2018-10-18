@@ -19,8 +19,7 @@ def test_base_error_raises():
     with pytest.raises(PypyrError) as err_info:
         raise PypyrError("this is error text right here")
 
-    assert repr(err_info.value) == ("Error('this is error text "
-                                    "right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_context_error_raises():
@@ -30,8 +29,7 @@ def test_context_error_raises():
     with pytest.raises(ContextError) as err_info:
         raise ContextError("this is error text right here")
 
-    assert repr(err_info.value) == ("ContextError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_key_not_in_context_error_raises():
@@ -43,8 +41,7 @@ def test_key_not_in_context_error_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         raise KeyNotInContextError("this is error text right here")
 
-    assert repr(err_info.value) == ("KeyNotInContextError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_key_in_context_has_no_value_error_raises():
@@ -56,9 +53,7 @@ def test_key_in_context_has_no_value_error_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         raise KeyInContextHasNoValueError("this is error text right here")
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError('this is error "
-        "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_loop_max_exhausted_error_raises():
@@ -69,8 +64,7 @@ def test_loop_max_exhausted_error_raises():
     with pytest.raises(LoopMaxExhaustedError) as err_info:
         raise LoopMaxExhaustedError("this is error text right here")
 
-    assert repr(err_info.value) == ("LoopMaxExhaustedError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_pipeline_definition_error_raises():
@@ -81,8 +75,7 @@ def test_pipeline_definition_error_raises():
     with pytest.raises(PipelineDefinitionError) as err_info:
         raise PipelineDefinitionError("this is error text right here")
 
-    assert repr(err_info.value) == ("PipelineDefinitionError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_pipeline_not_found_error_raises():
@@ -93,8 +86,7 @@ def test_pipeline_not_found_error_raises():
     with pytest.raises(PipelineNotFoundError) as err_info:
         raise PipelineNotFoundError("this is error text right here")
 
-    assert repr(err_info.value) == ("PipelineNotFoundError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_plugin_error_raises():
@@ -105,8 +97,7 @@ def test_plugin_error_raises():
     with pytest.raises(PlugInError) as err_info:
         raise PlugInError("this is error text right here")
 
-    assert repr(err_info.value) == ("PlugInError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"
 
 
 def test_pymodule_not_found_error_raises():
@@ -117,5 +108,4 @@ def test_pymodule_not_found_error_raises():
     with pytest.raises(PyModuleNotFoundError) as err_info:
         raise PyModuleNotFoundError("this is error text right here")
 
-    assert repr(err_info.value) == ("PyModuleNotFoundError('this is error "
-                                    "text right here',)")
+    assert str(err_info.value) == "this is error text right here"

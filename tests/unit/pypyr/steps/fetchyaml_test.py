@@ -13,10 +13,9 @@ def test_fetchyaml_no_path_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         filefetcher.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['fetchYamlPath'] "
-        "doesn't exist. It must exist for "
-        "pypyr.steps.fetchyaml.\",)")
+    assert str(err_info.value) == ("context['fetchYamlPath'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.fetchyaml.")
 
 
 def test_fetchyaml_empty_path_raises():
@@ -27,9 +26,8 @@ def test_fetchyaml_empty_path_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         filefetcher.run_step(context)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"context['fetchYamlPath'] must have a "
-        "value for pypyr.steps.fetchyaml.\",)")
+    assert str(err_info.value) == ("context['fetchYamlPath'] must have a "
+                                   "value for pypyr.steps.fetchyaml.")
 
 
 def test_fetchyaml_pass():

@@ -146,10 +146,9 @@ def test_assert_key_has_value_fails_key_error_message():
     with pytest.raises(KeyNotInContextError) as err_info:
         context.assert_key_has_value('notindict', 'mydesc')
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"context['notindict'] "
-        "doesn't exist. It must exist for "
-        "mydesc.\",)")
+    assert str(err_info.value) == ("context['notindict'] "
+                                   "doesn't exist. It must exist for "
+                                   "mydesc.")
 
 
 def test_assert_key_has_value_fails_key_empty():
@@ -218,8 +217,7 @@ def test_assert_key_type_value_no_key_raises():
     with pytest.raises(KeyNotInContextError) as err_info:
         Context().assert_key_type_value(info, 'mydesc')
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"mydesc couldn't find key1 in context.\",)")
+    assert str(err_info.value) == "mydesc couldn't find key1 in context."
 
 
 def test_assert_key_type_value_no_key_raises_extra_text():
@@ -233,9 +231,8 @@ def test_assert_key_type_value_no_key_raises_extra_text():
     with pytest.raises(KeyNotInContextError) as err_info:
         Context().assert_key_type_value(info, 'mydesc', 'extra text here')
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"mydesc couldn't find key1 in context. extra "
-        "text here\",)")
+    assert str(err_info.value) == (
+        "mydesc couldn't find key1 in context. extra text here")
 
 
 def test_assert_key_type_value_no_value_raises():
@@ -249,9 +246,8 @@ def test_assert_key_type_value_no_value_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         Context().assert_key_type_value(info, 'mydesc')
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key1 in context but it "
-        "doesn\'t have a value.\",)")
+    assert str(err_info.value) == ("mydesc found key1 in context but it "
+                                   "doesn\'t have a value.")
 
 
 def test_assert_key_type_value_no_value_raises_extra_text():
@@ -265,9 +261,8 @@ def test_assert_key_type_value_no_value_raises_extra_text():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         Context().assert_key_type_value(info, 'mydesc', 'extra text here')
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key1 in context but it "
-        "doesn\'t have a value. extra text here\",)")
+    assert str(err_info.value) == ("mydesc found key1 in context but it "
+                                   "doesn\'t have a value. extra text here")
 
 
 def test_assert_key_type_value_wrong_type_raises():
@@ -281,9 +276,8 @@ def test_assert_key_type_value_wrong_type_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         Context().assert_key_type_value(info, 'mydesc')
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key1 in context, but "
-        "it\'s not a <class 'str'>.\",)")
+    assert str(err_info.value) == ("mydesc found key1 in context, but "
+                                   "it\'s not a <class 'str'>.")
 
 
 def test_assert_key_type_value_wrong_type_raises_with_extra_error_text():
@@ -297,9 +291,9 @@ def test_assert_key_type_value_wrong_type_raises_with_extra_error_text():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         Context().assert_key_type_value(info, 'mydesc', 'extra text here')
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key1 in context, but "
-        "it\'s not a <class 'str'>. extra text here\",)")
+    assert str(err_info.value) == (
+        "mydesc found key1 in context, but "
+        "it\'s not a <class 'str'>. extra text here")
 
 
 def test_assert_keys_type_value_passes():
@@ -348,9 +342,8 @@ def test_assert_keys_type_value_raises():
     with pytest.raises(KeyInContextHasNoValueError) as err_info:
         Context().assert_keys_type_value('mydesc', None, info1, info2, info3)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key2 in context but it "
-        "doesn\'t have a value.\",)")
+    assert str(err_info.value) == ("mydesc found key2 in context but it "
+                                   "doesn\'t have a value.")
 
 
 def test_assert_keys_type_value_raises_with_extra_error_text():
@@ -380,9 +373,8 @@ def test_assert_keys_type_value_raises_with_extra_error_text():
                                          info2,
                                          info3)
 
-    assert repr(err_info.value) == (
-        "KeyInContextHasNoValueError(\"mydesc found key2 in context but it "
-        "doesn\'t have a value. extra text here\",)")
+    assert str(err_info.value) == ("mydesc found key2 in context but it "
+                                   "doesn\'t have a value. extra text here")
 
 # ------------------- asserts ------------------------------------------------#
 
@@ -442,10 +434,10 @@ def test_tag_not_in_context_should_throw():
         context['input_string'] = '{key1} this is {key2} string'
         context.get_formatted('input_string')
 
-    assert repr(err.value) == (
-        "KeyNotInContextError(\"Unable to format '{key1} this is "
+    assert str(err.value) == (
+        "Unable to format '{key1} this is "
         "{key2} string' at context['input_string'], because "
-        "key2 not found in the pypyr context.\",)")
+        "key2 not found in the pypyr context.")
 
 
 def test_context_item_not_a_string_should_return_as_is():
@@ -476,9 +468,9 @@ def test_input_string_tag_not_in_context_should_throw():
         input_string = '{key1} this is {key2} string'
         context.get_formatted_string(input_string)
 
-    assert repr(err_info.value) == (
-        "KeyNotInContextError(\"Unable to format '{key1} this is {key2} "
-        "string' because key2 not found in the pypyr context.\",)")
+    assert str(err_info.value) == (
+        "Unable to format '{key1} this is {key2} "
+        "string' because key2 not found in the pypyr context.")
 
 
 def test_input_string_interpolate_sic():
@@ -495,9 +487,8 @@ def test_input_string_not_a_string_throw():
         input_string = 77
         context.get_formatted_string(input_string)
 
-    assert repr(err_info.value) == (
-        "TypeError(\"can only format on strings. 77 is a <class 'int'> "
-        "instead.\",)")
+    assert str(err_info.value) == (
+        "can only format on strings. 77 is a <class 'int'> instead.")
 
 
 def test_get_formatted_iterable_list():

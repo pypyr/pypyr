@@ -536,7 +536,7 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
         with pytest.raises(ValueError) as err_info:
             step.run_step(context)
 
-    assert repr(err_info.value) == ("ValueError('whoops',)")
+    assert str(err_info.value) == "whoops"
 
     assert mock_logger_info.mock_calls == [
         call('while decorator will loop 3 times at 0.0s intervals.'),
@@ -569,9 +569,8 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
         with pytest.raises(LoopMaxExhaustedError) as err_info:
             step.run_step(context)
 
-    assert repr(err_info.value) == (
-        "LoopMaxExhaustedError('while loop reached "
-        "3 and {key5} never evaluated to True.',)")
+    assert str(err_info.value) == ("while loop reached "
+                                   "3 and {key5} never evaluated to True.")
 
     assert mock_logger_info.mock_calls == [
         call('while decorator will loop 3 times, or until {key5} evaluates to '
@@ -606,8 +605,7 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
         with pytest.raises(LoopMaxExhaustedError) as err_info:
             step.run_step(context)
 
-    assert repr(err_info.value) == (
-        "LoopMaxExhaustedError('while loop reached 3.',)")
+    assert str(err_info.value) == "while loop reached 3."
 
     assert mock_logger_info.mock_calls == [
         call('while decorator will loop 3 times at 0.0s intervals.'),
@@ -711,8 +709,7 @@ def test_invoke_step_no_run_step(mocked_moduleloader):
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
 
-    assert repr(err_info.value) == (
-        "AttributeError(\"'int' object has no attribute 'run_step'\",)")
+    assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -1573,7 +1570,7 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
     with pytest.raises(ValueError) as err_info:
         step.run_step(context)
 
-        assert repr(err_info.value) == ("ValueError(\'arb error here',)")
+        assert str(err_info.value) == "arb error here"
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1595,7 +1592,7 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
     with pytest.raises(ValueError) as err_info:
         step.run_step(context)
 
-        assert repr(err_info.value) == ("ValueError(\'arb error here',)")
+    assert str(err_info.value) == "arb error here"
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1612,8 +1609,7 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
         with pytest.raises(ValueError) as err_info:
             step.run_step(Context({'k1': 'v1'}))
 
-            assert repr(err_info.value) == (
-                "ValueError(\'arb error here',)")
+            assert str(err_info.value) == "arb error here"
 
     mock_logger_debug.assert_any_call('step1 is a simple string.')
     mock_invoke_step.assert_called_once_with(
@@ -1720,9 +1716,8 @@ def test_while_init_not_a_dict():
     with pytest.raises(PipelineDefinitionError) as err_info:
         WhileDecorator('arb')
 
-    assert repr(err_info.value) == (
-        "PipelineDefinitionError('while decorator must be a dict (i.e a map) "
-        "type.',)")
+    assert str(err_info.value) == (
+        "while decorator must be a dict (i.e a map) type.")
 
 
 def test_while_init_no_max_no_stop():
@@ -1730,11 +1725,11 @@ def test_while_init_no_max_no_stop():
     with pytest.raises(PipelineDefinitionError) as err_info:
         WhileDecorator({'arb': 'arbv'})
 
-    assert repr(err_info.value) == (
-        'PipelineDefinitionError("the while decorator must have either max or '
-        'stop, or both. But not neither. Note that setting stop: False with '
-        'no max is an infinite loop. If an infinite loop is really what you '
-        'want, set stop: \'{ContextKeyWithFalseValue}\'",)')
+    assert str(err_info.value) == (
+        "the while decorator must have either max or "
+        "stop, or both. But not neither. Note that setting stop: False with "
+        "no max is an infinite loop. If an infinite loop is really what you "
+        "want, set stop: \'{ContextKeyWithFalseValue}\'")
 
 
 # ------------------- WhileDecorator: init -----------------------------------#
@@ -1860,9 +1855,9 @@ def test_while_loop_no_stop_no_max():
         wd.while_loop(Context(), mock)
 
     mock.assert_not_called()
-    assert repr(err_info.value) == (
-        "PipelineDefinitionError('the while decorator must have either max or "
-        "stop, or both. But not neither.',)")
+    assert str(err_info.value) == (
+        "the while decorator must have either max or "
+        "stop, or both. But not neither.")
 
 
 @patch('time.sleep')
@@ -2024,9 +2019,8 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
             with pytest.raises(LoopMaxExhaustedError) as err_info:
                 wd.while_loop(context, mock_step)
 
-    assert repr(err_info.value) == (
-        "LoopMaxExhaustedError('while loop reached 3 and {k1} never evaluated "
-        "to True.',)")
+    assert str(err_info.value) == (
+        "while loop reached 3 and {k1} never evaluated to True.")
 
     assert context['whileCounter'] == 3
     assert step_count == 3
@@ -2080,8 +2074,7 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
             with pytest.raises(LoopMaxExhaustedError) as err_info:
                 wd.while_loop(context, mock_step)
 
-    assert repr(err_info.value) == (
-        "LoopMaxExhaustedError('while loop reached 3.',)")
+    assert str(err_info.value) == "while loop reached 3."
 
     assert context['whileCounter'] == 3
     assert step_count == 3
