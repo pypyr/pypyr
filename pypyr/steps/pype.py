@@ -54,16 +54,18 @@ def run_step(context):
     try:
         if use_parent_context:
             logger.info(f"pyping {pipeline_name}, using parent context.")
-            pipelinerunner.run_pipeline(pipeline_name=pipeline_name,
-                                        pipeline_context_input=pipe_arg,
-                                        context=context,
-                                        parse_input=not skip_parse)
+            pipelinerunner.load_and_run_pipeline(
+                pipeline_name=pipeline_name,
+                pipeline_context_input=pipe_arg,
+                context=context,
+                parse_input=not skip_parse)
         else:
             logger.info(f"pyping {pipeline_name}, without parent context.")
-            pipelinerunner.run_pipeline(pipeline_name=pipeline_name,
-                                        pipeline_context_input=pipe_arg,
-                                        working_dir=context.working_dir,
-                                        parse_input=not skip_parse)
+            pipelinerunner.load_and_run_pipeline(
+                pipeline_name=pipeline_name,
+                pipeline_context_input=pipe_arg,
+                working_dir=context.working_dir,
+                parse_input=not skip_parse)
 
         logger.info(f"pyped {pipeline_name}.")
     except Exception as ex_info:
