@@ -144,9 +144,9 @@ def main(
     # without needing to pip install a package 1st.
     pypyr.moduleloader.set_working_directory(working_dir)
 
-    run_pipeline(pipeline_name=pipeline_name,
-                 pipeline_context_input=pipeline_context_input,
-                 working_dir=working_dir)
+    load_and_run_pipeline(pipeline_name=pipeline_name,
+                          pipeline_context_input=pipeline_context_input,
+                          working_dir=working_dir)
 
     logger.debug("pypyr done")
 
@@ -175,14 +175,14 @@ def prepare_context(pipeline, context_in_string, context):
     logger.debug("done")
 
 
-def run_pipeline(pipeline_name,
-                 pipeline_context_input=None,
-                 working_dir=None,
-                 context=None,
-                 parse_input=True):
-    """Run the specified pypyr pipeline.
+def load_and_run_pipeline(pipeline_name,
+                          pipeline_context_input=None,
+                          working_dir=None,
+                          context=None,
+                          parse_input=True):
+    """Load and run the specified pypyr pipeline.
 
-    This function runs the actual pipeline. If you are running another
+    This function runs the actual pipeline by name. If you are running another
     pipeline from within a pipeline, call this, not main(). Do call main()
     instead for your 1st pipeline if there are pipelines calling pipelines.
 
@@ -206,7 +206,6 @@ def run_pipeline(pipeline_name,
     Returns:
         None
     """
-    logger.debug("starting")
 
     logger.debug(f"you asked to run pipeline: {pipeline_name}")
     logger.debug(f"you set the initial context to: {pipeline_context_input}")
@@ -224,10 +223,42 @@ def run_pipeline(pipeline_name,
     pipeline_definition = get_pipeline_definition(pipeline_name=pipeline_name,
                                                   working_dir=working_dir)
 
+    run_pipeline(
+        pipeline=pipeline_definition,
+        pipeline_context_input=pipeline_context_input,
+        context=context,
+        parse_input=parse_input
+    )
+
+
+def run_pipeline(pipeline,
+                 context,
+                 pipeline_context_input=None,
+                 parse_input=True):
+    """Run the specified pypyr pipeline.
+
+    This function runs the actual pipeline. If you are running another
+    pipeline from within a pipeline, call this, not main(). Do call main()
+    instead for your 1st pipeline if there are pipelines calling pipelines.
+
+    Pipeline and context should be already loaded.
+
+    Args:
+        pipeline (dict): Dictionary representing the pipeline.
+        context (pypyr.context.Context): Reusable context object.
+        pipeline_context_input (str): Initialize the pypyr context with this
+                                string.
+        parse_input (bool): run context_parser in pipeline.
+
+    Returns:
+        None
+    """
+    logger.debug("starting")
+
     try:
         if parse_input:
             logger.debug("executing context_parser")
-            prepare_context(pipeline=pipeline_definition,
+            prepare_context(pipeline=pipeline,
                             context_in_string=pipeline_context_input,
                             context=context)
         else:
@@ -235,14 +266,14 @@ def run_pipeline(pipeline_name,
 
         # run main steps
         pypyr.stepsrunner.run_step_group(
-            pipeline_definition=pipeline_definition,
+            pipeline_definition=pipeline,
             step_group_name='steps',
             context=context)
 
         # if nothing went wrong, run on_success
         logger.debug("pipeline steps complete. Running on_success steps now.")
         pypyr.stepsrunner.run_step_group(
-            pipeline_definition=pipeline_definition,
+            pipeline_definition=pipeline,
             step_group_name='on_success',
             context=context)
     except Exception:
@@ -252,7 +283,7 @@ def run_pipeline(pipeline_name,
 
         # failure_step_group will log but swallow any errors
         pypyr.stepsrunner.run_failure_step_group(
-            pipeline=pipeline_definition,
+            pipeline=pipeline,
             context=context)
         logger.debug("Raising original exception to caller.")
         raise
