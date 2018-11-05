@@ -575,12 +575,12 @@ class Context(dict):
                             self.get_formatted_iterable(v))
                     elif types.are_all_this_type(tuple, current[k], v):
                         # concatenate tuples
-                        current[k] = (current[k] +
-                                      self.get_formatted_iterable(v))
+                        current[k] = (
+                            current[k] + self.get_formatted_iterable(v))
                     elif types.are_all_this_type(Set, current[k], v):
                         # join sets
-                        current[k] = (current[k] |
-                                      self.get_formatted_iterable(v))
+                        current[k] = (
+                            current[k] | self.get_formatted_iterable(v))
                     else:
                         # at this point it's not mergable nor a known iterable
                         current[k] = v
