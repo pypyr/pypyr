@@ -95,7 +95,7 @@ def test_pype_get_arguments_name_empty():
 # ------------------------ run_step -------------------------------------------
 
 
-@patch('pypyr.pipelinerunner.run_pipeline')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context(mock_run_pipeline):
     """pype use_parent_context True."""
     context = Context({
@@ -123,7 +123,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.run_pipeline')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_parent_context(mock_run_pipeline):
     """pype use_parent_context False."""
     context = Context({
@@ -152,7 +152,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.run_pipeline')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_skip_parse(mock_run_pipeline):
     """pype use_parent_context False."""
     context = Context({
@@ -181,7 +181,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.run_pipeline')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_pipe_arg(mock_run_pipeline):
     """pype use_parent_context False."""
     context = Context({
@@ -210,7 +210,8 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.run_pipeline', side_effect=RuntimeError('whoops'))
+@patch('pypyr.pipelinerunner.load_and_run_pipeline',
+       side_effect=RuntimeError('whoops'))
 def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
     """pype without swallowing error in child pipeline."""
     context = Context({
@@ -240,7 +241,8 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
 
-@patch('pypyr.pipelinerunner.run_pipeline', side_effect=RuntimeError('whoops'))
+@patch('pypyr.pipelinerunner.load_and_run_pipeline',
+       side_effect=RuntimeError('whoops'))
 def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
     """pype swallowing error in child pipeline."""
     context = Context({
