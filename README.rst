@@ -1040,8 +1040,8 @@ For example, say input context is:
     key2: value2
     key3: value3
     envUnset:
-        MYVAR1
-        MYVAR2
+        - MYVAR1
+        - MYVAR2
 
 This will result in the following $ENVs being unset:
 
