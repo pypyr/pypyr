@@ -1073,8 +1073,16 @@ Loads a yaml file into the pypyr context.
 
 This step requires the following key in the pypyr context to succeed:
 
-- fetchYamlPath.
-  - path-like. Path to file on disk. Can be relative. Supports `Substitutions`_.
+- fetchYamlPath
+
+  - path-like. Path to file on disk. Can be relative.
+
+- fetchYamlKey
+
+  - Optional. Write yaml to this context key. If not specified, yaml writes
+    directly to context root.
+
+All inputs support `Substitutions`_.
 
 Yaml parsed from the file will be merged into the pypyr context. This will
 overwrite existing values if the same keys are already in there.
@@ -1088,7 +1096,8 @@ I.e if file yaml has
 but context ``{'eggs': 'fried'}`` already exists, returned ``context['eggs']``
 will be 'boiled'.
 
-The yaml should not be a list at the top level, but rather a mapping.
+If *fetchYamlKey* is not specified, the yaml should not be a list at the top
+level, but rather a mapping.
 
 So the top-level yaml should not look like this:
 
