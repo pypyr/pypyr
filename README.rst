@@ -1056,8 +1056,16 @@ Loads a json file into the pypyr context.
 
 This step requires the following key in the pypyr context to succeed:
 
-- fetchJsonPath.
-  - path-like. Path to file on disk. Can be relative. Supports `Substitutions`_.
+- fetchJsonPath
+
+  - path-like. Path to file on disk. Can be relative.
+
+- fetchJsonKey
+
+  - Optional. Write json to this context key. If not specified, json writes
+    directly to context root.
+
+All inputs support `Substitutions`_.
 
 Json parsed from the file will be merged into the pypyr context. This will
 overwrite existing values if the same keys are already in there.
@@ -1065,7 +1073,8 @@ overwrite existing values if the same keys are already in there.
 I.e if file json has ``{'eggs' : 'boiled'}``, but context ``{'eggs': 'fried'}``
 already exists, returned ``context['eggs']`` will be 'boiled'.
 
-The json should not be an array [] at the top level, but rather an Object.
+If *fetchJsonKey* is not specified, the json should not be an array [] at the
+root level, but rather an Object {}.
 
 pypyr.steps.fetchyaml
 ^^^^^^^^^^^^^^^^^^^^^
