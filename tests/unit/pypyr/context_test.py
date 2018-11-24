@@ -1,14 +1,17 @@
 """context.py unit tests."""
 from collections.abc import MutableMapping
 from pypyr.context import Context, ContextItemInfo
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import (
+    ContextError,
+    KeyInContextHasNoValueError,
+    KeyNotInContextError)
 import pytest
 
 # ------------------- behaves like a dictionary-------------------------------#
 
 
 def test_context_is_dictionary_like():
-    """Context should behave like a dictionary"""
+    """Context should behave like a dictionary."""
     # initializes to empty
     d = Context()
     assert d is not None
@@ -70,7 +73,7 @@ def test_context_is_dictionary_like():
 
 
 def test_context_missing_override():
-    """Subclass of dict should override __missing__ on KeyNotFound"""
+    """Subclass of dict should override __missing__ on KeyNotFound."""
     context = Context({'arbkey': 'arbvalue'})
 
     with pytest.raises(KeyNotInContextError):
@@ -80,8 +83,87 @@ def test_context_missing_override():
 # ------------------- asserts ------------------------------------------------#
 
 
+def test_assert_child_key_has_value_passes():
+    """Pass if [parent][child] has value."""
+    context = Context({
+        'parent': {
+            'child': 1
+        }
+    })
+
+    context.assert_child_key_has_value('parent', 'child', 'arb')
+
+
+def test_assert_child_key_has_value_raises_no_parent():
+    """Raise if [parent] doesn't exist."""
+    context = Context({
+        'parent': {
+            'child': 1
+        }
+    })
+
+    with pytest.raises(KeyNotInContextError):
+        context.assert_child_key_has_value('XparentX', 'child', 'arb')
+
+
+def test_assert_child_key_has_value_raises_no_child():
+    """Raise if [parent][child] doesn't exist."""
+    context = Context({
+        'parent': {
+            'child': 1
+        }
+    })
+
+    with pytest.raises(KeyNotInContextError) as err:
+        context.assert_child_key_has_value('parent', 'XchildX', 'arb')
+
+    assert str(err.value) == (
+        "context['parent']['XchildX'] doesn't exist. It must exist for arb.")
+
+
+def test_assert_child_key_has_value_raises_child_none():
+    """Raise if [parent][child] is None."""
+    context = Context({
+        'parent': {
+            'child': None
+        }
+    })
+
+    with pytest.raises(KeyInContextHasNoValueError) as err:
+        context.assert_child_key_has_value('parent', 'child', 'arb')
+
+    assert str(err.value) == (
+        "context['parent']['child'] must have a value for arb.")
+
+
+def test_assert_child_key_has_value_raises_parent_none():
+    """Raise if [parent] is None."""
+    context = Context({
+        'parent': None
+    })
+
+    with pytest.raises(KeyInContextHasNoValueError) as err:
+        context.assert_child_key_has_value('parent', 'child', 'arb')
+
+    assert str(err.value) == ("context['parent'] must have a value for arb.")
+
+
+def test_assert_child_key_has_value_raises_parent_not_iterable():
+    """Raise if [parent] is not iterable."""
+    context = Context({
+        'parent': 1
+    })
+
+    with pytest.raises(ContextError) as err:
+        context.assert_child_key_has_value('parent', 'child', 'arb')
+
+    assert str(err.value) == ("context['parent'] must be iterable and contain "
+                              "'child' for arb. argument of type 'int' is not "
+                              "iterable")
+
+
 def test_assert_key_exists_raises():
-    """KeyNotInContextError if key doesn't exist."""
+    """Raise KeyNotInContextError if key doesn't exist."""
     context = Context({'key1': 'value1'})
     with pytest.raises(KeyNotInContextError):
         context.assert_key_exists('notindict', None)
@@ -107,7 +189,7 @@ def test_assert_keys_exist_passes():
 
 
 def test_assert_keys_exists_with_values_fails():
-    """KeyNotInContextError if list of keys not all found in context."""
+    """Raise KeyNotInContextError if list of keys not all found in context."""
     with pytest.raises(KeyNotInContextError):
         context = Context({'key1': 'value1',
                            'key2': 'value2',
@@ -134,14 +216,14 @@ def test_assert_key_has_value_fails_on_key_none():
 
 
 def test_assert_key_has_value_fails_key_not_found():
-    """KeyNotInContextError if context doesn't have key on assert."""
+    """Raise KeyNotInContextError if context doesn't have key on assert."""
     context = Context({'key1': 'value1'})
     with pytest.raises(KeyNotInContextError):
         context.assert_key_has_value('notindict', None)
 
 
 def test_assert_key_has_value_fails_key_error_message():
-    """KeyNotInContextError if context missing key, assert message correct."""
+    """Raise KeyNotInContextError if missing key, assert message correct."""
     context = Context({'key1': 'value1'})
     with pytest.raises(KeyNotInContextError) as err_info:
         context.assert_key_has_value('notindict', 'mydesc')
@@ -152,7 +234,7 @@ def test_assert_key_has_value_fails_key_error_message():
 
 
 def test_assert_key_has_value_fails_key_empty():
-    """KeyInContextHasNoValueError if context dictionary key value is None."""
+    """Raise KeyInContextHasNoValueError if context dict key value is None."""
     context = Context({'key1': None})
     with pytest.raises(KeyInContextHasNoValueError):
         context.assert_key_has_value('key1', None)
@@ -183,7 +265,7 @@ def test_assert_keys_have_values_passes():
 
 
 def test_assert_keys_have_values_fails():
-    """KeyNotInContextError if list of keys not all in context with values."""
+    """Raise KeyNotInContextError if list of keys don't all have values."""
     with pytest.raises(KeyNotInContextError):
         context = Context({'key1': 'value1',
                            'key2': 'value2',
@@ -510,7 +592,7 @@ def test_get_formatted_iterable_list():
 
 
 def test_get_formatted_iterable_tuple():
-    """Simple tuple"""
+    """Simple tuple."""
     input_obj = ('k1', 'k2', '{ctx3}', True, False, 44)
 
     context = Context(
@@ -528,7 +610,7 @@ def test_get_formatted_iterable_tuple():
 
 
 def test_get_formatted_iterable_set():
-    """Simple set"""
+    """Simple set."""
     input_obj = {'k1', 'k2', '{ctx3}', True, False, 44}
 
     context = Context(
@@ -714,7 +796,6 @@ def test_get_formatted_iterable_nested_with_sic():
 
 def test_get_formatted_iterable_with_memo():
     """Straight deepish copy with formatting."""
-
     arb_dict = {'key4.1': 'value4.1',
                 '{ctx2}_key4.2': 'value_{ctx3}_4.2',
                 'key4.3': {
@@ -799,7 +880,6 @@ def test_get_formatted_iterable_with_memo():
 
 def test_iter_formatted():
     """iter_formatted yields a formatted string on each loop."""
-
     context = Context(
         {'ctx1': 'ctxvalue1',
          'ctx2': 'ctxvalue2',
@@ -822,7 +902,7 @@ def test_iter_formatted():
 
 
 def test_get_formatted_as_type_string_to_bool_no_subst():
-    """get_formatted_as_type returns bool no formatting"""
+    """get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type('False', out_type=bool)
 
@@ -831,7 +911,7 @@ def test_get_formatted_as_type_string_to_bool_no_subst():
 
 
 def test_get_formatted_as_type_string_to_true_bool_no_subst():
-    """get_formatted_as_type returns bool no formatting"""
+    """get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type('True', out_type=bool)
 
@@ -840,7 +920,7 @@ def test_get_formatted_as_type_string_to_true_bool_no_subst():
 
 
 def test_get_formatted_as_type_bool_false_no_subst():
-    """get_formatted_as_type returns bool no formatting"""
+    """get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type(False, out_type=bool)
 
@@ -849,7 +929,7 @@ def test_get_formatted_as_type_bool_false_no_subst():
 
 
 def test_get_formatted_as_type_bool_true_no_subst():
-    """get_formatted_as_type returns bool no formatting"""
+    """get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type(None, True, out_type=bool)
 
@@ -858,7 +938,7 @@ def test_get_formatted_as_type_bool_true_no_subst():
 
 
 def test_get_formatted_as_type_bool_false_with_subst():
-    """get_formatted_as_type returns bool with formatting"""
+    """get_formatted_as_type returns bool with formatting."""
     context = Context({'k1': False})
     result = context.get_formatted_as_type(None, '{k1}', out_type=bool)
 
@@ -867,7 +947,7 @@ def test_get_formatted_as_type_bool_false_with_subst():
 
 
 def test_get_formatted_as_type_bool_true_with_subst():
-    """get_formatted_as_type returns bool with formatting"""
+    """get_formatted_as_type returns bool with formatting."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(None, '{k1}', out_type=bool)
 
@@ -876,7 +956,7 @@ def test_get_formatted_as_type_bool_true_with_subst():
 
 
 def test_get_formatted_as_type_bool_true_with_list_input():
-    """get_formatted_as_type returns bool True with arbitrary input"""
+    """get_formatted_as_type returns bool True with arbitrary input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type([0, 1, 2], out_type=bool)
 
@@ -885,7 +965,7 @@ def test_get_formatted_as_type_bool_true_with_list_input():
 
 
 def test_get_formatted_as_type_bool_false_with_empty_list_input():
-    """get_formatted_as_type returns bool false with empty input"""
+    """get_formatted_as_type returns bool false with empty input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type([], out_type=bool)
 
@@ -894,7 +974,7 @@ def test_get_formatted_as_type_bool_false_with_empty_list_input():
 
 
 def test_get_formatted_as_type_bool_false_with_0_input():
-    """get_formatted_as_type returns bool False with 0 input"""
+    """get_formatted_as_type returns bool False with 0 input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(0, out_type=bool)
 
@@ -903,7 +983,7 @@ def test_get_formatted_as_type_bool_false_with_0_input():
 
 
 def test_get_formatted_as_type_bool_false_with_string_capital_false():
-    """get_formatted_as_type returns bool False with string FALSE"""
+    """get_formatted_as_type returns bool False with string FALSE."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('FALSE', out_type=bool)
 
@@ -912,7 +992,7 @@ def test_get_formatted_as_type_bool_false_with_string_capital_false():
 
 
 def test_get_formatted_as_type_bool_true_with_1_input():
-    """get_formatted_as_type returns bool True with int 1 input"""
+    """get_formatted_as_type returns bool True with int 1 input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(1, out_type=bool)
 
@@ -921,7 +1001,7 @@ def test_get_formatted_as_type_bool_true_with_1_input():
 
 
 def test_get_formatted_as_type_bool_true_with_decimal_input():
-    """get_formatted_as_type returns bool True with decimal input"""
+    """get_formatted_as_type returns bool True with decimal input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(1.1, out_type=bool)
 
@@ -930,7 +1010,7 @@ def test_get_formatted_as_type_bool_true_with_decimal_input():
 
 
 def test_get_formatted_as_type_bool_true_with_str_true():
-    """get_formatted_as_type returns bool True with string true"""
+    """get_formatted_as_type returns bool True with string true."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('true', out_type=bool)
 
@@ -939,7 +1019,7 @@ def test_get_formatted_as_type_bool_true_with_str_true():
 
 
 def test_get_formatted_as_type_bool_true_with_str_capital_true():
-    """get_formatted_as_type returns bool True with string TRUE"""
+    """get_formatted_as_type returns bool True with string TRUE."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('TRUE', out_type=bool)
 
@@ -948,7 +1028,7 @@ def test_get_formatted_as_type_bool_true_with_str_capital_true():
 
 
 def test_get_formatted_as_type_bool_true_with_str_1_true():
-    """get_formatted_as_type returns bool True with string 1"""
+    """get_formatted_as_type returns bool True with string 1."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('1', out_type=bool)
 
@@ -957,7 +1037,7 @@ def test_get_formatted_as_type_bool_true_with_str_1_true():
 
 
 def test_get_formatted_as_type_int_no_subst():
-    """get_formatted_as_type returns int no formatting"""
+    """get_formatted_as_type returns int no formatting."""
     context = Context()
     result = context.get_formatted_as_type('10', out_type=int)
 
@@ -966,7 +1046,7 @@ def test_get_formatted_as_type_int_no_subst():
 
 
 def test_get_formatted_as_type_int_with_subst():
-    """get_formatted_as_type returns int no formatting"""
+    """get_formatted_as_type returns int no formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type('{k1}', out_type=int)
 
@@ -975,7 +1055,7 @@ def test_get_formatted_as_type_int_with_subst():
 
 
 def test_get_formatted_as_type_float_no_subst():
-    """get_formatted_as_type returns float no formatting"""
+    """get_formatted_as_type returns float no formatting."""
     context = Context()
     result = context.get_formatted_as_type('10.1', out_type=float)
 
@@ -984,7 +1064,7 @@ def test_get_formatted_as_type_float_no_subst():
 
 
 def test_get_formatted_as_type_default_no_subst():
-    """get_formatted_as_type returns default no formatting"""
+    """get_formatted_as_type returns default no formatting."""
     context = Context()
     result = context.get_formatted_as_type(None, default=10, out_type=int)
 
@@ -993,7 +1073,7 @@ def test_get_formatted_as_type_default_no_subst():
 
 
 def test_get_formatted_as_type_default_with_subst():
-    """get_formatted_as_type returns default with formatting"""
+    """get_formatted_as_type returns default with formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type(
         None, default='{k1}', out_type=int)
@@ -1003,7 +1083,7 @@ def test_get_formatted_as_type_default_with_subst():
 
 
 def test_get_formatted_as_type_default_with_subst_str():
-    """get_formatted_as_type returns default with formatting"""
+    """get_formatted_as_type returns default with formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type(
         None, default='xx{k1}xx')
@@ -1126,7 +1206,7 @@ def test_key_in_context():
 
 
 def test_keys_of_type_exist_single():
-    """return a single tuple"""
+    """return a single tuple."""
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
     k1, = context.keys_of_type_exist(('k1', str),)
@@ -1208,7 +1288,7 @@ def test_keys_none_exist():
 
 
 def test_merge_pass_no_substitutions():
-    """merge success case with no substitutions."""
+    """Merge success case with no substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -1229,7 +1309,7 @@ def test_merge_pass_no_substitutions():
 
 
 def test_merge_pass_nested_with_substitutions():
-    """merge success case with nested hierarchy and substitutions."""
+    """Merge success case with nested hierarchy and substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -1261,7 +1341,7 @@ def test_merge_pass_nested_with_substitutions():
 
 
 def test_merge_pass_no_recognized_type():
-    """merge success case where type not known mergable."""
+    """Merge success case where type not known mergable."""
     arb_obj = TimeoutError('blah')
     context = Context({
         'key1': 'value1',
@@ -1297,7 +1377,7 @@ def test_merge_pass_no_recognized_type():
 
 
 def test_merge_pass_nested_with_types():
-    """merge success case with nested hierarchy, substitutions, diff types."""
+    """Merge success case with nested hierarchy, substitutions, diff types."""
     context = Context({
         'k1': 'v1',
         'k2': 'v2_{ctx1}',
@@ -1443,7 +1523,7 @@ def test_merge_pass_nested_with_types():
 
 # ------------------- set_defaults -------------------------------------------#
 def test_set_defaults_pass_no_substitutions():
-    """defaults success case with no substitutions."""
+    """Defaults success case with no substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -1465,7 +1545,7 @@ def test_set_defaults_pass_no_substitutions():
 
 
 def test_set_defaults_pass_nested_with_substitutions():
-    """merge success case with nested hierarchy and substitutions."""
+    """Merge success case with nested hierarchy and substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -1497,7 +1577,7 @@ def test_set_defaults_pass_nested_with_substitutions():
 
 
 def test_set_defaults_pass_nested_with_types():
-    """defaults with nested hierarchy, substitutions, diff types."""
+    """Defaults with nested hierarchy, substitutions, diff types."""
     context = Context({
         'k1': 'v1',
         'k2': 'v2_{ctx1}',
