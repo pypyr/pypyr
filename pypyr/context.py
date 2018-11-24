@@ -2,7 +2,9 @@
 from collections import namedtuple
 from collections.abc import Mapping, Set, Sequence
 from string import Formatter
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import (ContextError,
+                          KeyInContextHasNoValueError,
+                          KeyNotInContextError)
 from pypyr.utils import types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
@@ -31,6 +33,7 @@ class Context(dict):
     Attributes:
         working_dir (path-like): working directory path. Either CWD or
                                  initialized from the cli --dir arg.
+
     """
 
     def __missing__(self, key):
@@ -40,6 +43,43 @@ class Context(dict):
         https://docs.python.org/3/library/stdtypes.html#dict
         """
         raise KeyNotInContextError(f"{key} not found in the pypyr context.")
+
+    def assert_child_key_has_value(self, parent, child, caller):
+        """Assert that context contains key that has child which has a value.
+
+        Args:
+            parent: parent key
+            child: validate this sub-key of parent exists AND isn't None.
+            caller: string. calling function name - this used to construct
+                    error messages
+
+        Raises:
+            KeyNotInContextError: Key doesn't exist
+            KeyInContextHasNoValueError: context[key] is None
+            AssertionError: if key is None
+
+        """
+        assert parent, ("parent parameter must be specified.")
+        assert child, ("child parameter must be specified.")
+        self.assert_key_has_value(parent, caller)
+
+        try:
+            child_exists = child in self[parent]
+        except TypeError as err:
+            # This happens if parent isn't iterable
+            raise ContextError(
+                f"context['{parent}'] must be iterable and contain '{child}' "
+                f"for {caller}. {err}") from err
+
+        if child_exists:
+            if self[parent][child] is None:
+                raise KeyInContextHasNoValueError(
+                    f"context['{parent}']['{child}'] must have a value for "
+                    f"{caller}.")
+        else:
+            raise KeyNotInContextError(
+                f"context['{parent}']['{child}'] doesn't "
+                f"exist. It must exist for {caller}.")
 
     def assert_key_exists(self, key, caller):
         """Assert that context contains key.
@@ -51,6 +91,7 @@ class Context(dict):
 
         Raises:
             KeyNotInContextError: When key doesn't exist in context.
+
         """
         assert key, ("key parameter must be specified.")
         if key not in self:
@@ -96,7 +137,8 @@ class Context(dict):
             KeyNotInContextError: Key doesn't exist
             KeyInContextHasNoValueError: context[key] is None or the wrong
                                          type.
-         """
+
+        """
         assert context_item, ("context_item parameter must be specified.")
 
         if extra_error_text is None or extra_error_text == '':
@@ -131,6 +173,7 @@ class Context(dict):
 
         Raises:
             KeyNotInContextError: When key doesn't exist in context.
+
         """
         assert keys, ("*keys parameter must be specified.")
         for key in keys:
@@ -148,6 +191,7 @@ class Context(dict):
             KeyNotInContextError: Key doesn't exist
             KeyInContextHasNoValueError: context[key] is None
             AssertionError: if *keys is None
+
         """
         for key in keys:
             self.assert_key_has_value(key, caller)
@@ -170,6 +214,7 @@ class Context(dict):
             KeyNotInContextError: Key doesn't exist
             KeyInContextHasNoValueError: context[key] is None or the wrong
                                          type.
+
         """
         assert context_items, ("context_items parameter must be specified.")
 
@@ -177,7 +222,7 @@ class Context(dict):
             self.assert_key_type_value(context_item, caller, extra_error_text)
 
     def get_formatted(self, key):
-        """Returns formatted value for context[key].
+        """Return formatted value for context[key].
 
         If context[key] is a type string, will just format and return the
         string.
@@ -202,6 +247,7 @@ class Context(dict):
         Raises:
             KeyNotInContextError: context[key] value contains {somekey} where
                                   somekey does not exist in context dictionary.
+
         """
         val = self[key]
 
@@ -247,8 +293,8 @@ class Context(dict):
 
         Returns:
             Iterable identical in structure to the input iterable.
-        """
 
+        """
         if memo is None:
             memo = {}
 
@@ -283,7 +329,7 @@ class Context(dict):
         return new
 
     def get_formatted_string(self, input_string):
-        """Returns formatted value for input_string.
+        """Return formatted value for input_string.
 
         get_formatted gets a context[key] value.
         get_formatted_string is for any arbitrary string that is not in the
@@ -307,6 +353,7 @@ class Context(dict):
             KeyNotInContextError: context[key] has {somekey} where somekey does
                                   not exist in context dictionary.
             TypeError: Attempt operation on a non-string type.
+
         """
         if isinstance(input_string, str):
             try:
@@ -322,7 +369,7 @@ class Context(dict):
                             f"{type(input_string)} instead.")
 
     def get_formatted_as_type(self, value, default=None, out_type=str):
-        """Returns formatted value for input value, returns as out_type.
+        """Return formatted value for input value, returns as out_type.
 
         Caveat emptor: if out_type is bool and value a string,
         return will be True if str is 'True'. It will be False for all other
@@ -335,6 +382,7 @@ class Context(dict):
 
         Returns:
             Formatted value of type out_type
+
         """
         if value is None:
             value = default
@@ -356,7 +404,7 @@ class Context(dict):
             return out_type(value)
 
     def get_processed_string(self, input_string):
-        """Runs token substitution on input_string against context.
+        """Run token substitution on input_string against context.
 
         You probably don't want to call this directly yourself - rather use
         get_formatted, get_formatted_iterable, or get_formatted_string because
@@ -405,6 +453,7 @@ class Context(dict):
             KeyNotInContextError: input_string is not a sic string and has
                                   {somekey} where somekey does not exist in
                                   context dictionary.
+
         """
         if input_string[: 6] == '[sic]"':
             return input_string[6: -1]
@@ -444,7 +493,7 @@ class Context(dict):
                 return input_string.format_map(self)
 
     def iter_formatted_strings(self, iterable_strings):
-        """Generator that yields a formatted string from iterable_strings
+        """Yield a formatted string from iterable_strings.
 
         If iterable_strings[0]='Piping {key1} the {key2} wild'
         And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
@@ -456,6 +505,7 @@ class Context(dict):
 
         Returns:
             Yields formatted line.
+
         """
         for string in iterable_strings:
             yield self.get_formatted_string(string)
@@ -473,6 +523,7 @@ class Context(dict):
         Sample:
             k1, = context.keys_exist('k1')
             k1, k2, k3 = context.keys_exist('k1', 'k2', 'k3')
+
         """
         return tuple(key in self.keys() for key in keys)
 
@@ -496,6 +547,7 @@ class Context(dict):
             a, = context.keys_of_type_exist('a')
             # > 1
             a, b = context.keys_of_type_exist('a', 'b')
+
         """
         # k[0] = key name, k[1] = exists, k2 = expected type
         keys_exist = [(key, key in self.keys(), expected_type)
@@ -538,9 +590,10 @@ class Context(dict):
 
         Returns:
             None. All operations mutate this instance of context.
+
         """
         def merge_recurse(current, add_me):
-            """This inner function exists to walk the current context tree.
+            """Walk the current context tree in recursive inner function.
 
             On 1st iteration, current = self (i.e root of context)
             On subsequent recursive iterations, current is wherever you're at
@@ -622,9 +675,10 @@ class Context(dict):
 
         Returns:
             None. All operations mutate this instance of context.
+
         """
         def defaults_recurse(current, defaults):
-            """This inner function exists to walk the current context tree.
+            """Walk the current context tree in recursive inner function.
 
             On 1st iteration, current = self (i.e root of context)
             On subsequent recursive iterations, current is wherever you're at
@@ -634,6 +688,7 @@ class Context(dict):
                 current: dict. Destination of merge.
                 defaults: dict. Add this to current if keys don't exist
                                 already.
+
             """
             for k, v in defaults.items():
                 # key supports interpolation
