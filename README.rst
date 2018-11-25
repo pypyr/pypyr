@@ -20,6 +20,8 @@ wait for status changes before continuing, break on failure conditions or
 swallow errors. Pretty useful for orchestrating continuous integration,
 continuous deployment and devops operations.
 
+Read, merge and write configuration files to and from yaml, json or just text.
+
 |build-status| |coverage| |pypi|
 
 .. contents::
@@ -541,6 +543,8 @@ Built-in steps
 |                               |                                                 |                              |
 |                               |                                                 | fileReplacePairs (dict)      |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.filewriteyaml`_  | Write payload to file in yaml format.           | fileWriteYaml (dict)         |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -953,8 +957,23 @@ At least one of these context keys must exist:
 This step will run whatever combination of Get, Set and Unset you specify.
 Regardless of combination, execution order is Get, Set, Unset.
 
+.. highlights::
+
+  In general, pypyr steps do not clear context properties when complete. This
+  has a couple of important implications. If you run a step like
+  *pypyr.steps.env* multiple times in the same pipeline, the previous envGet,
+  envSet and/or envUnset keys will still be in context when the next step
+  executes. This can lead to unexpected results where you could envUnset a
+  value while you're trying to envSet in a subsequent step, surprising all
+  round.
+
+  An easy way around this is to use the `pypyr.steps.contextclear`_ step to wipe
+  the envGet/envSet/envUnset properties after you're done with a
+  *pypyr.steps.env* step.
+
 See a worked example `for environment variables here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
+
 
 envGet
 """"""
@@ -1270,6 +1289,52 @@ The file in and out paths support `Substitutions`_.
 See a worked
 `example here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/filereplace.yaml>`_.
+
+pypyr.steps.filewriteyaml
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Write a payload to a yaml file on disk.
+
+*filewriteyaml* expects the following input context:
+
+.. code-block:: yaml
+
+  fileWriteYaml:
+    path: /path/to/output.yaml # destination file
+    payload: # payload to write to path
+      key1: value1 # output yaml will have
+      key2: value2 # key1 and key2.
+
+If you do not specify *payload*, pypyr will write the entire context to the
+output file in yaml format. Be careful if you have sensitive values like
+passwords or private keys!
+
+All inputs support `Substitutions`_. This means you can specify another context
+item to be the path and/or the payload, for example:
+
+.. code-block:: yaml
+
+  arbkey: arbvalue
+  writehere: /path/to/output.yaml
+  writeme:
+    this: yaml content
+    will: be written to
+    thepath: with substitutions like this {arbkey}.
+  fileWriteYaml:
+    path: '{writehere}'
+    payload: '{writeme}'
+
+Substitution processing runs on the output. In the above example, in the output
+yaml file created at */path/to/output.yaml*, the ``{arbkey}`` expression in
+the last line will substitute like this:
+
+.. code-block:: yaml
+
+  this: yaml content
+  will: be written to
+  thepath: with substitutions like this arbvalue.
+
+See a worked `filewriteyaml example here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/filewriteyaml.yaml>`_.
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
