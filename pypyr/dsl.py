@@ -1,15 +1,145 @@
-"""pypyr pipeline yaml definition classes - domain specific language"""
+"""pypyr pipeline yaml definition classes - domain specific language."""
 
 import logging
 from pypyr.errors import LoopMaxExhaustedError, PipelineDefinitionError
 import pypyr.moduleloader
-import pypyr.utils.poll
+from pypyr.utils import expressions, poll
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
+# ------------------------ custom yaml tags -----------------------------------
 
-class Step(object):
+
+class SpecialTagDirective:
+    """Base class for all special tag directives.
+
+    Derive all special tag directives from this base class. Of particular
+    interest is the get_value implementation.
+
+    Derived classes MUST have the following attributes:
+        - yaml_tag class variable. this is the yaml tag used to represent this
+          class.
+        - get_value() method override. this is what pypyr calls when applying
+          formatting to this scalar.
+
+    If your derived class wants to instantiate some instance properties, do so
+    in __init__ rather than from_yaml. That way, self.value always contains the
+    original, untouched scalar value.
+
+    """
+
+    def __init__(self, value):
+        """Initialize class."""
+        self.value = value
+
+    def __bool__(self):
+        """Truth testing - instance is falsy if no value."""
+        return bool(self.value)
+
+    def __str__(self):
+        """Friendly string representation of instance."""
+        return self.value
+
+    def __repr__(self):
+        """Repr representation of instance."""
+        return f'{self.__class__.__name__}({self.value!r})'
+
+    def __eq__(self, other):
+        """Equivalence over-ride."""
+        return repr(self) == repr(other)
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """How to serialize this class back to yaml."""
+        return representer.represent_scalar(cls.yaml_tag, node.value)
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        """Implement how to create the class from yaml representation."""
+        return cls(node.value)
+
+    def get_value(self, context=None):
+        """Process the input value and return the output.
+
+        Derived classes must provide an implementation for this method.
+
+        This method is called by the various context get_formatted functions,
+        where each special tag has its own processing rules about how to format
+        values for that particular tag.
+        """
+        raise NotImplementedError(
+            'Implement this to provide the processed value of your custom tag '
+            'during formatting operations.')
+
+
+class PyString(SpecialTagDirective):
+    """py strings allow you to execute python expressions dynamically.
+
+    A py string is defined by custom yaml tag like this:
+    !py <<<your expression here>>>
+
+    For example:
+        !py key == 3
+
+    Will return True if context['key'] is 3.
+
+    This provides dynamic python eval of an input expression. The return is
+    whatever the result of the expression is.
+
+    Use with caution: since input_string executes any arbitrary code object
+    the potential for damage is great.
+
+    The eval uses the current context object as the namespace. This means
+    if you have context['mykey'], in the input_string expression you can
+    use the key directly as a variable like this: "mykey == 'mykeyvalue'".
+
+    Unlike formatting expressions, key names do NOT go in {curlies}.
+
+    Both __builtins__ and context are available to the eval expression.
+
+    """
+
+    yaml_tag = '!py'
+
+    def get_value(self, context):
+        """Run python eval on the input string."""
+        if self.value:
+            return expressions.eval_string(self.value, dict(context))
+        else:
+            # Empty input raises cryptic EOF syntax err, this more human
+            # friendly
+            raise ValueError('!py string expression is empty. It must be a '
+                             'valid python expression instead.')
+
+
+class SicString(SpecialTagDirective):
+    """Sic strings do not have any processing applied to them.
+
+    If a string is NOT to have {substitutions} run on it, it's sic erat
+    scriptum, i.e literal.
+
+    A sic string looks like this:
+    input_string=!sic <<your string literal here>>
+
+    For example:
+        !sic piping {key} the valleys wild
+
+    Will return "piping {key} the valleys wild" without attempting to
+    substitute {key} from context.
+
+    """
+
+    yaml_tag = '!sic'
+
+    def get_value(self, context=None):
+        """Simply return the string as is, the whole point of a sic string."""
+        return self.value
+
+# ------------------------ END custom yaml tags -------------------------------
+
+
+class Step:
     """A step, as interpreted by the pypyr pipeline definition yaml.
 
     Encapsulates useful methods for the execution of a step, and also
@@ -40,10 +170,11 @@ class Step(object):
                     and continue processing if true.
         while_decorator: (WhileDecorator) defaults None. execute step in while
                          loop.
+
     """
 
     def __init__(self, step):
-        """Initialize the class. No duh, huh?
+        """Initialize the class. No duh, huh?.
 
         You can happily expect the initializer to initialize all
         member attributes.
@@ -52,6 +183,7 @@ class Step(object):
             step: a string or a dict. This is the actual step as it exists in
                   the pipeline yaml - which is to say it can just be a string
                   for a simple step, or a dict for a complex step.
+
         """
         logger.debug("starting")
 
@@ -257,7 +389,7 @@ class Step(object):
         logger.debug("done")
 
 
-class WhileDecorator(object):
+class WhileDecorator:
     """While Decorator, as interpreted by the pypyr pipeline definition yaml.
 
     Encapsulate the methods that run a step in a while loop, and also maintains
@@ -275,10 +407,11 @@ class WhileDecorator(object):
         max: (int) default None. Maximum loop iterations. None is infinite.
         sleep: (float) defaults 0. Sleep in seconds between iterations.
         stop:(bool) defaults None. Exit loop when stop is True.
+
     """
 
     def __init__(self, while_definition):
-        """Initialize the class. No duh, huh?
+        """Initialize the class. No duh, huh.
 
         You can happily expect the initializer to initialize all
         member attributes.
@@ -286,6 +419,7 @@ class WhileDecorator(object):
         Args:
             while_definition: dict. This is the actual while definition as it
                               exists in the pipeline yaml.
+
         """
         logger.debug("starting")
 
@@ -340,6 +474,7 @@ class WhileDecorator(object):
          Returns:
             bool. True if self.stop evaluates to True after step execution,
                   False otherwise.
+
         """
         logger.debug("starting")
         context['whileCounter'] = counter
@@ -368,11 +503,13 @@ class WhileDecorator(object):
             step_method: (method/function) This is the method/function that
                          will execute on every loop iteration. Signature is:
                          function(context)
+
         """
         logger.debug("starting")
 
         stop = False
 
+        context['whileCounter'] = 0
         if self.stop:
             stop = context.get_formatted_as_type(self.stop, out_type=bool)
         else:
@@ -408,8 +545,8 @@ class WhileDecorator(object):
                 logger.info(f"while decorator will loop until {self.stop} "
                             f"evaluates to True at {sleep}s intervals.")
 
-            if not pypyr.utils.poll.while_until_true(interval=sleep,
-                                                     max_attempts=max)(
+            if not poll.while_until_true(interval=sleep,
+                                         max_attempts=max)(
                     self.exec_iteration)(context=context,
                                          step_method=step_method):
                 # False means loop exhausted and stop never eval-ed True.
