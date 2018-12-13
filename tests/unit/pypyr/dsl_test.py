@@ -4,8 +4,177 @@ import logging
 import pytest
 from unittest.mock import call, patch, MagicMock
 from pypyr.context import Context
-from pypyr.dsl import Step, WhileDecorator
+from pypyr.dsl import (PyString,
+                       SicString,
+                       SpecialTagDirective,
+                       Step,
+                       WhileDecorator)
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
+
+
+# ------------------- custom yaml tags----------------------------------------#
+
+def test_special_tag_directive_base_no_get_value():
+    """Base class SpecialTagDirective raises on get_value."""
+    base = SpecialTagDirective(None)
+
+    with pytest.raises(NotImplementedError):
+        base.get_value()
+
+
+def test_special_tag_directive_base_eq():
+    """Repr equivalence and inverse works."""
+    SpecialTagDirective(None) == SpecialTagDirective(None)
+    SpecialTagDirective('none') != SpecialTagDirective('some')
+
+
+def test_special_tag_directive_repr_roundtrip():
+    """Repr string repr evals back to instance."""
+    s = SpecialTagDirective('arb')
+    repr_string = repr(s)
+    assert repr_string == 'SpecialTagDirective(\'arb\')'
+    reconstituted = eval(repr_string)
+    assert isinstance(reconstituted, SpecialTagDirective)
+    assert str(reconstituted) == 'arb'
+
+
+def test_special_tag_directive_truthy():
+    """Special Tag String work as falsy, else Truthy."""
+    assert SpecialTagDirective('blah')
+    assert not SpecialTagDirective(None)
+    assert not SpecialTagDirective('')
+# ------------------- py string custom tag -----------------------------------#
+
+
+def test_py_string_behaves():
+    """Py string does what it should."""
+    assert PyString.yaml_tag == '!py'
+    py = PyString('1+1')
+    assert str(py) == '1+1'
+    assert repr(py) == "PyString('1+1')"
+    assert py.get_value({}) == 2
+
+
+def test_py_string_class_methods():
+    """Py string yaml class methods serialize and deserialize class."""
+    mock_node = MagicMock()
+    mock_node.value = 'False and False'
+
+    new_instance = PyString.from_yaml(None, mock_node)
+    assert isinstance(new_instance, PyString)
+    assert str(new_instance) == 'False and False'
+    assert repr(new_instance) == "PyString('False and False')"
+    assert not new_instance.get_value({})
+
+    mock_representer = MagicMock()
+    PyString.to_yaml(mock_representer, mock_node)
+    mock_representer.represent_scalar.assert_called_once_with('!py',
+                                                              'False and False'
+                                                              )
+
+
+def test_py_string_with_context():
+    """Py string works with Context."""
+    assert PyString('len(a)').get_value(Context({'a': '123'})) == 3
+
+
+def test_py_string_eq_and_neq():
+    """Py string equivalence passes on repr."""
+    assert PyString('arb') == PyString('arb')
+    assert PyString('blah') != PyString('arb')
+
+
+def test_py_string_repr_roundtrip():
+    """Py string repr evals back to instance."""
+    s = PyString('len("three")')
+    repr_string = repr(s)
+    assert repr_string == 'PyString(\'len("three")\')'
+    reconstituted = eval(repr_string)
+    assert isinstance(reconstituted, PyString)
+    assert reconstituted.get_value({}) == 5
+
+
+def test_py_string_empty():
+    """Empty py string raises error."""
+    with pytest.raises(ValueError) as err:
+        PyString(None).get_value({})
+
+    assert str(err.value) == ('!py string expression is empty. It must be a '
+                              'valid python expression instead.')
+
+    with pytest.raises(ValueError) as err:
+        PyString('').get_value({})
+
+
+def test_py_string_truthy():
+    """Empty Py String work as falsy, else Truthy."""
+    assert PyString('blah')
+    assert not PyString(None)
+    assert not PyString('')
+
+# ------------------- END py string custom tag -------------------------------#
+
+# ------------------- sic string custom tag ----------------------------------#
+
+
+def test_sic_string_behaves():
+    """Sic string does what it should."""
+    assert SicString.yaml_tag == '!sic'
+    sic = SicString('1+1')
+    assert str(sic) == '1+1'
+    assert repr(sic) == "SicString('1+1')"
+    assert sic.get_value({}) == '1+1'
+
+
+def test_sic_string_class_methods():
+    """Sic string yaml class methods serialize and deserialize class."""
+    mock_node = MagicMock()
+    mock_node.value = 'False {and} False'
+
+    new_instance = SicString.from_yaml(None, mock_node)
+    assert isinstance(new_instance, SicString)
+    assert str(new_instance) == 'False {and} False'
+    assert repr(new_instance) == "SicString('False {and} False')"
+    assert new_instance.get_value({}) == 'False {and} False'
+
+    mock_representer = MagicMock()
+    SicString.to_yaml(mock_representer, mock_node)
+    mock_representer.represent_scalar.assert_called_once_with(
+        '!sic',
+        'False {and} False'
+    )
+
+
+def test_sic_string_with_context():
+    """Sic string works with Context."""
+    assert SicString('len(a)').get_value(Context({'a': '123'})) == 'len(a)'
+
+
+def test_sic_string_eq_and_neq():
+    """Sic string equivalence passes on repr."""
+    assert SicString('arb') == SicString('arb')
+    assert SicString('blah') != SicString('arb')
+
+
+def test_sic_string_repr_roundtrip():
+    """Sic string repr evals back to instance."""
+    s = SicString('arb')
+    repr_string = repr(s)
+    assert repr_string == "SicString('arb')"
+    reconstituted = eval(repr_string)
+    assert isinstance(reconstituted, SicString)
+    assert reconstituted.get_value() == 'arb'
+
+
+def test_sic_string_truthy():
+    """Empty Sic String work as falsy, else Truthy."""
+    assert SicString('blah')
+    assert not SicString(None)
+    assert not SicString('')
+
+# ------------------- END sic string custom tag ------------------------------#
+
+# ------------------- END custom yaml tags------------------------------------#
 
 
 class DeepCopyMagicMock(MagicMock):
@@ -24,6 +193,7 @@ class DeepCopyMagicMock(MagicMock):
     """
 
     def __call__(self, *args, **kwargs):
+        """Mock call override does deepcopy."""
         return super(DeepCopyMagicMock, self).__call__(*deepcopy(args),
                                                        **deepcopy(kwargs))
 
@@ -53,7 +223,7 @@ def get_test_context():
 
 
 def mock_run_step(context):
-    """Arbitrary mock function to execute instead of run_step"""
+    """Arbitrary mock function to execute instead of run_step."""
     context['test_run_step'] = 'this was set in step'
 
 
@@ -63,7 +233,7 @@ def mock_run_step_empty_context(context):
 
 
 def mock_run_step_none_context(context):
-    """None the context in the step"""
+    """None the context in the step."""
     # ignore the context is not used flake8 warning
     context = None  # noqa: F841
 # ------------------- step mocks ---------------------------------------------#
@@ -191,7 +361,7 @@ def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'run_conditional_decorators')
 def test_foreach_once(mock_run, mock_moduleloader):
-    """foreach loops once."""
+    """The foreach loops once."""
     step = Step({'name': 'step1',
                  'foreach': ['one']})
 
@@ -220,7 +390,7 @@ def test_foreach_once(mock_run, mock_moduleloader):
 @patch.object(Step, 'run_conditional_decorators')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_twice(mock_run, mock_moduleloader):
-    """foreach loops twice."""
+    """The foreach loops twice."""
     step = Step({'name': 'step1',
                  'foreach': ['one', 'two']})
 
@@ -255,7 +425,7 @@ def test_foreach_twice(mock_run, mock_moduleloader):
 @patch.object(Step, 'run_conditional_decorators')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
-    """foreach loops thrice with substitutions inside a list."""
+    """The foreach loops thrice with substitutions inside a list."""
     step = Step({'name': 'step1',
                  'foreach': ['{key1}', '{key2}', 'key3']})
 
@@ -294,7 +464,7 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
 @patch.object(Step, 'run_conditional_decorators')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
-    """foreach gets list from string format expression."""
+    """The foreach gets list from string format expression."""
     step = Step({'name': 'step1',
                  'foreach': '{list}'})
 
@@ -336,14 +506,14 @@ def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
 
 
 def mock_step_mutating_run(context):
-    """Mock a step's run_step by setting a context value False"""
+    """Mock a step's run_step by setting a context value False."""
     context['dynamic_run_expression'] = False
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
-    """foreach evaluates run_me expression on each loop iteration."""
+    """The foreach evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'run': '{dynamic_run_expression}',
                  'foreach': ['{key1}', '{key2}', 'key3']})
@@ -373,14 +543,14 @@ def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
 
 
 def mock_step_mutating_skip(context):
-    """Mock a step's run_step by setting a context value False"""
+    """Mock a step's run_step by setting a context value False."""
     context['dynamic_skip_expression'] = True
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_skip)
 def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
-    """foreach evaluates skip expression on each loop iteration."""
+    """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'skip': '{dynamic_skip_expression}',
                  'foreach': ['{key1}', '{key2}', 'key3']})
@@ -420,7 +590,7 @@ def mock_step_deliberate_error(context):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=mock_step_deliberate_error)
 def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
-    """foreach evaluates skip expression on each loop iteration."""
+    """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'swallow': '{dynamic_swallow_expression}',
                  'foreach': ['{key1}', '{key2}', 'key3']})
@@ -460,7 +630,7 @@ def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_while_max(mock_invoke, mock_moduleloader):
-    """while runs to max."""
+    """The while runs to max."""
     step = Step({'name': 'step1',
                  'while': {'max': 3}})
 
@@ -488,7 +658,7 @@ def test_while_max(mock_invoke, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
-    """while evaluates run_me expression on each loop iteration."""
+    """The while evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'run': '{dynamic_run_expression}',
                  'while': {'max': '{whileMax}', 'stop': '{key5}'}})
@@ -554,7 +724,7 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_while_exhausts(mock_invoke, mock_moduleloader):
-    """while exhausts throws error on errorOnMax."""
+    """While exhausts throws error on errorOnMax."""
     step = Step({'name': 'step1',
                  'while': {'max': '{whileMax}',
                            'stop': '{key5}',
@@ -590,7 +760,7 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
-    """while evaluates run_me expression on each loop iteration, no format."""
+    """While evaluates run_me expression on each loop iteration, no format."""
     step = Step({'name': 'step1',
                  'while': {'max': '{whileMax}',
                            'stop': False,
@@ -625,7 +795,7 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
 @patch.object(Step, 'run_conditional_decorators')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
-    """while loops twice, foreach thrice with substitutions inside a list."""
+    """While loops twice, foreach thrice with substitutions inside a list."""
     step = Step({'name': 'step1',
                  'foreach': ['{key1}', '{key2}', 'key3'],
                  'while': {'max': 2}
@@ -727,7 +897,7 @@ def test_invoke_step_context_abides(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_invoke_step_empty_context(mocked_moduleloader):
-    """Empty context in step (i.e count == 0, but not is None)"""
+    """Empty context in step (i.e count == 0, but not is None)."""
     mocked_moduleloader.return_value.run_step = mock_run_step_empty_context
     context = get_test_context()
 
@@ -1684,7 +1854,7 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
 
 
 def test_while_init_defaults_stop():
-    """WhileDecorator ctor sets defaults with only stop set."""
+    """The WhileDecorator ctor sets defaults with only stop set."""
     wd = WhileDecorator({'stop': 'arb'})
     assert wd.stop == 'arb'
     assert wd.sleep == 0
@@ -1693,7 +1863,7 @@ def test_while_init_defaults_stop():
 
 
 def test_while_init_defaults_max():
-    """WhileDecorator ctor sets defaults with only max set."""
+    """The WhileDecorator ctor sets defaults with only max set."""
     wd = WhileDecorator({'max': 3})
     assert wd.stop is None
     assert wd.sleep == 0
@@ -1702,7 +1872,7 @@ def test_while_init_defaults_max():
 
 
 def test_while_init_all_attributes():
-    """WhileDecorator ctor with all props set."""
+    """The WhileDecorator ctor with all props set."""
     wd = WhileDecorator(
         {'errorOnMax': True, 'max': 3, 'sleep': 4.4, 'stop': '5'})
     assert wd.stop == '5'
@@ -1712,7 +1882,7 @@ def test_while_init_all_attributes():
 
 
 def test_while_init_not_a_dict():
-    """WhileDecorator raises PipelineDefinitionError on bad ctor input."""
+    """The WhileDecorator raises PipelineDefinitionError on bad ctor input."""
     with pytest.raises(PipelineDefinitionError) as err_info:
         WhileDecorator('arb')
 
@@ -1721,7 +1891,7 @@ def test_while_init_not_a_dict():
 
 
 def test_while_init_no_max_no_stop():
-    """WhileDecorator raises PipelineDefinitionError on no max and no stop."""
+    """The WhileDecorator raises PipelineDefinitionError no max and no stop."""
     with pytest.raises(PipelineDefinitionError) as err_info:
         WhileDecorator({'arb': 'arbv'})
 
@@ -1845,7 +2015,7 @@ def test_while_loop_stop_evals_true():
 
 
 def test_while_loop_no_stop_no_max():
-    """no stop, no max should raise error."""
+    """No stop, no max should raise error."""
     wd = WhileDecorator({'stop': True})
     wd.max = None
     wd.stop = None
@@ -1862,7 +2032,7 @@ def test_while_loop_no_stop_no_max():
 
 @patch('time.sleep')
 def test_while_loop_max_no_stop(mock_time_sleep):
-    """while loop runs with max but no stop."""
+    """While loop runs with max but no stop."""
     wd = WhileDecorator({'max': 3})
     context = Context({'k1': 'v1'})
     mock = MagicMock()
@@ -1887,7 +2057,7 @@ def test_while_loop_max_no_stop(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_stop_no_max(mock_time_sleep):
-    """while loop runs with stop but no max."""
+    """While loop runs with stop but no max."""
     wd = WhileDecorator({'stop': '{k1}', 'sleep': '{k2}'})
     context = Context({'k1': False, 'k2': 0.3})
 
@@ -1924,7 +2094,7 @@ def test_while_loop_stop_no_max(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
-    """while loop runs with stop and max, exit before max."""
+    """While loop runs with stop and max, exit before max."""
     wd = WhileDecorator({'max': 5, 'stop': '{k1}', 'sleep': '{k2}'})
     context = Context({'k1': False, 'k2': 0.3})
 
@@ -1961,7 +2131,7 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
-    """while loop runs with stop and max, exhaust max."""
+    """While loop runs with stop and max, exhaust max."""
     wd = WhileDecorator({'max': 3, 'stop': '{k1}', 'sleep': '{k2}'})
     context = Context({'k1': False, 'k2': 0.3})
 
@@ -1998,7 +2168,7 @@ def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
-    """while loop runs with stop and max, exhaust max."""
+    """While loop runs with stop and max, exhaust max."""
     wd = WhileDecorator({'max': 3,
                          'stop': '{k1}',
                          'sleep': '{k2}',
@@ -2054,7 +2224,7 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_max_exhaust_error(mock_time_sleep):
-    """while loop runs with only max, exhaust max."""
+    """While loop runs with only max, exhaust max."""
     wd = WhileDecorator({'max': 3,
                          'sleep': '{k2}',
                          'errorOnMax': True})
@@ -2107,7 +2277,7 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_loop_all_substitutions(mock_time_sleep):
-    """while loop runs every param substituted."""
+    """While loop runs every param substituted."""
     wd = WhileDecorator({'max': '{k3[1][k031]}',
                          'stop': '{k1}',
                          'sleep': '{k2}',

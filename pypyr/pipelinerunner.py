@@ -8,7 +8,7 @@ import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 import pypyr.stepsrunner
-import ruamel.yaml as yaml
+import pypyr.yaml
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ def get_parsed_context(pipeline, context_in_string):
     Raises:
         AttributeError: parser specified on pipeline missing get_parsed_context
                         function.
+
     """
     logger.debug("starting")
 
@@ -83,6 +84,7 @@ def get_pipeline_definition(pipeline_name, working_dir):
     Raises:
         FileNotFoundError: pipeline_name.yaml not found in the various pipeline
                            dirs.
+
     """
     logger.debug("starting")
 
@@ -93,8 +95,8 @@ def get_pipeline_definition(pipeline_name, working_dir):
     logger.debug(f"Trying to open pipeline at path {pipeline_path}")
     try:
         with open(pipeline_path) as yaml_file:
-            yaml_loader = yaml.YAML(typ='safe', pure=True)
-            pipeline_definition = yaml_loader.load(yaml_file)
+            pipeline_definition = pypyr.yaml.get_pipeline_yaml(
+                yaml_file)
             logger.debug(
                 f"found {len(pipeline_definition)} stages in pipeline.")
     except FileNotFoundError:
@@ -134,6 +136,7 @@ def main(
 
     Returns:
         None
+
     """
     pypyr.log.logger.set_root_logger(log_level, log_path)
 
@@ -163,6 +166,7 @@ def prepare_context(pipeline, context_in_string, context):
     Returns:
         None. The context instance to use for the pipeline run is contained
               in the context arg, it's not passed back as a function return.
+
     """
     logger.debug("starting")
 
@@ -205,8 +209,8 @@ def load_and_run_pipeline(pipeline_name,
 
     Returns:
         None
-    """
 
+    """
     logger.debug(f"you asked to run pipeline: {pipeline_name}")
     logger.debug(f"you set the initial context to: {pipeline_context_input}")
 
@@ -252,6 +256,7 @@ def run_pipeline(pipeline,
 
     Returns:
         None
+
     """
     logger.debug("starting")
 

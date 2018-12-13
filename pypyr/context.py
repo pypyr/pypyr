@@ -2,10 +2,11 @@
 from collections import namedtuple
 from collections.abc import Mapping, Set, Sequence
 from string import Formatter
+from pypyr.dsl import SpecialTagDirective
 from pypyr.errors import (ContextError,
                           KeyInContextHasNoValueError,
                           KeyNotInContextError)
-from pypyr.utils import types
+from pypyr.utils import expressions, types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
                              ['key',
@@ -221,11 +222,38 @@ class Context(dict):
         for context_item in context_items:
             self.assert_key_type_value(context_item, caller, extra_error_text)
 
+    def get_eval_string(self, input_string):
+        """Dynamically evaluates the input_string expression.
+
+        This provides dynamic python eval of an input expression. The return is
+        whatever the result of the expression is.
+
+        Use with caution: since input_string executes any arbitrary code object
+        the potential for damage is great.
+
+        The eval uses the current context object as the namespace. This means
+        if you have context['mykey'], in the input_string expression you can
+        use the key directly as a variable like this: "mykey == 'mykeyvalue'".
+
+        Both __builtins__ and context are available to the eval expression.
+
+        Args:
+            input_string: expression to evaluate.
+
+        Returns:
+            Whatever object results from the string expression valuation.
+
+        """
+        return expressions.eval_string(input_string, dict(self))
+
     def get_formatted(self, key):
         """Return formatted value for context[key].
 
         If context[key] is a type string, will just format and return the
         string.
+        If context[key] is a special literal type, like a py string or sic
+        string, will run the formatting implemented by the custom tag
+        representer.
         If context[key] is not a string, specifically an iterable type like a
         dict, list, tuple, set, it will use get_formatted_iterable under the
         covers to loop through and handle the entire structure contained in
@@ -261,6 +289,8 @@ class Context(dict):
                     f'Unable to format \'{val}\' at context[\'{key}\'], '
                     f'because {err}'
                 ) from err
+        elif isinstance(val, SpecialTagDirective):
+            return val.get_value(self)
         else:
             # any sort of complex type will work with get_formatted_iterable.
             return self.get_formatted_iterable(val)
@@ -305,6 +335,8 @@ class Context(dict):
 
         if isinstance(obj, str):
             new = self.get_formatted_string(obj)
+        elif isinstance(obj, SpecialTagDirective):
+            new = obj.get_value(self)
         elif isinstance(obj, (bytes, bytearray)):
             new = obj
         elif isinstance(obj, Mapping):
@@ -364,6 +396,8 @@ class Context(dict):
                 raise KeyNotInContextError(
                     f'Unable to format \'{input_string}\' because {err}'
                 ) from err
+        elif isinstance(input_string, SpecialTagDirective):
+            return input_string.get_value(self)
         else:
             raise TypeError(f"can only format on strings. {input_string} is a "
                             f"{type(input_string)} instead.")
@@ -387,6 +421,9 @@ class Context(dict):
         if value is None:
             value = default
 
+        if isinstance(value, SpecialTagDirective):
+            result = value.get_value(self)
+            return types.cast_to_type(result, out_type)
         if isinstance(value, str):
             result = self.get_formatted_string(value)
             result_type = type(result)
@@ -427,24 +464,12 @@ class Context(dict):
 
         Then this will return string: "Piping down the valleys wild"
 
-        If a string is NOT to have {substitutions} run on it, it's sic erat
-        scriptum, i.e literal.
-
-        A sic string looks like this:
-        input_string=[sic]"<<your string literal here>>"
-
-        For example:
-            [sic]"piping {key} the valleys wild"
-
-        Will return "piping {key} the valleys wild" without attempting to
-        substitute {key} from context.
-
         Args:
             input_string: string to Parse
 
         Returns:
             any given type: Formatted string with {substitutions} made from
-            context. If it's a [sic] string, x from [sic]"x", with no
+            context. If it's a !sic string, x from !sic x, with no
             substitutions made on x. If input_string was a single expression
             (e.g '{field}'), then returns the object with {substitutions} made
             for its attributes.
@@ -455,8 +480,13 @@ class Context(dict):
                                   context dictionary.
 
         """
-        if input_string[: 6] == '[sic]"':
-            return input_string[6: -1]
+        # arguably, this doesn't really belong here, or at least it makes a
+        # nonsense of the function name. given how py and strings
+        # look and feel pretty much like strings from user's perspective, and
+        # given legacy code back when sic strings were in fact just strings,
+        # keep in here for backwards compatibility.
+        if isinstance(input_string, SpecialTagDirective):
+            return input_string.get_value(self)
         else:
             # is this a special one field formatstring? i.e "{field}", with
             # nothing else?

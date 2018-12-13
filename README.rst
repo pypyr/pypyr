@@ -1502,13 +1502,14 @@ steps:
 .. code-block:: yaml
 
   - name: pypyr.steps.shell
-    description: hop one up from current working dir
+    description: hop one up from current working dir. sic means won't attempt
+                 to substitute {PWD} from context.
     in:
-      cmd: '[sic]"echo ${PWD}; cd ../; echo ${PWD}"'
+      cmd: !sic echo ${PWD}; cd ../; echo ${PWD}
   - name: pypyr.steps.shell
     description: back to your current working dir
     in:
-      cmd: '[sic]"echo ${PWD}"'
+      cmd: !sic echo ${PWD}
 
 Supports string `Substitutions`_.
 
@@ -1523,7 +1524,7 @@ Example pipeline yaml using a pipe:
     - name: pypyr.steps.shell
       description: if you want to pass curlies to the shell, use sic strings
       in:
-        cmd: '[sic]"echo ${PWD};"'
+        cmd: !sic echo ${PWD};
 
 See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
@@ -1713,6 +1714,51 @@ values like this:
   '{root[2]}' = list index 1
 
 
+py strings
+==========
+py strings allow you to execute python expressions dynamically. This allows you
+to use a python expression wherever you can use a string formatting expression.
+
+A py string looks like this:
+
+.. code-block:: text
+
+  !py <<your python expression here>>
+
+
+For example, if ``context['key']`` is 'abc', the following will return True:
+``!py len(key) == 3"``
+
+The Py string expression has the usual python builtins available to it, in
+addition to the Context dictionary. In other words, you can use functions like
+``abs``, ``len`` - full list here
+https://docs.python.org/3/library/functions.html.
+
+Notice that you can use the context keys directly as variables. Unlike string
+formatting expressions, you don't surround the key name with {curlies}.
+
+In pipeline yaml, if the first character of the py string is a yaml structural
+character, you should put the Py string in quotes or as part of a literal block.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    description: don't run this step if int < 4.
+                 No need to wrap the expression in extra quotes!
+    run: !py thisIsAnInt < 5
+    in:
+      echoMe: you'll see me if context thisIsAnInt is less than 5.
+  - name: pypyr.steps.echo
+    description: only run this step if breakfast includes spam
+                 since the first char is a single quote, wrap the Py string in
+                 double quotes to prevent malformed yaml.
+    run: !py "'spam' in ['eggs', 'spam', 'bacon']"
+    in:
+      echoMe: you should see me because spam is in breakfast!
+
+See a worked example `for py strings here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/pystrings.yaml>`__.
+
 sic strings
 ===========
 If a string is NOT to have {substitutions} run on it, it's *sic erat scriptum*,
@@ -1724,21 +1770,23 @@ A *sic* string looks like this:
 
 .. code-block:: text
 
-  [sic]"<<your string literal here>>"
+  !sic <<your string literal here>>
 
 For example:
 
 .. code-block:: text
 
-  [sic]"piping {key} the valleys wild"
+  !sic piping {key} the valleys wild
 
 Will return "piping {key} the valleys wild" without attempting to substitute
-{key} from context. You can happily use ", ' or {} inside a ``[sic]""`` string
-without escaping these any further. This makes sic strings ideal for strings
-containing json.
+{key} from context. You can happily use ", ' or {} inside a ``!sic my string``
+string without escaping these any further. This makes sic strings ideal for
+strings containing json.
 
-In pipeline yaml, you need to have the ``[sic]`` in single quotes or as part
-of a literal block:
+You can surround the Sic string with single or double quotes like this
+``!sic 'my string here'`` or ``!sic "my string here"``. This is handy if your
+string starts with a yaml structural character like square [ or curly { braces.
+Check example below for escape sequences if you do so.
 
 .. code-block:: yaml
 
@@ -1746,19 +1794,29 @@ of a literal block:
     description: >
                 use a sic string not to format any {values}. Do watch the
                 use of the yaml literal with block chomping indicator |- to
-                prevent the last character in the string from being a LF. If
-                you don't do this, you will end up with the trailing " in your
-                output, which in this case would be malformed json.
+                prevent the last character in the string from being a LF.
     in:
-      echoMe: |-
-              [sic]"
+      echoMe: !sic |-
+
               {
                 "key1": "key1 value with a {curly}"
-              }"
+              }
   - name: pypyr.steps.echo
-    description: put sic string in single quotes
+    description: use a sic string not to format any {values} on one line. No need to escape further quotes.
     in:
-      echoMe: '[sic]"string with a {curly} with ", '' and & and double quote at end:""'
+      echoMe: !sic string with a {curly} with ", ' and & and double quote at end:"
+  - name: pypyr.steps.echo
+    description: use a sic string with single quotes.
+    in:
+      echoMe: !sic '{string} with {curlies} inside single quotes, : colon, quote ", backslash \.'
+  - name: pypyr.steps.echo
+    description: use a sic string with double quotes. Double up the backslashes!
+    in:
+      echoMe: !sic "[string] with {curlies} inside double quotes, : colon, quote \", backslash \\."
+
+
+You can pick single or double quotes, so just go with whichever is less annoying
+for your particular string.
 
 See a worked example `for substitutions here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/substitutions.yaml>`__.

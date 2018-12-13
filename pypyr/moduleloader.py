@@ -24,6 +24,7 @@ def get_module(module_abs_import):
 
     Raises:
         PyModuleNotFoundError: if module not found.
+
     """
     logger.debug("starting")
     logger.debug(f"loading module {module_abs_import}")
@@ -63,6 +64,7 @@ def get_pipeline_path(pipeline_name, working_directory):
     Raises:
         PipelineNotFoundError: if pipeline_name.yaml not found in working_dir
                                or in {pypyr install dir}/pipelines.
+
     """
     logger.debug("starting")
 
@@ -107,6 +109,7 @@ def set_working_directory(working_directory):
 
     Args:
         working_directory: string. path to add to sys.paths
+
     """
     logger.debug("starting")
 

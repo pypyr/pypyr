@@ -1,6 +1,7 @@
 """context.py unit tests."""
 from collections.abc import MutableMapping
 from pypyr.context import Context, ContextItemInfo
+from pypyr.dsl import PyString, SicString
 from pypyr.errors import (
     ContextError,
     KeyInContextHasNoValueError,
@@ -220,6 +221,13 @@ def test_assert_key_has_value_fails_key_not_found():
     context = Context({'key1': 'value1'})
     with pytest.raises(KeyNotInContextError):
         context.assert_key_has_value('notindict', None)
+
+
+def test_assert_key_has_value__empty():
+    """No KeyNotInContextError if key exists but value empty (not None)."""
+    context = Context({'key': ''})
+    # with pytest.raises(KeyNotInContextError):
+    context.assert_key_has_value('key', None)
 
 
 def test_assert_key_has_value_fails_key_error_message():
@@ -460,6 +468,24 @@ def test_assert_keys_type_value_raises_with_extra_error_text():
 
 # ------------------- asserts ------------------------------------------------#
 
+# ------------------- get_eval -----------------------------------------------#
+
+
+def test_get_eval_string_bool():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'key1 == \'down\''
+    output = context.get_eval_string(input_string)
+    assert isinstance(output, bool)
+    assert output
+
+
+def test_get_eval_string_builtins():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = 'len(key1)'
+    assert context.get_eval_string(input_string) == 4
+
+# ------------------- end get_eval--------------------------------------------#
+
 # ------------------- formats ------------------------------------------------#
 
 
@@ -497,9 +523,17 @@ def test_string_interpolate_escapes_double_curly_pair():
 
 def test_string_interpolate_sic():
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
-    context['input_string'] = '[sic]"Piping {key1} the {key2} wild"'
+    context['input_string'] = SicString("Piping {key1} the {key2} wild")
     output = context.get_formatted('input_string')
     assert output == 'Piping {key1} the {key2} wild', (
+        "string interpolation incorrect")
+
+
+def test_string_interpolate_py():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    context['input_string'] = PyString("len(key1) + len(key2)")
+    output = context.get_formatted('input_string')
+    assert output == 11, (
         "string interpolation incorrect")
 
 
@@ -557,9 +591,25 @@ def test_input_string_tag_not_in_context_should_throw():
 
 def test_input_string_interpolate_sic():
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
-    input_string = '[sic]"Piping {key1} the {key2} wild"'
+    input_string = SicString("Piping {key1} the {key2} wild")
     output = context.get_formatted_string(input_string)
     assert output == "Piping {key1} the {key2} wild", (
+        "string interpolation incorrect")
+
+
+def test_input_string_interpolate_sic_singlequote():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = SicString('Piping {key1} the {key2} wild')
+    output = context.get_formatted_string(input_string)
+    assert output == "Piping {key1} the {key2} wild", (
+        "string interpolation incorrect")
+
+
+def test_input_string_interpolate_py_singlequote():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = PyString('len(key1) * len(key2)')
+    output = context.get_formatted_string(input_string)
+    assert output == 28, (
         "string interpolation incorrect")
 
 
@@ -574,7 +624,7 @@ def test_input_string_not_a_string_throw():
 
 
 def test_get_formatted_iterable_list():
-    """Simple list"""
+    """Simple list."""
     input_obj = ['k1', 'k2', '{ctx3}', True, False, 44]
 
     context = Context(
@@ -742,7 +792,7 @@ def test_get_formatted_iterable_nested_with_sic():
                      2,
                      '3_{ctx4}here',
                      {'key4.1': 'value4.1',
-                      '{ctx2}_key4.2': '[sic]"value_{ctx3}_4.2"',
+                      '{ctx2}_key4.2': SicString("value_{ctx3}_4.2"),
                       'key4.3': {
                           '4.3.1': '4.3.1value',
                           '4.3.2': '4.3.2_{ctx1}_value'}}
@@ -772,7 +822,7 @@ def test_get_formatted_iterable_nested_with_sic():
     assert input_obj['k4'][2] == '3_{ctx4}here'
     assert output['k4'][2] == '3_ctxvalue4here'
 
-    assert input_obj['k4'][3]['{ctx2}_key4.2'] == '[sic]"value_{ctx3}_4.2"'
+    assert input_obj['k4'][3]['{ctx2}_key4.2'] == SicString("value_{ctx3}_4.2")
     assert output['k4'][3]['ctxvalue2_key4.2'] == 'value_{ctx3}_4.2'
 
     assert input_obj['k4'][3]['key4.3']['4.3.2'] == '4.3.2_{ctx1}_value'
@@ -1036,6 +1086,25 @@ def test_get_formatted_as_type_bool_true_with_str_1_true():
     assert result
 
 
+def test_get_formatted_as_type_bool_true_with_pystring_true():
+    """get_formatted_as_type returns bool True with py string True."""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type(PyString('k1 and True'),
+                                           out_type=bool)
+
+    assert isinstance(result, bool)
+    assert result
+
+
+def test_get_formatted_as_type_bool_false_with_pystring_false():
+    """get_formatted_as_type returns bool True with py string True."""
+    context = Context({'k1': True})
+    result = context.get_formatted_as_type(PyString('not k1'), out_type=bool)
+
+    assert isinstance(result, bool)
+    assert not result
+
+
 def test_get_formatted_as_type_int_no_subst():
     """get_formatted_as_type returns int no formatting."""
     context = Context()
@@ -1133,10 +1202,26 @@ def test_get_processed_string_shorter_than_6_no_interpolation():
 
 def test_get_processed_string_sic_skips_interpolation():
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
-    input_string = '[sic]"Piping {key1} the {key2} wild"'
+    input_string = SicString("Piping {key1} the {key2} wild")
     output = context.get_processed_string(input_string)
     assert output == 'Piping {key1} the {key2} wild', (
         "string interpolation incorrect")
+
+
+def test_get_processed_string_pystring_double_quote():
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    input_string = PyString("key1 == 'down'")
+    output = context.get_processed_string(input_string)
+    assert isinstance(output, bool)
+    assert output
+
+
+def test_get_processed_string_pystring_single_quote():
+    context = Context({'key1': 2, 'key2': -3, 'key3': 'value3'})
+    input_string = PyString('abs(key1+key2)')
+    output = context.get_processed_string(input_string)
+    assert isinstance(output, int)
+    assert output == 1
 
 
 def test_get_processed_string_single_expression_keeps_type():
