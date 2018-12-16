@@ -404,7 +404,8 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | *errorOnMax* to True.                       |                |
 +---------------+----------+---------------------------------------------+----------------+
 
-All step decorators support `Substitutions`_.
+All step decorators support `Substitutions`_. You can use `py strings`_ for
+dynamic boolean conditions like ``len(key) > 0``.
 
 If no looping decorators are specified, the step will execute once (depending
 on the conditional decorators' settings).
@@ -453,6 +454,8 @@ Decorator examples
 +------------------------------------------------+-----------------------------+
 | conditional step decorators                    | |step-decorators|           |
 +------------------------------------------------+-----------------------------+
+| dynamic expression evaluation                  | |pystring-decorator|        |
++------------------------------------------------+-----------------------------+
 | foreach looping                                | |foreach-decorator|         |
 +------------------------------------------------+-----------------------------+
 | foreach with dynamic conditional decorator     | |foreach-dynamic|           |
@@ -471,6 +474,8 @@ Decorator examples
 +------------------------------------------------+-----------------------------+
 
 .. |step-decorators| replace:: `step decorators <https://github.com/pypyr/pypyr-example/blob/master/pipelines/stepdecorators.yaml>`__
+
+.. |pystring-decorator| replace:: `dynamic expression <https://github.com/pypyr/pypyr-example/blob/master/pipelines/pystrings.yaml>`__
 
 .. |foreach-decorator| replace:: `foreach <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreach.yaml>`__
 
@@ -542,6 +547,8 @@ Built-in steps
 |                               |                                                 | fileReplaceOut (path-like)   |
 |                               |                                                 |                              |
 |                               |                                                 | fileReplacePairs (dict)      |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.filewritejson`_  | Write payload to file in json format.           | fileWriteJson (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filewriteyaml`_  | Write payload to file in yaml format.           | fileWriteYaml (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1289,6 +1296,54 @@ The file in and out paths support `Substitutions`_.
 See a worked
 `example here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/filereplace.yaml>`_.
+
+pypyr.steps.filewritejson
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Write a payload to a json file on disk.
+
+*filewritejson* expects the following input context:
+
+.. code-block:: yaml
+
+  fileWriteJson:
+    path: /path/to/output.json # destination file
+    payload: # payload to write to path
+      key1: value1 # output json will have
+      key2: value2 # key1 and key2.
+
+If you do not specify *payload*, pypyr will write the entire context to the
+output file in json format. Be careful if you have sensitive values like
+passwords or private keys!
+
+All inputs support `Substitutions`_. This means you can specify another context
+item to be the path and/or the payload, for example:
+
+.. code-block:: yaml
+
+  arbkey: arbvalue
+  writehere: /path/to/output.json
+  writeme:
+    this: json content
+    will: be written to
+    thepath: with substitutions like this {arbkey}.
+  fileWriteJson:
+    path: '{writehere}'
+    payload: '{writeme}'
+
+Substitution processing runs on the output. In the above example, in the output
+json file created at */path/to/output.json*, the ``{arbkey}`` expression in
+the last line will substitute like this:
+
+.. code-block:: json
+
+  {
+      "this": "json content",
+      "will": "be written to",
+      "thepath": "with substitutions like this arbvalue."
+  }
+
+See a worked `filewritejson example here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/filewritejson.yaml>`_.
 
 pypyr.steps.filewriteyaml
 ^^^^^^^^^^^^^^^^^^^^^^^^^
