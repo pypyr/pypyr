@@ -1,8 +1,7 @@
 """pypyr step that writes payload out to a yaml file."""
 import os
 import logging
-import ruamel.yaml as yaml
-from pypyr.context import Context
+import pypyr.yaml
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -39,13 +38,7 @@ def run_step(context):
     # None.
     is_payload_specified = 'payload' in context['fileWriteYaml']
 
-    yaml_writer = yaml.YAML(typ='rt', pure=True)
-    # if this isn't here the yaml doesn't format nicely indented for humans
-    yaml_writer.indent(mapping=2, sequence=4, offset=2)
-    # Context is a dict data structure, so can just use a dict representer
-    yaml_writer.Representer.add_representer(
-        Context,
-        yaml.representer.RoundTripRepresenter.represent_dict)
+    yaml_writer = pypyr.yaml.get_yaml_parser_roundtrip_for_context()
 
     logger.debug(f"opening destination file for writing: {out_path}")
     os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)

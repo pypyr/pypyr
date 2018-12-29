@@ -47,7 +47,7 @@ def run_step(context):
         else:
             formatted_iterable = context.get_formatted_iterable(context)
 
-        json.dump(formatted_iterable, outfile, indent=4, ensure_ascii=False)
+        json.dump(formatted_iterable, outfile, indent=2, ensure_ascii=False)
 
     logger.info(f"formatted context content and wrote to {out_path}")
     logger.debug("done")

@@ -1,0 +1,4 @@
+Don't add files to this dir unless you know what you're doing.
+The globbing integration tests expect these specifics here.
+Yes, I should prob be using test fixtures for more discrete setup/teardown.
+Call it integration-testing-by-convention. It's the hot new thing.

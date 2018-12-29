@@ -95,7 +95,7 @@ def test_filereplace_empty_replacepairs_raises():
 def test_filereplace_pass_no_matches():
     """Relative path to file should succeed.
 
-     Strictly speaking not a unit test.
+    Strictly speaking not a unit test.
     """
     context = Context({
         'ok1': 'ov1',
@@ -130,7 +130,7 @@ def test_filereplace_pass_no_matches():
 def test_filereplace_pass_with_replacements():
     """Relative path to file should succeed.
 
-     Strictly speaking not a unit test.
+    Strictly speaking not a unit test.
     """
     context = Context({
         'k1': 'X1',
@@ -168,7 +168,7 @@ def test_filereplace_pass_with_replacements():
 def test_filereplace_pass_with_path_replacements():
     """Relative path to file should succeed with path replacements.
 
-     Strictly speaking not a unit test.
+    Strictly speaking not a unit test.
     """
     context = Context({
         'k1': 'X1',
@@ -210,60 +210,64 @@ def test_filereplace_pass_with_path_replacements():
 
 
 def test_iter_replace_string_empties():
-    """Nothing in, nothing out"""
+    """Nothing in, nothing out."""
     in_string = ''
     replace_pairs = {}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
-    assert not result
+    result = filereplace.iter_replace_strings(replace_pairs)
+    assert not list(result(in_string))
 
 
 def test_iter_replace_string_one_none():
-    """One in, none out"""
+    """One in, none out."""
     in_string = ['one two three four five six seven eight']
     replace_pairs = {'ten': '10'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
-    assert result == in_string
+    result = filereplace.iter_replace_strings(replace_pairs)
+    assert list(result(in_string)) == in_string
 
 
 def test_iter_replace_string_one_one():
-    """One in, one out"""
+    """One in, one out."""
     in_string = ['one two three four five six seven eight']
     replace_pairs = {'six': '6'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
-    assert result[0] == 'one two three four five 6 seven eight'
+    result = filereplace.iter_replace_strings(replace_pairs)
+    assert list(result(in_string))[
+        0] == 'one two three four five 6 seven eight'
 
 
 def test_iter_replace_string_two_one():
-    """Two in, one out"""
+    """Two in, one out."""
     in_string = ['one two three four five six seven eight']
     replace_pairs = {'six': '6', 'XXX': '3'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
-    assert result[0] == 'one two three four five 6 seven eight'
+    result = filereplace.iter_replace_strings(replace_pairs)
+    assert list(result(in_string))[
+        0] == 'one two three four five 6 seven eight'
 
 
 def test_iter_replace_string_two_two():
-    """Two in, two out"""
+    """Two in, two out."""
     in_string = ['one two three four five six seven eight']
     replace_pairs = {'six': '6', 'three': '3'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
-    assert result[0] == 'one two 3 four five 6 seven eight'
+    result = filereplace.iter_replace_strings(replace_pairs)
+    assert list(result(in_string))[0] == 'one two 3 four five 6 seven eight'
 
 
 def test_iter_replace_string_instring_actually_iterates():
-    """Iterates over an in iterable"""
+    """Iterates over an in iterable."""
     in_string = ['one two three', 'four five six', 'seven eight nine']
     replace_pairs = {'six': '6', 'three': '3'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
+    func = filereplace.iter_replace_strings(replace_pairs)
+    result = list(func(in_string))
     assert result[0] == 'one two 3'
     assert result[1] == 'four five 6'
     assert result[2] == 'seven eight nine'
 
 
 def test_iter_replace_string_later_replace_earlier():
-    """A later replacement replaces one from earlier"""
+    """A later replacement replaces one from earlier."""
     in_string = ['one two three', 'four five six', 'seven eight nine']
     replace_pairs = {'six': '6', 'three': '3', '6': 'XXX'}
-    result = list(filereplace.iter_replace_strings(in_string, replace_pairs))
+    func = filereplace.iter_replace_strings(replace_pairs)
+    result = list(func(in_string))
     assert result[0] == 'one two 3'
     assert result[1] == 'four five XXX'
     assert result[2] == 'seven eight nine'
@@ -274,5 +278,5 @@ def test_iter_replace_string_later_replace_earlier():
 
 
 def teardown_module(module):
-    """Teardown"""
+    """Teardown."""
     os.rmdir('./tests/testfiles/out/')

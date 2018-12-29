@@ -105,10 +105,10 @@ def test_filewritejson_pass_no_payload(mock_makedirs):
         mock_output.assert_called_once_with('/arb/blah', 'w')
         # json well formed & new lines and indents are where they should be
         assert out_text.getvalue() == ('{\n'
-                                       '    "k1": "v1",\n'
-                                       '    "fileWriteJson": {\n'
-                                       '        "path": "/arb/blah"\n'
-                                       '    }\n'
+                                       '  "k1": "v1",\n'
+                                       '  "fileWriteJson": {\n'
+                                       '    "path": "/arb/blah"\n'
+                                       '  }\n'
                                        '}')
 
 
@@ -160,19 +160,19 @@ def test_filewritejson_pass_with_payload(mock_makedirs):
         mock_output.assert_called_once_with('/arb/blah', 'w')
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('[\n'
-                                       '    "first",\n'
-                                       '    "second",\n'
-                                       '    {\n'
-                                       '        "a": "b",\n'
-                                       '        "c": 123.45,\n'
-                                       '        "d": [\n'
-                                       '            0,\n'
-                                       '            1,\n'
-                                       '            2\n'
-                                       '        ]\n'
-                                       '    },\n'
-                                       '    12,\n'
-                                       '    true\n'
+                                       '  "first",\n'
+                                       '  "second",\n'
+                                       '  {\n'
+                                       '    "a": "b",\n'
+                                       '    "c": 123.45,\n'
+                                       '    "d": [\n'
+                                       '      0,\n'
+                                       '      1,\n'
+                                       '      2\n'
+                                       '    ]\n'
+                                       '  },\n'
+                                       '  12,\n'
+                                       '  true\n'
                                        ']')
 
 
@@ -203,19 +203,19 @@ def test_filewritejson_pass_no_payload_substitutions(mock_makedirs):
         mock_output.assert_called_once_with('/arb/path', 'w')
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('{\n'
-                                       '    "k1": "v1",\n'
-                                       '    "pathkey": "/arb/path",\n'
-                                       '    "parent": [\n'
-                                       '        0,\n'
-                                       '        1,\n'
-                                       '        {\n'
-                                       '            "child": "v1"\n'
-                                       '        }\n'
-                                       '    ],\n'
-                                       '    "nested": "v1",\n'
-                                       '    "fileWriteJson": {\n'
-                                       '        "path": "/arb/path"\n'
+                                       '  "k1": "v1",\n'
+                                       '  "pathkey": "/arb/path",\n'
+                                       '  "parent": [\n'
+                                       '    0,\n'
+                                       '    1,\n'
+                                       '    {\n'
+                                       '      "child": "v1"\n'
                                        '    }\n'
+                                       '  ],\n'
+                                       '  "nested": "v1",\n'
+                                       '  "fileWriteJson": {\n'
+                                       '    "path": "/arb/path"\n'
+                                       '  }\n'
                                        '}')
 
 
@@ -263,15 +263,15 @@ def test_filewritejson_pass_with_payload_subsitutions(mock_makedirs):
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == (
             '{\n'
-            '    "child": [\n'
-            '        "v1",\n'
-            '        3,\n'
-            '        [\n'
-            '            "a",\n'
-            '            "b",\n'
-            '            "c"\n'
-            '        ]\n'
+            '  "child": [\n'
+            '    "v1",\n'
+            '    3,\n'
+            '    [\n'
+            '      "a",\n'
+            '      "b",\n'
+            '      "c"\n'
             '    ]\n'
+            '  ]\n'
             '}')
 
 

@@ -1,14 +1,14 @@
 """pypyr step that parses file, does string replacement and writes output."""
 from functools import reduce
-import os
 import logging
+from pypyr.utils.filesystem import StreamRewriter
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Parses input file and replaces a search string.
+    """Parse input file and replace a search string.
 
     This also does string substitutions from context on the fileReplacePairs.
     It does this before it search & replaces the in file.
@@ -36,6 +36,7 @@ def run_step(context):
                                           context.
         pypyr.errors.KeyInContextHasNoValueError: Any of the required keys
                                                   exists but is None.
+
     """
     logger.debug("started")
     context.assert_keys_have_values(__name__,
@@ -44,35 +45,45 @@ def run_step(context):
                                     'fileReplacePairs')
 
     in_path = context.get_formatted('fileReplaceIn')
-    out_path = context.get_formatted('fileReplaceOut')
+    out_path = context.get_formatted(
+        'fileReplaceOut') if 'fileReplaceOut' in context else None
 
-    logger.debug("Running subsitutions from context on fileReplacePairs")
+    logger.debug("Running substitutions from context on fileReplacePairs")
     formatted_replacements = context.get_formatted_iterable(
         context['fileReplacePairs'])
 
-    logger.debug(f"opening source file: {in_path}")
-    with open(in_path) as infile:
-        logger.debug(f"opening destination file for writing: {out_path}")
-        os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
-        with open(out_path, 'w') as outfile:
-            outfile.writelines(iter_replace_strings(infile,
-                                                    formatted_replacements))
+    rewriter = StreamRewriter(iter_replace_strings(formatted_replacements))
+    rewriter.files_in_to_out(in_path=in_path, out_path=out_path)
 
-    logger.info(f"Read {in_path}, replaced strings and wrote to {out_path}")
     logger.debug("done")
 
 
-def iter_replace_strings(iterable_strings, replacements):
-    """Generator that yields a formatted string from iterable_strings.
+def iter_replace_strings(replacements):
+    """Create a function that will use replacement pairs to process a string.
+
+    The returned function takes an iterator and yields on each processed line.
 
     Args:
-        iterable_strings: Iterable containing strings. E.g a file-like object.
         replacements: Dict containing 'find_string': 'replace_string' pairs
 
     Returns:
-        Yields formatted line.
+        function with signature: iterator of strings = function(iterable)
+
     """
-    for string in iterable_strings:
-        yield reduce((lambda s, kv: s.replace(*kv)),
-                     replacements.items(),
-                     string)
+    def function_iter_replace_strings(iterable_strings):
+        """Yield a formatted string from iterable_strings using a generator.
+
+        Args:
+            iterable_strings: Iterable containing strings. E.g a file-like
+                              object.
+
+        Returns:
+            Yields formatted line.
+
+        """
+        for string in iterable_strings:
+            yield reduce((lambda s, kv: s.replace(*kv)),
+                         replacements.items(),
+                         string)
+
+    return function_iter_replace_strings
