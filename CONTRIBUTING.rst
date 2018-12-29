@@ -114,6 +114,14 @@ pypyr has 100% test coverage. Shippable CI enforces this on all branches.
   tox -e ci -- --cov=pypyr --cov-report term tests
 
 
+If the above results in less than 100%, hunt down missing lines like this:
+
+.. code-block:: bash
+
+  # display line numbers in a particular file where branch coverage missing.
+  # works only after report.
+  coverage report -m pypyr/mymodule.py
+
 PRs
 ===
 When you pull request, code will have to pass the linting and coverage
