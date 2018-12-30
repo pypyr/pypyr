@@ -218,7 +218,8 @@ def test_get_formatted_iterable_nested_with_formatting():
          'ctx3': 'ctxvalue3',
          'ctx4': 'ctxvalue4',
          'contextSetf': {
-             'output': input_obj}})
+             'output': input_obj,
+             '{ctx1}': 'substituted key'}})
 
     pypyr.steps.contextsetf.run_step(context)
 
@@ -255,3 +256,5 @@ def test_get_formatted_iterable_nested_with_formatting():
     output['k7'] = 'mutate 7 on new'
     assert input_obj['k7'] == 'simple string to close 7'
     assert output['k7'] == 'mutate 7 on new'
+
+    assert context['ctxvalue1'] == 'substituted key'
