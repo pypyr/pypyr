@@ -198,10 +198,20 @@ Built-in context parsers
 | pypyr.parser.commas         | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
 |                             | dictionary where each element becomes the key,  |                                                                                     |
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
-|                             |                                                 |{'param1': True, 'param2': True, 'param3': True}                                     |
-|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             |                                                 |                                                                                     |
+|                             | Don't have spaces between commas unless you     |.. code-block:: python                                                               |
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
-|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       |  {'param1': True, 'param2': True, 'param3': True}                                   |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.dict           | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
+|                             | and returns a dictionary where each pair becomes|                                                                                     |
+|                             | a dictionary element inside a dict with name    |This will create a context dictionary like this:                                     |
+|                             | *argDict*.                                      |                                                                                     |
+|                             |                                                 |.. code-block:: python                                                               |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | really mean it. \"k1=v1, k2=v2\" will result in |  {'argDict': {'param1': 'value1',                                                   |
+|                             | a context key name of \' k2\' not \'k2\'.       |               'param2': 'value2',                                                   |
+|                             |                                                 |               'param3': 'value3'}}                                                  |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename '{"key1":"value1","key2":"value2"}'``                           |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
@@ -209,23 +219,29 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
 |                             | and returns a dictionary where each pair becomes|                                                                                     |
-|                             | a dictionary element.                           |                                                                                     |
+|                             | a dictionary element.                           |This will create a context dictionary like this:                                     |
 |                             |                                                 |                                                                                     |
-|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | Don't have spaces between commas unless you     |.. code-block:: python                                                               |
 |                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
-|                             | a context key name of \' k2\' not \'k2\'.       |                                                                                     |
+|                             | a context key name of \' k2\' not \'k2\'.       | {'param1': 'value1',                                                                |
+|                             |                                                 |  'param2': 'value2',                                                                |
+|                             |                                                 |  'param3': 'value3'}                                                                |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
 |                             | list in context with name *argList*.            |                                                                                     |
 |                             |                                                 |This will create a context dictionary like this:                                     |
-|                             | Don't have spaces between commas unless you     |{'argList': ['param1', 'param2', 'param3']}                                          |
-|                             | really mean it. \"v1, v2\" will result in       |                                                                                     |
+|                             | Don't have spaces between commas unless you     |                                                                                     |
+|                             | really mean it. \"v1, v2\" will result in       |.. code-block:: python                                                               |
 |                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
+|                             |                                                 | {'argList': ['param1', 'param2', 'param3']}                                         |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.string         | Takes any arbitrary string and returns a        |``pypyr pipelinename "arbitrary string here"``                                       |
 |                             | string in context with name *argString*.        |                                                                                     |
 |                             |                                                 |This will create a context dictionary like this:                                     |
-|                             |                                                 |{'argString': 'arbitrary string here'}                                               |
+|                             |                                                 |                                                                                     |
+|                             |                                                 |.. code-block:: python                                                               |
+|                             |                                                 |                                                                                     |
+|                             |                                                 |  {'argString': 'arbitrary string here'}                                             |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename "./path/sample.yaml"``                                          |
 |                             | the pypyr context dictionary.                   |                                                                                     |
