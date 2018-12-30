@@ -515,6 +515,8 @@ Built-in steps
 |                               | expressions with {token} substitutions.         |                              |
 |                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.debug`_          | Pretty print pypyr context to output.           | debug (dict)                 |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.default`_        | Set default values in context. Only set values  | defaults (dict)              |
 |                               | if they do not exist already.                   |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -856,6 +858,40 @@ This will result in context like this:
 
 See a worked example `for contextsetf here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/contextset.yaml>`__.
+
+pypyr.steps.debug
+^^^^^^^^^^^^^^^^^
+Pretty print the context to output.
+
+Print the pypyr context to the pypyr output. This is likely to be the console.
+This may assist in debugging when trying to see what values are what.
+
+Obviously, be aware that if you have sensitive values like passwords in your
+context you probably want to be careful about this. No duh.
+
+All inputs are optional. This means you can run debug in a pipeline as a
+simple step just with
+
+.. code-block:: yaml
+
+    steps:
+      - pypyr.steps.debug
+
+In this case it will dump the entire context as is without applying formatting.
+
+Debug supports the following optional inputs:
+
+.. code-block:: yaml
+
+    debug: # optional
+      keys: keytodump # optional. str for a single key name to print.
+                      # or a list of key names to print ['key1', 'key2'].
+                      # if not specified, print entire context.
+      format: False # optional. Boolean, defaults False.
+                    # Applies formatting expressions to output.
+
+See some worked examples of `use debug to pretty print context here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/debug.yaml>`__.
 
 pypyr.steps.default
 ^^^^^^^^^^^^^^^^^^^
