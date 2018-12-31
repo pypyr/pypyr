@@ -1087,9 +1087,9 @@ This will result in the following $ENVs:
 
 .. code-block:: yaml
 
-  $MYVAR1 = value1
-  $MYVAR2 = before_value3_after
-  $MYVAR3 = arbtexthere
+  $MYVAR1 == value1
+  $MYVAR2 == before_value3_after
+  $MYVAR3 == arbtexthere
 
 Note that the $ENVs are not persisted system-wide, they only exist for the
 pypyr sub-processes, and as such for the subsequent steps during this pypyr
@@ -1810,10 +1810,10 @@ values like this:
 
 .. code-block:: text
 
-  '{root[0]}' = list index 0
-  '{root[1][key1]}' = this is a value from a dict containing a list, which contains a dict at index 1
-  '{root[1][key2]}' = key 2 value
-  '{root[2]}' = list index 1
+  '{root[0]}' == list index 0
+  '{root[1][key1]}' == this is a value from a dict containing a list, which contains a dict at index 1
+  '{root[1][key2]}' == key 2 value
+  '{root[2]}' == list index 1
 
 
 py strings
