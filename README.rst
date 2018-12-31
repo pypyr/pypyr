@@ -538,11 +538,7 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.echo`_           | Echo the context value `echoMe` to the output.  | echoMe (string)              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | envGet (dict)                |
-|                               |                                                 |                              |
-|                               |                                                 | envSet (dict)                |
-|                               |                                                 |                              |
-|                               |                                                 | envUnset (list)              |
+| `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | env (dict)                   |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJsonPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1007,38 +1003,35 @@ pypyr.steps.env
 ^^^^^^^^^^^^^^^
 Get, set or unset environment variables.
 
-At least one of these context keys must exist:
+The ``env`` context key must exist. ``env`` can contain a combination of get,
+set and unset keys.
+You must specify at least one of ``get``, ``set`` and ``unset``.
 
-- envGet
-- envSet
-- envUnset
+.. code-block:: bash
+
+  env:
+    get:
+      contextkey1: env1
+      contextkey2: env2
+    set:
+      env1: value1
+      env2: value2
+    unset:
+      - env1
+      - env2
 
 This step will run whatever combination of Get, Set and Unset you specify.
 Regardless of combination, execution order is Get, Set, Unset.
-
-.. highlights::
-
-  In general, pypyr steps do not clear context properties when complete. This
-  has a couple of important implications. If you run a step like
-  *pypyr.steps.env* multiple times in the same pipeline, the previous envGet,
-  envSet and/or envUnset keys will still be in context when the next step
-  executes. This can lead to unexpected results where you could envUnset a
-  value while you're trying to envSet in a subsequent step, surprising all
-  round.
-
-  An easy way around this is to use the `pypyr.steps.contextclear`_ step to wipe
-  the envGet/envSet/envUnset properties after you're done with a
-  *pypyr.steps.env* step.
 
 See a worked example `for environment variables here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/env_variables.yaml>`__.
 
 
-envGet
-""""""
+env get
+"""""""
 Get $ENVs into the pypyr context.
 
-``context['envGet']`` must exist. It's a dictionary.
+``context['env']['get']`` must exist. It's a dictionary.
 
 Values are the names of the $ENVs to write to the pypyr context.
 
@@ -1051,9 +1044,10 @@ For example, say input context is:
   key1: value1
   key2: value2
   pypyrCurrentDir: value3
-  envGet:
-    pypyrUser: USER
-    pypyrCurrentDir: PWD
+  env:
+    get:
+      pypyrUser: USER
+      pypyrCurrentDir: PWD
 
 
 This will result in context:
@@ -1066,11 +1060,11 @@ This will result in context:
   pypyrCurrentDir: <<value of $PWD here, not value3>>
   pypyrUser: <<value of $USER here>>
 
-envSet
-""""""
+env set
+"""""""
 Set $ENVs from the pypyr context.
 
-``context['envSet']`` must exist. It's a dictionary.
+``context['env']['set']`` must exist. It's a dictionary.
 
 Values are strings to write to $ENV. You can use {key} `Substitutions`_ to
 format the string from context.
@@ -1083,7 +1077,8 @@ For example, say input context is:
   key1: value1
   key2: value2
   key3: value3
-  envSet:
+  env:
+    set:
       MYVAR1: {key1}
       MYVAR2: before_{key3}_after
       MYVAR3: arbtexthere
@@ -1101,13 +1096,13 @@ pypyr sub-processes, and as such for the subsequent steps during this pypyr
 pipeline execution. If you set an $ENV here, don't expect to see it in your
 system environment variables after the pipeline finishes running.
 
-envUnset
-""""""""
+env unset
+"""""""""
 Unset $ENVs.
 
 Context is a dictionary or dictionary-like. context is mandatory.
 
-``context['envUnset']`` must exist. It's a list.
+``context['env']['unset']`` must exist. It's a list.
 List items are the names of the $ENV values to unset.
 
 For example, say input context is:

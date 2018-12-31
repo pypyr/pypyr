@@ -1,6 +1,7 @@
 """Step that gets, sets and unsets env vars."""
 import os
 import logging
+from pypyr.errors import KeyNotInContextError
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -11,38 +12,34 @@ def run_step(context):
 
     Context is a dictionary or dictionary-like. context is mandatory.
 
-    At least one of these context keys must exist:
-    context['envGet']
-    context['envSet']
-    context['envUnset']
+    Input context is:
+        env:
+            get: {dict}
+            set: {dict}
+            unset: [list]
+
+    At least one of env's sub-keys (get, set or unset) must exist.
 
     This step will run whatever combination of Get, Set and Unset you specify.
     Regardless of combination, execution order is Get, Set, Unset.
     """
     logger.debug("started")
-    # at least 1 of envGet, envSet or envUnset must exist in context
     assert context, f"context must have value for {__name__}"
-    get_info, set_info, unset_info = context.keys_of_type_exist(
-        ('envGet', dict),
-        ('envSet', dict),
-        ('envUnset', list)
-    )
-    found_at_least_one = False
+    deprecated(context)
 
-    if get_info.key_in_context and get_info.is_expected_type:
-        found_at_least_one = True
-        env_get(context)
+    context.assert_key_has_value('env', __name__)
 
-    if set_info.key_in_context and set_info.is_expected_type:
-        found_at_least_one = True
-        env_set(context)
+    found_get = env_get(context)
+    found_set = env_set(context)
+    found_unset = env_unset(context)
 
-    if unset_info.key_in_context and unset_info.is_expected_type:
-        found_at_least_one = True
-        env_unset(context)
+    # at least 1 of envGet, envSet or envUnset must exist in context
+    if not (found_get or found_set or found_unset):
+        raise KeyNotInContextError(
+            "context must contain any combination of "
+            "env['get'], env['set'] or env['unset'] for "
+            f"{__name__}")
 
-    assert found_at_least_one, ("context must contain any combination of "
-                                f"envGet, envSet or envUnset for {__name__}")
     logger.debug("done")
 
 
@@ -70,13 +67,21 @@ def env_get(context):
         pypyrUser: <<value of $USER here>>
         pypyrCurrentDir: <<value of $PWD here, not value3>>
     """
-    logger.debug("start")
+    get = context['env'].get('get', None)
 
-    for k, v in context['envGet'].items():
-        logger.debug(f"setting context {k} to $ENV {v}")
-        context[k] = os.environ[v]
+    exists = False
+    if get:
+        logger.debug("start")
 
-    logger.debug("done")
+        for k, v in get.items():
+            logger.debug(f"setting context {k} to $ENV {v}")
+            context[k] = os.environ[v]
+
+        logger.info(f"saved {len(get)} $ENVs to context.")
+        exists = True
+
+        logger.debug("done")
+    return exists
 
 
 def env_set(context):
@@ -107,13 +112,22 @@ def env_set(context):
     pipeline execution. If you set an $ENV here, don't expect to see it in your
     system environment variables after the pipeline finishes running.
     """
-    logger.debug("started")
+    env_set = context['env'].get('set', None)
 
-    for k, v in context['envSet'].items():
-        logger.debug(f"setting ${k} to context[{v}]")
-        os.environ[k] = context.get_formatted_string(v)
+    exists = False
+    if env_set:
+        logger.debug("started")
 
-    logger.debug("done")
+        for k, v in env_set.items():
+            logger.debug(f"setting ${k} to context[{v}]")
+            os.environ[k] = context.get_formatted_string(v)
+
+        logger.info(f"set {len(env_set)} $ENVs from context.")
+        exists = True
+
+        logger.debug("done")
+
+    return exists
 
 
 def env_unset(context):
@@ -136,16 +150,60 @@ def env_unset(context):
     $MYVAR1
     $MYVAR2
     """
-    logger.debug("started")
+    unset = context['env'].get('unset', None)
 
-    for env_var_name in context['envUnset']:
-        logger.debug(f"unsetting ${env_var_name}")
-        try:
-            del os.environ[env_var_name]
-        except KeyError:
-            # If user is trying to get rid of the $ENV, if it doesn't exist, no
-            # real point in throwing up an error that the thing you're trying
-            # to be rid off isn't there anyway.
-            logger.debug(f"${env_var_name} doesn't exist anyway. As you were.")
+    exists = False
+    if unset:
+        logger.debug("started")
 
-    logger.debug("done")
+        for env_var_name in unset:
+            logger.debug(f"unsetting ${env_var_name}")
+            try:
+                del os.environ[env_var_name]
+            except KeyError:
+                # If user is trying to get rid of the $ENV, if it doesn't
+                # exist, no real point in throwing up an error that the thing
+                # you're trying to be rid off isn't there anyway.
+                logger.debug(
+                    f"${env_var_name} doesn't exist anyway. As you were.")
+
+        logger.info(f"unset {len(unset)} $ENVs.")
+        exists = True
+
+        logger.debug("done")
+    return exists
+
+
+def deprecated(context):
+    """Handle deprecated context input."""
+    env = context.get('env', None)
+
+    get_info, set_info, unset_info = context.keys_of_type_exist(
+        ('envGet', dict),
+        ('envSet', dict),
+        ('envUnset', list)
+    )
+
+    found_at_least_one = (get_info.key_in_context or set_info.key_in_context
+                          or unset_info.key_in_context)
+
+    if not found_at_least_one:
+        return
+
+    if not env and found_at_least_one:
+        env = context['env'] = {}
+
+    if get_info.key_in_context and get_info.is_expected_type:
+        env['get'] = context[get_info.key]
+
+    if set_info.key_in_context and set_info.is_expected_type:
+        env['set'] = context[set_info.key]
+
+    if unset_info.key_in_context and unset_info.is_expected_type:
+        env['unset'] = context[unset_info.key]
+
+    logger.warning("envGet, envSet and envUnset are deprecated. They will "
+                   "stop working upon the next major release. "
+                   "Use the new context key env instead. It's a lot "
+                   "better, promise! For the moment pypyr is creating the "
+                   "new env key for you under the hood.")
