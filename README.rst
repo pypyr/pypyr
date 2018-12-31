@@ -513,8 +513,8 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | **step**                      | **description**                                 | **input context properties** |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assertThis (any)             |
-|                               | expected.                                       | assertEquals (any)           |
+| `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assert (dict)                |
+|                               | expected.                                       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -591,19 +591,22 @@ Assert that something is True or equal to something else.
 
 Uses these context keys:
 
-- ``assertThis``
+- ``assert``
 
-  - mandatory
-  - If assertEquals not specified, evaluates as a boolean.
+  - ``this``
 
-- ``assertEquals``
+    - mandatory
+    - If assert['equals'] not specified, evaluates as a boolean.
 
-  - optional
-  - If specified, compares ``assertThis`` to ``assertEquals``
+  - ``equals``
 
-If ``assertThis`` evaluates to False raises error.
+    - optional
+    - If specified, compares ``assert['this']`` to ``assert['equals']``
 
-If ``assertEquals`` is specified, raises error if ``assertThis != assertEquals``.
+If ``assert['this']`` evaluates to False raises error.
+
+If ``assert['equals']`` is specified, raises error if
+``assert['this'] != assert['equals']``.
 
 Supports `Substitutions`_.
 
@@ -611,30 +614,33 @@ Examples:
 
 .. code-block:: yaml
 
-    # continue pipeline
-    assertThis: True
-    # stop pipeline
-    assertThis: False
+    assert: # continue pipeline
+      this: True
+    assert: # stop pipeline
+      this: False
 
 or with substitutions:
 
 .. code-block:: yaml
 
     interestingValue: True
-    assertThis: '{interestingValue}' # continue with pipeline
+    assert:
+      this: '{interestingValue}' # continue with pipeline
 
 Non-0 numbers evalute to True:
 
 .. code-block:: yaml
 
-    assertThis: 1 # non-0 numbers assert to True. continue with pipeline
+    assert:
+      this: 1 # non-0 numbers assert to True. continue with pipeline
 
 String equality:
 
 .. code-block:: yaml
 
-    assertThis: 'up the valleys wild'
-    assertEquals: 'down the valleys wild' # strings not equal. stop pipeline.
+    assert:
+      this: 'up the valleys wild'
+      equals: 'down the valleys wild' # strings not equal. stop pipeline.
 
 String equality with substitutions:
 
@@ -642,16 +648,18 @@ String equality with substitutions:
 
     k1: 'down'
     k2: 'down'
-    assertThis: '{k1} the valleys wild'
-    assertEquals: '{k2} the valleys wild' # substituted strings equal. continue pipeline.
+    assert:
+      this: '{k1} the valleys wild'
+      equals: '{k2} the valleys wild' # substituted strings equal. continue pipeline.
 
 
 Number equality:
 
 .. code-block:: yaml
 
-    assertThis: 123.45
-    assertEquals: 123.45 # numbers equal. continue with pipeline.
+    assert:
+      this: 123.45
+      equals: 0123.450 # numbers equal. continue with pipeline.
 
 Number equality with substitutions:
 
@@ -659,8 +667,9 @@ Number equality with substitutions:
 
     numberOne: 123.45
     numberTwo: 678.9
-    assertThis: '{numberOne}'
-    assertEquals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
+    assert:
+      this: '{numberOne}'
+      equals: '{numberTwo}' # substituted numbers not equal. Stop pipeline.
 
 Complex types:
 
@@ -680,8 +689,9 @@ Complex types:
       k3:
         - sub list 1
         - sub list 2
-  assertThis: '{complexOne}'
-  assertEquals: '{complexTwo}' # substituted types equal. Continue pipeline.
+  assert:
+    this: '{complexOne}'
+    equals: '{complexTwo}' # substituted types equal. Continue pipeline.
 
 
 See a worked example `for assert here
@@ -887,7 +897,13 @@ simple step just with
 .. code-block:: yaml
 
     steps:
-      - pypyr.steps.debug
+      - name: my.arb.step
+        in:
+          arb: arb1
+      - pypyr.steps.debug # use debug as a simple step, with no config
+      - name: another.arb.step
+        in:
+          another: value
 
 In this case it will dump the entire context as is without applying formatting.
 
