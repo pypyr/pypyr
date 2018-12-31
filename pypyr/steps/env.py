@@ -48,7 +48,7 @@ def env_get(context):
 
     Context is a dictionary or dictionary-like. context is mandatory.
 
-    context['envGet'] must exist. It's a dictionary.
+    context['env']['get'] must exist. It's a dictionary.
     Values are the names of the $ENVs to write to the pypyr context.
     Keys are the pypyr context item to which to write the $ENV values.
 
@@ -56,9 +56,10 @@ def env_get(context):
         key1: value1
         key2: value2
         pypyrCurrentDir: value3
-        envGet:
-            pypyrUser: USER
-            pypyrCurrentDir: PWD
+        env:
+            get:
+                pypyrUser: USER
+                pypyrCurrentDir: PWD
 
     This will result in context:
         key1: value1
@@ -89,7 +90,7 @@ def env_set(context):
 
     Args:
         context: is dictionary-like. context is mandatory.
-                 context['envSet'] must exist. It's a dictionary.
+                 context['env']['set'] must exist. It's a dictionary.
                  Values are strings to write to $ENV.
                  Keys are the names of the $ENV values to which to write.
 
@@ -97,10 +98,11 @@ def env_set(context):
         key1: value1
         key2: value2
         key3: value3
-        envSet:
-            MYVAR1: {key1}
-            MYVAR2: before_{key3}_after
-            MYVAR3: arbtexthere
+        env:
+            set:
+                MYVAR1: {key1}
+                MYVAR2: before_{key3}_after
+                MYVAR3: arbtexthere
 
     This will result in the following $ENVs:
     $MYVAR1 = value1
@@ -135,16 +137,17 @@ def env_unset(context):
 
     Context is a dictionary or dictionary-like. context is mandatory.
 
-    context['envUnset'] must exist. It's a list.
+    context['env']['unset'] must exist. It's a list.
     List items are the names of the $ENV values to unset.
 
     For example, say input context is:
         key1: value1
         key2: value2
         key3: value3
-        envUnset:
-            MYVAR1
-            MYVAR2
+        env:
+            unset:
+                MYVAR1
+                MYVAR2
 
     This will result in the following $ENVs being unset:
     $MYVAR1

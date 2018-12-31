@@ -1,44 +1,48 @@
 """assert.py unit tests."""
 import importlib
+import pytest
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           KeyNotInContextError,
                           KeyInContextHasNoValueError)
-import pytest
-
-assert_step = None
 
 
-def setup_module(module):
-    """Setup any state specific to the execution of the given module."""
-    # loading assert dynamically because it clashes with built-in assert
-    global assert_step
-    assert_step = importlib.import_module('pypyr.steps.assert')
+# loading assert dynamically because it clashes with built-in assert
+assert_step = importlib.import_module('pypyr.steps.assert')
 
 
 def test_assert_raises_on_empty_context():
-    """context must exist."""
+    """Context must exist."""
     with pytest.raises(AssertionError):
         assert_step.run_step(Context())
 
 
-def test_assert_raises_on_missing_assertthis():
-    """assertThis must exist."""
+def test_assert_raises_on_missing_assert():
+    """Assert this must exist."""
     context = Context({'k1': 'v1'})
     with pytest.raises(KeyNotInContextError):
         assert_step.run_step(context)
 
 
-def test_assert_raises_on_empty_assertthis():
-    """assertThis must not be empty."""
-    context = Context({'assertThis': None})
+def test_assert_raises_on_empty_assert():
+    """Assert can't be empty."""
+    context = Context({'assert': None})
     with pytest.raises(KeyInContextHasNoValueError):
         assert_step.run_step(context)
 
 
+def test_assert_raises_on_empty_assertthis():
+    """Assert this must not be empty."""
+    context = Context({'assert': {'this': None}})
+    with pytest.raises(ContextError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "assert None evaluated to False."
+
+
 def test_assert_raises_on_assertthis_false():
-    """assertThis boolean False raises."""
-    context = Context({'assertThis': False})
+    """Assert this boolean False raises."""
+    context = Context({'assert': {'this': False}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -46,38 +50,38 @@ def test_assert_raises_on_assertthis_false():
 
 
 def test_assert_passes_on_assertthis_true():
-    """assertThis boolean True passes."""
-    context = Context({'assertThis': True})
+    """Assert this boolean True passes."""
+    context = Context({'assert': {'this': True}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_int():
-    """assertThis int 1 is True."""
-    context = Context({'assertThis': 1})
+    """Assert this int 1 is True."""
+    context = Context({'assert': {'this': 1}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_arb_int():
-    """assertThis non-0 int is True."""
-    context = Context({'assertThis': 55})
+    """Assert this non-0 int is True."""
+    context = Context({'assert': {'this': 55}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_arb_negative_int():
-    """assertThis non-0 int is True."""
-    context = Context({'assertThis': -55})
+    """Assert this non-0 int is True."""
+    context = Context({'assert': {'this': -55}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_float():
-    """assertThis non 0 float is True."""
-    context = Context({'assertThis': 3.5})
+    """Assert this non 0 float is True."""
+    context = Context({'assert': {'this': 3.5}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_false_string():
-    """assertThis arbitrary string isn't True raises."""
-    context = Context({'assertThis': 'arb string'})
+    """Assert this arbitrary string isn't True raises."""
+    context = Context({'assert': {'this': 'arb string'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -85,8 +89,8 @@ def test_assert_raises_on_assertthis_false_string():
 
 
 def test_assert_raises_on_assertthis_false_int():
-    """assertThis int 0 is False."""
-    context = Context({'assertThis': 0})
+    """Assert this int 0 is False."""
+    context = Context({'assert': {'this': 0}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -94,214 +98,216 @@ def test_assert_raises_on_assertthis_false_int():
 
 
 def test_assert_passes_on_assertthis_true_string():
-    """assertThis boolean string to True passes."""
-    context = Context({'assertThis': 'True'})
+    """Assert this boolean string to True passes."""
+    context = Context({'assert': {'this': 'True'}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals():
-    """assertThis does not equal assertEquals."""
+    """Assert this does not equal assertEquals."""
     context = Context({'assertThis': 'boom',
                        'assertEquals': 'BOOM'})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type "
-        "str and does not equal context['assertEquals'] of type str.")
+        "assert assert['this'] is of type "
+        "str and does not equal assert['equals'] of type str.")
 
 
 def test_assert_passes_on_assertthis_equals():
-    """assertThis equals assertEquals."""
-    context = Context({'assertThis': 'boom',
-                       'assertEquals': 'boom'})
+    """Assert this equals assertEquals."""
+    context = Context({'assert': {'this': 'boom',
+                                  'equals': 'boom'}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_equals_bools():
-    """assertThis equals assertEquals true bools."""
-    context = Context({'assertThis': True,
-                       'assertEquals': True})
+    """Assert this equals assertEquals true bools."""
+    context = Context({'assert': {'this': True,
+                                  'equals': True}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_equals_bools_false():
-    """assertThis equals assertEquals false bools."""
+    """Assert this equals assertEquals false bools."""
     context = Context({'assertThis': False,
                        'assertEquals': False})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_bools():
-    """assertThis does not equal assertEquals bools."""
-    context = Context({'assertThis': True,
-                       'assertEquals': False})
+    """Assert this does not equal assertEquals bools."""
+    context = Context({'assert': {'this': True,
+                                  'equals': False}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type bool and does "
-        "not equal context['assertEquals'] of type bool.")
+        "assert assert['this'] is of type bool and does "
+        "not equal assert['equals'] of type bool.")
 
 
 def test_assert_passes_on_assertthis_equals_ints():
-    """assertThis equals assertEquals true ints."""
-    context = Context({'assertThis': 33,
-                       'assertEquals': 33})
+    """Assert this equals assertEquals true ints."""
+    context = Context({'assert': {'this': 33,
+                                  'equals': 33}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_ints():
-    """assertThis does not equal assertEquals ints."""
-    context = Context({'assertThis': 0,
-                       'assertEquals': 23})
+    """Assert this does not equal assertEquals ints."""
+    context = Context({'assert': {'this': 0,
+                                  'equals': 23}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type int and does "
-        "not equal context['assertEquals'] of type int.")
+        "assert assert['this'] is of type int and does "
+        "not equal assert['equals'] of type int.")
 
 
 def test_assert_passes_on_assertthis_equals_floats():
-    """assertThis equals assertEquals true ints."""
-    context = Context({'assertThis': 123.45,
-                       'assertEquals': 123.45})
+    """Assert this equals assertEquals true ints."""
+    context = Context({'assert': {'this': 123.45,
+                                  'equals': 123.45}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_floats():
-    """assertThis does not equal assertEquals ints."""
-    context = Context({'assertThis': 123.45,
-                       'assertEquals': 5.432})
+    """Assert this does not equal assertEquals ints."""
+    context = Context({'assert': {'this': 123.45,
+                                  'equals': 5.432}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type float and "
-        "does not equal context['assertEquals'] of type float.")
+        "assert assert['this'] is of type float and "
+        "does not equal assert['equals'] of type float.")
 
 
 def test_assert_raises_on_assertthis_not_equals_string_to_int():
-    """assertThis does not equal assertEquals string to int conversion."""
-    context = Context({'assertThis': '23',
-                       'assertEquals': 23})
+    """Assert this does not equal assertEquals string to int conversion."""
+    context = Context({'assert': {'this': '23',
+                                  'equals': 23}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type str and does "
-        "not equal context['assertEquals'] of type int.")
+        "assert assert['this'] is of type str and does "
+        "not equal assert['equals'] of type int.")
 
 
 def test_assert_raises_on_assertthis_not_equals_string_to_bool():
-    """assertThis string does not equal assertEquals bool."""
-    context = Context({'assertThis': True,
-                       'assertEquals': 'True'})
+    """Assert this string does not equal assertEquals bool."""
+    context = Context({'assert': {'this': True,
+                                  'equals': 'True'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type bool and does "
-        "not equal context['assertEquals'] of type str.")
+        "assert assert['this'] is of type bool and does "
+        "not equal assert['equals'] of type str.")
 
 
 def test_assert_passes_on_assertthis_equals_lists():
-    """assertThis equals assertEquals true list."""
-    context = Context({'assertThis': [1, 2, 3, 4.5],
-                       'assertEquals': [1, 2, 3, 4.5]})
+    """Assert this equals assertEquals true list."""
+    context = Context({'assert': {'this': [1, 2, 3, 4.5],
+                                  'equals': [1, 2, 3, 4.5]}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_lists():
-    """assertThis string does not equal assertEquals list."""
-    context = Context({'assertThis': [1, 2, 8, 4.5],
-                       'assertEquals': [1, 2, 3, 4.5]})
+    """Assert this string does not equal assertEquals list."""
+    context = Context({'assert': {'this': [1, 2, 8, 4.5],
+                                  'equals': [1, 2, 3, 4.5]}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type list and does "
-        "not equal context['assertEquals'] of type list.")
+        "assert assert['this'] is of type list and does "
+        "not equal assert['equals'] of type list.")
 
 
 def test_assert_passes_on_assertthis_equals_dicts():
-    """assertThis equals assertEquals true dict."""
-    context = Context({'assertThis': {'k1': 1, 'k2': [2, 3], 'k3': False},
-                       'assertEquals': {'k1': 1, 'k2': [2, 3], 'k3': False}})
+    """Assert this equals assertEquals true dict."""
+    context = Context({'assert': {
+        'this': {'k1': 1, 'k2': [2, 3], 'k3': False},
+        'equals': {'k1': 1, 'k2': [2, 3], 'k3': False}}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_dict_to_list():
-    """assertThis string does not equal assertEquals dict."""
-    context = Context({'assertThis': {'k1': 1, 'k2': [2, 3], 'k3': False},
-                       'assertEquals': [1, 2, 3, 4.5]})
+    """Assert this string does not equal assertEquals dict."""
+    context = Context({'assert': {'this': {'k1': 1, 'k2': [2, 3], 'k3': False},
+                                  'equals': [1, 2, 3, 4.5]}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type dict and does "
-        "not equal context['assertEquals'] of type list.")
+        "assert assert['this'] is of type dict and does "
+        "not equal assert['equals'] of type list.")
 
 
 def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
-    """assertThis string does not equal assertEquals dict."""
-    context = Context({'assertThis': {'k1': 1, 'k2': [2, 3], 'k3': False},
-                       'assertEquals': {'k1': 1, 'k2': [2, 55], 'k3': False}})
+    """Assert this string does not equal assertEquals dict."""
+    context = Context({'assert': {
+        'this': {'k1': 1, 'k2': [2, 3], 'k3': False},
+        'equals': {'k1': 1, 'k2': [2, 55], 'k3': False}}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type dict and does "
-        "not equal context['assertEquals'] of type dict.")
+        "assert assert['this'] is of type dict and does "
+        "not equal assert['equals'] of type dict.")
 
 # ---------------------- substitutions ----------------------------------------
 
 
 def test_assert_passes_on_assertthis_equals_ints_substitutions():
-    """assertThis equals assertEquals true ints with substitutions."""
+    """Assert this equals assertEquals true ints with substitutions."""
     context = Context({'k1': 33,
                        'k2': 33,
-                       'assertThis': '{k1}',
-                       'assertEquals': '{k2}'})
+                       'assert': {'this': '{k1}',
+                                  'equals': '{k2}'}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_ints_substitutions():
-    """assertThis string does not equal assertEquals int."""
+    """Assert this string does not equal assertEquals int."""
     context = Context({'k1': 33,
                        'k2': 34,
-                       'assertThis': '{k1}',
-                       'assertEquals': '{k2}'})
+                       'assert': {'this': '{k1}',
+                                  'equals': '{k2}'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type int and does "
-        "not equal context['assertEquals'] of type int.")
+        "assert assert['this'] is of type int and does "
+        "not equal assert['equals'] of type int.")
 
 
 def test_assert_passes_on_assertthis_not_equals_bools_substitutions():
     """Format expressions doesn't equivocate string True and bool True."""
     context = Context({'k1': True,
                        'k2': 'True',
-                       'assertThis': '{k1}',
-                       'assertEquals': '{k2}'})
+                       'assert': {'this': '{k1}',
+                                  'equals': '{k2}'}})
 
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type bool and does "
-        "not equal context['assertEquals'] of type str.")
+        "assert assert['this'] is of type bool and does "
+        "not equal assert['equals'] of type str.")
 
 
 def test_assert_passes_on_assertthis_not_equals_none_substitutions():
     """None equals None."""
     context = Context({'k1': None,
                        'k2': None,
-                       'assertThis': '{k1}',
-                       'assertEquals': '{k2}'})
+                       'assert': {'this': '{k1}',
+                                  'equals': '{k2}'}})
     assert_step.run_step(context)
 
 
@@ -309,25 +315,25 @@ def test_assert_passes_on_assertthis_true_substitutions():
     """Format expressions equivocates string True and bool True."""
     context = Context({'k1': True,
                        'k2': 'True',
-                       'assertThis': '{k1}'})
+                       'assert': {'this': '{k1}'}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_none_substitutions():
-    """assertThis string does not equal assertEquals with a None."""
+    """Assert this string does not equal assertEquals with a None."""
     context = Context({'k1': None,
                        'k2': 34,
-                       'assertThis': '{k1}',
-                       'assertEquals': '{k2}'})
+                       'assert': {'this': '{k1}',
+                                  'equals': '{k2}'}})
     with pytest.raises(ContextError):
         assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_bool_substitutions():
-    """assertThis string substituted bool evaluates False."""
+    """Assert this string substituted bool evaluates False."""
     context = Context({'k1': False,
                        'k2': 34,
-                       'assertThis': '{k1}'})
+                       'assert': {'this': '{k1}'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -338,7 +344,7 @@ def test_assert_raises_on_assertthis_substitutions_int():
     """Format expressions doesn't equivocates int 0 and bool True."""
     context = Context({'k1': 0,
                        'k2': 'True',
-                       'assertThis': '{k1}'})
+                       'assert': {'this': '{k1}'}})
 
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
@@ -350,16 +356,16 @@ def test_assert_assertthis_int_1_is_true():
     """Format expressions equivocates int 1 and bool True."""
     context = Context({'k1': 1,
                        'k2': 'True',
-                       'assertThis': '{k1}'})
+                       'assert': {'this': '{k1}'}})
 
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_none_substitutions():
-    """assertThis string substituted None evaluates False."""
+    """Assert this string substituted None evaluates False."""
     context = Context({'k1': None,
                        'k2': 34,
-                       'assertThis': '{k1}'})
+                       'assert': {'this': '{k1}'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -367,20 +373,20 @@ def test_assert_raises_on_assertthis_none_substitutions():
 
 
 def test_assert_passes_on_assertthis_equals_dicts_substitutions():
-    """assertThis equals assertEquals true dict."""
+    """Assert this equals assertEquals true dict."""
     context = Context({'k1': 'v1',
                        'k2': 'v1',
-                       'assertThis': {'k1': 1,
-                                      'k2': [2, '{k1}'],
-                                      'k3': False},
-                       'assertEquals': {'k1': 1,
-                                        'k2': [2, '{k2}'],
-                                        'k3': False}})
+                       'assert': {'this': {'k1': 1,
+                                           'k2': [2, '{k1}'],
+                                           'k3': False},
+                                  'equals': {'k1': 1,
+                                             'k2': [2, '{k2}'],
+                                             'k3': False}}})
     assert_step.run_step(context)
 
 
 def test_assert_passes_on_assertthis_equals_dict_substitutions():
-    """assertThis equals assertEquals true dict."""
+    """Assert this equals assertEquals true dict."""
     context = Context({'k1': 'v1',
                        'k2': 'v1',
                        'dict1': {'k1': 1,
@@ -389,24 +395,38 @@ def test_assert_passes_on_assertthis_equals_dict_substitutions():
                        'dict2': {'k1': 1,
                                  'k2': [2, '{k1}'],
                                  'k3': False},
-                       'assertThis': '{dict1}',
-                       'assertEquals': '{dict2}'})
+                       'assert': {'this': '{dict1}',
+                                  'equals': '{dict2}'}})
     assert_step.run_step(context)
 
 
 def test_assert_raises_on_assertthis_not_equals_dict_to_dict_substitutions():
-    """assertThis string does not equal assertEquals dict."""
+    """Assert this string does not equal assertEquals dict."""
     context = Context({'k1': 'v1',
                        'k2': 'v2',
-                       'assertThis': {'k1': 1,
-                                      'k2': [2, '{k1}'],
-                                      'k3': False},
-                       'assertEquals': {'k1': 1,
-                                        'k2': [2, '{k2}'],
-                                        'k3': False}})
+                       'assert': {'this': {'k1': 1,
+                                           'k2': [2, '{k1}'],
+                                           'k3': False},
+                                  'equals': {'k1': 1,
+                                             'k2': [2, '{k2}'],
+                                             'k3': False}}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
-        "assert context['assertThis'] is of type dict and does "
-        "not equal context['assertEquals'] of type dict.")
+        "assert assert['this'] is of type dict and does "
+        "not equal assert['equals'] of type dict.")
+
+# --------------------- deprecated --------------------------------------------
+
+
+def test_assert_passes_on_assertthis_true_deprecated():
+    """Assert this boolean True passes."""
+    context = Context({'assertThis': True})
+    assert_step.run_step(context)
+
+
+def test_assert_passes_on_assertthis_equals_true_deprecated():
+    """Assert this boolean True passes."""
+    context = Context({'assertThis': True, 'assertEquals': True})
+    assert_step.run_step(context)
