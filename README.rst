@@ -1112,7 +1112,8 @@ For example, say input context is:
     key1: value1
     key2: value2
     key3: value3
-    envUnset:
+    env:
+      unset:
         - MYVAR1
         - MYVAR2
 
