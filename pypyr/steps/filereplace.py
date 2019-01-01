@@ -1,7 +1,6 @@
 """pypyr step that parses file, does string replacement and writes output."""
-from functools import reduce
 import logging
-from pypyr.utils.filesystem import StreamRewriter
+from pypyr.steps.dsl.fileinoutrewriter import StreamReplacePairsRewriterStep
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -20,12 +19,24 @@ def run_step(context):
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context keys expected:
-                - fileReplaceIn. mandatory. path-like.
-                  Path to source file on disk.
-                - fileReplaceOut. mandatory. path-like. Write output file to
-                  here. Will create directories in path for you.
-                - fileReplacePairs. mandatory. Dictionary where items are:
-                    'find_string': 'replace_string'
+                - fileReplace
+                    - in. mandatory.
+                      str, path-like, or an iterable (list/tuple) of
+                      strings/paths. Each str/path can be a glob, relative or
+                      absolute path.
+                    - out. optional. path-like.
+                      Can refer to a file or a directory.
+                      will create directory structure if it doesn't exist. If
+                      in-path refers to >1 file (e.g it's a glob or list), out
+                      path can only be a directory - it doesn't make sense to
+                      write >1 file to the same single file (this is not an
+                      appender.) To ensure out_path is read as a directory and
+                      not a file, be sure to have the path separator (/) at the
+                      end.
+                      If out_path is not specified or None, will in-place edit
+                      and overwrite the in-files.
+                    - replacePairs. mandatory. Dictionary where items are:
+                      'find_string': 'replace_string'
 
     Returns:
         None.
@@ -39,51 +50,27 @@ def run_step(context):
 
     """
     logger.debug("started")
-    context.assert_keys_have_values(__name__,
-                                    'fileReplaceIn',
-                                    'fileReplaceOut',
-                                    'fileReplacePairs')
-
-    in_path = context.get_formatted('fileReplaceIn')
-    out_path = context.get_formatted(
-        'fileReplaceOut') if 'fileReplaceOut' in context else None
-
-    logger.debug("Running substitutions from context on fileReplacePairs")
-    formatted_replacements = context.get_formatted_iterable(
-        context['fileReplacePairs'])
-
-    rewriter = StreamRewriter(iter_replace_strings(formatted_replacements))
-    rewriter.files_in_to_out(in_path=in_path, out_path=out_path)
+    deprecated(context)
+    StreamReplacePairsRewriterStep(__name__, 'fileReplace', context).run_step()
 
     logger.debug("done")
 
 
-def iter_replace_strings(replacements):
-    """Create a function that will use replacement pairs to process a string.
+def deprecated(context):
+    """Create new style in params from deprecated."""
+    if 'fileReplaceIn' in context:
+        context.assert_keys_have_values(__name__,
+                                        'fileReplaceIn',
+                                        'fileReplaceOut',
+                                        'fileReplacePairs')
 
-    The returned function takes an iterator and yields on each processed line.
+        context['fileReplace'] = {'in': context['fileReplaceIn'],
+                                  'out': context['fileReplaceOut'],
+                                  'replacePairs': context['fileReplacePairs']}
 
-    Args:
-        replacements: Dict containing 'find_string': 'replace_string' pairs
-
-    Returns:
-        function with signature: iterator of strings = function(iterable)
-
-    """
-    def function_iter_replace_strings(iterable_strings):
-        """Yield a formatted string from iterable_strings using a generator.
-
-        Args:
-            iterable_strings: Iterable containing strings. E.g a file-like
-                              object.
-
-        Returns:
-            Yields formatted line.
-
-        """
-        for string in iterable_strings:
-            yield reduce((lambda s, kv: s.replace(*kv)),
-                         replacements.items(),
-                         string)
-
-    return function_iter_replace_strings
+        logger.warning("fileReplaceIn, fileReplaceOut and fileReplacePairs "
+                       "are deprecated. They will stop working upon the next "
+                       "major release. Use the new context key fileReplace "
+                       "instead. It's a lot better, promise! For the moment "
+                       "pypyr is creating the new fileReplace key for you "
+                       "under the hood.")

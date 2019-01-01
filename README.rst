@@ -556,11 +556,7 @@ Built-in steps
 |                               | context.                                        |                              |
 |                               |                                                 | fileFormatYamlOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.filereplace`_    | Parse input file and replace search strings.    | fileReplaceIn (path-like)    |
-|                               |                                                 |                              |
-|                               |                                                 | fileReplaceOut (path-like)   |
-|                               |                                                 |                              |
-|                               |                                                 | fileReplacePairs (dict)      |
+| `pypyr.steps.filereplace`_    | Parse input file and replace search strings.    | fileReplace (dict)           |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filewritejson`_  | Write payload to file in json format.           | fileWriteJson (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1318,42 +1314,81 @@ aren't helpful for a formatting expression - e.g inside a .js file.
 
 The following context keys expected:
 
-- fileReplaceIn
+- fileReplace
 
-  - Path to source file on disk.
+  - in
 
-- fileReplaceOut
+    - Mandatory path(s) to source file on disk.
+    - This can be a string path to a single file, or a glob, or a list of paths
+      and globs. Each path can be a relative or absolute path.
 
-  - Write output file to here. Will create directories in path if these do not
-    exist already.
+  - out
 
-- fileReplacePairs
+    - Write output file to here. Will create directories in path if these do not
+      exist already.
+    - *out* is optional. If not specified, will edit the *in* files in-place.
+    - If in-path refers to >1 file (e.g it's a glob or list), out path can only
+      be a directory - it doesn't make sense to write >1 file to the same
+      single file output (this is not an appender.)
+    - To ensure out_path is read as a directory and not a file, be sure to have
+      the os' path separator (/ on a sane filesystem) at the end.
+    - Files are created in the *out* directory with the same name they had in
+      *in*.
 
-  - dictionary where format is:
+  - replacePairs
 
-    - 'find_string': 'replace_string'
+    - dictionary where format is:
+
+      - 'find_string': 'replace_string'
 
 Example input context:
 
 .. code-block:: yaml
 
-  fileReplaceIn: ./infile.txt
-  fileReplaceOut: ./outfile.txt
-  fileReplacePairs:
-    findmestring: replacewithme
-    findanotherstring: replacewithanotherstring
-    alaststring: alastreplacement
+  fileReplace:
+    in: ./infile.txt
+    out: ./outfile.txt
+    replacePairs:
+      findmestring: replacewithme
+      findanotherstring: replacewithanotherstring
+      alaststring: alastreplacement
 
-This also does string substitutions from context on the fileReplacePairs. It
-does this before it search & replaces the *fileReplaceIn* file.
+
+Example with globs and a list. You can also pass a single string glob.
+
+.. code-block:: yaml
+
+  fileReplace:
+    in:
+      # ** recurses sub-dirs per usual globbing
+      - ./testfiles/replace/sub/**
+      - ./testfiles/replace/*.ext
+    # note the dir separator at the end.
+    # since >1 in files, out can only be a dir.
+    out: ./out/replace/
+    replacePairs:
+        findmestring: replacewithme
+
+If you do not specify *out*, it will over-write (i.e edit) all the files
+specified by *in*.
+
+.. code-block:: yaml
+
+  fileReplace:
+    # in-place edit/overwrite all the files in
+    in: ./infile.txt
+    replacePairs:
+      findmestring: replacewithme
+
+fileReplace also does string substitutions from context on the replacePairs. It
+does this before it search & replaces the *in* file.
 
 Be careful of order. The last string replacement expression could well replace
 a replacement that an earlier replacement made in the sequence.
 
-If fileReplacePairs is not an ordered collection,
-replacements could evaluate in any given order. If you are creating your *in*
-parameters in the pipeline yaml, don't worry about it, it will be an ordered
-dictionary already, so life is good.
+If replacePairs is not an ordered collection, replacements could evaluate in
+any given order. If you are creating your *in* parameters in the pipeline yaml,
+don't worry about it, it will be an ordered dictionary already, so life is good.
 
 The file in and out paths support `Substitutions`_.
 
