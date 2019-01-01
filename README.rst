@@ -547,9 +547,8 @@ Built-in steps
 | `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormat (dict)            |
 |                               | context.                                        |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJsonIn (path-like) |
+| `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJson (dict)        |
 |                               | context.                                        |                              |
-|                               |                                                 | fileFormatJsonOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYamlIn (path-like) |
 |                               | context.                                        |                              |
@@ -1258,7 +1257,8 @@ You would end up with an output file like this:
   pypyr sit thee down and write
   In a book that all may read
 
-Example with globs and a list. You can also pass a single string glob.
+Example with globs and a list. You can also pass a single string glob, it
+doesn't need to be in a list.
 
 .. code-block:: yaml
 
@@ -1297,18 +1297,50 @@ json's structural braces.
 
 The following context keys expected:
 
-- fileFormatJsonIn
+- fileFormatJson
 
-  - Path to source file on disk.
+  - in
 
-- fileFormatJsonOut
+    - Mandatory path(s) to source file on disk.
+    - This can be a string path to a single file, or a glob, or a list of paths
+      and globs. Each path can be a relative or absolute path.
 
-  - Write output file to here. Will create directories in path if these do not
-    exist already.
+  - out
+
+    - Write output file to here. Will create directories in path if these do not
+      exist already.
+    - *out* is optional. If not specified, will edit the *in* files in-place.
+    - If in-path refers to >1 file (e.g it's a glob or list), out path can only
+      be a directory - it doesn't make sense to write >1 file to the same
+      single file output (this is not an appender.)
+    - To ensure out_path is read as a directory and not a file, be sure to have
+      the os' path separator (/ on a sane filesystem) at the end.
+    - Files are created in the *out* directory with the same name they had in
+      *in*.
+
+See `pypyr.steps.fileformat`_ for more examples on in/out path handling - the
+same processing rules apply.
+
+Example with a glob input:
+
+.. code-block:: yaml
+
+  fileFormatJson:
+    in: ./testfiles/sub3/**/*.txt
+    # note the dir separator at the end.
+    # since >1 in files, out can only be a dir.
+    out: ./out/replace/
+
+If you do not specify *out*, it will over-write (i.e edit) all the files
+specified by *in*.
 
 `Substitutions`_ enabled for keys and values in the source json.
 
 The file in and out paths also support `Substitutions`_.
+
+See a worked example of
+`fileformatjson here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/fileformatjson.yaml>`_.
 
 pypyr.steps.fileformatyaml
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

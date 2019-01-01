@@ -185,7 +185,7 @@ class ObjectRewriter(FileRewriter):
         self.object_representer = object_representer
         logger.debug('obj loader set')
 
-    def in_to_out(self, in_path, out_path):
+    def in_to_out(self, in_path, out_path=None):
         """Load file into object, formats, writes object to out.
 
         If in_path and out_path point to the same thing it will in-place edit
