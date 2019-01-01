@@ -544,9 +544,8 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormatIn (path-like)     |
+| `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormat (dict)            |
 |                               | context.                                        |                              |
-|                               |                                                 | fileFormatOut (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJsonIn (path-like) |
 |                               | context.                                        |                              |
@@ -1217,14 +1216,26 @@ from the pypyr context.
 
 The following context keys expected:
 
-- fileFormatIn
+- fileFormat
 
-  - Path to source file on disk.
+  - in
 
-- fileFormatOut
+    - Mandatory path(s) to source file on disk.
+    - This can be a string path to a single file, or a glob, or a list of paths
+      and globs. Each path can be a relative or absolute path.
 
-  - Write output file to here. Will create directories in path if these do not
-    exist already.
+  - out
+
+    - Write output file to here. Will create directories in path if these do not
+      exist already.
+    - *out* is optional. If not specified, will edit the *in* files in-place.
+    - If in-path refers to >1 file (e.g it's a glob or list), out path can only
+      be a directory - it doesn't make sense to write >1 file to the same
+      single file output (this is not an appender.)
+    - To ensure out_path is read as a directory and not a file, be sure to have
+      the os' path separator (/ on a sane filesystem) at the end.
+    - Files are created in the *out* directory with the same name they had in
+      *in*.
 
 So if you had a text file like this:
 
@@ -1247,7 +1258,34 @@ You would end up with an output file like this:
   pypyr sit thee down and write
   In a book that all may read
 
+Example with globs and a list. You can also pass a single string glob.
+
+.. code-block:: yaml
+
+  fileFormat:
+    in:
+      # ** recurses sub-dirs per usual globbing
+      - ./testfiles/sub3/**/*.txt
+      - ./testfiles/??b/fileformat-in.*.txt
+    # note the dir separator at the end.
+    # since >1 in files, out can only be a dir.
+    out: ./out/replace/
+
+If you do not specify *out*, it will over-write (i.e edit) all the files
+specified by *in*.
+
+.. code-block:: yaml
+
+  fileFormat:
+    # in-place edit/overwrite all the files in. this can also be a glob, or
+    # a mixed list of paths and/or globs.
+    in: ./infile.txt
+
 The file in and out paths support `Substitutions`_.
+
+See a worked example of
+`fileformat here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/fileformat.yaml>`_.
 
 pypyr.steps.fileformatjson
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1907,7 +1945,7 @@ character, you should put the Py string in quotes or as part of a literal block.
 .. code-block:: yaml
 
   - name: pypyr.steps.echo
-    description: don't run this step if int < 4.
+    description: don't run this step if int > 4.
                  No need to wrap the expression in extra quotes!
     run: !py thisIsAnInt < 5
     in:
