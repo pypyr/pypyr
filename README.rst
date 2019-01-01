@@ -550,9 +550,8 @@ Built-in steps
 | `pypyr.steps.fileformatjson`_ | Parse json file and substitute {tokens} from    | fileFormatJson (dict)        |
 |                               | context.                                        |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYamlIn (path-like) |
+| `pypyr.steps.fileformatyaml`_ | Parse yaml file and substitute {tokens} from    | fileFormatYaml (dict)        |
 |                               | context.                                        |                              |
-|                               |                                                 | fileFormatYamlOut (path-like)|
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filereplace`_    | Parse input file and replace search strings.    | fileReplace (dict)           |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1357,14 +1356,42 @@ to preserve comments on output.
 
 The following context keys expected:
 
-- fileFormatYamlIn
+- fileFormatYaml
 
-  - Path to source file on disk.
+  - in
 
-- fileFormatYamlOut
+    - Mandatory path(s) to source file on disk.
+    - This can be a string path to a single file, or a glob, or a list of paths
+      and globs. Each path can be a relative or absolute path.
 
-  - Write output file to here. Will create directories in path if these do not
-    exist already.
+  - out
+
+    - Write output file to here. Will create directories in path if these do not
+      exist already.
+    - *out* is optional. If not specified, will edit the *in* files in-place.
+    - If in-path refers to >1 file (e.g it's a glob or list), out path can only
+      be a directory - it doesn't make sense to write >1 file to the same
+      single file output (this is not an appender.)
+    - To ensure out_path is read as a directory and not a file, be sure to have
+      the os' path separator (/ on a sane filesystem) at the end.
+    - Files are created in the *out* directory with the same name they had in
+      *in*.
+
+See `pypyr.steps.fileformat`_ for more examples on in/out path handling - the
+same processing rules apply.
+
+Example with a glob input and a normal path in a list:
+
+.. code-block:: yaml
+
+  fileFormatYaml:
+    in: [./file1.yaml, ./testfiles/sub3/**/*.yaml]
+    # note the dir separator at the end.
+    # since >1 in files, out can only be a dir.
+    out: ./out/replace/
+
+If you do not specify *out*, it will over-write (i.e edit) all the files
+specified by *in*.
 
 The file in and out paths support `Substitutions`_.
 
