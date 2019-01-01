@@ -580,9 +580,9 @@ Built-in steps
 | `pypyr.steps.shell`_          | Runs the context value `cmd` in the default     | cmd (string)                 |
 |                               | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tarExtract (dict)            |
+| `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tar (dict)                   |
 |                               | compression. Supports gzip, bzip2, lzma.        |                              |
-|                               |                                                 | tarArchive (dict)            |
+|                               |                                                 |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 
 pypyr.steps.assert
@@ -1652,22 +1652,30 @@ pypyr.steps.tar
 ^^^^^^^^^^^^^^^
 Archive and/or extract tars with or without compression.
 
-At least one of these context keys must exist:
+.. code-block:: yaml
 
-- tarExtract
-- tarArchive
+  tar:
+      extract:
+          - in: /path/my.tar
+            out: /out/path
+      archive:
+          - in: /dir/to/archive
+            out: /out/destination.tar
+      format: ''
+
+Either ``extract`` or ``archive`` should exist, or both. But not neither.
 
 Optionally, you can also specify the tar compression format with
-``context['tarFormat']``. If not specified, defaults to *lzma/xz*
-Available options:
+``format``. If not specified, defaults to *lzma/xz*
+Available options for ``format``:
 
-- '' - no compression
-- gz (gzip)
-- bz2 (bzip2)
-- xz (lzma)
+- ``''`` - no compression
+- ``gz`` (gzip)
+- ``bz2`` (bzip2)
+- ``xz`` (lzma)
 
 This step will run whatever combination of Extract and Archive you specify.
-Regardless of combination, execution order is Extract, Archive.
+Regardless of combination, execution order is Extract, then Archive.
 
 Never extract archives from untrusted sources without prior inspection. It is
 possible that files are created outside of path, e.g. members that have
@@ -1676,9 +1684,9 @@ absolute filenames starting with "/" or filenames with two dots "..".
 See a worked example `for tar here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/tar.yaml>`__.
 
-tarExtract
-""""""""""
-``context['tarExtract']`` must exist. It's a dictionary.
+tar extract
+"""""""""""
+``tar['extract']`` must exist. It's a list of dictionaries.
 
 keys are the path to the tar to extract.
 
@@ -1691,11 +1699,12 @@ You can use {key} substitutions to format the string from context. See
 
   key1: here
   key2: tar.xz
-  tarExtract:
-    - in: path/to/my.tar.xz
-      out: /path/extract/{key1}
-    - in: another/{key2}
-      out: .
+  tar:
+    extract:
+      - in: path/to/my.tar.xz
+        out: /path/extract/{key1}
+      - in: another/{key2}
+        out: .
 
 This will:
 
@@ -1705,9 +1714,9 @@ This will:
   - This is the directory you're running pypyr from, not the pypyr pipeline
     working directory you set with the ``--dir`` flag.
 
-tarArchive
-""""""""""
-``context['tarArchive']`` must exist. It's a dictionary.
+tar archive
+"""""""""""
+``tar['archive']`` must exist. It's a list of dictionaries.
 
 keys are the paths to archive.
 
@@ -1720,11 +1729,12 @@ You can use {key} substitutions to format the string from context. See
 
   key1: destination.tar.xz
   key2: value2
-  tarArchive:
-    - in: path/{key2}/dir
-      out: path/to/{key1}
-    - in: another/my.file
-      out: ./my.tar.xz
+  tar:
+    archive:
+      - in: path/{key2}/dir
+        out: path/to/{key1}
+      - in: another/my.file
+        out: ./my.tar.xz
 
 This will:
 

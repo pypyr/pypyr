@@ -1,6 +1,6 @@
 """tar.py unit tests."""
 from pypyr.context import Context
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import KeyNotInContextError
 import pypyr.steps.tar
 import pytest
 from unittest.mock import patch, DEFAULT
@@ -11,21 +11,23 @@ from unittest.mock import patch, DEFAULT
 def test_get_file_mode_for_reading():
     """File Mode for reading passes, with defaults."""
     # if there's no tarFormat, r:*
-    assert 'r:*' == pypyr.steps.tar.get_file_mode_for_reading(Context())
+    assert 'r:*' == pypyr.steps.tar.get_file_mode_for_reading(
+        Context({'tar': {}}))
 
     # if there's a tarFormat, r:blah
     assert 'r:blah' == pypyr.steps.tar.get_file_mode_for_reading(
-        Context({'tarFormat': 'blah'}))
+        Context({'tar': {'format': 'blah'}}))
 
 
 def test_get_file_mode_for_writing():
     """File Mode for writing passes, with defaults."""
     # if there's no tarFormat, r:*
-    assert 'w:xz' == pypyr.steps.tar.get_file_mode_for_writing(Context())
+    assert 'w:xz' == pypyr.steps.tar.get_file_mode_for_writing(
+        Context({'tar': {}}))
 
     # if there's a tarFormat, r:blah
     assert 'w:blah' == pypyr.steps.tar.get_file_mode_for_writing(
-        Context({'tarFormat': 'blah'}))
+        Context({'tar': {'format': 'blah'}}))
 
 # ------------------------- get file mode ------------------------------------#
 
@@ -34,7 +36,7 @@ def test_get_file_mode_for_writing():
 
 
 def test_tar_throws_on_empty_context():
-    """context must exist."""
+    """Context must exist."""
     with pytest.raises(AssertionError) as err_info:
         pypyr.steps.tar.run_step(None)
 
@@ -42,41 +44,35 @@ def test_tar_throws_on_empty_context():
 
 
 def test_tar_throws_if_all_tar_context_missing():
-    """tar context keys must exist."""
+    """Tar context keys must exist."""
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.tar.run_step(Context({'arbkey': 'arbvalue'}))
 
-    assert str(err_info.value) == ("pypyr.steps.tar "
-                                   "couldn\'t find tarExtract in context. "
-                                   "This step needs any combination of "
-                                   "tarExtract or tarArchive in context.")
+    assert str(err_info.value) == ("context['tar'] doesn't exist. It must "
+                                   "exist for pypyr.steps.tar.")
 
 
 def test_tar_throws_if_tar_context_wrong_type():
-    """tar context keys must exist."""
-    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+    """Tar context keys must exist."""
+    with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.tar.run_step(
-            Context({'tarExtract': 'it shouldnt be a string'}))
+            Context({'tar': {'extractX': 'it shouldnt be a string'}}))
 
     assert str(err_info.value) == (
-        "pypyr.steps.tar found tarExtract in "
-        "context, but it's not a <class 'list'>. "
-        "This step needs any combination of "
-        "tarExtract or tarArchive in context.")
+        "pypyr.steps.tar must have either extract or archive specified under "
+        "the tar key. Or both of these. It has neither.")
 
 
 def test_tar_throws_if_tar_context_no_value():
-    """tar context keys must exist."""
-    with pytest.raises(KeyInContextHasNoValueError) as err_info:
+    """Tar context keys must exist."""
+    with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.tar.run_step(
             Context({'tarExtract': None,
                      'tarArchive': None}))
 
     assert str(err_info.value) == (
-        "pypyr.steps.tar found tarExtract in "
-        "context but it doesn't have a value. "
-        "This step needs any combination of "
-        "tarExtract or tarArchive in context.")
+        "pypyr.steps.tar must have either extract or archive specified under "
+        "the tar key. Or both of these. It has neither.")
 
 
 def test_tar_only_calls_extract():
@@ -85,12 +81,12 @@ def test_tar_only_calls_extract():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': [
+        'tar': {'extract': [
             {'in': 'key2',
              'out': 'ARB_GET_ME1'},
             {'in': 'key4',
              'out': 'ARB_GET_ME2'}
-        ]
+        ]}
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -109,12 +105,12 @@ def test_tar_only_calls_archive():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'key2',
              'out': 'ARB_GET_ME1'},
             {'in': 'key4',
              'out': 'ARB_GET_ME2'}
-        ]
+        ]}
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -133,18 +129,18 @@ def test_tar_calls_archive_and_extract():
         'key2': 'value2',
         'key1': 'value1',
         'key3': 'value3',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'key2',
              'out': 'ARB_GET_ME1'},
             {'in': 'key4',
              'out': 'ARB_GET_ME2'}
         ],
-        'tarExtract': [
+            'extract': [
             {'in': 'key2',
              'out': 'ARB_GET_ME1'},
             {'in': 'key4',
              'out': 'ARB_GET_ME2'}
-        ]
+        ]}
     })
 
     with patch.multiple('pypyr.steps.tar',
@@ -162,15 +158,15 @@ def test_tar_calls_archive_and_extract():
 # ------------------------- tar extract---------------------------------------#
 
 def test_tar_extract_one_pass():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': [
+        'tar': {'extract': [
             {'in': './blah.tar.xz',
              'out': 'path/to/dir'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -182,15 +178,15 @@ def test_tar_extract_one_pass():
 
 
 def test_tar_extract_one_pass_uncompressed():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
-        'tarFormat': '',
-        'tarExtract': [
+        'tar': {'extract': [
             {'in': './blah.tar.xz',
              'out': 'path/to/dir'}
-        ]
+        ],
+            'format': ''}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -202,15 +198,15 @@ def test_tar_extract_one_pass_uncompressed():
 
 
 def test_tar_extract_one_with_interpolation():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': [
+        'tar': {'extract': [
             {'in': './{key3}.tar.xz',
              'out': 'path/{key2}/dir'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -222,17 +218,17 @@ def test_tar_extract_one_with_interpolation():
 
 
 def test_tar_extract_pass():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarExtract': [
+        'tar': {'extract': [
             {'in': './blah.tar.xz',
              'out': 'path/to/dir'},
             {'in': '/tra/la/la.tar.xz',
              'out': '.'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -254,15 +250,15 @@ def test_tar_extract_pass():
 
 
 def test_tar_archive_one_pass():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'path/to/dir',
              'out': './blah.tar.xz'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -274,15 +270,15 @@ def test_tar_archive_one_pass():
 
 
 def test_tar_archive_one_pass_with_interpolation():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': '{key2}/to/dir',
              'out': './blah.tar.{key1}'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -294,15 +290,15 @@ def test_tar_archive_one_pass_with_interpolation():
 
 
 def test_tar_archive_one_pass_without_compression():
-    """tar extract success case without compression."""
+    """Tar extract success case without compression."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
-        'tarFormat': '',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'path/to/dir',
              'out': './blah.tar.xz'}
-        ]
+        ],
+            'format': ''}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -314,15 +310,16 @@ def test_tar_archive_one_pass_without_compression():
 
 
 def test_tar_archive_one_pass_with_gz():
-    """tar extract success case with gz"""
+    """Tar extract success case with gz."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'tarFormat': 'gz',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'path/to/dir',
              'out': './blah.tar.gz'}
-        ]
+        ],
+            'format': 'gz'}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -334,17 +331,17 @@ def test_tar_archive_one_pass_with_gz():
 
 
 def test_tar_archive_pass():
-    """tar extract success case"""
+    """Tar extract success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
-        'tarArchive': [
+        'tar': {'archive': [
             {'in': 'path/to/dir',
              'out': './blah.tar.xz'},
             {'in': '.',
              'out': '/tra/la/la.tar.xz'}
-        ]
+        ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
@@ -361,3 +358,71 @@ def test_tar_archive_pass():
      __enter__().add.assert_any_call('.', arcname='.'))
 
 # ------------------------- tar archive --------------------------------------#
+
+# ------------------------- deprecated ---------------------------------------#
+
+
+def test_tar_extract_one_pass_deprecated():
+    """Tar extract success case with deprecasted in."""
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'tarExtract': [
+            {'in': './blah.tar.xz',
+             'out': 'path/to/dir'}
+        ]
+    })
+
+    with patch('tarfile.open') as mock_tarfile:
+        pypyr.steps.tar.run_step(context)
+
+    mock_tarfile.assert_called_once_with('./blah.tar.xz', 'r:*')
+    (mock_tarfile.return_value.
+     __enter__().extractall.assert_called_once_with('path/to/dir'))
+
+
+def test_tar_archive_one_pass_deprecated():
+    """Tar extract success case with deprecated in."""
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'tarArchive': [
+            {'in': 'path/to/dir',
+             'out': './blah.tar.xz'}
+        ]
+    })
+
+    with patch('tarfile.open') as mock_tarfile:
+        pypyr.steps.tar.run_step(context)
+
+    mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:xz')
+    (mock_tarfile.return_value.
+     __enter__().add.assert_called_once_with('path/to/dir', arcname='.'))
+
+
+def test_tar_archive_both_pass_with_format_deprecated():
+    """Tar extract and archive both success case deprecated."""
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'tarArchive': [
+            {'in': 'path/to/dir/a',
+             'out': './a/blah.tar.xz'}
+        ],
+        'tarExtract': [
+            {'in': './e/blah.tar.xz',
+             'out': 'path/to/dir/e'}
+        ],
+        'tarFormat': 'blah'
+    })
+
+    with patch('tarfile.open') as mock_tarfile:
+        pypyr.steps.tar.run_step(context)
+
+    mock_tarfile.assert_any_call('./a/blah.tar.xz', 'w:blah')
+    mock_tarfile.assert_any_call('./e/blah.tar.xz', 'r:blah')
+    (mock_tarfile.return_value.
+     __enter__().add.assert_called_with('path/to/dir/a', arcname='.'))
