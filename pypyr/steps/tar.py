@@ -13,17 +13,22 @@ def run_step(context):
     Args:
         context: dictionary-like. Mandatory.
 
-        At least one of these context keys must exist:
-        context['tarExtract']
-        context['tarArchive']
+        Expects the following context:
+        tar:
+            extract:
+                - in: /path/my.tar
+                  out: /out/path
+            archive:
+                - in: /dir/to/archive
+                  out: /out/destination.tar
+            format: ''
 
-        Optional:
-        context['tarFormat'] - if not specified, defaults to lzma/xz
-                               Available options:
-                                - '' - no compression
-                                - gz (gzip)
-                                - bz2 (bzip2)
-                                - xz (lzma)
+        tar['format'] - if not specified, defaults to lzma/xz
+                       Available options:
+                        - '' - no compression
+                        - gz (gzip)
+                        - bz2 (bzip2)
+                        - xz (lzma)
 
     This step will run whatever combination of Extract and Archive you specify.
     Regardless of combination, execution order is Extract, Archive.
@@ -38,58 +43,60 @@ def run_step(context):
 
     assert context, f"context must have value for {__name__}"
 
-    # at least 1 of tarExtract or tarArchive must exist in context
-    tarExtract, tarArchive = context.keys_of_type_exist(
-        ('tarExtract', list),
-        ('tarArchive', list)
-    )
+    deprecated(context)
     found_at_least_one = False
 
-    if tarExtract.key_in_context and tarExtract.is_expected_type:
+    context.assert_key_has_value('tar', __name__)
+
+    tar = context['tar']
+    if 'extract' in tar:
         found_at_least_one = True
         tar_extract(context)
 
-    if tarArchive.key_in_context and tarArchive.is_expected_type:
+    if 'archive' in tar:
         found_at_least_one = True
         tar_archive(context)
 
     if not found_at_least_one:
         # This will raise exception on first item with a problem.
-        context.assert_keys_type_value(__name__,
-                                       ('This step needs any combination of '
-                                        'tarExtract or tarArchive in context.'
-                                        ),
-                                       tarExtract,
-                                       tarArchive)
+        raise KeyNotInContextError('pypyr.steps.tar must have either extract '
+                                   'or archive specified under the tar key. '
+                                   'Or both of these. It has neither.')
 
     logger.debug("done")
 
 
 def get_file_mode_for_reading(context):
-    """Get file mode for reading from context['tarFormat'].
+    """Get file mode for reading from tar['format'].
 
     This should return r:*, r:gz, r:bz2 or r:xz. If user specified something
-    wacky in tarFormat, that's their business.
+    wacky in tar.Format, that's their business.
 
     In theory r:* will auto-deduce the correct format.
     """
-    try:
-        mode = f"r:{context['tarFormat']}"
-    except KeyNotInContextError:
+    format = context['tar'].get('format', None)
+
+    if format or format == '':
+        mode = f"r:{context.get_formatted_string(format)}"
+    else:
         mode = 'r:*'
 
     return mode
 
 
 def get_file_mode_for_writing(context):
-    """Get file mode for writing from context['tarFormat']
+    """Get file mode for writing from tar['format'].
 
     This should return w:, w:gz, w:bz2 or w:xz. If user specified something
-    wacky in tarFormat, that's their business.
+    wacky in tar.Format, that's their business.
     """
-    try:
-        mode = f"w:{context['tarFormat']}"
-    except KeyNotInContextError:
+    format = context['tar'].get('format', None)
+    # slightly weird double-check because falsy format could mean either format
+    # doesn't exist in input, OR that it exists and is empty. Exists-but-empty
+    # has special meaning - default to no compression.
+    if format or format == '':
+        mode = f"w:{context.get_formatted_string(format)}"
+    else:
         mode = 'w:xz'
 
     return mode
@@ -100,16 +107,17 @@ def tar_archive(context):
 
     Args:
         context: dictionary-like. context is mandatory.
-            context['tarArchive'] must exist. It's a dictionary.
+            context['tar']['archive'] must exist. It's a dictionary.
             keys are the paths to archive.
             values are the destination output paths.
 
     Example:
-        tarArchive:
-            - in: path/to/dir
-              out: path/to/destination.tar.xs
-            - in: another/my.file
-              out: ./my.tar.xs
+        tar:
+            archive:
+                - in: path/to/dir
+                  out: path/to/destination.tar.xs
+                - in: another/my.file
+                  out: ./my.tar.xs
 
         This will archive directory path/to/dir to path/to/destination.tar.xs,
         and also archive file another/my.file to ./my.tar.xs
@@ -118,7 +126,7 @@ def tar_archive(context):
 
     mode = get_file_mode_for_writing(context)
 
-    for item in context['tarArchive']:
+    for item in context['tar']['archive']:
         # value is the destination tar. Allow string interpolation.
         destination = context.get_formatted_string(item['out'])
         # key is the source to archive
@@ -137,16 +145,17 @@ def tar_extract(context):
 
     Args:
         context: dictionary-like. context is mandatory.
-            context['tarExtract'] must exist. It's a dictionary.
+            context['tar']['extract'] must exist. It's a dictionary.
             keys are the path to the tar to extract.
             values are the destination paths.
 
     Example:
-        tarExtract:
-            - in: path/to/my.tar.xs
-              out: /path/extract/here
-            - in: another/tar.xs
-              out: .
+        tar:
+            extract:
+                - in: path/to/my.tar.xs
+                  out: /path/extract/here
+                - in: another/tar.xs
+                  out: .
 
         This will extract path/to/my.tar.xs to /path/extract/here, and also
         extract another/tar.xs to $PWD.
@@ -155,7 +164,7 @@ def tar_extract(context):
 
     mode = get_file_mode_for_reading(context)
 
-    for item in context['tarExtract']:
+    for item in context['tar']['extract']:
         # in is the path to the tar to extract. Allows string interpolation.
         source = context.get_formatted_string(item['in'])
         # out is the outdir, dhur. Allows string interpolation.
@@ -167,3 +176,36 @@ def tar_extract(context):
             logger.info(f"Extracted '{source}' to '{destination}'")
 
     logger.debug("end")
+
+
+def deprecated(context):
+    """Handle deprecated context input."""
+    tar = context.get('tar', None)
+
+    # at least 1 of tarExtract or tarArchive must exist in context
+    tar_extract, tar_archive = context.keys_of_type_exist(
+        ('tarExtract', list),
+        ('tarArchive', list))
+
+    found_at_least_one = (tar_extract.key_in_context
+                          or tar_archive.key_in_context)
+
+    if tar and not found_at_least_one:
+        return
+    elif found_at_least_one:
+        tar = context['tar'] = {}
+
+    if tar_extract.key_in_context and tar_extract.is_expected_type:
+        tar['extract'] = context[tar_extract.key]
+
+    if tar_archive.key_in_context and tar_archive.is_expected_type:
+        tar['archive'] = context[tar_archive.key]
+
+    if 'tarFormat' in context:
+        tar['format'] = context['tarFormat']
+
+    logger.warning("tarExtract and tarArchive are deprecated. They will "
+                   "stop working upon the next major release. "
+                   "Use the new context key env instead. It's a lot "
+                   "better, promise! For the moment pypyr is creating the "
+                   "new env key for you under the hood.")
