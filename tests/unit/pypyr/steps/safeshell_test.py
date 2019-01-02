@@ -55,4 +55,4 @@ def test_empty_context_cmd_throw():
 
     assert str(err_info.value) == ("context['cmd'] "
                                    "doesn't exist. It must exist for "
-                                   "pypyr.steps.safeshell.")
+                                   "pypyr.steps.cmd.")

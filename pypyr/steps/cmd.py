@@ -1,8 +1,8 @@
-"""pypyr step that executes a shell as a sub-process.
+"""pypyr step that executes a cmd as a sub-process.
 
-The command string must be formatted exactly as it would be when typed
-at the shell prompt. This includes, for example, quoting or backslash escaping
-filenames with spaces in them. The shell defaults to /bin/sh.
+You cannot use things like exit, return, shell pipes, filename wildcards,
+environment,variable expansion, and expansion of ~ to a user’s home
+directory.
 """
 import logging
 from pypyr.steps.dsl.cmd import CmdStep
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Run shell command without shell interpolation.
+    """Run command, program or executable.
 
     Context is a dictionary or dictionary-like.
 
@@ -24,13 +24,9 @@ def run_step(context):
         run: str. mandatory. <<cmd string>> command + args to execute.
         save: bool. defaults False. save output to cmdOut.
 
-    Will execute command string in the shell as a sub-process.
-    The shell defaults to /bin/sh.
-    The context['cmd'] string must be formatted exactly as it would be when
-    typed at the shell prompt. This includes, for example, quoting or backslash
-    escaping filenames with spaces in them.
-    There is an exception to this: Escape curly braces: if you want a literal
-    curly brace, double it like {{ or }}.
+    Will execute the command string in the shell as a sub-process.
+    Escape curly braces: if you want a literal curly brace, double it like
+    {{ or }}.
 
     If save is True, will save the output to context as follows:
         cmdOut:
@@ -52,6 +48,6 @@ def run_step(context):
     """
     logger.debug("started")
 
-    CmdStep(name=__name__, context=context).run_step(is_shell=True)
+    CmdStep(name=__name__, context=context).run_step(is_shell=False)
 
     logger.debug("done")
