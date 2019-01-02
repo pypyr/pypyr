@@ -516,6 +516,9 @@ Built-in steps
 | `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assert (dict)                |
 |                               | expected.                                       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.cmd`_            | Runs the program and args specified in the      | cmd (string or dict)         |
+|                               | context value `cmd` as a subprocess.            |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclearall`_| Wipe the entire context.                        |                              |
@@ -567,10 +570,9 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pypyrversion`_   | Writes installed pypyr version to output.       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.safeshell`_      | Runs the program and args specified in the      | cmd (string)                 |
-|                               | context value `cmd` as a subprocess.            |                              |
+| `pypyr.steps.safeshell`_      | Alias for `pypyr.steps.cmd`_.                   | cmd (string or dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.shell`_          | Runs the context value `cmd` in the default     | cmd (string)                 |
+| `pypyr.steps.shell`_          | Runs the context value `cmd` in the default     | cmd (string or dict)         |
 |                               | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tar (dict)                   |
@@ -689,6 +691,76 @@ Complex types:
 
 See a worked example `for assert here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/assert.yaml>`__.
+
+pypyr.steps.cmd
+^^^^^^^^^^^^^^^
+Runs the context value *cmd* as a sub-process.
+
+In *cmd*, you cannot use things like exit, return, shell pipes, filename
+wildcards, environment variable expansion, and expansion of ~ to a user’s
+home directory. Use `pypyr.steps.shell`_ for this instead. *cmd* runs a
+program, it does not invoke the shell.
+
+Input context can take one of two forms:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.cmd
+    description: passing cmd as a string does not save the output to context.
+                 it prints stdout in real-time.
+    in:
+      cmd: 'echo ${PWD}'
+  - name: pypyr.steps.cmd
+    description: passing cmd as a dict allows you to specify if you want to
+                 save the output to context.
+                 it prints command output only AFTER it has finished running.
+    in:
+      cmd:
+        run: 'echo ${PWD}'
+        save: True
+
+Be aware that if save is True, all of the command output ends up in memory.
+Don't specify it unless your pipeline uses the stdout/stderr response in
+subsequent steps. Keep in mind that if the invoked command return code returns
+a non-zero return code pypyr will automatically raise a *CalledProcessError*
+and stop the pipeline.
+
+If save is True, pypyr will save the output to context as follows:
+
+.. code-block:: yaml
+
+    cmdOut:
+        returncode: 0
+        stdout: 'stdout str here. None if empty.'
+        stderr: 'stderr str here. None if empty.'
+
+*cmdOut.returncode* is the exit status of the called process. Typically 0 means
+OK. A negative value -N indicates that the child was terminated by signal N
+(POSIX only).
+
+You can use cmdOut in subsequent steps like this:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    run: !py "cmdOut['returncode'] == 0"
+    in:
+      echoMe: "you'll only see me if cmd ran successfully with return code 0.
+              the command output was: {cmdOut[stdout]}"
+
+Supports string `Substitutions`_.
+
+Example pipeline yaml:
+
+.. code-block:: bash
+
+  steps:
+    - name: pypyr.steps.cmd
+      in:
+        cmd: ls -a
+
+See a worked example `for cmd here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
 
 pypyr.steps.contextclear
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1711,14 +1783,7 @@ Example pipeline yaml:
 
 pypyr.steps.safeshell
 ^^^^^^^^^^^^^^^^^^^^^
-Runs the context value `cmd` as a sub-process.
-
-In `safeshell`, you cannot use things like exit, return, shell pipes, filename
-wildcards, environment variable expansion, and expansion of ~ to a user’s
-home directory. Use pypyr.steps.shell for this instead. Safeshell runs a
-program, it does not invoke the shell.
-
-Supports string `Substitutions`_.
+Alias for `pypyr.steps.cmd`_.
 
 Example pipeline yaml:
 
@@ -1729,15 +1794,59 @@ Example pipeline yaml:
       in:
         cmd: ls -a
 
-See a worked example `for shell power here
-<https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
-
 pypyr.steps.shell
 ^^^^^^^^^^^^^^^^^
 Runs the context value `cmd` in the default shell. On a sensible O/S, this is
 `/bin/sh`
 
-Do all the things you can't do with `safeshell`.
+Do all the things you can't do with `pypyr.steps.cmd`_.
+
+Input context can take one of two forms:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.shell
+    description: passing cmd as a string does not save the output to context.
+                 it prints stdout in real-time.
+    in:
+      cmd: 'echo ${PWD}'
+  - name: pypyr.steps.shell
+    description: passing cmd as a dict allows you to specify if you want to
+                 save the output to context.
+                 it prints command output only AFTER it has finished running.
+    in:
+      cmd:
+        run: 'echo ${PWD}'
+        save: True
+
+Be aware that if save is True, all of the command output ends up in memory.
+Don't specify it unless your pipeline uses the stdout/stderr response in
+subsequent steps. Keep in mind that if the invoked command return code returns
+a non-zero return code pypyr will automatically raise a *CalledProcessError*
+and stop the pipeline.
+
+If save is True, pypyr will save the output to context as follows:
+
+.. code-block:: yaml
+
+    cmdOut:
+        returncode: 0
+        stdout: 'stdout str here. None if empty.'
+        stderr: 'stderr str here. None if empty.'
+
+*cmdOut.returncode* is the exit status of the called process. Typically 0 means
+OK. A negative value -N indicates that the child was terminated by signal N
+(POSIX only).
+
+You can use cmdOut in subsequent steps like this:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    run: !py "cmdOut['returncode'] == 0"
+    in:
+      echoMe: "you'll only see me if cmd ran successfully with return code 0.
+              the command output was: {cmdOut[stdout]}"
 
 Friendly reminder of the difference between separating your commands with ; or
 &&:

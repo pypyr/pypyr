@@ -1,26 +1,44 @@
-"""pypyr Step that executes a safe shell as a sub-process.
+"""pypyr step that executes a cmd as a sub-process.
+
+Alias for pypyr.steps.cmd
 
 You cannot use things like exit, return, shell pipes, filename wildcards,
 environment,variable expansion, and expansion of ~ to a user’s home
 directory.
 """
 import logging
-import subprocess
+import pypyr.steps.cmd
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Run shell command without shell interpolation.
+    """Run command, program or executable.
 
     Context is a dictionary or dictionary-like.
-    Will execute context['cmd'] in the shell as a sub-process.
+
+    Context must contain the following keys:
+    cmd: <<cmd string>> (command + args to execute.)
+
+    OR, as a dict
+    cmd:
+        run: str. mandatory. <<cmd string>> command + args to execute.
+        save: bool. defaults False. save output to cmdOut.
+
+    Will execute the command string in the shell as a sub-process.
     Escape curly braces: if you want a literal curly brace, double it like
     {{ or }}.
 
-    context is mandatory. When you execute the pipeline, it should look
-    something like this: pipeline-runner [name here] 'cmd=ls -a'.
+    If save is True, will save the output to context as follows:
+        cmdOut:
+            returncode: 0
+            stdout: 'stdout str here. None if empty.'
+            stderr: 'stderr str here. None if empty.'
+
+    cmdOut.returncode is the exit status of the called process. Typically 0
+    means OK. A negative value -N indicates that the child was terminated by
+    signal N (POSIX only).
 
     context['cmd'] will interpolate anything in curly braces for values
     found in context. So if your context looks like this:
@@ -31,16 +49,7 @@ def run_step(context):
     The cmd passed to the shell will be "mything --arg value1"
     """
     logger.debug("started")
-    context.assert_key_has_value(key='cmd', caller=__name__)
 
-    logger.debug(f"Processing command string: {context['cmd']}")
-    interpolated_string = context.get_formatted('cmd')
-
-    # input string is a command like 'ls -l | grep boom'. Split into list on
-    # spaces to allow for natural shell language input string.
-    args = interpolated_string.split(' ')
-
-    # check=True throws CalledProcessError if exit code != 0
-    subprocess.run(args, shell=False, check=True)
+    pypyr.steps.cmd.run_step(context)
 
     logger.debug("done")
