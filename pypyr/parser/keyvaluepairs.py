@@ -17,10 +17,13 @@ logger = logging.getLogger(__name__)
 
 def get_parsed_context(context_arg):
     """Parse input context string and returns context as dictionary."""
-    assert context_arg, ("pipeline must be invoked with context arg set. For "
-                         "this keyvaluepairs parser you're looking for "
-                         "something like: "
-                         "pypyr pipelinename 'key1=value1,key2=value2'.")
+    if not context_arg:
+        logger.debug("pipeline invoked without context arg set. For "
+                     "this keyvaluepairs parser you're looking for "
+                     "something like: "
+                     "pypyr pipelinename 'key1=value1,key2=value2'.")
+        return None
+
     logger.debug("starting")
     # for each comma-delimited element, project key=value
     return dict(element.split('=') for element in context_arg.split(','))
