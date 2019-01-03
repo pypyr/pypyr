@@ -1,6 +1,7 @@
 """list.py unit tests."""
+import logging
+from unittest.mock import patch
 import pypyr.parser.list
-import pytest
 
 
 def test_comma_string_parses_to_dict():
@@ -19,13 +20,16 @@ def test_no_commas_string_parses_to_single_entry():
     assert len(out['argList']) == 1, "1 item expected in argList"
 
 
-def test_empty_string_throw():
-    """Empty input string should throw assert error."""
-    with pytest.raises(AssertionError) as err_info:
-        pypyr.parser.list.get_parsed_context(None)
+def test_empty_string_empty_list():
+    """Empty input string should return empty list."""
+    logger = logging.getLogger('pypyr.parser.list')
 
-    assert str(err_info.value) == (
-        "pipeline must be invoked with context arg set. For "
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        out = pypyr.parser.list.get_parsed_context(None)
+
+    assert out['argList'] is None
+    mock_logger_debug.assert_called_once_with(
+        "pipeline invoked without context arg set. For "
         "this list parser you're looking for something like: "
         "pypyr pipelinename 'spam,eggs' "
         "OR: pypyr pipelinename 'spam'.")

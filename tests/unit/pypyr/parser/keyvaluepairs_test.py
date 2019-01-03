@@ -29,7 +29,7 @@ def test_no_equals_string_parses_to_single_entry():
             'key1value2,value3')
 
 
-def test_empty_string_throw():
-    """Empty input string should throw assert error."""
-    with pytest.raises(AssertionError):
-        pypyr.parser.keyvaluepairs.get_parsed_context(None)
+def test_empty_string_empty_dict():
+    """Empty input string should returbn empty dict."""
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(None)
+    assert not out

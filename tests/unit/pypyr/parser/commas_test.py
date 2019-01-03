@@ -1,6 +1,5 @@
 """commas.py unit tests."""
 import pypyr.parser.commas
-import pytest
 
 
 def test_comma_string_parses_to_dict():
@@ -18,7 +17,7 @@ def test_no_commas_string_parses_to_single_entry():
     assert len(out) == 1, "1 item expected"
 
 
-def test_empty_string_throw():
-    """Empty input string should throw assert error."""
-    with pytest.raises(AssertionError):
-        pypyr.parser.commas.get_parsed_context(None)
+def test_empty_string_empty_dict():
+    """Empty input string should return empty dict."""
+    out = pypyr.parser.commas.get_parsed_context(None)
+    assert not out
