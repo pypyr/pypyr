@@ -190,11 +190,10 @@ def deprecated(context):
     found_at_least_one = (get_info.key_in_context or set_info.key_in_context
                           or unset_info.key_in_context)
 
-    if not found_at_least_one:
-        return
-
-    if not env and found_at_least_one:
+    if found_at_least_one:
         env = context['env'] = {}
+    else:
+        return
 
     if get_info.key_in_context and get_info.is_expected_type:
         env['get'] = context[get_info.key]
