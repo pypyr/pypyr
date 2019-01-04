@@ -315,6 +315,32 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
 
 # ------------------- Step: init ---------------------------------------------#
 
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
+                                                     mock_get_module):
+    """Complex step with run decorator set false doesn't run step."""
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'info') as mock_logger_info:
+        step = Step({'name': 'step1',
+                     'description': 'test description',
+                     'run': False})
+
+    mock_logger_info.assert_called_once_with('step1: test description')
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with patch.object(logger, 'info') as mock_logger_info:
+        step.run_step(context)
+
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
+    mock_invoke_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
 # ------------------- Step: run_step: foreach --------------------------------#
 
 

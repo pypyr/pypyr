@@ -188,6 +188,7 @@ class Step:
         logger.debug("starting")
 
         # defaults for decorators
+        self.description = None
         self.foreach_items = None
         self.in_parameters = None
         self.run_me = True
@@ -201,6 +202,11 @@ class Step:
             logger.debug(f"{self.name} is complex.")
 
             self.in_parameters = step.get('in', None)
+
+            # description: optional. Write to stdout if exists and flagged.
+            self.description = step.get('description', None)
+            if self.description:
+                logger.info(f"{self.name}: {self.description}")
 
             # foreach: optional value. None by default.
             self.foreach_items = step.get('foreach', None)
