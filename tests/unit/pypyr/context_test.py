@@ -79,6 +79,15 @@ def test_context_missing_override():
 
     with pytest.raises(KeyNotInContextError):
         context['notindict']
+
+
+def test_context_missing_raise_key_error():
+    """Context should raise error compatible with dict KeyError."""
+    context = Context({'arbkey': 'arbvalue'})
+
+    with pytest.raises(KeyError):
+        context['notindict']
+
 # ------------------- behaves like a dictionary-------------------------------#
 
 # ------------------- asserts ------------------------------------------------#

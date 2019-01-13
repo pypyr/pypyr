@@ -105,7 +105,7 @@ class PyString(SpecialTagDirective):
     def get_value(self, context):
         """Run python eval on the input string."""
         if self.value:
-            return expressions.eval_string(self.value, dict(context))
+            return expressions.eval_string(self.value, context)
         else:
             # Empty input raises cryptic EOF syntax err, this more human
             # friendly
