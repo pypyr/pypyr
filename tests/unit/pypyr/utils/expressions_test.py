@@ -3,7 +3,6 @@
 from math import sqrt
 import pytest
 from pypyr.context import Context
-from pypyr.errors import KeyNotInContextError
 import pypyr.utils.expressions as expressions
 
 
@@ -71,23 +70,6 @@ def test_expr_var_doesnt_exist():
         expressions.eval_string('a', {'b': True})
 
 
-def test_expr_derived_dicts_fail():
-    """Derived dicts fail with eval.
-
-    For reasons best known to eval(), it EAFPs the locals() look-up 1st and if
-    it raises a KeyNotFound error, moves on to globals.
-
-    This means if you pass in something like the pypyr context, the custom
-    KeyNotInContextError the pypyr context raises isn't caught, and thus eval
-    doesn't work.
-
-    Therefore, before pypyr context needs to initialize a new dict(context) in
-    order to be used as the locals arg.
-
-    If this unit test fails, it means the functionality has changed and you can
-    get rid of the redundant dict creation when context get_eval_string invokes
-    expressions eval_string.
-    """
-    with pytest.raises(KeyNotInContextError):
-        assert expressions.eval_string(
-            'len([0,1,2])', Context({'k1': 'v1'})) == 3
+def test_expr_func_when_context_as_locals():
+    """Expression should use built-in function when Context used as locals."""
+    assert expressions.eval_string('len([0,1,2])', Context({'k1': 'v1'})) == 3

@@ -16,8 +16,11 @@ class KeyInContextHasNoValueError(ContextError):
     """pypyr context[key] doesn't have a value."""
 
 
-class KeyNotInContextError(ContextError):
+class KeyNotInContextError(ContextError, KeyError):
     """Key not found in the pypyr context."""
+    def __str__(self):
+        """KeyError has custom error formatting, avoid this behaviour."""
+        return super(Exception, self).__str__()
 
 
 class LoopMaxExhaustedError(Error):
