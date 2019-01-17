@@ -33,6 +33,9 @@ def run_step(context):
                 - useParentContext. optional. bool. Defaults to True. Pass the
                   current (i.e parent) pipeline context to the invoked (child)
                   pipeline.
+                - loader: str. optional. Absolute name of pipeline loader
+                  module. If not specified will use
+                  pypyr.pypeloaders.fileloader.
 
     Returns:
         None
@@ -49,7 +52,9 @@ def run_step(context):
      use_parent_context,
      pipe_arg,
      skip_parse,
-     raise_error) = get_arguments(context)
+     raise_error,
+     loader,
+     ) = get_arguments(context)
 
     try:
         if use_parent_context:
@@ -58,14 +63,18 @@ def run_step(context):
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
                 context=context,
-                parse_input=not skip_parse)
+                parse_input=not skip_parse,
+                loader=loader
+            )
         else:
             logger.info(f"pyping {pipeline_name}, without parent context.")
             pipelinerunner.load_and_run_pipeline(
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
                 working_dir=context.working_dir,
-                parse_input=not skip_parse)
+                parse_input=not skip_parse,
+                loader=loader
+            )
 
         logger.info(f"pyped {pipeline_name}.")
     except Exception as ex_info:
@@ -98,7 +107,7 @@ def get_arguments(context):
                raise_error #bool
                )
 
-   Raises:
+    Raises:
        pypyr.errors.KeyNotInContextError: if ['pype']['name'] is missing.
        pypyr.errors.KeyInContextHasNoValueError: if ['pype']['name'] exists but
                                                  is None.
@@ -122,9 +131,13 @@ def get_arguments(context):
     pipe_arg = pype.get('pipeArg', None)
     skip_parse = pype.get('skipParse', True)
     raise_error = pype.get('raiseError', True)
+    loader = pype.get('loader', None)
 
-    return (pipeline_name,
-            use_parent_context,
-            pipe_arg,
-            skip_parse,
-            raise_error)
+    return (
+        pipeline_name,
+        use_parent_context,
+        pipe_arg,
+        skip_parse,
+        raise_error,
+        loader,
+    )

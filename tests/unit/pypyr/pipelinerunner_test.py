@@ -1,12 +1,14 @@
 """pipelinerunner.py unit tests."""
+import logging
 import os
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           KeyNotInContextError,
                           PyModuleNotFoundError)
+import pypyr.moduleloader
 import pypyr.pipelinerunner
 import pytest
-from unittest.mock import call, mock_open, patch
+from unittest.mock import call, patch
 
 
 # ------------------------- parser mocks -------------------------------------#
@@ -66,8 +68,8 @@ def test_get_parsed_context_parser_pass(mocked_moduleloader):
 
     assert isinstance(context, Context)
     assert len(context) == 2
-    context['key1'] == 'created in mock parser'
-    context['key2'] == 'in arg here'
+    assert context['key1'] == 'created in mock parser'
+    assert context['key2'] == 'in arg here'
 
 
 @patch('pypyr.moduleloader.get_module', return_value=3)
@@ -81,38 +83,6 @@ def test_get_parser_context_signature_wrong(mocked_moduleloader):
                                    "'get_parsed_context'")
 
 # ------------------------- get_parsed_context--------------------------------#
-
-# ------------------------- get_pipeline_definition --------------------------#
-
-
-@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
-@patch('pypyr.moduleloader.get_pipeline_path', return_value='arb/path/x.yaml')
-def test_get_pipeline_definition_pass(mocked_get_path,
-                                      mocked_yaml):
-    """get_pipeline_definition passes correct params to all methods."""
-    with patch('pypyr.pipelinerunner.open',
-               mock_open(read_data='pipe contents')) as mocked_open:
-        pipeline_def = pypyr.pipelinerunner.get_pipeline_definition(
-            'pipename', '/working/dir')
-
-    assert pipeline_def == 'mocked pipeline def'
-    mocked_get_path.assert_called_once_with(
-        pipeline_name='pipename', working_directory='/working/dir')
-    mocked_open.assert_called_once_with('arb/path/x.yaml')
-    mocked_yaml.assert_called_once_with(mocked_open.return_value)
-
-
-@patch('pypyr.moduleloader.get_pipeline_path', return_value='arb/path/x.yaml')
-def test_get_pipeline_definition_file_not_found(mocked_get_path):
-    """get_pipeline_definition raises file not found."""
-    with patch('pypyr.pipelinerunner.open',
-               mock_open(read_data='pipe contents')) as mocked_open:
-        mocked_open.side_effect = FileNotFoundError('deliberate err')
-        with pytest.raises(FileNotFoundError):
-            pypyr.pipelinerunner.get_pipeline_definition(
-                'pipename', '/working/dir')
-
-# ------------------------- get_pipeline_definition --------------------------#
 
 # ------------------------- main ---------------------------------------------#
 
@@ -198,7 +168,8 @@ def test_prepare_context_with_parse_merge(mocked_get_parsed_context):
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context())
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_pass(mocked_work_dir,
                                     mocked_get_pipe_def,
@@ -237,7 +208,8 @@ def test_load_and_run_pipeline_pass(mocked_work_dir,
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context())
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_pass_skip_parse_context(
         mocked_work_dir,
@@ -269,7 +241,8 @@ def test_load_and_run_pipeline_pass_skip_parse_context(
 
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context')
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_parse_context_error(
         mocked_work_dir,
@@ -307,7 +280,8 @@ def test_load_and_run_pipeline_parse_context_error(
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context({'c1': 'cv1'}))
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_steps_error(mocked_work_dir,
                                            mocked_get_pipe_def,
@@ -346,7 +320,8 @@ def test_load_and_run_pipeline_steps_error(mocked_work_dir,
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context())
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_steps_error_no_context(
         mocked_work_dir,
@@ -386,7 +361,8 @@ def test_load_and_run_pipeline_steps_error_no_context(
 @patch('pypyr.stepsrunner.run_step_group')
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context({'1': 'context 1', '2': 'context2'}))
-@patch('pypyr.pipelinerunner.get_pipeline_definition', return_value='pipe def')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 def test_load_and_run_pipeline_with_existing_context_pass(
         mocked_work_dir,
@@ -425,6 +401,88 @@ def test_load_and_run_pipeline_with_existing_context_pass(
     mocked_run_step_group.assert_has_calls(expected_run_step_groups)
 
 # ------------------------- run_pipeline -------------------------------------#
+
+# ------------------------- loader -------------------------------------------#
+
+
+def test_arbitrary_loader_module_not_found():
+    with pytest.raises(PyModuleNotFoundError):
+        pypyr.pipelinerunner.load_and_run_pipeline(
+            pipeline_name='arb pipe',
+            pipeline_context_input='arb context input',
+            working_dir='arb/dir',
+            loader='not_found_loader'
+        )
+
+
+def test_loader_no_get_pipeline_definition():
+    """Arbitrary loader module without `get_pipeline_definition` function."""
+
+    import sys
+    current_module = sys.modules[__name__]
+
+    logger = logging.getLogger('pypyr.pipelinerunner')
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(AttributeError) as err:
+            pypyr.pipelinerunner.load_and_run_pipeline(
+                pipeline_name='arb pipe',
+                pipeline_context_input='arb context input',
+                working_dir='arb/dir',
+                loader=__name__)
+
+    assert str(err.value) == f"module '{__name__}' " \
+        "has no attribute 'get_pipeline_definition'"
+
+    mock_logger_error.assert_called_once_with(
+        f"The pipeline loader {current_module} doesn't have a "
+        "get_pipeline_definition(pipeline_name, working_dir) function."
+    )
+
+
+@patch('pypyr.pipelinerunner.run_pipeline')
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
+def test_empty_loader_set_up_to_default(mock_get_pipeline_definition,
+                                        mock_run_pipeline):
+    """Default loader should be pypyr.pypeloaders.fileloader."""
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        working_dir='arb/dir',
+    )
+
+    mock_get_pipeline_definition.assert_called_once_with(
+        pipeline_name='arb pipe',
+        working_dir='arb/dir'
+    )
+    mock_run_pipeline.assert_called_once_with(
+        context={},
+        parse_input=True,
+        pipeline='pipe def',
+        pipeline_context_input='arb context input'
+    )
+
+
+@patch('pypyr.pipelinerunner.run_pipeline')
+def test_arb_loader(mock_run_pipeline):
+    """Test loader set up"""
+    pypyr.moduleloader.set_working_directory('tests')
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        working_dir='tests',
+        loader='arbpack.arbloader'
+    )
+
+    mock_run_pipeline.assert_called_once_with(
+        context={},
+        parse_input=True,
+        pipeline={'pipeline_name': 'arb pipe', 'working_dir': 'tests'},
+        pipeline_context_input='arb context input'
+    )
+
+
+# ------------------------- loader -------------------------------------------#
 
 # ------------------------- integration---------------------------------------#
 

@@ -17,7 +17,8 @@ def test_pype_get_arguments_all():
             'pipeArg': 'argument here',
             'useParentContext': 'parent context bool',
             'skipParse': 'skip parse',
-            'raiseError': 'raise err'
+            'raiseError': 'raise err',
+            'loader': 'test loader'
         }
     })
 
@@ -25,12 +26,14 @@ def test_pype_get_arguments_all():
      use_parent_context,
      pipe_arg,
      skip_parse,
-     raise_error) = pype.get_arguments(context)
+     raise_error,
+     loader) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert use_parent_context == 'parent context bool'
     assert skip_parse == 'skip parse'
     assert raise_error == 'raise err'
+    assert loader == 'test loader'
 
 
 def test_pype_get_arguments_defaults():
@@ -45,7 +48,8 @@ def test_pype_get_arguments_defaults():
      use_parent_context,
      pipe_arg,
      skip_parse,
-     raise_error) = pype.get_arguments(context)
+     raise_error,
+     loader) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert use_parent_context
@@ -54,6 +58,7 @@ def test_pype_get_arguments_defaults():
     assert isinstance(skip_parse, bool)
     assert raise_error
     assert isinstance(raise_error, bool)
+    assert loader is None
 
 
 def test_pype_get_arguments_missing_pype():
@@ -104,7 +109,8 @@ def test_pype_use_parent_context(mock_run_pipeline):
             'pipeArg': 'argument here',
             'useParentContext': True,
             'skipParse': True,
-            'raiseError': True
+            'raiseError': True,
+            'loader': 'test loader'
         }
     })
 
@@ -116,7 +122,9 @@ def test_pype_use_parent_context(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         context=context,
-        parse_input=False)
+        parse_input=False,
+        loader='test loader'
+    )
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
@@ -132,7 +140,8 @@ def test_pype_no_parent_context(mock_run_pipeline):
             'pipeArg': 'argument here',
             'useParentContext': False,
             'skipParse': True,
-            'raiseError': True
+            'raiseError': True,
+            'loader': 'test loader',
         }
     })
     context.working_dir = 'arb/dir'
@@ -145,7 +154,9 @@ def test_pype_no_parent_context(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         working_dir='arb/dir',
-        parse_input=False)
+        parse_input=False,
+        loader='test loader',
+    )
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -174,7 +185,9 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         working_dir='arb/dir',
-        parse_input=True)
+        parse_input=True,
+        loader=None
+    )
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -190,7 +203,7 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
             'pipeArg': None,
             'useParentContext': False,
             'skipParse': False,
-            'raiseError': True
+            'raiseError': True,
         }
     })
     context.working_dir = 'arb/dir'
@@ -203,7 +216,9 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input=None,
         working_dir='arb/dir',
-        parse_input=True)
+        parse_input=True,
+        loader=None,
+    )
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -235,7 +250,9 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         context=context,
-        parse_input=False)
+        parse_input=False,
+        loader=None,
+    )
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
@@ -251,7 +268,8 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
             'pipeArg': 'argument here',
             'useParentContext': True,
             'skipParse': True,
-            'raiseError': False
+            'raiseError': False,
+            'loader': 'test loader'
         }
     })
 
@@ -263,8 +281,11 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         context=context,
-        parse_input=False)
+        parse_input=False,
+        loader='test loader',
+    )
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
-    # ------------------------ run_step --------------------------------------
+
+# ------------------------ run_step --------------------------------------
