@@ -1,6 +1,5 @@
 """moduleloader.py unit tests."""
-from pypyr.errors import (PipelineNotFoundError,
-                          PyModuleNotFoundError)
+from pypyr.errors import PyModuleNotFoundError
 import pypyr.moduleloader
 import pytest
 import os
@@ -13,6 +12,12 @@ import sys
 def test_get_module_raises():
     """get_module ModuleNotFoundError on module not found."""
     with pytest.raises(PyModuleNotFoundError):
+        pypyr.moduleloader.get_module('unlikelyblahmodulenameherexxssz')
+
+
+def test_get_module_raises_compatible_error():
+    """get_module should raise error compatible with ModuleNotFoundError."""
+    with pytest.raises(ModuleNotFoundError):
         pypyr.moduleloader.get_module('unlikelyblahmodulenameherexxssz')
 
 
@@ -48,66 +53,6 @@ def test_get_module_in_package_pass():
 
 # ------------------------- get_module ---------------------------------------#
 
-# ------------------------- get_pipeline_path --------------------------------#
-
-
-def test_get_pipeline_path_in_working_dir():
-    """Find a pipeline in the working dir"""
-    working_dir = os.path.join(
-        os.getcwd(),
-        'tests')
-    path_found = pypyr.moduleloader.get_pipeline_path('testpipeline',
-                                                      working_dir)
-
-    expected_path = os.path.join(
-        os.getcwd(),
-        'tests',
-        'pipelines',
-        'testpipeline.yaml')
-
-    assert path_found == expected_path
-
-
-def test_get_pipeline_path_in_pypyr_dir():
-    """Find a pipeline in the pypyr install dir"""
-    working_dir = os.path.join(
-        os.getcwd(),
-        'tests')
-    path_found = pypyr.moduleloader.get_pipeline_path('donothing',
-                                                      working_dir)
-
-    expected_path = os.path.join(
-        os.getcwd(),
-        'pypyr',
-        'pipelines',
-        'donothing.yaml')
-
-    assert path_found == expected_path
-
-
-def test_get_pipeline_path_raises():
-    """Failure to find pipeline should raise PipelineNotFoundError"""
-    with pytest.raises(PipelineNotFoundError) as err:
-        pypyr.moduleloader.get_pipeline_path('unlikelypipeherexyz',
-                                             os.getcwd())
-
-    current_path = os.path.join(
-        os.getcwd(),
-        'pipelines')
-
-    pypyr_path = os.path.join(
-        os.getcwd(),
-        'pypyr',
-        'pipelines')
-
-    expected_msg = (f'unlikelypipeherexyz.yaml not found in either '
-                    f'{current_path} or {pypyr_path}')
-
-    assert str(err.value) == f"{expected_msg}"
-
-
-# ------------------------- get_pipeline_path --------------------------------#
-#
 # ------------------------- set_working_dir ----------------------------------#
 
 

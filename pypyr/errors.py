@@ -39,5 +39,5 @@ class PlugInError(Error):
     """Pypyr plug-ins should sub-class this."""
 
 
-class PyModuleNotFoundError(Error):
+class PyModuleNotFoundError(Error, ModuleNotFoundError):
     """Could not load python module because it wasn't found."""

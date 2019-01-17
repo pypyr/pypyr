@@ -65,52 +65,6 @@ def get_parsed_context(pipeline, context_in_string):
         return pypyr.context.Context()
 
 
-def get_pipeline_definition(pipeline_name, working_dir):
-    """Open and parse the pipeline definition yaml.
-
-    Parses pipeline yaml and returns dictionary representing the pipeline.
-
-    pipeline_name.yaml should be in the working_dir/pipelines/ directory.
-
-    Args:
-        pipeline_name: string. Name of pipeline. This will be the file-name of
-                       the pipeline - i.e {pipeline_name}.yaml
-        working_dir: path. Start looking in
-                           ./working_dir/pipelines/pipeline_name.yaml
-
-    Returns:
-        dict describing the pipeline, parsed from the pipeline yaml.
-
-    Raises:
-        FileNotFoundError: pipeline_name.yaml not found in the various pipeline
-                           dirs.
-
-    """
-    logger.debug("starting")
-
-    pipeline_path = pypyr.moduleloader.get_pipeline_path(
-        pipeline_name=pipeline_name,
-        working_directory=working_dir)
-
-    logger.debug(f"Trying to open pipeline at path {pipeline_path}")
-    try:
-        with open(pipeline_path) as yaml_file:
-            pipeline_definition = pypyr.yaml.get_pipeline_yaml(
-                yaml_file)
-            logger.debug(
-                f"found {len(pipeline_definition)} stages in pipeline.")
-    except FileNotFoundError:
-        logger.error(
-            "The pipeline doesn't exist. Looking for a file here: "
-            f"{pipeline_name}.yaml in the /pipelines sub directory.")
-        raise
-
-    logger.debug("pipeline definition loaded")
-
-    logger.debug("done")
-    return pipeline_definition
-
-
 def main(
     pipeline_name,
     pipeline_context_input,
@@ -183,14 +137,16 @@ def load_and_run_pipeline(pipeline_name,
                           pipeline_context_input=None,
                           working_dir=None,
                           context=None,
-                          parse_input=True):
+                          parse_input=True,
+                          loader=None):
     """Load and run the specified pypyr pipeline.
 
     This function runs the actual pipeline by name. If you are running another
     pipeline from within a pipeline, call this, not main(). Do call main()
     instead for your 1st pipeline if there are pipelines calling pipelines.
 
-    pipeline_name.yaml should be in the working_dir/pipelines/ directory.
+    By default pypyr uses file loader. This means that pipeline_name.yaml
+    should be in the working_dir/pipelines/ directory.
 
     Args:
         pipeline_name (str): Name of pipeline, sans .yaml at end.
@@ -206,12 +162,20 @@ def load_and_run_pipeline(pipeline_name,
                  object for the child pipeline. Any mutations of the context by
                  the pipeline will be against this instance of it.
         parse_input (bool): run context_parser in pipeline.
+        loader (str): str. optional. Absolute name of pipeline loader module.
+                If not specified will use pypyr.pypeloaders.fileloader.
 
     Returns:
         None
 
     """
     logger.debug(f"you asked to run pipeline: {pipeline_name}")
+    if loader:
+        logger.debug(f"you set the pype loader to: {loader}")
+    else:
+        loader = 'pypyr.pypeloaders.fileloader'
+        logger.debug(f"use default pype loader: {loader}")
+
     logger.debug(f"you set the initial context to: {pipeline_context_input}")
 
     if context is None:
@@ -224,8 +188,24 @@ def load_and_run_pipeline(pipeline_name,
     # try to run a failure-handler from the pipeline, but if the pipeline
     # doesn't exist there is no failure handler that can possibly run so this
     # is very much a fatal stop error.
-    pipeline_definition = get_pipeline_definition(pipeline_name=pipeline_name,
-                                                  working_dir=working_dir)
+    loader_module = pypyr.moduleloader.get_module(loader)
+
+    try:
+        get_pipeline_definition = getattr(
+            loader_module, 'get_pipeline_definition'
+        )
+    except AttributeError:
+        logger.error(
+            f"The pipeline loader {loader_module} doesn't have a "
+            "get_pipeline_definition(pipeline_name, working_dir) function.")
+        raise
+
+    logger.debug(f"loading the pipeline definition with {loader_module}")
+    pipeline_definition = get_pipeline_definition(
+        pipeline_name=pipeline_name,
+        working_dir=working_dir
+    )
+    logger.debug(f"{loader_module} done")
 
     run_pipeline(
         pipeline=pipeline_definition,
