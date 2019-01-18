@@ -1713,6 +1713,7 @@ Example input context:
     raiseError: True # optional. bool. Defaults True.
     skipParse: True # optional. bool. Defaults True.
     useParentContext: True  # optional. bool. Defaults True.
+    loader: None # optional. string. Defaults to standard file loader.
 
 +-----------------------+------------------------------------------------------+
 | **pype property**     | **description**                                      |
@@ -1751,6 +1752,69 @@ Example input context:
 |                       | child pipeline and updates to the child context do   |
 |                       | not reach the parent context.                        |
 +-----------------------+------------------------------------------------------+
+| loader                | Load the child pipeline with this loader. The        |
+|                       | default is the standard pypyr                        |
+|                       | pypyr.pypeloaders.fileloader, which looks for pypes  |
+|                       | in the ./pipelines directory.                        |
++-----------------------+------------------------------------------------------+
+
+Roll your own pype loaders
+""""""""""""""""""""""""""
+A pype loader is responsible for loading a pipeline. By default pypyr gets
+pypes from the local ./pipelines/pypename.yaml location.
+
+The default pype loader is *pypyr.pypeloaders.fileloader*.
+
+If you want to load pypes from somewhere else, like maybe a shared pype library,
+or implement caching, or maybe from something like s3, you can roll your own
+pype loader.
+
+.. code-block:: python
+
+  import logging
+  from pypyr.errors import PipelineNotFoundError
+  import pypyr.yaml
+
+  # use pypyr logger to ensure loglevel is set correctly
+  logger = logging.getLogger(__name__)
+
+  def get_pipeline_definition(pipeline_name, working_dir):
+      """Open and parse the pipeline definition yaml.
+
+      Parses pipeline yaml and returns dictionary representing the pipeline.
+
+      pipeline_name is whatever is passed in from the shell like:
+      pypyr pipelinename args
+
+      Args:
+          pipeline_name: string. Name of pipeline. This will be the file-name of
+                         the pipeline - i.e {pipeline_name}.yaml
+                         Passed in from the shell 1st positional argument.
+          working_dir: path. passed in from the shell --dir switch.
+
+      Returns:
+          dict describing the pipeline, parsed from the pipeline yaml.
+
+      Raises:
+          PipelineNotFoundError: pipeline_name not found.
+
+      """
+      logger.debug("starting")
+
+      # it's good form only to use .info and higher log levels when you must.
+      # For .debug() being verbose is very much encouraged.
+      logger.info("Your clever code goes here. . . ")
+
+      yaml_file = your_clever_function_that_gets_a_filelike_object_from_somewhere()
+      pipeline_definition = pypyr.yaml.get_pipeline_yaml(yaml_file)
+
+      logger.debug(
+          f"found {len(pipeline_definition)} stages in pipeline.")
+
+      logger.debug("pipeline definition loaded")
+
+      logger.debug("done")
+      return pipeline_definition
 
 Recursion
 """""""""
@@ -2202,7 +2266,7 @@ Where other libraries are requisite, you can selectively choose to add this
 functionality by installing a pypyr plug-in.
 
 +----------------------------+-------------------------------------------------+
-| | **boss pypyr plug-ins**  | **description**                                 |
+| **boss pypyr plug-ins**    | **description**                                 |
 +----------------------------+-------------------------------------------------+
 | |pypyr-aws|                | Interact with the AWS sdk api. Supports all AWS |
 |                            | Client functions, such as S3, EC2, ECS & co.    |
