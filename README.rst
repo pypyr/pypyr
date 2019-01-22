@@ -201,7 +201,7 @@ Built-in context parsers
 |                             | with value to true.                             |This will create a context dictionary like this:                                     |
 |                             |                                                 |                                                                                     |
 |                             | Don't have spaces between commas unless you     |.. code-block:: python                                                               |
-|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
+|                             | really mean it. \"k1, k2\" will result in       |                                                                                     |
 |                             | a context key name of \' k2\' not \'k2\'.       |  {'param1': True, 'param2': True, 'param3': True}                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.dict           | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
