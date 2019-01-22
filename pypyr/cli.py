@@ -31,7 +31,8 @@ def get_parser():
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help='Working directory. Use if your pipelines '
                         'directory is elsewhere. Defaults to cwd.')
-    parser.add_argument('--loglevel', dest='log_level', type=int, default=20,
+    parser.add_argument('--log', '--loglevel', dest='log_level', type=int,
+                        default=20,
                         help='Integer log level. Defaults to 20 (INFO). '
                         '10=DEBUG\n20=INFO\n30=WARNING\n40=ERROR\n50=CRITICAL'
                         '.\n Log Level < 10 gives full traceback on errors.')
