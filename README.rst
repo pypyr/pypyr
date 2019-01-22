@@ -327,7 +327,11 @@ You can specify a step in the pipeline yaml in two ways:
 
       steps:
         - name: my.package.another.module
-          description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
+          description: Optional Description is for humans.
+                       It is any yaml-escaped text that makes your life easier.
+                       Outputs to the console during runtime as INFO.
+          comment: Optional comments for pipeline developers.
+                   Does not output to console during run-time.
           in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
             parameter1: value1
             parameter2: value2
@@ -350,8 +354,13 @@ Don't bother specifying these unless you want to deviate from the default values
 
   steps:
     - name: my.package.another.module
-      description: Optional Description is for humans. It's any yaml-escaped text that makes your life easier.
-      in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+      description: Optional Description is for humans.
+                   Any yaml-escaped text that makes your life easier.
+                   Outputs to console during run-time.
+      comment: Optional comments for pipeline developers. Like code comments.
+               Does not output to console during run.
+      in: # optional. In parameters are added to the context.
+          # this step and subsequent steps can use these key-value pairs.
         parameter1: value1
         parameter2: value2
       foreach: [] # optional. Repeat the step once for each item in this list.
