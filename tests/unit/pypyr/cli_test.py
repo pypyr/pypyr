@@ -28,6 +28,54 @@ def test_main_pass_with_sysargv_context_positional():
         )
 
 
+def test_main_pass_with_sysargv_context_positional_log_alias():
+    """Invoke from cli sets sys.argv with log alias."""
+    arg_list = ['pypyr',
+                'blah',
+                'ctx string',
+                '--log',
+                '50',
+                '--dir',
+                'dir here']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            pypyr.cli.main()
+
+        mock_pipeline_main.assert_called_once_with(
+            pipeline_name='blah',
+            pipeline_context_input='ctx string',
+            working_dir='dir here',
+            log_level=50,
+            log_path=None
+        )
+
+
+def test_main_pass_with_sysargv_context_positional_abbreviations():
+    """Invoke from cli sets sys.argv with log abbreviations."""
+    arg_list = ['pypyr',
+                'blah',
+                'ctx string',
+                '--logl',
+                '50',
+                '--dir',
+                'dir here',
+                '--logp',
+                '/blah']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            pypyr.cli.main()
+
+        mock_pipeline_main.assert_called_once_with(
+            pipeline_name='blah',
+            pipeline_context_input='ctx string',
+            working_dir='dir here',
+            log_level=50,
+            log_path='/blah'
+        )
+
+
 def test_main_pass_with_sysargv_context_positional_flags_last():
     """Check assigns correctly to args when positional last not first."""
     arg_list = ['pypyr',

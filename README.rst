@@ -85,7 +85,8 @@ pypyr assumes a pipelines directory in your current working directory.
   $ pypyr mypipelinename --loglevel 10
 
   # run pipelines/mypipelinename.yaml with INFO logging level.
-  $ pypyr mypipelinename --logl 20
+  # log is an alias for loglevel, so less typing, wooohoo!
+  $ pypyr mypipelinename --log 20
 
   # If you don't specify --loglevel it defaults to 20 - INFO logging level.
   $ pypyr mypipelinename
