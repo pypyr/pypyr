@@ -20,9 +20,13 @@ def run_step(context):
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context key must exist
-                - fetchJsonPath. path-like. Path to file on disk.
-                - fetchJsonKey. string. If exists, write json structure to this
-                                context key. Else json writes to context root.
+                - fetchJson
+                    - path. path-like. Path to file on disk.
+                    - key. string. If exists, write json structure to this
+                      context key. Else json writes to context root.
+
+    Also supports a passing path as string to fetchJson, but in this case you
+    won't be able to specify a key.
 
     All inputs support formatting expressions.
 
@@ -31,17 +35,28 @@ def run_step(context):
 
     Raises:
         FileNotFoundError: take a guess
-        pypyr.errors.KeyNotInContextError: fetchJsonPath missing in context.
-        pypyr.errors.KeyInContextHasNoValueError: fetchJsonPath exists but is
+        pypyr.errors.KeyNotInContextError: fetchJson.path missing in context.
+        pypyr.errors.KeyInContextHasNoValueError: fetchJson.path exists but is
                                                   None.
 
     """
     logger.debug("started")
-    context.assert_key_has_value(key='fetchJsonPath', caller=__name__)
 
-    file_path = context.get_formatted('fetchJsonPath')
+    deprecated(context)
 
-    destination_key_expression = context.get('fetchJsonKey', None)
+    context.assert_key_has_value(key='fetchJson', caller=__name__)
+
+    fetch_json_input = context.get_formatted('fetchJson')
+
+    if isinstance(fetch_json_input, str):
+        file_path = fetch_json_input
+        destination_key_expression = None
+    else:
+        context.assert_child_key_has_value(parent='fetchJson',
+                                           child='path',
+                                           caller=__name__)
+        file_path = fetch_json_input['path']
+        destination_key_expression = fetch_json_input.get('key', None)
 
     logger.debug(f"attempting to open file: {file_path}")
     with open(file_path) as json_file:
@@ -65,3 +80,21 @@ def run_step(context):
 
     logger.info(f"json file written into pypyr context. Count: {len(payload)}")
     logger.debug("done")
+
+
+def deprecated(context):
+    """Create new style in params from deprecated."""
+    if 'fetchJsonPath' in context:
+        context.assert_key_has_value(key='fetchJsonPath', caller=__name__)
+
+        context['fetchJson'] = {'path': context['fetchJsonPath']}
+
+        if 'fetchJsonKey' in context:
+            context['fetchJson']['key'] = context.get('fetchJsonKey', None)
+
+        logger.warning("fetchJsonPath and fetchJsonKey "
+                       "are deprecated. They will stop working upon the next "
+                       "major release. Use the new context key fetchJson "
+                       "instead. It's a lot better, promise! For the moment "
+                       "pypyr is creating the new feetchJson key for you "
+                       "under the hood.")
