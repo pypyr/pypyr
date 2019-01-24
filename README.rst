@@ -555,7 +555,7 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.envget`_         | Get $ENVs and use a default if they don't exist.| envget (list)                |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJsonPath (path-like)    |
+| `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJson (dict)             |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1308,14 +1308,19 @@ Loads a json file into the pypyr context.
 
 This step requires the following key in the pypyr context to succeed:
 
-- fetchJsonPath
+.. code-block:: yaml
 
-  - path-like. Path to file on disk. Can be relative.
+  fetchJson:
+    path: ./path.json # required. path to file on disk. can be relative.
+    key: 'destinationKey' # optional. write json to this context key.
 
-- fetchJsonKey
+If ``key`` is not specified, json writes directly to context root.
 
-  - Optional. Write json to this context key. If not specified, json writes
-    directly to context root.
+If you do not want to specify a key, you can also use the streamlined format:
+
+.. code-block:: yaml
+
+  fetchJson: ./path.json # required. path to file on disk. can be relative.
 
 All inputs support `Substitutions`_.
 
@@ -1325,7 +1330,7 @@ overwrite existing values if the same keys are already in there.
 I.e if file json has ``{'eggs' : 'boiled'}``, but context ``{'eggs': 'fried'}``
 already exists, returned ``context['eggs']`` will be 'boiled'.
 
-If *fetchJsonKey* is not specified, the json should not be an array [] at the
+If ``key`` is not specified, the json should not be an array [] at the
 root level, but rather an Object {}.
 
 pypyr.steps.fetchyaml
