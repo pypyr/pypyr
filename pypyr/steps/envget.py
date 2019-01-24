@@ -50,6 +50,8 @@ def run_step(context):
     else:
         get_items = [context['envGet']]
 
+    get_count = 0
+
     for get_me in get_items:
         (env, key, has_default, default) = get_args(get_me)
 
@@ -59,6 +61,7 @@ def run_step(context):
 
         if formatted_env in os.environ:
             context[formatted_key] = os.environ[formatted_env]
+            get_count += 1
         else:
             logger.debug(f"$ENV {env} not found.")
             if has_default:
@@ -66,9 +69,12 @@ def run_step(context):
                 formatted_default = context.get_formatted_iterable(default)
                 context[formatted_key] = os.environ.get(formatted_env,
                                                         formatted_default)
+                get_count += 1
             else:
                 logger.debug(
                     f"No default value for {env} found. Doin nuthin'.")
+
+    logger.info(f"saved {get_count} $ENVs to context.")
 
 
 def get_args(get_item):
