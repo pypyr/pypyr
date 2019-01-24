@@ -557,7 +557,7 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJson (dict)             |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
+| `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYaml (dict)             |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fileformat`_     | Parse file and substitute {tokens} from         | fileFormat (dict)            |
 |                               | context.                                        |                              |
@@ -1339,14 +1339,19 @@ Loads a yaml file into the pypyr context.
 
 This step requires the following key in the pypyr context to succeed:
 
-- fetchYamlPath
+.. code-block:: yaml
 
-  - path-like. Path to file on disk. Can be relative.
+  fetchYaml:
+    path: ./path.yaml # required. path to file on disk. can be relative.
+    key: 'destinationKey' # optional. write yaml to this context key.
 
-- fetchYamlKey
+If ``key`` not specified, yaml writes directly to context root.
 
-  - Optional. Write yaml to this context key. If not specified, yaml writes
-    directly to context root.
+If you do not want to specify a key, you can also use the streamlined format:
+
+.. code-block:: yaml
+
+  fetchYaml: ./path.yaml # required. path to file on disk. can be relative.
 
 All inputs support `Substitutions`_.
 
@@ -1362,7 +1367,7 @@ I.e if file yaml has
 but context ``{'eggs': 'fried'}`` already exists, returned ``context['eggs']``
 will be 'boiled'.
 
-If *fetchYamlKey* is not specified, the yaml should not be a list at the top
+If ``key`` is not specified, the yaml should not be a list at the top
 level, but rather a mapping.
 
 So the top-level yaml should not look like this:
