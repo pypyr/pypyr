@@ -553,6 +553,8 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | env (dict)                   |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.envget`_         | Get $ENVs and use a default if they don't exist.| envget (list)                |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchjson`_      | Loads json file into pypyr context.             | fetchJsonPath (path-like)    |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.fetchyaml`_      | Loads yaml file into pypyr context.             | fetchYamlPath (path-like)    |
@@ -953,6 +955,21 @@ This will result in context like this:
     answer: 42
     key4: 'What do you get when you multiply six by nine? 42'
 
+You can use *contextsetf* in conjunction with `py strings`_ for conditional
+assignment of context items or ternary expressions.
+
+.. code-block:: yaml
+
+    arb1: null
+    arb2: ''
+    arb3: eggy
+    arb4: [1,1,2,3,5,8]
+    contextSetf:
+      isNull: !py arb1 is None # make a bool based on None
+      isEmpty: !py bool(arb2) # use truthy, empty strings are false
+      ternaryResult: !py "'eggs' if arb3 == 'eggy' else 'ham'"
+      isIn: !py 10 in arb4 # bool if thing in list
+
 See a worked example `for contextsetf here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/contextset.yaml>`__.
 
@@ -1098,7 +1115,7 @@ The ``env`` context key must exist. ``env`` can contain a combination of get,
 set and unset keys.
 You must specify at least one of ``get``, ``set`` and ``unset``.
 
-.. code-block:: bash
+.. code-block:: yaml
 
   env:
     get:
@@ -1121,6 +1138,10 @@ See a worked example `for environment variables here
 env get
 """""""
 Get $ENVs into the pypyr context.
+
+If the $ENV does not exist, this step will raise an error. If you want to get
+an $ENV that might not exist without throwing an error, use
+`pypyr.steps.envget`_ instead.
 
 ``context['env']['get']`` must exist. It's a dictionary.
 
@@ -1214,6 +1235,70 @@ This will result in the following $ENVs being unset:
 
   $MYVAR1
   $MYVAR2
+
+pypyr.steps.envget
+^^^^^^^^^^^^^^^^^^
+Get environment variables, and assign a default value to context if they do
+not exist.
+
+The difference between *pypyr.steps.envget* and *pypyr.steps.env* `env get`_,
+is that *pypyr.steps.envget* won't raise an error if the $ENV doesn't exist.
+
+The ``envget`` context key must exist.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.envget
+    description: if env MACAVITY is not there, set context theHiddenPaw to default.
+    in:
+      envGet:
+        env: MACAVITY
+        key: theHiddenPaw
+        default: but macavity wasn't there!
+
+
+If you need to get more than one $ENV, you can pass a list to ``envget``.
+
+.. code-block:: yaml
+
+  envGet:
+    # get >1 $ENVs by passing them in as list items
+    - env: ENV_NAME1 # mandatory
+      key: saveMeHere1 # mandatory
+      default: null # optional
+    - env: ENV_NAME2
+      key: saveMeHere2
+      default: 'use-me-if-env-not-there' # optional
+
+
+- ``env``: Mandatory. This is the environment variable name. This is the bare
+  environment variable name, do not put the $ in front of it.
+- ``key``: Mandatory. The pypyr context key destination to which to copy the
+  $ENV value.
+- ``default`` Optional. Assign this value to ``key`` if the $ENV specified
+  by ``env`` doesn't exist.
+
+  - If you want to create a key in the pypyr context with an empty value,
+    specify ``null``.
+  - If you do NOT want to create a key in the pypyr context, do not have a
+    default input.
+
+.. code-block:: yaml
+
+  # save ENV_NAME to key. If ENV_NAME doesn't exist, do NOT set saveMeHere.
+  envGet:
+    - env: ENV_NAME
+      key: saveMeHere # saveMeHere won't be in context if ENV_NAME not there.
+      # this is because the default keyword is not specified.
+
+All inputs support `Substitutions`_.
+
+See a worked example for `getting environment variables with defaults here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/envget.yaml>`__.
+
+Friendly warning: if you still have the legacy *pypyr.steps.env* ``envGet`` in
+context in old pipelines, be careful with *pypyr.steps.envget* until you've
+upgraded to the new awesome style ``env[get]``. It's worth it, promise.
 
 pypyr.steps.fetchjson
 ^^^^^^^^^^^^^^^^^^^^^
