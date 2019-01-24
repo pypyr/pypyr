@@ -96,5 +96,5 @@ def deprecated(context):
                        "are deprecated. They will stop working upon the next "
                        "major release. Use the new context key fetchJson "
                        "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new feetchJson key for you "
+                       "pypyr is creating the new fetchJson key for you "
                        "under the hood.")

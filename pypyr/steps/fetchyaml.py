@@ -18,11 +18,15 @@ def run_step(context):
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context key must exist
-                - fetchYamlPath. path-like. Path to file on disk.
-                - fetchYamlKey. string. If exists, write yaml to this context
-                                key. Else yaml writes to context root.
+                - fetchYaml
+                    - path. path-like. Path to file on disk.
+                    - key. string. If exists, write yaml to this context key.
+                      Else yaml writes to context root.
 
     All inputs support formatting expressions.
+
+    Also supports a passing path as string to fetchYaml, but in this case you
+    won't be able to specify a key.
 
     Returns:
         None. updates context arg.
@@ -35,11 +39,22 @@ def run_step(context):
 
     """
     logger.debug("started")
-    context.assert_key_has_value(key='fetchYamlPath', caller=__name__)
 
-    destination_key_expression = context.get('fetchYamlKey', None)
+    deprecated(context)
 
-    file_path = context.get_formatted('fetchYamlPath')
+    context.assert_key_has_value(key='fetchYaml', caller=__name__)
+
+    fetch_yaml_input = context.get_formatted('fetchYaml')
+
+    if isinstance(fetch_yaml_input, str):
+        file_path = fetch_yaml_input
+        destination_key_expression = None
+    else:
+        context.assert_child_key_has_value(parent='fetchYaml',
+                                           child='path',
+                                           caller=__name__)
+        file_path = fetch_yaml_input['path']
+        destination_key_expression = fetch_yaml_input.get('key', None)
 
     logger.debug(f"attempting to open file: {file_path}")
     with open(file_path) as yaml_file:
@@ -64,3 +79,21 @@ def run_step(context):
 
     logger.info(f"yaml file written into pypyr context. Count: {len(payload)}")
     logger.debug("done")
+
+
+def deprecated(context):
+    """Create new style in params from deprecated."""
+    if 'fetchYamlPath' in context:
+        context.assert_key_has_value(key='fetchYamlPath', caller=__name__)
+
+        context['fetchYaml'] = {'path': context['fetchYamlPath']}
+
+        if 'fetchYamlKey' in context:
+            context['fetchYaml']['key'] = context.get('fetchYamlKey', None)
+
+        logger.warning("fetchYamlPath and fetchYamlKey "
+                       "are deprecated. They will stop working upon the next "
+                       "major release. Use the new context key fetchYaml "
+                       "instead. It's a lot better, promise! For the moment "
+                       "pypyr is creating the new fetchYaml key for you "
+                       "under the hood.")
