@@ -574,6 +574,8 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filewriteyaml`_  | Write payload to file in yaml format.           | fileWriteYaml (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.pathcheck`_      | Check if path exists on filesystem.             | pathCheck (string or dict)   |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -1753,6 +1755,76 @@ the last line will substitute like this:
 
 See a worked `filewriteyaml example here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/filewriteyaml.yaml>`_.
+
+pypyr.steps.pathcheck
+^^^^^^^^^^^^^^^^^^^^^
+Check if a path exists on the filesystem. Supports globbing. A path can point
+to a file or a directory.
+
+The ``pathCheck`` context key must exist.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.pathcheck
+    in:
+      pathCheck: ./**/*.py # single path with glob
+
+If you want to check for the existence of multiple paths, you can pass a list
+instead. You can freely mix literal paths and globs.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.pathcheck
+    in:
+      pathCheck:
+        - ./file1 # literal relative path
+        - ./dirname # also finds dirs
+        - ./**/{arbkey}* # glob with a string formatting expression
+
+After *pathcheck* completes, the ``pathCheckOut`` context key is available.
+This contains the results of the *pathcheck* operation.
+
+.. code-block:: yaml
+
+  pathCheckOut:
+      # the key is the ORIGINAL input, no string formatting applied.
+      'inpath-is-the-key': # one of these for each pathCheck input
+          exists: true # bool. True if path exists.
+          count: 0 # int. Number of files found for in path.
+          found: ['path1', 'path2'] # list of strings. Paths of files found.
+
+Example of passing a single input and the expected output context:
+
+.. code-block:: yaml
+
+  pathCheck: ./myfile # assuming ./myfile exists in $PWD
+  pathCheckOut:
+    './myfile':
+      exists: true,
+      count: 1,
+      found:
+        - './myfile'
+
+The ``exists`` and ``count`` keys can be very useful for conditional
+decorators to help decide whether to run subsequent steps. You can use these
+directly in string formatting expressions without any extra fuss.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.pathcheck
+    in:
+      pathCheck: ./**/*.arb
+  - name: pypyr.steps.echo
+    run: '{pathCheckOut[./**/*.arb][exists]}'
+    in:
+      echoMe: you'll only see me if ./**/*.arb found something on filesystem.
+
+All inputs support `Substitutions`_. This means you can specify another context
+item to be an individual path, or part of a path, or the entire path list.
+
+See a worked
+example for `pathcheck here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/pathcheck.yaml>`_.
 
 pypyr.steps.py
 ^^^^^^^^^^^^^^
