@@ -1,6 +1,8 @@
 """pypyr.steps.envget unit tests."""
+import logging
 import os
 import pytest
+from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import ContextError, KeyNotInContextError
 import pypyr.steps.envget
@@ -58,10 +60,14 @@ def test_envget_pass():
         ]
     })
 
-    pypyr.steps.envget.run_step(context)
+    logger = logging.getLogger('pypyr.steps.envget')
+    with patch.object(logger, 'info') as mock_logger_info:
+        pypyr.steps.envget.run_step(context)
 
     del os.environ['ARB_DELETE_ME1']
     del os.environ['ARB_DELETE_ME2']
+
+    mock_logger_info.assert_called_once_with('saved 3 $ENVs to context.')
 
     assert context['key1'] == 'value1'
     assert context['key2'] == 'arb value from $ENV ARB_DELETE_ME1'
