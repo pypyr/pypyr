@@ -1333,6 +1333,9 @@ already exists, returned ``context['eggs']`` will be 'boiled'.
 If ``key`` is not specified, the json should not be an array [] at the
 root level, but rather an Object {}.
 
+See some worked examples of `fetchjson here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/fetchjson.yaml>`__.
+
 pypyr.steps.fetchyaml
 ^^^^^^^^^^^^^^^^^^^^^
 Loads a yaml file into the pypyr context.
@@ -1385,6 +1388,8 @@ but rather like this:
     - eggs
     - ham
 
+See some worked examples of `fetchyaml here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/fetchyaml.yaml>`__.
 
 pypyr.steps.fileformat
 ^^^^^^^^^^^^^^^^^^^^^^
