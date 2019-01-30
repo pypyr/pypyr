@@ -1,4 +1,5 @@
 """cmd.py unit tests."""
+from pathlib import Path
 import platform
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
@@ -63,6 +64,32 @@ def test_cmd_dict_input_sequence_with_string_interpolation_save_out():
 
     assert context['cmdOut']['returncode'] == 0
     assert context['cmdOut']['stdout'] == 'blah\n'
+    assert not context['cmdOut']['stderr']
+
+
+def test_cmd_dict_input_sequence_with_cwd():
+    """Single command string works with cwd."""
+    context = Context({'fileName': 'deleteinterpolatedme.arb',
+                       'cmd': {'run': 'pwd',
+                               'save': True,
+                               'cwd': './tests'}})
+    pypyr.steps.cmd.run_step(context)
+
+    assert context['cmdOut']['returncode'] == 0
+    assert Path(context['cmdOut']['stdout'].rstrip('\n')).samefile('./tests')
+    assert not context['cmdOut']['stderr']
+
+
+def test_cmd_dict_input_sequence_with_cwd_interpolate():
+    """Single command string works with cwd interpolation."""
+    context = Context({'k1': './tests',
+                       'cmd': {'run': 'pwd',
+                               'save': True,
+                               'cwd': '{k1}'}})
+    pypyr.steps.cmd.run_step(context)
+
+    assert context['cmdOut']['returncode'] == 0
+    assert Path(context['cmdOut']['stdout'].rstrip('\n')).samefile('./tests')
     assert not context['cmdOut']['stderr']
 
 

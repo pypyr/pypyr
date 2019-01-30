@@ -732,14 +732,23 @@ Input context can take one of two forms:
       cmd:
         run: 'echo ${PWD}'
         save: True
+        cwd: './current/working/dir/here'
 
-Be aware that if save is True, all of the command output ends up in memory.
+If ``cwd`` is specified, will change the current working directory to *cwd* to
+execute this command. The directory change is only for the duration of this
+step, not any subsequent steps. If *cwd* is specified, the executable or program
+specified in *run* is relative to the *cwd* if the *run* cmd uses relative paths.
+
+If ``cwd`` is not specified, defaults to the current working directory, which
+is from wherever you are running ``pypyr``.
+
+Be aware that if *save* is True, all of the command output ends up in memory.
 Don't specify it unless your pipeline uses the stdout/stderr response in
 subsequent steps. Keep in mind that if the invoked command return code returns
 a non-zero return code pypyr will automatically raise a *CalledProcessError*
 and stop the pipeline.
 
-If save is True, pypyr will save the output to context as follows:
+If *save* is True, pypyr will save the output to context as follows:
 
 .. code-block:: yaml
 
@@ -2064,8 +2073,17 @@ Input context can take one of two forms:
       cmd:
         run: 'echo ${PWD}'
         save: True
+        cwd: './current/working/dir/here'
 
-Be aware that if save is True, all of the command output ends up in memory.
+If ``cwd`` is specified, will change the current working directory to *cwd* to
+execute this command. The directory change is only for the duration of this
+step, not any subsequent steps. If *cwd* is specified, the executable or program
+specified in *run* is relative to the *cwd* if the *run* cmd uses relative paths.
+
+If ``cwd`` is not specified, defaults to the current working directory, which
+is from wherever you are running ``pypyr``.
+
+Be aware that if *save* is True, all of the command output ends up in memory.
 Don't specify it unless your pipeline uses the stdout/stderr response in
 subsequent steps. Keep in mind that if the invoked command return code returns
 a non-zero return code pypyr will automatically raise a *CalledProcessError*
@@ -2101,9 +2119,11 @@ Friendly reminder of the difference between separating your commands with ; or
   It won't exit with an error code if it wasn't the last statement.
 - && stops and exits reporting error on first error.
 
-You can change directory during this shell step using ``cd``, but dir changes
-are only in scope for subsequent commands in this step, not for subsequent
-steps:
+You can change directory multiple times during this shell step using ``cd``,
+but dir changes are only in scope for subsequent commands in this step, not for
+subsequent steps. Instead prefer using the ``cwd`` input as described above for
+an easy life, which sets the working directory for the entire step without you
+having to code it in with chained shell commands.
 
 .. code-block:: yaml
 
