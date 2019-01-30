@@ -42,6 +42,8 @@ class CmdStep():
             cmd:
                 run: str. mandatory. command + args to execute.
                 save: bool. optional. defaults False. save output to cmdOut.
+                cwd: str/path. optional. if specified, change the working
+                     directory just for the duration of the command.
 
         Args:
             name: Unique name for step. Likely __name__ of calling step.
@@ -64,6 +66,7 @@ class CmdStep():
 
         if isinstance(cmd_config, str):
             self.cmd_text = context.get_formatted('cmd')
+            self.cwd = None
             self.logger.debug(f"Processing command string: {cmd_config}")
         elif isinstance(cmd_config, dict):
             context.assert_child_key_has_value(parent='cmd',
@@ -74,7 +77,16 @@ class CmdStep():
             is_save = cmd_config.get('save', False)
             self.is_save = context.get_formatted_as_type(is_save,
                                                          out_type=bool)
-            self.logger.debug(f"Processing command string: {run_string}")
+
+            cwd_string = cmd_config.get('cwd', None)
+            if cwd_string:
+                self.cwd = context.get_formatted_string(cwd_string)
+                self.logger.debug("Processing command string in dir "
+                                  f"{self.cwd}: {run_string}")
+            else:
+                self.cwd = None
+                self.logger.debug(f"Processing command string: {run_string}")
+
         else:
             raise ContextError(f"{name} cmd config should be either a simple "
                                "string cmd='mycommandhere' or a dictionary "
@@ -101,6 +113,7 @@ class CmdStep():
 
         if self.is_save:
             completed_process = subprocess.run(args,
+                                               cwd=self.cwd,
                                                shell=is_shell,
                                                # capture_output=True,only>py3.7
                                                stdout=subprocess.PIPE,
@@ -123,4 +136,4 @@ class CmdStep():
             completed_process.check_returncode()
         else:
             # check=True throws CalledProcessError if exit code != 0
-            subprocess.run(args, shell=is_shell, check=True)
+            subprocess.run(args, shell=is_shell, check=True, cwd=self.cwd)

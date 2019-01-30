@@ -58,6 +58,7 @@ def test_cmdstep_cmd_is_string():
         obj = CmdStep('blahname', Context({'cmd': 'blah'}))
 
     assert not obj.is_save
+    assert obj.cwd is None
     assert obj.logger.name == 'blahname'
     assert obj.context == Context({'cmd': 'blah'})
     assert obj.cmd_text == 'blah'
@@ -87,8 +88,41 @@ def test_cmdstep_cmd_is_dict_default_save_true():
                                                    'save': True}}))
 
     assert obj.is_save
+    assert obj.cwd is None
     assert obj.logger.name == 'blahname'
     assert obj.context == Context({'cmd': {'run': 'blah', 'save': True}})
+    assert obj.cmd_text == 'blah'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string: blah')
+
+
+def test_cmdstep_cmd_is_dict_cwd():
+    """Cwd assigns."""
+    logger = logging.getLogger('blahname')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        obj = CmdStep('blahname', Context({'cmd': {'run': 'blah',
+                                                   'cwd': 'pathhere'}}))
+
+    assert not obj.is_save
+    assert obj.cwd == 'pathhere'
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'cmd': {'run': 'blah', 'cwd': 'pathhere'}})
+    assert obj.cmd_text == 'blah'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string in dir pathhere: blah')
+
+
+def test_cmdstep_cmd_is_dict_cwd_none():
+    """Explicit None on cwd."""
+    logger = logging.getLogger('blahname')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        obj = CmdStep('blahname', Context({'cmd': {'run': 'blah',
+                                                   'cwd': None}}))
+
+    assert not obj.is_save
+    assert obj.cwd is None
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'cmd': {'run': 'blah', 'cwd': None}})
     assert obj.cmd_text == 'blah'
     mock_logger_debug.assert_called_once_with(
         'Processing command string: blah')
@@ -112,7 +146,7 @@ def test_cmdstep_runstep_cmd_is_string_shell_false():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
-                                     shell=False, check=True)
+                                     cwd=None, shell=False, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
@@ -123,6 +157,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
                                            'cmd': '{k1} -{k1}1 --{k1}2'}))
 
     assert not obj.is_save
+    assert obj.cwd is None
     assert obj.logger.name == 'blahname'
     assert obj.context == Context({'k1': 'blah',
                                    'cmd': '{k1} -{k1}1 --{k1}2'})
@@ -135,7 +170,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
-                                     shell=False, check=True)
+                                     cwd=None, shell=False, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_string_shell_true():
@@ -156,7 +191,7 @@ def test_cmdstep_runstep_cmd_is_string_shell_true():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with('blah -blah1 --blah2',
-                                     shell=True, check=True)
+                                     cwd=None, shell=True, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_string_formatting_shell_true():
@@ -179,7 +214,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_true():
 
     # blah is a string because shell == true
     mock_run.assert_called_once_with('blah -blah1 --blah2',
-                                     shell=True, check=True)
+                                     cwd=None, shell=True, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_false_shell_false():
@@ -201,7 +236,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_false():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
-                                     shell=False, check=True)
+                                     cwd=None, shell=False, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true():
@@ -223,7 +258,37 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with('blah -blah1 --blah2',
-                                     shell=True, check=True)
+                                     cwd=None, shell=True, check=True)
+
+
+def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true_cwd_formatting():
+    """Dict command with save false and shell true, cwd formatting."""
+    logger = logging.getLogger('blahname')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        obj = CmdStep('blahname', Context({
+            'k1': 'v1',
+            'k2': 'v2',
+            'cmd': {
+                'run': 'blah -blah1 --blah2', 'cwd': '/{k1}/{k2}'}}))
+
+    assert not obj.is_save
+    assert obj.cwd == '/v1/v2'
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'k1': 'v1',
+                                   'k2': 'v2',
+                                   'cmd': {
+                                       'run': 'blah -blah1 --blah2',
+                                       'cwd': '/{k1}/{k2}'}})
+    assert obj.cmd_text == 'blah -blah1 --blah2'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string in dir /v1/v2: blah -blah1 --blah2')
+
+    with patch('subprocess.run') as mock_run:
+        obj.run_step(is_shell=True)
+
+    # blah is in a list because shell == false
+    mock_run.assert_called_once_with('blah -blah1 --blah2',
+                                     cwd='/v1/v2', shell=True, check=True)
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
@@ -254,6 +319,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+                                     cwd=None,
                                      shell=False,
                                      stderr=subprocess.PIPE,
                                      stdout=subprocess.PIPE,
@@ -293,6 +359,50 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with('blah -blah1 --blah2',
+                                     cwd=None,
+                                     shell=True,
+                                     # capture_output=True,
+                                     stderr=subprocess.PIPE,
+                                     stdout=subprocess.PIPE,
+                                     # text=True,
+                                     universal_newlines=True)
+
+    assert context['cmdOut']['returncode'] == 0
+    assert context['cmdOut']['stdout'] == 'std'
+    assert context['cmdOut']['stderr'] is None
+
+
+def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
+    """Dict command with save false and shell true with cwd set."""
+    logger = logging.getLogger('blahname')
+    context = Context({'cmd': {'run': 'blah -blah1 --blah2',
+                               'save': True,
+                               'cwd': 'pathhere'}})
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        obj = CmdStep('blahname', context)
+
+    assert obj.is_save
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'cmd': {'run': 'blah -blah1 --blah2',
+                                           'save': True,
+                                           'cwd': 'pathhere'}})
+    assert obj.cmd_text == 'blah -blah1 --blah2'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string in dir pathhere: blah -blah1 --blah2')
+
+    with patch('subprocess.run') as mock_run:
+        mock_run.return_value = subprocess.CompletedProcess(None,
+                                                            0,
+                                                            'std',
+                                                            None)
+        with patch.object(logger, 'info') as mock_logger_info:
+            obj.run_step(is_shell=True)
+
+    mock_logger_info.assert_called_once_with('stdout: std')
+
+    # blah is in a list because shell == false
+    mock_run.assert_called_once_with('blah -blah1 --blah2',
+                                     cwd='pathhere',
                                      shell=True,
                                      # capture_output=True,
                                      stderr=subprocess.PIPE,
@@ -337,6 +447,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+                                     cwd=None,
                                      shell=False,
                                      # capture_output=True,
                                      stderr=subprocess.PIPE,
