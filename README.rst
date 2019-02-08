@@ -527,7 +527,7 @@ Built-in steps
 |                               | expected.                                       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.cmd`_            | Runs the program and args specified in the      | cmd (string or dict)         |
-|                               | context value `cmd` as a subprocess.            |                              |
+|                               | context value ``cmd`` as a subprocess.          |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.contextclear`_   | Remove specified items from context.            | contextClear (list)          |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -549,7 +549,7 @@ Built-in steps
 | `pypyr.steps.default`_        | Set default values in context. Only set values  | defaults (dict)              |
 |                               | if they do not exist already.                   |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.echo`_           | Echo the context value `echoMe` to the output.  | echoMe (string)              |
+| `pypyr.steps.echo`_           | Echo the context value ``echoMe`` to the output.| echoMe (string)              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.env`_            | Get, set or unset $ENVs.                        | env (dict)                   |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -576,7 +576,7 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pathcheck`_      | Check if path exists on filesystem.             | pathCheck (string or dict)   |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.py`_             | Executes the context value `pycode` as python   | pycode (string)              |
+| `pypyr.steps.py`_             | Executes the context value ``pycode`` as python | pycode (string)              |
 |                               | code.                                           |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pype`_           | Run another pipeline from within the current    | pype (dict)                  |
@@ -584,9 +584,15 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pypyrversion`_   | Writes installed pypyr version to output.       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.now`_            | Saves current local date/time to context        | nowIn (str)                  |
+|                               | ``now``.                                        |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.nowutc`_         | Saves current utc date/time to context          | nowUtcIn (str)               |
+|                               | ``nowUtc``.                                     |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.safeshell`_      | Alias for `pypyr.steps.cmd`_.                   | cmd (string or dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
-| `pypyr.steps.shell`_          | Runs the context value `cmd` in the default     | cmd (string or dict)         |
+| `pypyr.steps.shell`_          | Runs the context value ``cmd`` in the default   | cmd (string or dict)         |
 |                               | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tar (dict)                   |
@@ -2031,10 +2037,82 @@ pypyr logging format.
 
 Example pipeline yaml:
 
-.. code-block:: bash
+.. code-block:: yaml
 
     steps:
       - pypyr.steps.pypyrversion
+
+pypyr.steps.now
+^^^^^^^^^^^^^^^
+Writes the current local date & time to context *now*. Also known as wall time.
+
+If you want UTC time, check out `pypyr.steps.nowutc`_ instead.
+
+If you run this step as a simple step (with no input *nowIn* formatting), the
+default datetime format is ISO8601. For example:
+*YYYY-MM-DDTHH:MM:SS.ffffff+00:00*
+
+You can use explicit format strings to control the datetime representation. For
+a full list of available formatting codes, check here:
+https://docs.python.org/3.7/library/datetime.html#strftime-and-strptime-behavior
+
+.. code-block:: yaml
+
+  - pypyr.steps.now # this sets {now} to YYYY-MM-DDTHH:MM:SS.ffffff+00:00
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'timestamp in ISO8601 format: {now}'
+  - name: pypyr.steps.now
+    description: use a custom date format string instead of the default ISO8601
+    in:
+      nowIn: '%A %Y %m/%d %H:%M in timezone %Z offset %z, localized to %x'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'the custom formatting for now was set in the previous step. {now}'
+  - pypyr.steps.now # subsequent simple step calls will re-use previously set
+                    # nowIn for formatting, but refresh the timestamp.
+
+
+Supports string `Substitutions`_.
+
+See a worked example for `now here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/now.yaml>`__.
+
+pypyr.steps.nowutc
+^^^^^^^^^^^^^^^^^^
+Writes the current UTC date & time to context *nowUtc*.
+
+If you want local or wall time, check out `pypyr.steps.now`_ instead.
+
+If you run this step as a simple step (with no input *nowUtcIn* formatting), the
+default datetime format is ISO8601. For example:
+*YYYY-MM-DDTHH:MM:SS.ffffff+00:00*
+
+You can use explicit format strings to control the datetime representation. For
+a full list of available formatting codes, check here:
+https://docs.python.org/3.7/library/datetime.html#strftime-and-strptime-behavior
+
+.. code-block:: yaml
+
+  - pypyr.steps.nowutc # this sets {nowUtc} to YYYY-MM-DDTHH:MM:SS.ffffff+00:00
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'utc timestamp in ISO8601 format: {nowUtc}'
+  - name: pypyr.steps.nowutc
+    description: use a custom date format string instead of the default ISO8601
+    in:
+      nowUtcIn: '%A %Y %m/%d %H:%M in timezone %Z offset %z, localized to %x'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'the custom formatting was set in the previous step: {nowUtc}'
+  - pypyr.steps.nowutc # subsequent simple step calls will re-use previously set
+                       # nowUtcIn for formatting, but refresh the timestamp.
+
+
+Supports string `Substitutions`_.
+
+See a worked example for `nowutc here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/now.yaml>`__.
 
 pypyr.steps.safeshell
 ^^^^^^^^^^^^^^^^^^^^^
@@ -2042,7 +2120,7 @@ Alias for `pypyr.steps.cmd`_.
 
 Example pipeline yaml:
 
-.. code-block:: bash
+.. code-block:: yaml
 
   steps:
     - name: pypyr.steps.safeshell
