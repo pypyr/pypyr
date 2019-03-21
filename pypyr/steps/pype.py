@@ -113,7 +113,7 @@ def get_arguments(context):
                                                  is None.
     """
     context.assert_key_has_value(key='pype', caller=__name__)
-    pype = context['pype']
+    pype = context.get_formatted('pype')
 
     try:
         pipeline_name = pype['name']

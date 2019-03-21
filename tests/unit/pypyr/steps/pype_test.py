@@ -36,6 +36,40 @@ def test_pype_get_arguments_all():
     assert loader == 'test loader'
 
 
+def test_pype_get_arguments_all_with_interpolation():
+    """Parse all input from context."""
+    context = Context({
+        'pipeName': 'pipe name',
+        'argHere': 'argument here',
+        'parentContext': 'parent context bool',
+        'skipParse': 'skip parse',
+        'raiseErr': 'raise err',
+        'loaderHere': 'test loader',
+        'pype': {
+            'name': '{pipeName}',
+            'pipeArg': '{argHere}',
+            'useParentContext': '{parentContext}',
+            'skipParse': '{skipParse}',
+            'raiseError': '{raiseErr}',
+            'loader': '{loaderHere}'
+        }
+    })
+
+    (pipeline_name,
+     use_parent_context,
+     pipe_arg,
+     skip_parse,
+     raise_error,
+     loader) = pype.get_arguments(context)
+
+    assert pipeline_name == 'pipe name'
+    assert use_parent_context == 'parent context bool'
+    assert pipe_arg == 'argument here'
+    assert skip_parse == 'skip parse'
+    assert raise_error == 'raise err'
+    assert loader == 'test loader'
+
+
 def test_pype_get_arguments_defaults():
     """Parse all input from context and assign defaults where not specified."""
     context = Context({
