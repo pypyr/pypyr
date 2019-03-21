@@ -1912,6 +1912,9 @@ Example input context:
     useParentContext: True  # optional. bool. Defaults True.
     loader: None # optional. string. Defaults to standard file loader.
 
+
+All inputs supports string `Substitutions`_.
+
 +-----------------------+------------------------------------------------------+
 | **pype property**     | **description**                                      |
 +-----------------------+------------------------------------------------------+
