@@ -936,7 +936,7 @@ Requires the following context:
 
 .. code-block:: yaml
 
-  contextsetf:
+  contextSetf:
     newkey: '{format expression}'
     newkey2: '{format expression}'
 
