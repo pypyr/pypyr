@@ -8,6 +8,7 @@ from pypyr.dsl import (PyString,
                        SicString,
                        SpecialTagDirective,
                        Step,
+                       RetryDecorator,
                        WhileDecorator)
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
 
@@ -255,6 +256,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     assert step.module == 'iamamodule'
     assert step.foreach_items is None
     assert step.in_parameters is None
+    assert not step.retry_decorator
     assert step.run_me
     assert not step.skip_me
     assert not step.swallow_me
@@ -276,6 +278,7 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     assert step.module == 'iamamodule'
     assert step.foreach_items is None
     assert step.in_parameters is None
+    assert not step.retry_decorator
     assert step.run_me
     assert not step.skip_me
     assert not step.swallow_me
@@ -290,6 +293,7 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     step = Step({'name': 'blah',
                  'in': {'k1': 'v1', 'k2': 'v2'},
                  'foreach': [0],
+                 'retry': {'max': 5, 'sleep': 7},
                  'run': False,
                  'skip': True,
                  'swallow': True,
@@ -302,6 +306,8 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     assert step.module == 'iamamodule'
     assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
+    assert step.retry_decorator.max == 5
+    assert step.retry_decorator.sleep == 7
     assert not step.run_me
     assert step.skip_me
     assert step.swallow_me
@@ -1296,6 +1302,85 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
 
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
+                                              mock_get_module):
+    """Complex step with retry runs step."""
+    step = Step({
+        'name': 'step1',
+        # -1 will evaluate True because it's an int and != 0
+        'retry': {'max': 10}
+    })
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        step.run_step(context)
+
+    mock_logger_debug.assert_any_call("done")
+    mock_invoke_step.assert_called_once_with(
+        {'key1': 'value1',
+                 'key2': 'value2',
+                 'key3': 'value3',
+                 'key4': [
+                     {'k4lk1': 'value4',
+                      'k4lk2': 'value5'},
+                     {'k4lk1': 'value6',
+                      'k4lk2': 'value7'}
+                 ],
+         'key5': False,
+         'key6': True,
+         'key7': 77,
+         'retryCounter': 1})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len + 1
+    assert context['retryCounter'] == 1
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_with_retries(mock_invoke_step,
+                                         mock_get_module):
+    """Complex step with retry runs step."""
+    step = Step({
+        'name': 'step1',
+        # -1 will evaluate True because it's an int and != 0
+        'retry': {'max': 0}
+    })
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    mock_invoke_step.side_effect = [ValueError('arb'), None]
+
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        step.run_step(context)
+
+    mock_logger_debug.assert_any_call("done")
+    mock_invoke_step.mock_calls == 2
+    mock_invoke_step.assert_called_with(
+        {'key1': 'value1',
+                 'key2': 'value2',
+                 'key3': 'value3',
+                 'key4': [
+                     {'k4lk1': 'value4',
+                      'k4lk2': 'value5'},
+                     {'k4lk1': 'value6',
+                      'k4lk2': 'value7'}
+                 ],
+         'key5': False,
+         'key6': True,
+         'key7': 77,
+         'retryCounter': 2})
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len + 1
 # ------------------- Step: run_step: run ------------------------------------#
 
 
@@ -1875,7 +1960,242 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
 # ------------------- Step: set_step_input_context ---------------------------#
 # ------------------- Step----------------------------------------------------#
 
+# ------------------- RetryDecorator -----------------------------------------#
+# ------------------- RetryDecorator: init -----------------------------------#
+
+
+def test_retry_init_defaults_stop():
+    """The RetryDecorator ctor sets defaults with nothing set."""
+    rd = RetryDecorator({})
+    assert rd.sleep == 0
+    assert rd.max is None
+
+
+def test_retry_init_defaults_max():
+    """The RetryDecorator ctor sets defaults with only max set."""
+    rd = RetryDecorator({'max': 3})
+    assert rd.sleep == 0
+    assert rd.max == 3
+
+
+def test_retry_init_all_attributes():
+    """The RetryDecorator ctor with all props set."""
+    rd = RetryDecorator({'max': 3, 'sleep': 4.4, })
+    assert rd.sleep == 4.4
+    assert rd.max == 3
+
+
+def test_retry_init_not_a_dict():
+    """The RetryDecorator raises PipelineDefinitionError on bad ctor input."""
+    with pytest.raises(PipelineDefinitionError) as err_info:
+        RetryDecorator('arb')
+
+    assert str(err_info.value) == (
+        "retry decorator must be a dict (i.e a map) type.")
+
+# ------------------- RetryDecorator: init -----------------------------------#
+# ------------------- RetryDecorator: exec_iteration -------------------------#
+
+
+def test_retry_exec_iteration_returns_true_on_success():
+    """exec_iteration returns True when no error on step method."""
+    rd = RetryDecorator({'max': 3})
+
+    context = Context({})
+    mock = MagicMock()
+
+    assert rd.exec_iteration(2, context, mock)
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+
+
+def test_retry_exec_iteration_returns_true_on_max_success():
+    """exec_iteration returns True when no error on step method on max."""
+    rd = RetryDecorator({'max': 3})
+
+    context = Context({})
+    mock = MagicMock()
+    assert rd.exec_iteration(3, context, mock)
+    # context endures
+    assert context['retryCounter'] == 3
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 3})
+
+
+def test_retry_exec_iteration_returns_false_on_success():
+    """exec_iteration returns True when no error on step method."""
+    rd = RetryDecorator({'max': 3})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        assert not rd.exec_iteration(2, context, mock)
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with('retry: ignoring error because '
+                                              'retryCounter < max.\n'
+                                              'ValueError: arb')
+
+
+def test_retry_exec_iteration_raises_on_max_exhaust():
+    """exec_iteration raises error if counter is max."""
+    rd = RetryDecorator({'max': 3})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(3, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 3
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 3})
+    mock_logger_debug.assert_called_with('retry: max 3 retries '
+                                         'exhausted. raising error.')
+
+# ------------------- RetryDecorator: exec_iteration -------------------------#
+
+# ------------------- RetryDecorator: retry_loop -----------------------------#
+@patch('time.sleep')
+def test_retry_loop_max_end_on_error(mock_time_sleep):
+    """Retry loops until max and ends with error at end."""
+    rd = RetryDecorator({'max': 3})
+    context = Context({'k1': 'v1'})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        with pytest.raises(ValueError) as err_info:
+            rd.retry_loop(context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    assert context['retryCounter'] == 3
+    assert mock.call_count == 3
+    mock.assert_called_with({'k1': 'v1', 'retryCounter': 3})
+
+    assert mock_time_sleep.call_count == 2
+    mock_time_sleep.assert_called_with(0)
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try 3 times at 0.0s intervals.'),
+        call('retry: running step with counter 1'),
+        call('retry: running step with counter 2'),
+        call('retry: running step with counter 3')]
+
+
+@patch('time.sleep')
+def test_retry_loop_max_continue_on_success(mock_time_sleep):
+    """Retry loops breaks out of loop on success."""
+    rd = RetryDecorator({'max': 3, 'sleep': 10.1})
+    context = Context({'k1': 'v1'})
+    mock = MagicMock()
+    mock.side_effect = [ValueError('arb'), None]
+
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'info') as mock_logger_info:
+        with patch.object(logger, 'debug') as mock_logger_debug:
+            rd.retry_loop(context, mock)
+
+    assert context['retryCounter'] == 2
+    assert mock.call_count == 2
+    mock.assert_called_with({'k1': 'v1', 'retryCounter': 2})
+
+    assert mock_time_sleep.call_count == 1
+    mock_time_sleep.assert_called_with(10.1)
+
+    mock_logger_debug.assert_any_call(
+        'retry loop complete, reporting success.')
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try 3 times at 10.1s intervals.'),
+        call('retry: running step with counter 1'),
+        call('retry: running step with counter 2')]
+
+
+@patch('time.sleep')
+def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
+    """Retry loops breaks out of indefinite loop on success."""
+    rd = RetryDecorator({'sleep': 10.1})
+    context = Context({'k1': 'v1'})
+    mock = MagicMock()
+    mock.side_effect = [ValueError('arb1'), ValueError('arb2'), None]
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        rd.retry_loop(context, mock)
+
+    assert context['retryCounter'] == 3
+    assert mock.call_count == 3
+    mock.assert_called_with({'k1': 'v1', 'retryCounter': 3})
+
+    assert mock_time_sleep.call_count == 2
+    mock_time_sleep.assert_called_with(10.1)
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try indefinitely at 10.1s intervals.'),
+        call('retry: running step with counter 1'),
+        call('retry: running step with counter 2'),
+        call('retry: running step with counter 3')]
+
+
+@patch('time.sleep')
+def test_retry_all_substitutions(mock_time_sleep):
+    """Retry loop runs every param substituted."""
+    rd = RetryDecorator({'max': '{k3[1][k031]}',
+                         'sleep': '{k2}'})
+    context = Context({'k1': False,
+                       'k2': 0.3,
+                       'k3': [
+                           0,
+                           {'k031': 1, 'k032': False}
+                       ]})
+
+    step_count = 0
+
+    def mock_step(context):
+        nonlocal step_count
+        step_count += 1
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        rd.retry_loop(context, mock_step)
+
+    assert context['retryCounter'] == 1
+    assert step_count == 1
+
+    assert mock_time_sleep.call_count == 0
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try 1 times at 0.3s intervals.'),
+        call('retry: running step with counter 1')]
+
+# ------------------- RetryDecorator: retry_loop -----------------------------#
+
+# ------------------- RetryDecorator -----------------------------------------#
+
 # ------------------- WhileDecorator -----------------------------------------#
+
 # ------------------- WhileDecorator: init -----------------------------------#
 
 

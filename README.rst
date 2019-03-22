@@ -365,6 +365,9 @@ Don't bother specifying these unless you want to deviate from the default values
         parameter1: value1
         parameter2: value2
       foreach: [] # optional. Repeat the step once for each item in this list.
+      retry: # optional. Retry step until it doesn't raise an error.
+        max: 1 # max times to retry. integer. Defaults None (infinite).
+        sleep: 0 # sleep between retries, in seconds. Decimals allowed. Defaults 0.
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
       swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
@@ -394,6 +397,15 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | execution, before the *foreach* and *while* |                |
 |               |          | decorators. It does not re-evaluate for each|                |
 |               |          | loop iteration.                             |                |
++---------------+----------+---------------------------------------------+----------------+
+| retry         | dict     | Retries the step until it doesn't error.    | None           |
+|               |          | The retry iteration counter is              |                |
+|               |          | ``context['retryCounter']``.                |                |
+|               |          |                                             |                |
+|               |          | If you reach *max* while the step still     |                |
+|               |          | errors, will raise the last error and stop  |                |
+|               |          | further pipeline processing, unless         |                |
+|               |          | *swallow* is True.                          |                |
 +---------------+----------+---------------------------------------------+----------------+
 | run           | bool     | Runs this step if True, skips step if       | True           |
 |               |          | False.                                      |                |
@@ -463,6 +475,8 @@ Decorators can interplay, meaning that the sequence of evaluation is important.
 - *swallow* can evaluate dynamically inside a loop to decide whether to swallow
   an error or not on a particular iteration.
 
+- *swallow* can swallow an error after *retry* exhausted max attempts.
+
 .. code-block:: yaml
 
   in # in evals once and only once at the beginning of step
@@ -470,8 +484,9 @@ Decorators can interplay, meaning that the sequence of evaluation is important.
       -> foreach # everything below loops inside foreach
         -> run # evals dynamically on each loop iteration
          -> skip # evals dynamically on each loop iteration after run
+          -> retry # repeats step execution until no error
             [>>>actual step execution here<<<]
-              -> swallow # evaluated dynamically on each loop iteration
+          -> swallow # evaluated dynamically on each loop iteration
 
 Decorator examples
 ^^^^^^^^^^^^^^^^^^
@@ -486,6 +501,8 @@ Decorator examples
 +------------------------------------------------+-----------------------------+
 | foreach with dynamic conditional decorator     | |foreach-dynamic|           |
 | evaluation.                                    |                             |
++------------------------------------------------+-----------------------------+
+| retry                                          | |retry-decorator|           |
 +------------------------------------------------+-----------------------------+
 | while looping                                  | |while-decorator|           |
 +------------------------------------------------+-----------------------------+
@@ -506,6 +523,8 @@ Decorator examples
 .. |foreach-decorator| replace:: `foreach <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreach.yaml>`__
 
 .. |foreach-dynamic| replace:: `foreach dynamic conditionals <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreachconditionals.yaml>`__
+
+.. |retry-decorator| replace:: `retry decorator <https://github.com/pypyr/pypyr-example/blob/master/pipelines/retry.yaml>`__
 
 .. |while-decorator| replace:: `while decorator <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while.yaml>`__
 
