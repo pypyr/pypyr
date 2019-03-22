@@ -13,7 +13,11 @@ from pypyr.dsl import (PyString,
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
 
 
+def arb_step_mock(context):
+    """No real reason, other than to mock the existence of a run_step."""
+    return 'from arb step mock'
 # ------------------- custom yaml tags----------------------------------------#
+
 
 def test_special_tag_directive_base_no_get_value():
     """Base class SpecialTagDirective raises on get_value."""
@@ -243,9 +247,10 @@ def mock_run_step_none_context(context):
 # ------------------- Step: init ---------------------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module', return_value='iamamodule')
+@patch('pypyr.moduleloader.get_module')
 def test_simple_step_init_defaults(mocked_moduleloader):
     """Simple step initializes with defaults as expected."""
+    mocked_moduleloader.return_value.run_step = arb_step_mock
     logger = logging.getLogger('pypyr.dsl')
     with patch.object(logger, 'debug') as mock_logger_debug:
         step = Step('blah')
@@ -253,7 +258,8 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     mock_logger_debug.assert_any_call("blah is a simple string.")
 
     assert step.name == 'blah'
-    assert step.module == 'iamamodule'
+    assert step.module == mocked_moduleloader.return_value
+    assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
     assert step.in_parameters is None
     assert not step.retry_decorator
@@ -265,9 +271,10 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 
-@patch('pypyr.moduleloader.get_module', return_value='iamamodule')
+@patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_defaults(mocked_moduleloader):
     """Complex step initializes with defaults as expected."""
+    mocked_moduleloader.return_value.run_step = arb_step_mock
     logger = logging.getLogger('pypyr.dsl')
     with patch.object(logger, 'debug') as mock_logger_debug:
         step = Step({'name': 'blah'})
@@ -275,7 +282,8 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     mock_logger_debug.assert_any_call("blah is complex.")
 
     assert step.name == 'blah'
-    assert step.module == 'iamamodule'
+    assert step.module == mocked_moduleloader.return_value
+    assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
     assert step.in_parameters is None
     assert not step.retry_decorator
@@ -287,9 +295,26 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 
-@patch('pypyr.moduleloader.get_module', return_value='iamamodule')
+@patch('pypyr.moduleloader.get_module', return_value=3)
+def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
+    """Step can't get run_step method on the dynamically imported module."""
+    logger = logging.getLogger('pypyr.dsl')
+    with pytest.raises(AttributeError) as err_info:
+        with patch.object(logger, 'error') as mock_logger_error:
+            Step('mocked.step')
+
+    mocked_moduleloader.assert_called_once_with('mocked.step')
+    mock_logger_error.assert_called_once_with(
+        "The step mocked.step in module 3 doesn't have a "
+        "run_step(context) function.")
+
+    assert str(err_info.value) == "'int' object has no attribute 'run_step'"
+
+
+@patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
+    mocked_moduleloader.return_value.run_step = arb_step_mock
     step = Step({'name': 'blah',
                  'in': {'k1': 'v1', 'k2': 'v2'},
                  'foreach': [0],
@@ -303,7 +328,8 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
                            'max': 4}
                  })
     assert step.name == 'blah'
-    assert step.module == 'iamamodule'
+    assert step.module == mocked_moduleloader.return_value
+    assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
     assert step.retry_decorator.max == 5
@@ -899,19 +925,6 @@ def test_invoke_step_pass(mocked_moduleloader):
          'key5': False,
          'key6': True,
          'key7': 77})
-
-
-@patch('pypyr.moduleloader.get_module', return_value=3)
-def test_invoke_step_no_run_step(mocked_moduleloader):
-    """run_pipeline_step fails if no run_step on imported module."""
-    step = Step('mocked.step')
-
-    with pytest.raises(AttributeError) as err_info:
-        step.invoke_step(get_test_context())
-
-    mocked_moduleloader.assert_called_once_with('mocked.step')
-
-    assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
 
 @patch('pypyr.moduleloader.get_module')

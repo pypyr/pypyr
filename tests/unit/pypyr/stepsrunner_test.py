@@ -10,6 +10,11 @@ import pypyr.stepsrunner
 # ------------------------- test context--------------------------------------#
 
 
+def arb_step_mock(context):
+    """No real reason, other than to mock the existence of a run_step."""
+    return 'from arb step mock'
+
+
 def get_test_context():
     """Return a pypyr context for testing."""
     return Context({
@@ -149,7 +154,7 @@ def test_run_pipeline_steps_none():
     mock_logger_debug.assert_any_call("No steps found to execute.")
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex(mock_invoke_step, mock_module):
     """Complex step run with no in args."""
@@ -162,7 +167,7 @@ def test_run_pipeline_steps_complex(mock_invoke_step, mock_module):
     mock_invoke_step.assert_called_once_with(context={'k1': 'v1'})
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
     """Complex step run with in args. In args added to context for run_step."""
@@ -200,7 +205,7 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
 # -----------------------  run_pipeline_steps: run ---------------------------#
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_mix_run_and_not_run(mock_invoke_step, mock_module):
     """Complex steps, some run some don't."""
@@ -267,7 +272,7 @@ def test_run_pipeline_steps_mix_run_and_not_run(mock_invoke_step, mock_module):
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_multistep_none_run(mock_invoke_step,
                                                             mock_module):
@@ -309,7 +314,7 @@ def test_run_pipeline_steps_complex_with_multistep_none_run(mock_invoke_step,
 # -----------------------  run_pipeline_steps: skip --------------------------#
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_mix_skip_and_not_skip(mock_invoke_step,
                                                   mock_module):
@@ -377,7 +382,7 @@ def test_run_pipeline_steps_mix_skip_and_not_skip(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
                                                             mock_module):
@@ -428,7 +433,7 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
 # -----------------------  run_pipeline_steps: swallow -----------------------#
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     """Complex steps, some run some don't, some swallow, some don't."""
@@ -556,7 +561,7 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
 # ------------------------- run_pipeline_steps--------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module', return_value='arbmodule')
+@patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'run_step')
 def test_run_pipeline_steps_simple(mock_run_step, mock_module):
     """Simple step run."""

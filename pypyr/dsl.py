@@ -239,6 +239,12 @@ class Step:
             self.name = step
 
         self.module = pypyr.moduleloader.get_module(self.name)
+        try:
+            self.run_step_function = getattr(self.module, 'run_step')
+        except AttributeError:
+            logger.error(f"The step {self.name} in module {self.module} "
+                         "doesn't have a run_step(context) function.")
+            raise
 
         logger.debug("done")
 
@@ -290,16 +296,11 @@ class Step:
         """
         logger.debug("starting")
 
-        try:
-            logger.debug(f"running step {self.module}")
+        logger.debug(f"running step {self.module}")
 
-            self.module.run_step(context)
+        self.run_step_function(context)
 
-            logger.debug(f"step {self.module} done")
-        except AttributeError:
-            logger.error(f"The step {self.name} doesn't have a "
-                         "run_step(context) function.")
-            raise
+        logger.debug(f"step {self.module} done")
 
     def run_conditional_decorators(self, context):
         """Evaluate the step decorators to decide whether to run step or not.
