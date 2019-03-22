@@ -191,6 +191,7 @@ class Step:
         self.description = None
         self.foreach_items = None
         self.in_parameters = None
+        self.retry_decorator = None
         self.run_me = True
         self.skip_me = False
         self.swallow_me = False
@@ -211,6 +212,11 @@ class Step:
             # foreach: optional value. None by default.
             self.foreach_items = step.get('foreach', None)
 
+            # retry: optional, defaults none.
+            retry_definition = step.get('retry', None)
+            if retry_definition:
+                self.retry_decorator = RetryDecorator(retry_definition)
+
             # run: optional value, true by default. Allow substitution.
             self.run_me = step.get('run', True)
 
@@ -224,6 +230,7 @@ class Step:
             while_definition = step.get('while', None)
             if while_definition:
                 self.while_decorator = WhileDecorator(while_definition)
+
         else:
             # of course, it might not be a string. in line with duck typing,
             # beg forgiveness later. as long as it loads the module, happy
@@ -317,7 +324,11 @@ class Step:
         if run_me:
             if not skip_me:
                 try:
-                    self.invoke_step(context=context)
+                    if self.retry_decorator:
+                        self.retry_decorator.retry_loop(context,
+                                                        self.invoke_step)
+                    else:
+                        self.invoke_step(context=context)
                 except Exception as ex_info:
                     if swallow_me:
                         logger.error(
@@ -391,6 +402,142 @@ class Step:
                     f"Updating context with {parameter_count} 'in' "
                     "parameters.")
                 context.update(self.in_parameters)
+
+        logger.debug("done")
+
+
+class RetryDecorator:
+    """Retry decorator, as interpreted by the pypyr pipeline definition yaml.
+
+    Encapsulate the methods that run a step in a retry loop, and also maintains
+    state necessary to run the loop. Given the need to maintain state, this is
+    in a class, rather than purely functional code.
+
+    In a normal world, Step invokes RetryDecorator. If you run it directly,
+    you're responsible for the context and surrounding control-of-flow.
+
+    External class consumers should probably use the retry_loop method.
+    retry_loop serves as the blackbox entrypoint for this class' other methods.
+
+    Attributes:
+        max: (int) default None. Maximum loop iterations. None is infinite.
+        sleep: (float) defaults 0. Sleep in seconds between iterations.
+
+    """
+
+    def __init__(self, retry_definition):
+        """Initialize the class. No duh, huh.
+
+        You can happily expect the initializer to initialize all
+        member attributes.
+
+        Args:
+            retry_definition: dict. This is the actual retry definition as it
+                              exists in the pipeline yaml.
+
+        """
+        logger.debug("starting")
+
+        if isinstance(retry_definition, dict):
+            # max: optional. defaults None.
+            self.max = retry_definition.get('max', None)
+
+            # sleep: optional. defaults 0.
+            self.sleep = retry_definition.get('sleep', 0)
+        else:
+            # if it isn't a dict, pipeline configuration is wrong.
+            logger.error(f"retry decorator definition incorrect.")
+            raise PipelineDefinitionError("retry decorator must be a dict "
+                                          "(i.e a map) type.")
+
+        logger.debug("done")
+
+    def exec_iteration(self, counter, context, step_method):
+        """Run a single retry iteration.
+
+        This method abides by the signature invoked by poll.while_until_true,
+        which is to say (counter, *args, **kwargs). In a normal execution
+        chain, this method's args passed by self.retry_loop where context
+        and step_method set. while_until_true injects counter as a 1st arg.
+
+        Args:
+            counter. int. loop counter, which number of iteration is this.
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate - after method execution will contain the new
+                     updated context.
+            step_method: (method/function) This is the method/function that
+                         will execute on every loop iteration. Signature is:
+                         function(context)
+
+         Returns:
+            bool. True if self.stop evaluates to True after step execution,
+                  False otherwise.
+
+        """
+        logger.debug("starting")
+        context['retryCounter'] = counter
+
+        logger.info(f"retry: running step with counter {counter}")
+        try:
+            step_method(context)
+            result = True
+        except Exception as ex_info:
+            if self.max:
+                if counter == self.max:
+                    logger.debug(f"retry: max {counter} retries exhausted. "
+                                 "raising error.")
+                    # arguably shouldn't be using errs for control of flow.
+                    # but would lose the err info if not, so lesser of 2 evils.
+                    raise
+
+            result = False
+            logger.error(f"retry: ignoring error because retryCounter < max.\n"
+                         f"{type(ex_info).__name__}: {ex_info}")
+
+        logger.debug(f"retry: done step with counter {counter}")
+
+        logger.debug("done")
+        return result
+
+    def retry_loop(self, context, step_method):
+        """Run step inside a retry loop.
+
+        Args:
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate - after method execution will contain the new
+                     updated context.
+            step_method: (method/function) This is the method/function that
+                         will execute on every loop iteration. Signature is:
+                         function(context)
+
+        """
+        logger.debug("starting")
+
+        context['retryCounter'] = 0
+
+        sleep = context.get_formatted_as_type(self.sleep, out_type=float)
+        if self.max:
+            max = context.get_formatted_as_type(self.max, out_type=int)
+
+            logger.info(f"retry decorator will try {max} times at {sleep}s "
+                        "intervals.")
+        else:
+            max = None
+            logger.info(f"retry decorator will try indefinitely at {sleep}s "
+                        "intervals.")
+
+        # this will never be false. because on counter == max,
+        # exec_iteration raises an exception, breaking out of the loop.
+        # pragma because cov doesn't know the implied else is impossible.
+        # unit test cov is 100%, though.
+        if poll.while_until_true(interval=sleep,
+                                 max_attempts=max)(
+                self.exec_iteration)(context=context,
+                                     step_method=step_method
+                                     ):  # pragma: no cover
+            logger.debug("retry loop complete, reporting success.")
+
+        logger.debug("retry loop done")
 
         logger.debug("done")
 
