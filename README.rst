@@ -527,6 +527,10 @@ Decorator examples
 +------------------------------------------------+-----------------------------+
 | retry                                          | |retry-decorator|           |
 +------------------------------------------------+-----------------------------+
+| retry with retryOn                             | |retry-decorator-retryon|   |
++------------------------------------------------+-----------------------------+
+| retry with stopOn                              | |retry-decorator-stopon|    |
++------------------------------------------------+-----------------------------+
 | while looping                                  | |while-decorator|           |
 +------------------------------------------------+-----------------------------+
 | while with sleep intervals                     | |while-sleep|               |
@@ -548,6 +552,10 @@ Decorator examples
 .. |foreach-dynamic| replace:: `foreach dynamic conditionals <https://github.com/pypyr/pypyr-example/blob/master/pipelines/foreachconditionals.yaml>`__
 
 .. |retry-decorator| replace:: `retry decorator <https://github.com/pypyr/pypyr-example/blob/master/pipelines/retry.yaml>`__
+
+.. |retry-decorator-retryon| replace:: `retry decorator retryOn <https://github.com/pypyr/pypyr-example/blob/master/pipelines/retryontypes.yaml>`__
+
+.. |retry-decorator-stopon| replace:: `retry decorator stopOn <https://github.com/pypyr/pypyr-example/blob/master/pipelines/retrystopon.yaml>`__
 
 .. |while-decorator| replace:: `while decorator <https://github.com/pypyr/pypyr-example/blob/master/pipelines/while.yaml>`__
 
