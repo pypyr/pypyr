@@ -2,6 +2,7 @@
 from pypyr.errors import Error as PypyrError
 from pypyr.errors import (
     ContextError,
+    get_error_name,
     KeyInContextHasNoValueError,
     KeyNotInContextError,
     LoopMaxExhaustedError,
@@ -10,6 +11,16 @@ from pypyr.errors import (
     PipelineNotFoundError,
     PyModuleNotFoundError)
 import pytest
+
+
+def test_get_error_name_builtin():
+    """Builtin returns bare name on get_error_name."""
+    assert get_error_name(ValueError('blah')) == 'ValueError'
+
+
+def test_get_error_name_canonical():
+    """Other error returns modulename.name on get_error_name."""
+    assert get_error_name(ContextError('blah')) == 'pypyr.errors.ContextError'
 
 
 def test_base_error_raises():

@@ -1982,6 +1982,8 @@ def test_retry_init_defaults_stop():
     rd = RetryDecorator({})
     assert rd.sleep == 0
     assert rd.max is None
+    assert rd.stop_on is None
+    assert rd.retry_on is None
 
 
 def test_retry_init_defaults_max():
@@ -1989,13 +1991,20 @@ def test_retry_init_defaults_max():
     rd = RetryDecorator({'max': 3})
     assert rd.sleep == 0
     assert rd.max == 3
+    assert rd.stop_on is None
+    assert rd.retry_on is None
 
 
 def test_retry_init_all_attributes():
     """The RetryDecorator ctor with all props set."""
-    rd = RetryDecorator({'max': 3, 'sleep': 4.4, })
+    rd = RetryDecorator({'max': 3,
+                         'sleep': 4.4,
+                         'retryOn': [1, 2, 3],
+                         'stopOn': [4, 5, 6]})
     assert rd.sleep == 4.4
     assert rd.max == 3
+    assert rd.stop_on == [4, 5, 6]
+    assert rd.retry_on == [1, 2, 3]
 
 
 def test_retry_init_not_a_dict():
@@ -2040,7 +2049,7 @@ def test_retry_exec_iteration_returns_true_on_max_success():
     mock.assert_called_once_with({'retryCounter': 3})
 
 
-def test_retry_exec_iteration_returns_false_on_success():
+def test_retry_exec_iteration_returns_false_on_error():
     """exec_iteration returns True when no error on step method."""
     rd = RetryDecorator({'max': 3})
 
@@ -2061,9 +2070,230 @@ def test_retry_exec_iteration_returns_false_on_success():
                                               'ValueError: arb')
 
 
+def test_retry_exec_iteration_returns_false_on_error_with_retryon():
+    """exec_iteration returns False when error specified in retryOn."""
+    rd = RetryDecorator({'max': 3,
+                         'retryOn': ['KeyError', 'ValueError']})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        assert not rd.exec_iteration(2, context, mock)
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with('retry: ignoring error because '
+                                              'retryCounter < max.\n'
+                                              'ValueError: arb')
+
+
+def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
+    """exec_iteration returns False when error in retryOn with format."""
+    rd = RetryDecorator({'max': 3,
+                         'retryOn': ['KeyError', '{k1}']})
+
+    context = Context({'k1': 'ValueError'})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with patch.object(logger, 'debug') as mock_logger_debug:
+            assert not rd.exec_iteration(2, context, mock)
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 2
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'k1': 'ValueError', 'retryCounter': 2})
+    mock_logger_error.assert_called_once_with('retry: ignoring error because '
+                                              'retryCounter < max.\n'
+                                              'ValueError: arb')
+    mock_logger_debug.assert_any_call('ValueError in retryOn. Retry again.')
+
+
+def test_retry_exec_iteration_raises_on_error_not_in_retryon():
+    """exec_iteration raises when error not in retryOn."""
+    rd = RetryDecorator({'max': 3,
+                         'retryOn': ['KeyError', 'BlahError']})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(2, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with(
+        'ValueError not in retryOn. Raising error and exiting retry.')
+
+
+def test_retry_exec_iteration_raises_on_error_in_stopon():
+    """exec_iteration raises when error in stopOn."""
+    rd = RetryDecorator({'max': 3,
+                         'stopOn': ['KeyError', 'ValueError']})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(2, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with(
+        'ValueError in stopOn. Raising error and exiting retry.')
+
+
+def test_retry_exec_iteration_raises_on_error_in_stopon_format():
+    """exec_iteration raises when error in stopOn with formatting."""
+    rd = RetryDecorator({'max': 3,
+                         'stopOn': '{k1}'})
+
+    context = Context({'k1': ['KeyError', 'ValueError']})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(2, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 2
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'k1': ['KeyError', 'ValueError'],
+                                  'retryCounter': 2})
+    mock_logger_error.assert_called_once_with(
+        'ValueError in stopOn. Raising error and exiting retry.')
+
+
+def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
+    """exec_iteration returns False when error specified in stopOn."""
+    rd = RetryDecorator({'max': 3,
+                         'stopOn': ['KeyError', 'ArbError']})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        assert not rd.exec_iteration(2, context, mock)
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with('retry: ignoring error because '
+                                              'retryCounter < max.\n'
+                                              'ValueError: arb')
+
+
+def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
+    """exec_iteration returns False when error specified in stopOn."""
+    rd = RetryDecorator({'max': 3,
+                         'stopOn': '{k1}'})
+
+    context = Context({'k1': ['KeyError', 'ArbError']})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with patch.object(logger, 'debug') as mock_logger_debug:
+            assert not rd.exec_iteration(2, context, mock)
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 2
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'k1': ['KeyError', 'ArbError'],
+                                  'retryCounter': 2})
+    mock_logger_error.assert_called_once_with('retry: ignoring error because '
+                                              'retryCounter < max.\n'
+                                              'ValueError: arb')
+    mock_logger_debug.assert_any_call('ValueError not in stopOn. Continue.')
+
+
+def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
+    """exec_iteration stopOn supersedes retryOn."""
+    rd = RetryDecorator({'max': 3,
+                         'stopOn': ['KeyError', 'ValueError'],
+                         'retryOn': ['KeyError', 'ValueError']})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(2, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 2
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 2})
+    mock_logger_error.assert_called_once_with(
+        'ValueError in stopOn. Raising error and exiting retry.')
+
+
 def test_retry_exec_iteration_raises_on_max_exhaust():
     """exec_iteration raises error if counter is max."""
     rd = RetryDecorator({'max': 3})
+
+    context = Context({})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+    logger = logging.getLogger('pypyr.dsl')
+
+    with patch.object(logger, 'debug') as mock_logger_debug:
+        with pytest.raises(ValueError) as err_info:
+            rd.exec_iteration(3, context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    # context endures
+    assert context['retryCounter'] == 3
+    assert len(context) == 1
+    # step_method called once and only once with updated context
+    mock.assert_called_once_with({'retryCounter': 3})
+    mock_logger_debug.assert_called_with('retry: max 3 retries '
+                                         'exhausted. raising error.')
+
+
+def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
+    """exec_iteration raises error if counter is max and supersedes retryOn."""
+    rd = RetryDecorator({'max': 3,
+                         'retryOn': ['KeyError', 'ValueError']})
 
     context = Context({})
     mock = MagicMock()
