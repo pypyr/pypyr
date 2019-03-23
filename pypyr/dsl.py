@@ -1,7 +1,9 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 
 import logging
-from pypyr.errors import LoopMaxExhaustedError, PipelineDefinitionError
+from pypyr.errors import (get_error_name,
+                          LoopMaxExhaustedError,
+                          PipelineDefinitionError)
 import pypyr.moduleloader
 from pypyr.utils import expressions, poll
 
@@ -423,6 +425,11 @@ class RetryDecorator:
     Attributes:
         max: (int) default None. Maximum loop iterations. None is infinite.
         sleep: (float) defaults 0. Sleep in seconds between iterations.
+        stop_on: (list) default None. Always stop retry on these error
+                 types. None means retry on all errors.
+        retry_on: (list) default None. Only retry on these error types. All
+                other error types will stop retry loop. None means retry all
+                errors.
 
     """
 
@@ -445,6 +452,12 @@ class RetryDecorator:
 
             # sleep: optional. defaults 0.
             self.sleep = retry_definition.get('sleep', 0)
+
+            # stopOn: optional. defaults None.
+            self.stop_on = retry_definition.get('stopOn', None)
+
+            # retryOn: optional. defaults None.
+            self.retry_on = retry_definition.get('retryOn', None)
         else:
             # if it isn't a dict, pipeline configuration is wrong.
             logger.error(f"retry decorator definition incorrect.")
@@ -471,8 +484,8 @@ class RetryDecorator:
                          function(context)
 
          Returns:
-            bool. True if self.stop evaluates to True after step execution,
-                  False otherwise.
+            bool. True if step execution completed without error.
+                  False if error occured during step execution.
 
         """
         logger.debug("starting")
@@ -490,6 +503,28 @@ class RetryDecorator:
                     # arguably shouldn't be using errs for control of flow.
                     # but would lose the err info if not, so lesser of 2 evils.
                     raise
+
+            if self.stop_on or self.retry_on:
+                error_name = get_error_name(ex_info)
+                if self.stop_on:
+                    formatted_stop_list = context.get_formatted_iterable(
+                        self.stop_on)
+                    if error_name in formatted_stop_list:
+                        logger.error(f"{error_name} in stopOn. Raising error "
+                                     "and exiting retry.")
+                        raise
+                    else:
+                        logger.debug(f"{error_name} not in stopOn. Continue.")
+
+                if self.retry_on:
+                    formatted_retry_list = context.get_formatted_iterable(
+                        self.retry_on)
+                    if error_name not in formatted_retry_list:
+                        logger.error(f"{error_name} not in retryOn. Raising "
+                                     "error and exiting retry.")
+                        raise
+                    else:
+                        logger.debug(f"{error_name} in retryOn. Retry again.")
 
             result = False
             logger.error(f"retry: ignoring error because retryCounter < max.\n"

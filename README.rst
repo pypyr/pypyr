@@ -368,6 +368,8 @@ Don't bother specifying these unless you want to deviate from the default values
       retry: # optional. Retry step until it doesn't raise an error.
         max: 1 # max times to retry. integer. Defaults None (infinite).
         sleep: 0 # sleep between retries, in seconds. Decimals allowed. Defaults 0.
+        stopOn: ['ValueError', 'MyModule.SevereError'] # Stop retry on these errors. Defaults None (retry all).
+        retryOn: ['TimeoutError'] # Only retry these errors. Defaults None (retry all).
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
       skip: False # optional. Skips this step if True, runs step if False. Defaults to False if not specified.
       swallow: False # optional. Swallows any errors raised by the step. Defaults to False if not specified.
@@ -406,6 +408,27 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | errors, will raise the last error and stop  |                |
 |               |          | further pipeline processing, unless         |                |
 |               |          | *swallow* is True.                          |                |
+|               |          |                                             |                |
+|               |          | When neither *stopOn* and *retryOn* set,    |                |
+|               |          | all types of errors will retry.             |                |
+|               |          |                                             |                |
+|               |          | If *stopOn* is specified, errors listed     |                |
+|               |          | in *stopOn* will stop retry processing and  |                |
+|               |          | raise an error. Errors not listed in        |                |
+|               |          | *stopOn* will retry.                        |                |
+|               |          |                                             |                |
+|               |          | If *retryOn* is specified, ONLY errors      |                |
+|               |          | listed in *retryOn* will retry.             |                |
+|               |          |                                             |                |
+|               |          | *max* evaluates before *stopOn* and         |                |
+|               |          | *retryOn*. *stopOn* supersedes *retryOn*.   |                |
+|               |          |                                             |                |
+|               |          | For builtin python errors, specify the bare |                |
+|               |          | error name for *stopOn* and *retryOn*, e.g  |                |
+|               |          | 'ValueError', 'KeyError'.                   |                |
+|               |          |                                             |                |
+|               |          | For all other errors, use module.errorname, |                |
+|               |          | e.g 'mypackage.mymodule.myerror'            |                |
 +---------------+----------+---------------------------------------------+----------------+
 | run           | bool     | Runs this step if True, skips step if       | True           |
 |               |          | False.                                      |                |

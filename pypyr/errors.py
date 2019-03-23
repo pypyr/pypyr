@@ -4,6 +4,29 @@ All pypyr specific exceptions derive from Error.
 """
 
 
+def get_error_name(error):
+    """Return canonical error name as string.
+
+    For builtin errors like ValueError or Exception, will return the bare
+    name, like ValueError or Exception.
+
+    For all other exceptions, will return modulename.errorname, such as
+    arbpackage.mod.myerror
+
+    Args:
+        error: Exception object.
+
+    Returns:
+        str. Canonical error name.
+
+    """
+    error_type = type(error)
+    if error_type.__module__ in ['__main__', 'builtins']:
+        return error_type.__name__
+    else:
+        return f'{error_type.__module__}.{error_type.__name__}'
+
+
 class Error(Exception):
     """Base class for all pypyr exceptions."""
 
@@ -18,6 +41,7 @@ class KeyInContextHasNoValueError(ContextError):
 
 class KeyNotInContextError(ContextError, KeyError):
     """Key not found in the pypyr context."""
+
     def __str__(self):
         """KeyError has custom error formatting, avoid this behaviour."""
         return super(Exception, self).__str__()
