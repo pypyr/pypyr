@@ -625,7 +625,7 @@ class WhileDecorator:
             # stop: optional. defaults None.
             self.stop = while_definition.get('stop', None)
 
-            if not self.stop and not self.max:
+            if self.stop is None and self.max is None:
                 logger.error(f"while decorator missing both max and stop.")
                 raise PipelineDefinitionError("the while decorator must have "
                                               "either max or stop, or both. "
@@ -633,8 +633,7 @@ class WhileDecorator:
                                               "setting stop: False with no "
                                               "max is an infinite loop. If "
                                               "an infinite loop is really "
-                                              "what you want, set stop: "
-                                              "'{ContextKeyWithFalseValue}'")
+                                              "what you want, set stop: False")
         else:
             # if it isn't a dict, pipeline configuration is wrong.
             logger.error(f"while decorator definition incorrect.")
@@ -696,65 +695,63 @@ class WhileDecorator:
         """
         logger.debug("starting")
 
-        stop = False
-
         context['whileCounter'] = 0
-        if self.stop:
-            stop = context.get_formatted_as_type(self.stop, out_type=bool)
-        else:
-            if not self.max:
-                # the ctor already does this check, but guess theoretically
-                # consumer could have messed with the props since ctor
-                logger.error(f"while decorator missing both max and stop.")
-                raise PipelineDefinitionError("the while decorator must have "
-                                              "either max or stop, or both. "
-                                              "But not neither.")
 
-        if stop:
-            # stop is already true, even before 1st loop iteration.
-            logger.info(
-                f"while decorator will not loop, because the stop condition "
-                f"{self.stop} already evaluated to True before 1st iteration.")
-        else:
-            error_on_max = context.get_formatted_as_type(
-                self.error_on_max, out_type=bool)
-            sleep = context.get_formatted_as_type(self.sleep, out_type=float)
-            if self.max:
-                max = context.get_formatted_as_type(self.max, out_type=int)
+        if self.stop is None and self.max is None:
+            # the ctor already does this check, but guess theoretically
+            # consumer could have messed with the props since ctor
+            logger.error(f"while decorator missing both max and stop.")
+            raise PipelineDefinitionError("the while decorator must have "
+                                          "either max or stop, or both. "
+                                          "But not neither.")
 
-                if self.stop:
-                    logger.info(f"while decorator will loop {max} times, or "
-                                f"until {self.stop} evaluates to True at "
-                                f"{sleep}s intervals.")
-                else:
-                    logger.info(f"while decorator will loop {max} times "
-                                f"at {sleep}s intervals.")
+        error_on_max = context.get_formatted_as_type(
+            self.error_on_max, out_type=bool)
+        sleep = context.get_formatted_as_type(self.sleep, out_type=float)
+        if self.max is None:
+            max = None
+            logger.info(f"while decorator will loop until {self.stop} "
+                        f"evaluates to True at {sleep}s intervals.")
+        else:
+            max = context.get_formatted_as_type(self.max, out_type=int)
+
+            if max < 1:
+                logger.info(
+                    f"max {self.max} is {max}. while only runs when max > 0.")
+                logger.debug("done")
+                return
+
+            if self.stop is None:
+                logger.info(f"while decorator will loop {max} times at "
+                            f"{sleep}s intervals.")
             else:
-                max = None
-                logger.info(f"while decorator will loop until {self.stop} "
-                            f"evaluates to True at {sleep}s intervals.")
+                logger.info(f"while decorator will loop {max} times, or "
+                            f"until {self.stop} evaluates to True at "
+                            f"{sleep}s intervals.")
 
-            if not poll.while_until_true(interval=sleep,
-                                         max_attempts=max)(
-                    self.exec_iteration)(context=context,
-                                         step_method=step_method):
-                # False means loop exhausted and stop never eval-ed True.
-                if error_on_max:
-                    logger.error(f"exhausted {max} iterations of while loop, "
-                                 "and errorOnMax is True.")
-                    if self.stop and max:
-                        raise LoopMaxExhaustedError("while loop reached "
-                                                    f"{max} and {self.stop} "
-                                                    "never evaluated to True.")
-                    else:
-                        raise LoopMaxExhaustedError("while loop reached "
-                                                    f"{max}.")
+        if not poll.while_until_true(interval=sleep,
+                                     max_attempts=max)(
+                self.exec_iteration)(context=context,
+                                     step_method=step_method):
+            # False means loop exhausted and stop never eval-ed True.
+            if error_on_max:
+                logger.error(f"exhausted {max} iterations of while loop, "
+                             "and errorOnMax is True.")
+                if self.stop and max:
+                    raise LoopMaxExhaustedError("while loop reached "
+                                                f"{max} and {self.stop} "
+                                                "never evaluated to True.")
                 else:
-                    if self.stop and max:
-                        logger.info(
-                            f"while decorator looped {max} times, "
-                            f"and {self.stop} never evaluated to True.")
+                    raise LoopMaxExhaustedError(f"while loop reached {max}.")
+            else:
+                if self.stop and max:
+                    logger.info(
+                        f"while decorator looped {max} times, "
+                        f"and {self.stop} never evaluated to True.")
 
             logger.debug("while loop done")
+        else:
+            logger.info(f"while loop done, stop condition {self.stop} "
+                        "evaluated True.")
 
         logger.debug("done")

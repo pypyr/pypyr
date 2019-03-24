@@ -836,7 +836,8 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     assert str(err_info.value) == "while loop reached 3."
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will loop 3 times at 0.0s intervals.'),
+        call('while decorator will loop 3 times, or until False evaluates to '
+             'True at 0.0s intervals.'),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
         call('while: running step with counter 3')]
@@ -2488,7 +2489,7 @@ def test_while_init_no_max_no_stop():
         "the while decorator must have either max or "
         "stop, or both. But not neither. Note that setting stop: False with "
         "no max is an infinite loop. If an infinite loop is really what you "
-        "want, set stop: \'{ContextKeyWithFalseValue}\'")
+        "want, set stop: False")
 
 
 # ------------------- WhileDecorator: init -----------------------------------#
@@ -2570,8 +2571,27 @@ def test_while_exec_iteration_stop_evals_false():
 
 
 def test_while_loop_stop_true():
-    """Stop True doesn't run loop even once."""
+    """Stop True runs loop once because it only evals after 1st iteration."""
     wd = WhileDecorator({'stop': True})
+
+    mock = MagicMock()
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        wd.while_loop(Context(), mock)
+
+    mock.assert_called_once()
+
+    assert mock_logger_info.mock_calls == [
+        call('while decorator will loop until True evaluates to True '
+             'at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while loop done, stop condition True evaluated True.')]
+
+
+def test_while_loop_max_0():
+    """Max 0 doesn't run even once."""
+    wd = WhileDecorator({'max': 0})
 
     mock = MagicMock()
 
@@ -2582,12 +2602,27 @@ def test_while_loop_stop_true():
     mock.assert_not_called()
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will not loop, because the stop condition True '
-             'already evaluated to True before 1st iteration.')]
+        call('max 0 is 0. while only runs when max > 0.')]
+
+
+def test_while_loop_max_0_with_formatting():
+    """Max 0 doesn't run even once with formatting expression."""
+    wd = WhileDecorator({'max': '{x}'})
+
+    mock = MagicMock()
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'info') as mock_logger_info:
+        wd.while_loop(Context({'x': -3}), mock)
+
+    mock.assert_not_called()
+
+    assert mock_logger_info.mock_calls == [
+        call('max {x} is -3. while only runs when max > 0.')]
 
 
 def test_while_loop_stop_evals_true():
-    """Stop evaluates True from formatting expr doesn't run loop even once."""
+    """Stop evaluates True from formatting expr runs once."""
     wd = WhileDecorator({'stop': '{thisistrue}'})
 
     mock = MagicMock()
@@ -2596,11 +2631,13 @@ def test_while_loop_stop_evals_true():
     with patch.object(logger, 'info') as mock_logger_info:
         wd.while_loop(Context({'thisistrue': True}), mock)
 
-    mock.assert_not_called()
+    mock.assert_called_once()
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will not loop, because the stop condition '
-             '{thisistrue} already evaluated to True before 1st iteration.')]
+        call('while decorator will loop until {thisistrue} evaluates to True '
+             'at 0.0s intervals.'),
+        call('while: running step with counter 1'),
+        call('while loop done, stop condition {thisistrue} evaluated True.')]
 
 
 def test_while_loop_no_stop_no_max():
@@ -2678,7 +2715,8 @@ def test_while_loop_stop_no_max(mock_time_sleep):
              'intervals.'),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
-        call('while: running step with counter 3')]
+        call('while: running step with counter 3'),
+        call('while loop done, stop condition {k1} evaluated True.')]
 
 
 @patch('time.sleep')
@@ -2715,7 +2753,8 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
              'True at 0.3s intervals.'),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
-        call('while: running step with counter 3')]
+        call('while: running step with counter 3'),
+        call('while loop done, stop condition {k1} evaluated True.')]
 
 
 @patch('time.sleep')
