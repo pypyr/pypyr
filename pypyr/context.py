@@ -638,7 +638,7 @@ class Context(dict):
                 k = self.get_formatted_string(k)
 
                 # str not mergable, so it doesn't matter if it exists in dest
-                if isinstance(v, str):
+                if isinstance(v, (str, SpecialTagDirective)):
                     # just overwrite dest - str adds/edits indiscriminately
                     current[k] = self.get_formatted_string(v)
                 elif isinstance(v, (bytes, bytearray)):

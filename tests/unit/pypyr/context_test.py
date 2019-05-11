@@ -1613,6 +1613,24 @@ def test_merge_pass_nested_with_types():
     }
 
 
+def test_merge_interpolate_py():
+    context = Context()
+    context.merge({"key": PyString("True")})
+    assert context["key"] is True
+
+
+def test_merge_replaced_by_interpolated_py_mapping():
+    context = Context({'key': {'b': 2}})
+    context.merge({"key": PyString("{'a': 1}")})
+    assert context["key"] == {'a': 1}
+
+
+def test_merge_interpolate_py_with_substitutions():
+    context = Context({"key": False})
+    context.merge({"key": PyString("5")})
+    assert context["key"] == 5
+
+
 # ------------------- merge --------------------------------------------------#
 
 # ------------------- set_defaults -------------------------------------------#
