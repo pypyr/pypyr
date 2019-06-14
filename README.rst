@@ -624,6 +624,8 @@ Built-in steps
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.filewriteyaml`_  | Write payload to file in yaml format.           | fileWriteYaml (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.glob`_           | Get paths from glob expression.                 | glob (string or list)        |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pathcheck`_      | Check if path exists on filesystem.             | pathCheck (string or dict)   |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.py`_             | Executes the context value ``pycode`` as python | pycode (string)              |
@@ -1835,6 +1837,62 @@ the last line will substitute like this:
 
 See a worked `filewriteyaml example here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/filewriteyaml.yaml>`_.
+
+pypyr.steps.glob
+^^^^^^^^^^^^^^^^
+Resolves a glob and gets all the paths that exist on the filesystem for the
+input glob.
+
+A path can point to a file or a directory.
+
+The ``glob`` context key must exist.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.glob
+    in:
+      glob: ./**/*.py # single glob
+
+If you want to resolve multiple globs simultaneously and combine the results,
+you can pass a list instead. You can freely mix literal paths and globs.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.glob
+    in:
+      glob:
+        - ./file1 # literal relative path
+        - ./dirname # also finds dirs
+        - ./**/{arbkey}* # glob with a string formatting expression
+
+After *glob* completes, the ``globOut`` context key is available.
+This contains the results of the *glob* operation.
+
+.. code-block:: yaml
+
+  globOut: # list of strings. Paths of all files found.
+      ['file1', 'dir1', 'blah/arb']
+
+You can use ``globOut`` as the list to enumerate in a ``foreach`` decorator
+step, to run a step for each file found.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.glob
+    in:
+     glob: ./get-files/**/*
+  - name: pypyr.steps.pype
+    foreach: '{globOut}'
+    in:
+      pype:
+        name: pipeline-does-something-with-single-file
+
+All inputs support `Substitutions`_. This means you can specify another context
+item to be an individual path, or part of a path, or the entire path list.
+
+See a worked
+example for `glob here
+<https://github.com/pypyr/pypyr-example/tree/master/pipelines/glob.yaml>`_.
 
 pypyr.steps.pathcheck
 ^^^^^^^^^^^^^^^^^^^^^
