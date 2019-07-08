@@ -194,61 +194,135 @@ class Step:
         self.foreach_items = None
         self.in_parameters = None
         self.retry_decorator = None
+        self.line_no = None
+        self.line_col = None
         self.run_me = True
         self.skip_me = False
         self.swallow_me = False
         self.name = None
         self.while_decorator = None
+        self.on_error = None
 
-        if isinstance(step, dict):
-            self.name = step['name']
-            logger.debug(f"{self.name} is complex.")
-
-            self.in_parameters = step.get('in', None)
-
-            # description: optional. Write to stdout if exists and flagged.
-            self.description = step.get('description', None)
-            if self.description:
-                logger.info(f"{self.name}: {self.description}")
-
-            # foreach: optional value. None by default.
-            self.foreach_items = step.get('foreach', None)
-
-            # retry: optional, defaults none.
-            retry_definition = step.get('retry', None)
-            if retry_definition:
-                self.retry_decorator = RetryDecorator(retry_definition)
-
-            # run: optional value, true by default. Allow substitution.
-            self.run_me = step.get('run', True)
-
-            # skip: optional value, false by default. Allow substitution.
-            self.skip_me = step.get('skip', False)
-
-            # swallow: optional, defaults false. Allow substitution.
-            self.swallow_me = step.get('swallow', False)
-
-            # while: optional, defaults none.
-            while_definition = step.get('while', None)
-            if while_definition:
-                self.while_decorator = WhileDecorator(while_definition)
-
-        else:
-            # of course, it might not be a string. in line with duck typing,
-            # beg forgiveness later. as long as it loads the module, happy
-            # days.
-            logger.debug(f"{step} is a simple string.")
-            self.name = step
-
-        self.module = pypyr.moduleloader.get_module(self.name)
         try:
-            self.run_step_function = getattr(self.module, 'run_step')
-        except AttributeError:
-            logger.error(f"The step {self.name} in module {self.module} "
-                         "doesn't have a run_step(context) function.")
+            if isinstance(step, dict):
+                self._init_from_dict(step)
+            else:
+                # of course, it might not be a string. in line with duck
+                # typing, beg forgiveness later. as long as it loads
+                # the module, happy days.
+                logger.debug(f"{step} is a simple string.")
+                self.name = step
+
+            self.module = pypyr.moduleloader.get_module(self.name)
+            try:
+                self.run_step_function = getattr(self.module, 'run_step')
+            except AttributeError:
+                logger.error(f"The step {self.name} in module {self.module} "
+                             "doesn't have a run_step(context) function.")
+                raise
+        except Exception:
+            # Exceptions could also happened on the step init phase
+            # (ModuleNotFound, KeyError, etc..),
+            # put exception handler here because of that.
+            # also handle case with missing step name
+            name = f" {self.name}" if self.name else ""
+
+            if self.line_no:
+                logger.error(
+                    f"Error at pipeline step{name} yaml line: "
+                    f"{self.line_no}, col: {self.line_col}"
+                )
+            else:
+                logger.error(
+                    f"Error at pipeline step{name}"
+                )
             raise
 
         logger.debug("done")
+
+    def _init_from_dict(self, step):
+        """Initialize the class from a dict for a complex step.
+
+        Args:
+            step: (CommentedMap/dict) This is the actual step as it
+            exists in the pipeline yaml.
+        """
+        if hasattr(step, 'lc'):
+            # line_no: optional. Has value only when the yaml
+            # round trip parser is in use.
+            self.line_no = step.lc.line
+            # line_col: optional. Has value only when the yaml
+            # round trip parser is in use.
+            self.line_col = step.lc.col
+
+        self.name = step.get('name', None)
+
+        if not self.name:
+            raise PipelineDefinitionError('step must have a name.')
+
+        logger.debug(f"{self.name} is complex.")
+
+        self.in_parameters = step.get('in', None)
+
+        # description: optional. Write to stdout if exists and flagged.
+        self.description = step.get('description', None)
+        if self.description:
+            logger.info(f"{self.name}: {self.description}")
+
+        # foreach: optional value. None by default.
+        self.foreach_items = step.get('foreach', None)
+
+        # retry: optional, defaults none.
+        retry_definition = step.get('retry', None)
+        if retry_definition:
+            self.retry_decorator = RetryDecorator(retry_definition)
+
+        # run: optional value, true by default. Allow substitution.
+        self.run_me = step.get('run', True)
+
+        # skip: optional value, false by default. Allow substitution.
+        self.skip_me = step.get('skip', False)
+
+        # swallow: optional, defaults false. Allow substitution.
+        self.swallow_me = step.get('swallow', False)
+
+        # on_error: optional, defaults none. Allow substitution.
+        self.on_error = step.get('onError', None)
+
+        # while: optional, defaults none.
+        while_definition = step.get('while', None)
+        if while_definition:
+            self.while_decorator = WhileDecorator(while_definition)
+
+    def save_error(self, context, exception, swallowed):
+        """Append step's exception information to the context.
+
+        Append the[on_error] dictionary to the context. This will append to
+        existing `runErrors` values if `runErrors` are already in there.
+
+        Args:
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate - after method execution will contain the new
+                     updated context.
+            exception: (Exception) The error detected during step execution.
+            swallowed: (bool) Whether exception was swallowed or not.
+        """
+        failure = {
+            'name': get_error_name(exception),
+            'description': str(exception),
+            'customError': context.get_formatted_iterable(
+                self.on_error
+            ) if self.on_error else {},
+            'line': self.line_no,
+            'col': self.line_col,
+            'step': self.name,
+            'exception': exception,
+            'swallowed': swallowed,
+        }
+
+        run_errors = context.setdefault('runErrors', [])
+
+        run_errors.append(failure)
 
     def foreach_loop(self, context):
         """Run step once for each item in foreach_items.
@@ -332,13 +406,27 @@ class Step:
                                                         self.invoke_step)
                     else:
                         self.invoke_step(context=context)
-                except Exception as ex_info:
+                except Exception as exc_info:
+                    self.save_error(
+                        context=context,
+                        exception=exc_info,
+                        swallowed=swallow_me
+                    )
                     if swallow_me:
                         logger.error(
                             f"{self.name} Ignoring error because swallow "
                             "is True for this step.\n"
-                            f"{type(ex_info).__name__}: {ex_info}")
+                            f"{get_error_name(exc_info)}: {exc_info}")
                     else:
+                        error_message = f"Error while running step {self.name}"
+
+                        if self.line_no:
+                            logger.error(
+                                f"{error_message} at pipeline yaml line: "
+                                f"{self.line_no}, col: {self.line_col}",
+                            )
+                        else:
+                            logger.error(error_message)
                         raise
             else:
                 logger.info(
