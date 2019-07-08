@@ -22,7 +22,7 @@ def get_pipeline_yaml(file):
     """
     tag_representers = [PyString, SicString]
 
-    yaml_loader = get_yaml_parser_safe()
+    yaml_loader = get_yaml_parser_roundtrip()
 
     for representer in tag_representers:
         yaml_loader.register_class(representer)

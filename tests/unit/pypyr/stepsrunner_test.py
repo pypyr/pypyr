@@ -6,6 +6,7 @@ from pypyr.context import Context
 from pypyr.dsl import Step
 from pypyr.errors import ContextError
 import pypyr.stepsrunner
+from tests.common.utils import DeepCopyMagicMock
 
 # ------------------------- test context--------------------------------------#
 
@@ -435,8 +436,32 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     """Complex steps, some run some don't, some swallow, some don't."""
+
+    step4_run_error_swallow = {
+        'col': None,
+        'customError': {},
+        'description': 'arb error here 4',
+        'exception': ValueError('arb error here 4'),
+        'line': None,
+        'name': 'ValueError',
+        'step': 'step4',
+        'swallowed': True,
+    }
+
+    step6_run_error_raise = {
+        'col': None,
+        'customError': {},
+        'description': 'arb error here 6',
+        'exception': ValueError('arb error here 6'),
+        'line': None,
+        'name': 'ValueError',
+        'step': 'step6',
+        'swallowed': False,
+    }
+
     # 1 & 2 don't run,
     # 3 runs, no error
     # 4 runs, error and swallows
@@ -445,8 +470,8 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     # 7 doesn't run because execution stopped at 6 because of error
     mock_invoke_step.side_effect = [
         None,  # 3
-        ValueError('arb error here 4'),  # 4
-        ValueError('arb error here 6'),  # 6
+        step4_run_error_swallow['exception'],  # 4
+        step6_run_error_raise['exception'],  # 6
     ]
 
     steps = [
@@ -489,72 +514,55 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
 
                     assert str(err_info.value) == "arb error here 6"
 
-    mock_logger_debug.assert_has_calls == [call('step1 is complex.'),
-                                           call('step2 is complex.'),
-                                           call('step3 is complex.'),
-                                           call('step4 is complex.'),
-                                           call('step5 is complex.'),
-                                           call('step6 is a simple string.')]
+    mock_logger_debug.assert_has_calls([
+        call('step1 is complex.'),
+        call('step2 is complex.'),
+        call('step3 is complex.'),
+        call('step4 is complex.'),
+        call('step5 is complex.'),
+        call('step6 is a simple string.')],
+        any_order=True
+    )
 
-    mock_logger_info.mock_calls == [
+    assert mock_logger_info.call_args_list == [
         call('step1 not running because run is False.'),
         call('step2 not running because skip is True.'),
         call('step5 not running because skip is True.')]
 
-    mock_logger_error.assert_called_once_with(
-        "step4 Ignoring error because swallow is True "
-        "for this step.\n"
-        "ValueError: arb error here 4")
+    assert mock_invoke_step.call_count == 3
+
+    assert mock_logger_error.call_args_list == [
+        call(
+            "step4 Ignoring error because swallow is True "
+            "for this step.\n"
+            "ValueError: arb error here 4"
+        ),
+        call("Error while running step step6"),
+    ]
 
     assert mock_invoke_step.call_count == 3
-    assert mock_invoke_step.mock_calls == [call(context={
-        'key1': 'value1',
-        'key2': 'value2',
-        'key3': 'value3', 'key4':
-        [
-            {
-                'k4lk1': 'value4',
-                'k4lk2': 'value5'},
-            {
-                'k4lk1': 'value6',
-                'k4lk2': 'value7'
-            }],
-        'key5': False,
-        'key6': True,
-        'key7': 77}),
-        call(context={
-            'key1': 'value1',
-            'key2': 'value2',
-            'key3': 'value3', 'key4':
-            [
-                {
-                    'k4lk1': 'value4',
-                    'k4lk2': 'value5'},
-                {
-                    'k4lk1': 'value6',
-                    'k4lk2': 'value7'
-                }],
-            'key5': False,
-            'key6': True,
-            'key7': 77}),
-        call(context={
-            'key1': 'value1',
-            'key2': 'value2',
-            'key3': 'value3', 'key4':
-            [
-                {
-                    'k4lk1': 'value4',
-                    'k4lk2': 'value5'},
-                {
-                    'k4lk1': 'value6',
-                    'k4lk2': 'value7'
-                }],
-            'key5': False,
-            'key6': True,
-            'key7': 77})]
 
-    # validate all the in params ended up in context as intended
-    assert len(context) == original_len
+    # step3
+    assert mock_invoke_step.call_args_list[0] == call(
+        context=get_test_context()
+    )
+
+    # step4
+    assert mock_invoke_step.call_args_list[1] == call(
+        context=get_test_context()
+    )
+
+    step6_context = mock_invoke_step.call_args_list[2][1]["context"]
+    assert get_test_context().items() <= step6_context.items()
+    assert len(step6_context['runErrors']) == 1
+
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert len(context['runErrors']) == 2
+
+    assert step4_run_error_swallow == context['runErrors'][0]
+    assert step6_run_error_raise == context['runErrors'][1]
 
 # -----------------------  END run_pipeline_steps: swallow------------------#
 

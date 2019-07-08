@@ -3,6 +3,9 @@ from copy import deepcopy
 import logging
 import pytest
 from unittest.mock import call, patch, MagicMock
+
+from ruamel.yaml.comments import CommentedMap
+
 from pypyr.context import Context
 from pypyr.dsl import (PyString,
                        SicString,
@@ -11,6 +14,7 @@ from pypyr.dsl import (PyString,
                        RetryDecorator,
                        WhileDecorator)
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
+from tests.common.utils import DeepCopyMagicMock
 
 
 def arb_step_mock(context):
@@ -29,8 +33,8 @@ def test_special_tag_directive_base_no_get_value():
 
 def test_special_tag_directive_base_eq():
     """Repr equivalence and inverse works."""
-    SpecialTagDirective(None) == SpecialTagDirective(None)
-    SpecialTagDirective('none') != SpecialTagDirective('some')
+    assert SpecialTagDirective(None) == SpecialTagDirective(None)
+    assert SpecialTagDirective('none') != SpecialTagDirective('some')
 
 
 def test_special_tag_directive_repr_roundtrip():
@@ -181,27 +185,6 @@ def test_sic_string_truthy():
 
 # ------------------- END custom yaml tags------------------------------------#
 
-
-class DeepCopyMagicMock(MagicMock):
-    """Derive a new MagicMock doing a deepcopy of args to calls.
-
-    MagicMocks store a reference to a mutable object - so on multiple calls to
-    the mock the call history isn't maintained if the same obj mutates as an
-    arg to those calls. https://bugs.python.org/issue33667
-
-    It's probably not sensible to deepcopy all mock calls. So this little class
-    is for patching the MagicMock class specifically, where it will do the
-    deepcopy only where specifically patched.
-
-    See here:
-    https://docs.python.org/3/library/unittest.mock-examples.html#coping-with-mutable-arguments
-    """
-
-    def __call__(self, *args, **kwargs):
-        """Mock call override does deepcopy."""
-        return super(DeepCopyMagicMock, self).__call__(*deepcopy(args),
-                                                       **deepcopy(kwargs))
-
 # ------------------- test context -------------------------------------------#
 
 
@@ -267,6 +250,8 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     assert not step.skip_me
     assert not step.swallow_me
     assert not step.while_decorator
+    assert step.line_no is None
+    assert step.line_col is None
 
     mocked_moduleloader.assert_called_once_with('blah')
 
@@ -291,8 +276,27 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     assert not step.skip_me
     assert not step.swallow_me
     assert not step.while_decorator
+    assert step.line_col is None
+    assert step.line_no is None
 
     mocked_moduleloader.assert_called_once_with('blah')
+
+
+def test_complex_step_init_with_missing_name_round_trip():
+    """Step can't get step name from the yaml pipeline."""
+    logger = logging.getLogger('pypyr.dsl')
+    with pytest.raises(PipelineDefinitionError) as err_info:
+        with patch.object(logger, 'error') as mock_logger_error:
+            step_info = CommentedMap({})
+            step_info._yaml_set_line_col(6, 7)
+            Step(step_info)
+
+    assert mock_logger_error.call_count == 1
+    assert mock_logger_error.mock_calls == [
+        call('Error at pipeline step yaml line: 6, col: 7'),
+    ]
+
+    assert str(err_info.value) == "step must have a name."
 
 
 @patch('pypyr.moduleloader.get_module', return_value=3)
@@ -304,9 +308,35 @@ def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
             Step('mocked.step')
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
-    mock_logger_error.assert_called_once_with(
-        "The step mocked.step in module 3 doesn't have a "
-        "run_step(context) function.")
+    assert mock_logger_error.call_count == 2
+    assert mock_logger_error.mock_calls == [
+        call("The step mocked.step in module 3 doesn't have a "
+             "run_step(context) function."),
+        call('Error at pipeline step mocked.step'),
+    ]
+
+    assert str(err_info.value) == "'int' object has no attribute 'run_step'"
+
+
+@patch('pypyr.moduleloader.get_module', return_value=3)
+def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
+    """Step can't get run_step method on the dynamically imported module
+    with round trip yaml loaded context.
+    """
+    logger = logging.getLogger('pypyr.dsl')
+    with pytest.raises(AttributeError) as err_info:
+        with patch.object(logger, 'error') as mock_logger_error:
+            commented_context = CommentedMap({'name': 'mocked.step'})
+            commented_context._yaml_set_line_col(1, 2)
+            Step(commented_context)
+
+    mocked_moduleloader.assert_called_once_with('mocked.step')
+    assert mock_logger_error.call_count == 2
+    assert mock_logger_error.mock_calls == [
+        call("The step mocked.step in module 3 doesn't have a "
+             "run_step(context) function."),
+        call("Error at pipeline step mocked.step yaml line: 1, col: 2"),
+    ]
 
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
@@ -341,6 +371,52 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     assert step.while_decorator.error_on_max
     assert step.while_decorator.sleep == 3
     assert step.while_decorator.max == 4
+
+    mocked_moduleloader.assert_called_once_with('blah')
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
+    """Complex step initializes with decorators set with round trip
+    yaml loaded context."""
+    mocked_moduleloader.return_value.run_step = arb_step_mock
+
+    context = CommentedMap({
+        'name': 'blah',
+        'in': {'k1': 'v1', 'k2': 'v2'},
+        'foreach': [0],
+        'retry': {'max': 5, 'sleep': 7},
+        'run': False,
+        'skip': True,
+        'swallow': True,
+        'while': {
+                'stop': 'stop condition',
+                'errorOnMax': True,
+                'sleep': 3,
+                'max': 4
+            }
+        }
+    )
+
+    context._yaml_set_line_col(8, 9)
+
+    step = Step(context)
+    assert step.name == 'blah'
+    assert step.module == mocked_moduleloader.return_value
+    assert step.run_step_function('blah') == 'from arb step mock'
+    assert step.foreach_items == [0]
+    assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
+    assert step.retry_decorator.max == 5
+    assert step.retry_decorator.sleep == 7
+    assert not step.run_me
+    assert step.skip_me
+    assert step.swallow_me
+    assert step.while_decorator.stop == 'stop condition'
+    assert step.while_decorator.error_on_max
+    assert step.while_decorator.sleep == 3
+    assert step.while_decorator.max == 4
+    assert step.line_no == 8
+    assert step.line_col == 9
 
     mocked_moduleloader.assert_called_once_with('blah')
 
@@ -637,17 +713,8 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     assert context['i'] == 'key3'
 
 
-def mock_step_deliberate_error(context):
-    """Mock step's run_step by setting swallow False and raising err."""
-    if context['i'] == 'value2':
-        context['dynamic_swallow_expression'] = True
-    elif context['i'] == 'key3':
-        raise ValueError('arb error')
-
-
 @patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=mock_step_deliberate_error)
-def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
+def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'swallow': '{dynamic_swallow_expression}',
@@ -658,9 +725,21 @@ def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
     original_len = len(context)
 
     logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
-        with patch.object(logger, 'error') as mock_logger_error:
-            step.run_step(context)
+
+    arb_error = ValueError('arb error')
+
+    def mock_step_deliberate_error(context):
+        """Mock step's run_step by setting swallow False and raising err."""
+        if context['i'] == 'value2':
+            context['dynamic_swallow_expression'] = True
+        elif context['i'] == 'key3':
+            raise arb_error
+
+    with patch.object(Step, 'invoke_step',
+                      side_effect=mock_step_deliberate_error) as mock_invoke:
+        with patch.object(logger, 'info') as mock_logger_info:
+            with patch.object(logger, 'error') as mock_logger_error:
+                step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
         call('foreach decorator will loop 3 times.'),
@@ -675,10 +754,21 @@ def test_foreach_evaluates_swallow_decorator(mock_invoke, mock_moduleloader):
         'step1 Ignoring error '
         'because swallow is True for this step.\nValueError: arb error')
 
-    # validate all the in params ended up in context as intended, plus i
-    assert len(context) == original_len + 1
+    # validate all the in params ended up in context as intended, plus i,
+    # plus runErrors
+    assert len(context) == original_len + 2
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'arb error',
+        'exception': arb_error,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': True,
+    }]
 
 # ------------------- Step: run_step: foreach --------------------------------#
 
@@ -774,9 +864,20 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     assert mock_invoke.call_count == 2
 
     # validate all the in params ended up in context as intended, plus i
-    assert len(context) == original_len + 1
+    # plus runErrors
+    assert len(context) == original_len + 2
     # after the looping's done, the i value will be the last iterator value
     assert context['whileCounter'] == 2
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'whoops',
+        'exception': err_info.value,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -1377,7 +1478,7 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
-    mock_invoke_step.mock_calls == 2
+    assert mock_invoke_step.call_count == 2
     mock_invoke_step.assert_called_with(
         {'key1': 'value1',
                  'key2': 'value2',
@@ -1395,6 +1496,49 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len + 1
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+def test_run_on_error(mock_invoke_step,
+                      mock_get_module):
+    """Complex step with swallow false raises error."""
+    complex_step_info = CommentedMap({
+        'name': 'step1',
+        'swallow': 0,
+        'onError': {'arb': 'value'}
+    })
+
+    complex_step_info._yaml_set_line_col(5, 6)
+
+    step = Step(complex_step_info)
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            step.run_step(context)
+
+            assert str(err_info.value) == "arb error here"
+
+    mock_logger_error.assert_called_once_with(
+        "Error while running step step1 at pipeline yaml line: 5, col: 6")
+
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert context['runErrors'] == [{
+        'col': 6,
+        'customError': {'arb': 'value'},
+        'description': 'arb error here',
+        'exception': err_info.value,
+        'line': 5,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
 # ------------------- Step: run_step: run ------------------------------------#
 
 
@@ -1809,9 +1953,8 @@ def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
 
 
 @patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
-def test_run_pipeline_steps_complex_swallow_true_error(mock_invoke_step,
-                                                       mock_get_module):
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     """Complex step with swallow true swallows error."""
     step = Step({
         'name': 'step1',
@@ -1822,9 +1965,12 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_invoke_step,
     original_len = len(context)
 
     logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
-        with patch.object(logger, 'error') as mock_logger_error:
-            step.run_step(context)
+    arb_error = ValueError('arb error here')
+    with patch.object(
+            Step, 'invoke_step', side_effect=arb_error) as mock_invoke_step:
+        with patch.object(logger, 'debug') as mock_logger_debug:
+            with patch.object(logger, 'error') as mock_logger_error:
+                step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
     mock_logger_error.assert_called_once_with(
@@ -1845,8 +1991,19 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_invoke_step,
                  'key6': True,
                  'key7': 77})
 
-    # validate all the in params ended up in context as intended
-    assert len(context) == original_len
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'arb error here',
+        'exception': arb_error,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': True,
+    }]
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -1867,8 +2024,61 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
 
         assert str(err_info.value) == "arb error here"
 
-    # validate all the in params ended up in context as intended
-    assert len(context) == original_len
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'arb error here',
+        'exception': err_info.value,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
+                                               mock_get_module):
+    """Complex step with swallow false raises error."""
+    complex_step_info = CommentedMap({
+        'name': 'step1',
+        'swallow': 0
+    })
+
+    complex_step_info._yaml_set_line_col(5, 6)
+
+    step = Step(complex_step_info)
+
+    context = get_test_context()
+    original_len = len(context)
+
+    logger = logging.getLogger('pypyr.dsl')
+    with patch.object(logger, 'error') as mock_logger_error:
+        with pytest.raises(ValueError) as err_info:
+            step.run_step(context)
+
+            assert str(err_info.value) == "arb error here"
+
+    mock_logger_error.assert_called_once_with(
+        "Error while running step step1 at pipeline yaml line: 5, col: 6")
+
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert context['runErrors'] == [{
+        'col': 6,
+        'customError': {},
+        'description': 'arb error here',
+        'exception': err_info.value,
+        'line': 5,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -1889,12 +2099,24 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
 
     assert str(err_info.value) == "arb error here"
 
-    # validate all the in params ended up in context as intended
-    assert len(context) == original_len
+    # validate all the in params ended up in context as intended,
+    # plus runErrors
+    assert len(context) == original_len + 1
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'arb error here',
+        'exception': err_info.value,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
                                               mock_get_module):
     """Simple step run with error should not swallow."""
@@ -1972,6 +2194,122 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
     assert context['key7'] == 88
 
 # ------------------- Step: set_step_input_context ---------------------------#
+
+
+# ------------------- Step: save_error ---------------------------#
+@patch('pypyr.moduleloader.get_module')
+def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
+    step = Step({'name': 'blah'})
+    context = get_test_context()
+    original_len = len(context)
+    arb_error = ValueError("arb error")
+    step.save_error(context, exception=arb_error, swallowed=False)
+
+    assert len(context) == original_len + 1
+
+    # validate all except runErrors
+    assert get_test_context().items() <= context.items()
+
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {},
+        'description': 'arb error',
+        'exception': arb_error,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_save_error_round_trip(mocked_moduleloader):
+    context = get_test_context()
+    step_info = CommentedMap({'name': 'arb step'})
+    step_info._yaml_set_line_col(6, 7)
+    step = Step(step_info)
+    original_len = len(context)
+    arb_error = ValueError("arb error")
+    step.save_error(context, exception=arb_error, swallowed=True)
+
+    assert len(context) == original_len + 1
+    assert get_test_context().items() <= context.items()
+
+    assert context['runErrors'] == [{
+        'col': 7,
+        'customError': {},
+        'description': 'arb error',
+        'exception': arb_error,
+        'line': 6,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': True,
+    }]
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_save_error_formatted(mocked_moduleloader):
+    step = Step({'name': 'blah', 'onError': {'key': '{key1}'}})
+    context = get_test_context()
+    original_len = len(context)
+    arb_error = ValueError("arb error")
+    step.save_error(context, exception=arb_error, swallowed=False)
+
+    assert len(context) == original_len + 1
+    assert get_test_context().items() <= context.items()
+
+    assert context['runErrors'] == [{
+        'col': None,
+        'customError': {'key': 'value1'},
+        'description': 'arb error',
+        'exception': arb_error,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': False,
+    }]
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_save_error_multiple_call(mocked_moduleloader):
+    step = Step({'name': 'blah'})
+    context = get_test_context()
+    original_len = len(context)
+
+    first_arb_error = ValueError("arb error first")
+    step.save_error(context, exception=first_arb_error, swallowed=True)
+
+    second_arb_error = RuntimeError("arb error second")
+    step.save_error(context, exception=second_arb_error, swallowed=False)
+
+    assert len(context) == original_len + 1
+    assert get_test_context().items() <= context.items()
+
+    assert len(context['runErrors']) == 2
+
+    assert context['runErrors'][0] == {
+        'col': None,
+        'customError': {},
+        'description': 'arb error first',
+        'exception': first_arb_error,
+        'line': None,
+        'name': 'ValueError',
+        'step': step.name,
+        'swallowed': True,
+    }
+
+    assert context['runErrors'][1] == {
+        'col': None,
+        'customError': {},
+        'description': 'arb error second',
+        'exception': second_arb_error,
+        'line': None,
+        'name': 'RuntimeError',
+        'step': step.name,
+        'swallowed': False,
+    }
+
+# ------------------- Step: save_error ---------------------------#
 # ------------------- Step----------------------------------------------------#
 
 # ------------------- RetryDecorator -----------------------------------------#
