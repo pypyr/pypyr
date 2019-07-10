@@ -365,6 +365,9 @@ Don't bother specifying these unless you want to deviate from the default values
         parameter1: value1
         parameter2: value2
       foreach: [] # optional. Repeat the step once for each item in this list.
+      onError: # optional. Custom Error Info to add to error if step fails.
+        code: 111 # you can also use custom elements for your custom error.
+        description: arb description here
       retry: # optional. Retry step until it doesn't raise an error.
         max: 1 # max times to retry. integer. Defaults None (infinite).
         sleep: 0 # sleep between retries, in seconds. Decimals allowed. Defaults 0.
@@ -399,6 +402,16 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | execution, before the *foreach* and *while* |                |
 |               |          | decorators. It does not re-evaluate for each|                |
 |               |          | loop iteration.                             |                |
++---------------+----------+---------------------------------------------+----------------+
+| onError       | any      | If this  step errors, write the contents of | None           |
+|               |          | *onError* to *runErrors.customError* in     |                |
+|               |          | context. Subsequent steps can then use this |                |
+|               |          | information, assuming you've got a *swallow*|                |
+|               |          | somewhere in the call chain.                |                |
+|               |          |                                             |                |
+|               |          | *onError* can be a simple string, or your   |                |
+|               |          | your own dict, or any given object. You can |                |
+|               |          | use `Substitutions`_.                       |                |
 +---------------+----------+---------------------------------------------+----------------+
 | retry         | dict     | Retries the step until it doesn't error.    | None           |
 |               |          | The retry iteration counter is              |                |
@@ -2489,6 +2502,34 @@ both that exception and the original cause exception will be logged.
 
 You can use built-in steps or code your own steps exactly like you would for
 steps - it uses the same function signature.
+
+******
+Errors
+******
+*pypyr* runs pipelines. . . and a pipeline is a sequence of steps. Philosophically,
+*pypyr* assumes that any error is a hard stop, unless you explicitly tell
+*pypyr* differently.
+
+*pypyr* saves all run-time errors to a list in context called *runErrors*.
+
+.. code-block:: yaml
+
+  runErrors:
+    - name: Error Name Here
+      description: Error Description Here
+      customError: # whatever you put into onError on step definition
+      line: 1 # line in pipeline yaml for failing step
+      col: 1 # column in pipeline yaml for failing step
+      step: my.bad.step.name # failing step name
+      exception: ValueError('arb') # the actual python error object
+      swallowed: False # True if err was swallowed
+
+The last error will be the last item in the list. The first error will be the
+first item in the list.
+
+This is handy if you use the *swallow* step decorator to swallow an error or
+bunch of errors, but you still want to do things in subsequent steps with the
+error information.
 
 *************
 Substitutions
