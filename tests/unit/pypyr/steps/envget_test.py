@@ -2,12 +2,12 @@
 import logging
 import os
 import pytest
-from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import ContextError, KeyNotInContextError
 import pypyr.steps.envget
 
 # ------------------------- run_step -----------------------------------------#
+from tests.common.utils import patch_logger
 
 
 def test_envget_throws_on_empty_context():
@@ -60,8 +60,7 @@ def test_envget_pass():
         ]
     })
 
-    logger = logging.getLogger('pypyr.steps.envget')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.envget', logging.INFO) as mock_logger_info:
         pypyr.steps.envget.run_step(context)
 
     del os.environ['ARB_DELETE_ME1']

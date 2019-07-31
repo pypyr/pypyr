@@ -5,6 +5,7 @@ from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.glob as glob_step
+from tests.common.utils import patch_logger
 
 
 def test_glob_no_input_raises():
@@ -74,8 +75,7 @@ def test_glob_single(mock_glob):
 
     mock_glob.return_value = ['./foundfile']
 
-    logger = logging.getLogger('pypyr.steps.glob')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.glob', logging.INFO) as mock_logger_info:
         glob_step.run_step(context)
 
     mock_logger_info.assert_called_once_with(
@@ -98,8 +98,8 @@ def test_glob_single_not_found(mock_glob):
 
     mock_glob.return_value = []
 
-    logger = logging.getLogger('pypyr.steps.glob')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.glob', logging.INFO) as mock_logger_info:
         glob_step.run_step(context)
 
     mock_logger_info.assert_called_once_with(
@@ -148,8 +148,7 @@ def test_glob_list(mock_glob):
         './f2.3',
     ]
 
-    logger = logging.getLogger('pypyr.steps.glob')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.glob', logging.INFO) as mock_logger_info:
         glob_step.run_step(context)
 
     mock_logger_info.assert_called_once_with(
@@ -179,8 +178,7 @@ def test_glob_list_none(mock_glob):
 
     mock_glob.return_value = []
 
-    logger = logging.getLogger('pypyr.steps.glob')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.glob', logging.INFO) as mock_logger_info:
         glob_step.run_step(context)
 
     mock_logger_info.assert_called_once_with(

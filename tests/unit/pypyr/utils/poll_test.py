@@ -5,6 +5,9 @@ import pypyr.utils.poll as poll
 
 
 # ----------------- wait_until_true -------------------------------------------
+from tests.common.utils import patch_logger
+
+
 @patch('time.sleep')
 def test_wait_until_true_with_static_decorator(mock_time_sleep):
     """wait_until_true with static decorator"""
@@ -352,8 +355,7 @@ def test_while_until_true_no_max(mock_time_sleep):
         else:
             return False
 
-    logger = logging.getLogger('pypyr.utils.poll')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.utils.poll', logging.DEBUG) as mock_logger_debug:
         assert (poll.while_until_true(interval=0.01,
                                       max_attempts=None)(decorate_me)('v1',
                                                                       'v2'))
@@ -402,8 +404,7 @@ def test_while_until_true_max_exhaust(mock_time_sleep):
         assert out == f'test string {counter}'
         return False
 
-    logger = logging.getLogger('pypyr.utils.poll')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.utils.poll', logging.DEBUG) as mock_logger_debug:
         assert not (poll.while_until_true(interval=0.01,
                                           max_attempts=3)(decorate_me)('v1',
                                                                        'v2'))

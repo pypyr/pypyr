@@ -75,10 +75,10 @@ def env_get(context):
         logger.debug("start")
 
         for k, v in get.items():
-            logger.debug(f"setting context {k} to $ENV {v}")
+            logger.debug("setting context %s to $ENV %s", k, v)
             context[k] = os.environ[v]
 
-        logger.info(f"saved {len(get)} $ENVs to context.")
+        logger.info("saved %d $ENVs to context.", len(get))
         exists = True
 
         logger.debug("done")
@@ -121,10 +121,10 @@ def env_set(context):
         logger.debug("started")
 
         for k, v in env_set.items():
-            logger.debug(f"setting ${k} to context[{v}]")
+            logger.debug("setting $%s to context[%s]", k, v)
             os.environ[k] = context.get_formatted_string(v)
 
-        logger.info(f"set {len(env_set)} $ENVs from context.")
+        logger.info("set %s $ENVs from context.", len(env_set))
         exists = True
 
         logger.debug("done")
@@ -160,7 +160,7 @@ def env_unset(context):
         logger.debug("started")
 
         for env_var_name in unset:
-            logger.debug(f"unsetting ${env_var_name}")
+            logger.debug("unsetting $%s", env_var_name)
             try:
                 del os.environ[env_var_name]
             except KeyError:
@@ -168,9 +168,9 @@ def env_unset(context):
                 # exist, no real point in throwing up an error that the thing
                 # you're trying to be rid off isn't there anyway.
                 logger.debug(
-                    f"${env_var_name} doesn't exist anyway. As you were.")
+                    "$%s doesn't exist anyway. As you were.", env_var_name)
 
-        logger.info(f"unset {len(unset)} $ENVs.")
+        logger.info("unset %d $ENVs.", len(unset))
         exists = True
 
         logger.debug("done")

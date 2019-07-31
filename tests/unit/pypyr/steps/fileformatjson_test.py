@@ -2,12 +2,13 @@
 import logging
 import os
 import json
-from unittest.mock import patch
 import shutil
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformatjson as fileformat
 import pytest
+
+from tests.common.utils import patch_logger
 
 
 def test_fileformatjson_no_in_obj_raises():
@@ -220,8 +221,9 @@ def test_fileformatjson_pass_with_path_substitutions_deprecated():
         'fileFormatJsonIn': './tests/testfiles/{pathIn}.json',
         'fileFormatJsonOut': './tests/testfiles/out/{pathOut}.json'})
 
-    logger = logging.getLogger('pypyr.steps.fileformatjson')
-    with patch.object(logger, 'warning') as mock_logger_warn:
+    with patch_logger(
+            'pypyr.steps.fileformatjson', logging.WARNING
+    ) as mock_logger_warn:
         fileformat.run_step(context)
 
     mock_logger_warn.assert_called_once_with(

@@ -52,6 +52,6 @@ def run_step(context):
 
     context['globOut'] = pypyr.utils.filesystem.get_glob(paths)
 
-    logger.info(f"glob checked {in_count} globs and saved "
-                f"{len(context['globOut'])} paths to globOut")
+    logger.info("glob checked %s globs and saved "
+                "%s paths to globOut", in_count, len(context['globOut']))
     logger.debug("done")

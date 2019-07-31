@@ -3,10 +3,10 @@ import logging
 import os
 import pytest
 import shutil
-from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformat as fileformat
+from tests.common.utils import patch_logger
 
 
 def test_fileformat_no_inpath_raises():
@@ -188,8 +188,9 @@ def test_fileformat_pass_with_path_substitutions_deprecated():
         'fileFormatIn': './tests/testfiles/{inFileName}.txt',
         'fileFormatOut': './tests/testfiles/out/{outFileName}.txt'})
 
-    logger = logging.getLogger('pypyr.steps.fileformat')
-    with patch.object(logger, 'warning') as mock_logger_warn:
+    with patch_logger(
+            'pypyr.steps.fileformat', logging.WARNING
+    ) as mock_logger_warn:
         fileformat.run_step(context)
 
     assert context, "context shouldn't be None"

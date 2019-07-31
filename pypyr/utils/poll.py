@@ -30,15 +30,15 @@ def wait_until_true(interval, max_attempts):
         logger.debug("started")
 
         def sleep_looper(*args, **kwargs):
-            logger.debug(f"Looping every {interval} seconds for "
-                         f"{max_attempts} attempts")
+            logger.debug("Looping every %s seconds for %s attempts",
+                         interval, max_attempts)
             for i in range(1, max_attempts + 1):
                 result = f(*args, **kwargs)
                 if result:
-                    logger.debug(f"iteration {i}. Desired state reached.")
+                    logger.debug("iteration %s. Desired state reached.", i)
                     return True
                 if i < max_attempts:
-                    logger.debug(f"iteration {i}. Still waiting. . .")
+                    logger.debug("iteration %s. Still waiting. . .", i)
                     time.sleep(interval)
             logger.debug("done")
             return False
@@ -81,10 +81,10 @@ def while_until_true(interval, max_attempts):
 
         def sleep_looper(*args, **kwargs):
             if max_attempts:
-                logger.debug(f"Looping every {interval} seconds for "
-                             f"{max_attempts} attempts")
+                logger.debug("Looping every %s seconds for %s attempts",
+                             interval, max_attempts)
             else:
-                logger.debug(f"Looping every {interval} seconds.")
+                logger.debug("Looping every %s seconds.", interval)
 
             i = 0
             result = False
@@ -96,19 +96,20 @@ def while_until_true(interval, max_attempts):
                 i += 1
                 result = f(i, *args, **kwargs)
                 if result:
-                    logger.debug(f"iteration {i}. Desired state reached.")
+                    logger.debug("iteration %s. Desired state reached.", i)
                     break
                 elif max_attempts:
                     if i < max_attempts:
-                        logger.debug(f"iteration {i}. Still waiting. . .")
+                        logger.debug("iteration %s. Still waiting. . .", i)
                         time.sleep(interval)
                     else:
-                        logger.debug(f"iteration {i}. Max attempts exhausted.")
+                        logger.debug("iteration %s. Max attempts exhausted.",
+                                     i)
                         break
                 else:
                     # result False AND max_attempts is None means keep looping
                     # because None = infinite
-                    logger.debug(f"iteration {i}. Still waiting. . .")
+                    logger.debug("iteration %s. Still waiting. . .", i)
                     time.sleep(interval)
             logger.debug("done")
             return result

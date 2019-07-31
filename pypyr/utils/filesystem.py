@@ -137,23 +137,23 @@ class FileRewriter(ABC):
                             # specified without an out file name
                             actual_out = basedir_out.joinpath(actual_in.name)
 
-                        logger.debug(f"writing {path} to {actual_out}")
+                        logger.debug("writing %s to %s", path, actual_out)
                         self.in_to_out(in_path=actual_in, out_path=actual_out)
                     else:
-                        logger.debug(f"editing {path}")
+                        logger.debug("editing %s", path)
                         self.in_to_out(in_path=actual_in)
                         is_edit = True
                     file_counter += 1
 
             if is_edit:
                 logger.info(
-                    f"edited & wrote {file_counter} file(s) at {in_path}")
+                    "edited & wrote %s file(s) at %s", file_counter, in_path)
             else:
                 logger.info(
-                    f"read {in_path}, formatted and wrote {file_counter} "
-                    f"file(s) to {out_path}")
+                    "read %s, formatted and wrote %s file(s) to %s",
+                    in_path, file_counter, out_path)
         else:
-            logger.info(f"{in_path} found no files")
+            logger.info("%s found no files", in_path)
 
 
 class ObjectRewriter(FileRewriter):
@@ -210,7 +210,7 @@ class ObjectRewriter(FileRewriter):
                 "file and then replacing in path with the temp file.")
             out_path = None
 
-        logger.debug(f"opening source file: {in_path}")
+        logger.debug("opening source file: %s", in_path)
         with open(in_path) as infile:
             obj = self.object_representer.load(infile)
 
@@ -228,7 +228,7 @@ class ObjectRewriter(FileRewriter):
                                     delete=False) as outfile:
                 self.object_representer.dump(outfile, self.formatter(obj))
 
-            logger.debug(f"moving temp file to: {in_path}")
+            logger.debug("moving temp file to: %s", in_path)
 
             move_temp_file(outfile.name, infile.name)
 
@@ -276,11 +276,11 @@ class StreamRewriter(FileRewriter):
             out_path = None
             is_in_place_edit = True
 
-        logger.debug(f"opening source file: {in_path}")
+        logger.debug("opening source file: %s", in_path)
         with open(in_path) as infile:
             if out_path:
                 logger.debug(
-                    f"opening destination file for writing: {out_path}")
+                    "opening destination file for writing: %s", out_path)
                 ensure_dir(out_path)
                 with open(out_path, 'w') as outfile:
                     outfile.writelines(self.formatter(infile))
@@ -299,7 +299,7 @@ class StreamRewriter(FileRewriter):
         # and cov not smart enough to realize that !is_in_place_edit won't ever
         # happen here (the function will have exited already)
         if is_in_place_edit:    # pragma: no branch
-            logger.debug(f"moving temp file to: {in_path}")
+            logger.debug("moving temp file to: %s", in_path)
             move_temp_file(outfile.name, infile.name)
 
 
@@ -481,8 +481,8 @@ def move_file(src, dest):
     try:
         os.replace(src, dest)
     except Exception as ex_replace:
-        logger.error(f"error moving file {src} to "
-                     f"{dest}. {ex_replace}")
+        logger.error("error moving file %s to "
+                     "%s. %s", src, dest, ex_replace)
         raise
 
 
@@ -514,7 +514,7 @@ def move_temp_file(src, dest):
             # raising the original error, though, not this error in the
             # error handler, as the 1st was the initial cause of all of
             # this.
-            logger.error(f"error removing temp file {src}. "
-                         f"{ex_clean}")
+            logger.error("error removing temp file %s. %s",
+                         src, ex_clean)
 
         raise

@@ -39,7 +39,7 @@ def run_step(context):
     context.assert_key_has_value(key='contextSet', caller=__name__)
 
     for k, v in context['contextSet'].items():
-        logger.debug(f"setting context {k} to value from context {v}")
+        logger.debug("setting context %s to value from context %s", k, v)
         context[k] = context[v]
 
     logger.debug("done")

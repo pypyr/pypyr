@@ -1,8 +1,8 @@
 """pathcheck.py integration tests."""
 import logging
-from unittest.mock import patch
 from pypyr.context import Context
 import pypyr.steps.pathcheck as pathchecker
+from tests.common.utils import patch_logger
 
 
 def test_pathcheck_list_none():
@@ -11,8 +11,9 @@ def test_pathcheck_list_none():
         'ok1': 'ov1',
         'pathCheck': ['./{ok1}/x', './arb/{ok1}', '{ok1}/arb/z']})
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO
+    ) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 3 path(s) and found 0')
@@ -67,8 +68,9 @@ def test_pathcheck_list():
                       './tests/testfiles/glob/arb.2*',
                       './tests/testfiles/glob/arb.XX']})
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO
+    ) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 3 path(s) and found 3')

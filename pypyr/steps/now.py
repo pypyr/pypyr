@@ -39,5 +39,5 @@ def run_step(context):
     else:
         context['now'] = datetime.now(tzlocal()).isoformat()
 
-    logger.info(f"timestamp {context['now']} saved to context now")
+    logger.info("timestamp %s saved to context now", context['now'])
     logger.debug("done")

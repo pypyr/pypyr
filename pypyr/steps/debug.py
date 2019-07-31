@@ -44,7 +44,7 @@ def run_step(context):
         format = debug.get('format', False)
 
         if keys:
-            logger.debug(f"Writing to output: {keys}")
+            logger.debug("Writing to output: %s", keys)
             if isinstance(keys, str):
                 payload = {keys: context[keys]}
             else:
@@ -59,6 +59,6 @@ def run_step(context):
     else:
         payload = context
 
-    logger.info(f'\n{json.dumps(payload, indent=2, ensure_ascii=False)}')
+    logger.info('\n%s', json.dumps(payload, indent=2, ensure_ascii=False))
 
     logger.debug("done")

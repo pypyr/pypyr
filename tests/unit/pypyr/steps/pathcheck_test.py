@@ -5,6 +5,7 @@ from unittest.mock import call, patch
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.pathcheck as pathchecker
+from tests.common.utils import patch_logger
 
 
 def test_pathcheck_no_input_raises():
@@ -65,8 +66,8 @@ def test_pathcheck_single(mock_glob):
 
     mock_glob.return_value = ['./foundfile']
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 1 path(s) and found 1')
@@ -92,8 +93,8 @@ def test_pathcheck_single_not_found(mock_glob):
 
     mock_glob.return_value = []
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 1 path(s) and found 0')
@@ -148,8 +149,8 @@ def test_pathcheck_list(mock_glob):
         []
     ]
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 3 path(s) and found 4')
@@ -194,8 +195,8 @@ def test_pathcheck_list_none(mock_glob):
         []
     ]
 
-    logger = logging.getLogger('pypyr.steps.pathcheck')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pathcheck', logging.INFO) as mock_logger_info:
         pathchecker.run_step(context)
 
     mock_logger_info.assert_called_once_with('checked 3 path(s) and found 0')

@@ -59,6 +59,6 @@ def run_step(context):
 
     context.merge(context['contextMerge'])
 
-    logger.info(f"merged {len(context['contextMerge'])} context items.")
+    logger.info("merged %d context items.", len(context['contextMerge']))
 
     logger.debug("done")

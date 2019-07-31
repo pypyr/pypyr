@@ -40,5 +40,5 @@ def run_step(context):
     else:
         context['nowUtc'] = datetime.now(timezone.utc).isoformat()
 
-    logger.info(f"timestamp {context['nowUtc']} saved to context nowUtc")
+    logger.info("timestamp %s saved to context nowUtc", context['nowUtc'])
     logger.debug("done")

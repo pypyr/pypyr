@@ -7,6 +7,7 @@ from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.pype as pype
 
 # ------------------------ get_arguments --------------------------------------
+from tests.common.utils import patch_logger
 
 
 def test_pype_get_arguments_all():
@@ -147,9 +148,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
@@ -179,9 +178,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
         }
     })
     context.working_dir = 'arb/dir'
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
@@ -210,9 +207,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         }
     })
     context.working_dir = 'arb/dir'
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
@@ -241,9 +236,7 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         }
     })
     context.working_dir = 'arb/dir'
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
@@ -272,9 +265,7 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
             'raiseError': True
         }
     })
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(RuntimeError) as err_info:
             pype.run_step(context)
 
@@ -306,9 +297,7 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
-
-    logger = logging.getLogger('pypyr.steps.pype')
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(

@@ -37,10 +37,10 @@ def run_step(context):
     context.assert_key_has_value(key='contextClear', caller=__name__)
 
     for k in context['contextClear']:
-        logger.debug(f"removing {k} from context")
+        logger.debug("removing %s from context", k)
         # slightly unorthodox pop returning None means you don't get a KeyError
         # if key doesn't exist
         context.pop(k, None)
-        logger.info(f"removed {k} from context")
+        logger.info("removed %s from context", k)
 
     logger.debug("done")

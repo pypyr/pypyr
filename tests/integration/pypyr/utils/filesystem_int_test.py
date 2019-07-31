@@ -10,6 +10,8 @@ import pypyr.utils.filesystem as filesystem
 
 
 # ------------------------ setup/teardown/fixtures ----------------------------
+from tests.common.utils import patch_logger
+
 
 @pytest.fixture(scope="module")
 def temp_dir():
@@ -117,8 +119,9 @@ def test_filerewriter_files_in_to_out_no_in_found_no_out():
     """Files in to out does nothing when in glob finds nothing, no outpath."""
     rewriter = ArbRewriter("formatter")
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out('./arb/*')
 
     assert mock_logger_info.mock_calls == [
@@ -131,8 +134,9 @@ def test_filerewriter_files_in_to_out_no_in_found_with_out():
     """Files in to out does nothing when in glob finds nothing, with out."""
     rewriter = ArbRewriter("formatter")
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out('./arb/*', './arb2/*')
 
     assert mock_logger_info.mock_calls == [
@@ -148,8 +152,10 @@ def test_filerewriter_files_in_to_out_1_to_1_str(temp_dir,
 
     file1 = temp_file_creator()
     out = temp_dir.joinpath('outfile')
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(str(file1), str(out))
 
     assert mock_logger_info.mock_calls == [
@@ -165,8 +171,10 @@ def test_filerewriter_files_in_to_out_1_to_1_path(temp_dir,
 
     file1 = temp_file_creator()
     out = temp_dir.joinpath('outfile')
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(file1, out)
 
     assert mock_logger_info.mock_calls == [
@@ -209,8 +217,9 @@ def test_filerewriter_files_in_to_out_edit_dir_slash(temp_dir,
     in_path = temp_dir.joinpath('*')
     out = str(temp_dir) + os.sep
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(in_path, out)
 
     assert mock_logger_info.mock_calls == [
@@ -230,8 +239,9 @@ def test_filerewriter_files_in_to_out_dir_slash_create(temp_dir,
     in_path = temp_dir.joinpath("*")
     out = str(temp_dir.joinpath('sub')) + os.sep
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(in_path, out)
 
     assert mock_logger_info.mock_calls == [
@@ -253,8 +263,9 @@ def test_filerewriter_files_in_to_out_edit_dir_no_slash(temp_dir,
 
     file1 = temp_file_creator()
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(file1, temp_dir)
 
     assert mock_logger_info.mock_calls == [
@@ -271,8 +282,9 @@ def test_filerewriter_files_in_to_out_no_out(temp_file_creator):
 
     file1 = temp_file_creator()
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(file1)
 
     assert mock_logger_info.mock_calls == [
@@ -293,8 +305,9 @@ def test_filerewriter_files_in_to_out_in_glob_no_out(temp_dir,
 
     in_glob = temp_dir.joinpath('*')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(in_glob)
 
     assert mock_logger_info.mock_calls == [
@@ -316,8 +329,9 @@ def test_filerewriter_files_in_to_out_in_list_no_out(temp_file_creator):
 
     in_list = [file1, str(file2), file3]
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.INFO
+    ) as mock_logger_info:
         rewriter.files_in_to_out(in_list)
 
     assert mock_logger_info.mock_calls == [
@@ -377,8 +391,9 @@ def test_objectrewriter_in_to_out_str(temp_dir, temp_file_creator):
     path_in.write_text('yyy')
     out_str = str(temp_dir.joinpath('sub', 'filename'))
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(str(path_in), out_str)
 
     assert representer.load_payload == 'yyy'
@@ -407,8 +422,9 @@ def test_objectrewriter_in_to_out_path(temp_dir, temp_file_creator):
     path_in.write_text('yyy')
     path_out = temp_dir.joinpath('sub', 'filename')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(path_in, path_out)
 
     assert representer.load_payload == 'yyy'
@@ -435,8 +451,9 @@ def test_objectrewriter_in_to_out_no_out_path(temp_file_creator):
     path_in = temp_file_creator()
     path_in.write_text('yyy')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(path_in, None)
 
     assert representer.load_payload == 'yyy'
@@ -462,8 +479,9 @@ def test_objectrewriter_in_to_out_no_out_str(temp_file_creator):
     path_in = temp_file_creator()
     path_in.write_text('yyy')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(str(path_in), None)
 
     assert representer.load_payload == 'yyy'
@@ -491,8 +509,9 @@ def test_objectrewriter_in_to_out_same_path(temp_file_creator):
 
     str_out = os.path.relpath(path_in)
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(path_in, str_out)
 
     assert representer.load_payload == 'yyy'
@@ -522,8 +541,9 @@ def test_streamrewriter_in_to_out_path(temp_dir, temp_file_creator):
     path_in.write_text('yyy')
     path_out = temp_dir.joinpath('sub', 'filename')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(path_in, path_out)
 
     assert mock_logger_debug.mock_calls == [
@@ -544,8 +564,9 @@ def test_streamrewriter_in_to_out_str(temp_dir, temp_file_creator):
     path_in.write_text('yyy')
     path_out = temp_dir.joinpath('sub', 'filename')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(str(path_in), str(path_out))
 
     assert mock_logger_debug.mock_calls == [
@@ -565,8 +586,9 @@ def test_streamrewriter_in_to_out_no_out_path(temp_file_creator):
     path_in = temp_file_creator()
     path_in.write_text('yyy')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(path_in, None)
 
     assert mock_logger_debug.mock_calls == [
@@ -585,8 +607,9 @@ def test_streamrewriter_in_to_out_no_out_str(temp_file_creator):
     path_in = temp_file_creator()
     path_in.write_text('yyy')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(str(path_in), None)
 
     assert mock_logger_debug.mock_calls == [
@@ -607,8 +630,9 @@ def test_streamrewriter_in_to_out_same_path(temp_file_creator):
 
     str_out = os.path.relpath(path_in)
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.DEBUG
+    ) as mock_logger_debug:
         rewriter.in_to_out(str(path_in), str_out)
 
     assert mock_logger_debug.mock_calls == [
@@ -938,8 +962,9 @@ def test_move_temp_file_err_removing_src(mock_remove,
 
     file2 = temp_dir.joinpath('blah', 'file2')
 
-    logger = logging.getLogger('pypyr.utils.filesystem')
-    with patch.object(logger, 'error') as mock_logger_err:
+    with patch_logger(
+            'pypyr.utils.filesystem', logging.ERROR
+    ) as mock_logger_err:
         with pytest.raises(FileNotFoundError) as err:
             filesystem.move_temp_file(file1, file2)
 

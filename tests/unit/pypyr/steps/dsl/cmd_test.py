@@ -10,6 +10,7 @@ from pypyr.errors import (ContextError,
 from pypyr.steps.dsl.cmd import CmdStep
 
 # ------------------------- FileInRewriterStep -------------------------------
+from tests.common.utils import patch_logger
 
 
 def test_cmdstep_name_required():
@@ -53,8 +54,7 @@ def test_cmdstep_context_cmd_not_dict():
 
 def test_cmdstep_cmd_is_string():
     """Str command is always not is_save."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': 'blah'}))
 
     assert not obj.is_save
@@ -68,8 +68,7 @@ def test_cmdstep_cmd_is_string():
 
 def test_cmdstep_cmd_is_dict_default_save_false():
     """Dict command defaults not is_save."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {'run': 'blah'}}))
 
     assert not obj.is_save
@@ -82,8 +81,7 @@ def test_cmdstep_cmd_is_dict_default_save_false():
 
 def test_cmdstep_cmd_is_dict_default_save_true():
     """Dict command with is_save true."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {'run': 'blah',
                                                    'save': True}}))
 
@@ -98,8 +96,7 @@ def test_cmdstep_cmd_is_dict_default_save_true():
 
 def test_cmdstep_cmd_is_dict_cwd():
     """Cwd assigns."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {'run': 'blah',
                                                    'cwd': 'pathhere'}}))
 
@@ -114,8 +111,7 @@ def test_cmdstep_cmd_is_dict_cwd():
 
 def test_cmdstep_cmd_is_dict_cwd_none():
     """Explicit None on cwd."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {'run': 'blah',
                                                    'cwd': None}}))
 
@@ -130,8 +126,7 @@ def test_cmdstep_cmd_is_dict_cwd_none():
 
 def test_cmdstep_runstep_cmd_is_string_shell_false():
     """Str command is always not is_save."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': 'blah -blah1 --blah2'}))
 
     assert not obj.is_save
@@ -151,8 +146,7 @@ def test_cmdstep_runstep_cmd_is_string_shell_false():
 
 def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
     """Str command is always not is_save and works with formatting."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'k1': 'blah',
                                            'cmd': '{k1} -{k1}1 --{k1}2'}))
 
@@ -175,8 +169,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
 
 def test_cmdstep_runstep_cmd_is_string_shell_true():
     """Str command is always not is_save."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': 'blah -blah1 --blah2'}))
 
     assert not obj.is_save
@@ -196,8 +189,7 @@ def test_cmdstep_runstep_cmd_is_string_shell_true():
 
 def test_cmdstep_runstep_cmd_is_string_formatting_shell_true():
     """Str command is always not is_save and works with formatting."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'k1': 'blah',
                                            'cmd': '{k1} -{k1}1 --{k1}2'}))
 
@@ -219,8 +211,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_true():
 
 def test_cmdstep_runstep_cmd_is_dict_save_false_shell_false():
     """Dict command with save false and shell false."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {
             'run': 'blah -blah1 --blah2'}}))
 
@@ -241,8 +232,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_false():
 
 def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true():
     """Dict command with save false and shell true."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({'cmd': {
             'run': 'blah -blah1 --blah2'}}))
 
@@ -263,8 +253,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true():
 
 def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true_cwd_formatting():
     """Dict command with save false and shell true, cwd formatting."""
-    logger = logging.getLogger('blahname')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', Context({
             'k1': 'v1',
             'k2': 'v2',
@@ -293,10 +282,9 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_true_cwd_formatting():
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
     """Dict command with save false and shell false."""
-    logger = logging.getLogger('blahname')
     context = Context({'cmd': {'run': 'blah -blah1 --blah2',
                                'save': True}})
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', context)
 
     assert obj.is_save
@@ -312,7 +300,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
                                                             0,
                                                             'std',
                                                             'err')
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('blahname', logging.ERROR) as mock_logger_error:
             obj.run_step(is_shell=False)
 
     mock_logger_error.assert_called_once_with('stderr: err')
@@ -333,10 +321,9 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
     """Dict command with save false and shell true."""
-    logger = logging.getLogger('blahname')
     context = Context({'cmd': {'run': 'blah -blah1 --blah2',
                                'save': True}})
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', context)
 
     assert obj.is_save
@@ -352,7 +339,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
                                                             0,
                                                             'std',
                                                             None)
-        with patch.object(logger, 'info') as mock_logger_info:
+        with patch_logger('blahname', logging.INFO) as mock_logger_info:
             obj.run_step(is_shell=True)
 
     mock_logger_info.assert_called_once_with('stdout: std')
@@ -374,11 +361,10 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
     """Dict command with save false and shell true with cwd set."""
-    logger = logging.getLogger('blahname')
     context = Context({'cmd': {'run': 'blah -blah1 --blah2',
                                'save': True,
                                'cwd': 'pathhere'}})
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', context)
 
     assert obj.is_save
@@ -395,7 +381,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
                                                             0,
                                                             'std',
                                                             None)
-        with patch.object(logger, 'info') as mock_logger_info:
+        with patch_logger('blahname', logging.INFO) as mock_logger_info:
             obj.run_step(is_shell=True)
 
     mock_logger_info.assert_called_once_with('stdout: std')
@@ -417,12 +403,11 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
     """Dict command with save false and shell false with formatting."""
-    logger = logging.getLogger('blahname')
     context = Context({'k1': 'blah',
                        'k2': True,
                        'cmd': {'run': '{k1} -{k1}1 --{k1}2',
                                'save': '{k2}'}})
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
         obj = CmdStep('blahname', context)
 
     assert obj.is_save
@@ -440,7 +425,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
                                                             0,
                                                             'std',
                                                             'err')
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('blahname', logging.ERROR) as mock_logger_error:
             obj.run_step(is_shell=False)
 
     mock_logger_error.assert_called_once_with('stderr: err')

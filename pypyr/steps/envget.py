@@ -55,7 +55,7 @@ def run_step(context):
     for get_me in get_items:
         (env, key, has_default, default) = get_args(get_me)
 
-        logger.debug(f"setting context {key} to $ENV {env}")
+        logger.debug("setting context %s to $ENV %s", key, env)
         formatted_key = context.get_formatted_string(key)
         formatted_env = context.get_formatted_string(env)
 
@@ -63,18 +63,18 @@ def run_step(context):
             context[formatted_key] = os.environ[formatted_env]
             get_count += 1
         else:
-            logger.debug(f"$ENV {env} not found.")
+            logger.debug("$ENV %s not found.", env)
             if has_default:
-                logger.debug(f"Using default value for {env} instead.")
+                logger.debug("Using default value for %s instead.", env)
                 formatted_default = context.get_formatted_iterable(default)
                 context[formatted_key] = os.environ.get(formatted_env,
                                                         formatted_default)
                 get_count += 1
             else:
                 logger.debug(
-                    f"No default value for {env} found. Doin nuthin'.")
+                    "No default value for %s found. Doin nuthin'.", env)
 
-    logger.info(f"saved {get_count} $ENVs to context.")
+    logger.info("saved %s $ENVs to context.", get_count)
 
 
 def get_args(get_item):

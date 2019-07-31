@@ -1,7 +1,7 @@
 """string.py unit tests."""
 import logging
-from unittest.mock import patch
 import pypyr.parser.string
+from tests.common.utils import patch_logger
 
 
 def test_comma_string_parses_to_dict():
@@ -20,9 +20,9 @@ def test_no_commas_string_parses_to_single_entry():
 
 def test_empty_string_throw():
     """Empty input string should throw assert error."""
-    logger = logging.getLogger('pypyr.parser.string')
 
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger(
+            'pypyr.parser.string', logging.DEBUG) as mock_logger_debug:
         out = pypyr.parser.string.get_parsed_context(None)
 
     assert out['argString'] is None

@@ -2,12 +2,13 @@
 import logging
 import os
 import shutil
-from unittest.mock import patch
 import ruamel.yaml as yaml
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformatyaml as fileformat
 import pytest
+
+from tests.common.utils import patch_logger
 
 
 def test_fileformatyaml_no_inpath_raises():
@@ -241,8 +242,9 @@ def test_fileformatyaml_pass_with_path_substitutions_deprecated():
         'fileFormatYamlIn': './tests/testfiles/{pathIn}.yaml',
         'fileFormatYamlOut': './tests/testfiles/out/{pathOut}.yaml'})
 
-    logger = logging.getLogger('pypyr.steps.fileformatyaml')
-    with patch.object(logger, 'warning') as mock_logger_warn:
+    with patch_logger(
+            'pypyr.steps.fileformatyaml', logging.WARNING
+    ) as mock_logger_warn:
         fileformat.run_step(context)
 
     mock_logger_warn.assert_called_once_with(

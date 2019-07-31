@@ -58,7 +58,7 @@ def run_step(context):
 
     try:
         if use_parent_context:
-            logger.info(f"pyping {pipeline_name}, using parent context.")
+            logger.info("pyping %s, using parent context.", pipeline_name)
             pipelinerunner.load_and_run_pipeline(
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
@@ -67,7 +67,7 @@ def run_step(context):
                 loader=loader
             )
         else:
-            logger.info(f"pyping {pipeline_name}, without parent context.")
+            logger.info("pyping %s, without parent context.", pipeline_name)
             pipelinerunner.load_and_run_pipeline(
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
@@ -76,19 +76,19 @@ def run_step(context):
                 loader=loader
             )
 
-        logger.info(f"pyped {pipeline_name}.")
+        logger.info("pyped %s.", pipeline_name)
     except Exception as ex_info:
         # yes, yes, don't catch Exception. Have to, though, in order to swallow
         # errs if !raise_error
-        logger.error(f"Something went wrong pyping {pipeline_name}. "
-                     f"{type(ex_info).__name__}: {ex_info}")
+        logger.error("Something went wrong pyping %s. %s: %s",
+                     pipeline_name, type(ex_info).__name__, ex_info)
 
         if raise_error:
             logger.debug("Raising original exception to caller.")
             raise
         else:
             logger.debug(
-                f"raiseError is False. Swallowing error in {pipeline_name}.")
+                "raiseError is False. Swallowing error in %s.", pipeline_name)
 
     logger.debug("done")
 

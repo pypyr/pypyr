@@ -15,10 +15,10 @@ def get_parsed_context(context_arg):
                          "pypyr pipelinename './myjsonfile.json'")
     logger.debug("starting")
     # open the json file on disk so that you can initialize the dictionary
-    logger.debug(f"attempting to open file: {context_arg}")
+    logger.debug("attempting to open file: %s", context_arg)
     with open(context_arg) as json_file:
         payload = json.load(json_file)
 
-    logger.debug(f"json file loaded into context. Count: {len(payload)}")
+    logger.debug("json file loaded into context. Count: %d", len(payload))
     logger.debug("done")
     return payload

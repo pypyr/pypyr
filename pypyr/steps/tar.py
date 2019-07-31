@@ -132,10 +132,10 @@ def tar_archive(context):
         # key is the source to archive
         source = context.get_formatted_string(item['in'])
         with tarfile.open(destination, mode) as archive_me:
-            logger.debug(f"Archiving '{source}' to '{destination}'")
+            logger.debug("Archiving '%s' to '%s'", source, destination)
 
             archive_me.add(source, arcname='.')
-            logger.info(f"Archived '{source}' to '{destination}'")
+            logger.info("Archived '%s' to '%s'", source, destination)
 
     logger.debug("end")
 
@@ -170,10 +170,10 @@ def tar_extract(context):
         # out is the outdir, dhur. Allows string interpolation.
         destination = context.get_formatted_string(item['out'])
         with tarfile.open(source, mode) as extract_me:
-            logger.debug(f"Extracting '{source}' to '{destination}'")
+            logger.debug("Extracting '%s' to '%s'", source, destination)
 
             extract_me.extractall(destination)
-            logger.info(f"Extracted '{source}' to '{destination}'")
+            logger.info("Extracted '%s' to '%s'", source, destination)
 
     logger.debug("end")
 

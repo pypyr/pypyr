@@ -79,6 +79,6 @@ def run_step(context):
 
     context.set_defaults(context['defaults'])
 
-    logger.info(f"set {len(context['defaults'])} context item defaults.")
+    logger.info("set %s context item defaults.", len(context['defaults']))
 
     logger.debug("done")
