@@ -6,7 +6,8 @@ from pypyr.context import Context
 from pypyr.dsl import Step
 from pypyr.errors import ContextError
 import pypyr.stepsrunner
-from tests.common.utils import DeepCopyMagicMock
+from tests.common.utils import DeepCopyMagicMock, patch_logger
+
 
 # ------------------------- test context--------------------------------------#
 
@@ -71,8 +72,7 @@ def get_valid_test_pipeline():
 
 def test_get_pipeline_steps_pass():
     """Return named step group from pipeline"""
-    logger = logging.getLogger('pypyr.stepsrunner')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         steps = pypyr.stepsrunner.get_pipeline_steps(
             get_test_pipeline(), 'sg1')
 
@@ -88,8 +88,7 @@ def test_get_pipeline_steps_pass():
 
 def test_get_pipeline_steps_not_found():
     """Can't find step group in pipeline"""
-    logger = logging.getLogger('pypyr.stepsrunner')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         steps = pypyr.stepsrunner.get_pipeline_steps(
             get_test_pipeline(), 'arb')
         assert steps is None
@@ -101,8 +100,8 @@ def test_get_pipeline_steps_not_found():
 
 def test_get_pipeline_steps_none():
     """Find step group in pipeline but it has no steps"""
-    logger = logging.getLogger('pypyr.stepsrunner')
-    with patch.object(logger, 'warn') as mock_logger_warn:
+    with patch_logger(
+            'pypyr.stepsrunner', logging.WARNING) as mock_logger_warn:
         steps = pypyr.stepsrunner.get_pipeline_steps(
             get_test_pipeline(), 'sg4')
         assert steps is None
@@ -126,10 +125,9 @@ def test_run_failure_step_group_pass():
 
 def test_run_failure_step_group_swallows():
     """Failure step group runner swallows errors."""
-    logger = logging.getLogger('pypyr.stepsrunner')
-
     with patch('pypyr.stepsrunner.run_step_group') as mock_run_group:
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger(
+                'pypyr.stepsrunner', logging.ERROR) as mock_logger_error:
             mock_run_group.side_effect = ContextError('arb error')
             pypyr.stepsrunner.run_failure_step_group(
                 {'pipe': 'val'}, Context())
@@ -148,8 +146,7 @@ def test_run_failure_step_group_swallows():
 
 def test_run_pipeline_steps_none():
     """If steps None does nothing"""
-    logger = logging.getLogger('pypyr.stepsrunner')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         pypyr.stepsrunner.run_pipeline_steps(None, Context({'k1': 'v1'}))
 
     mock_logger_debug.assert_any_call("No steps found to execute.")
@@ -159,8 +156,7 @@ def test_run_pipeline_steps_none():
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex(mock_invoke_step, mock_module):
     """Complex step run with no in args."""
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         pypyr.stepsrunner.run_pipeline_steps(
             [{'name': 'step1'}], Context({'k1': 'v1'}))
 
@@ -185,8 +181,7 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.stepsrunner')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
     mock_logger_debug.assert_any_call("executed 1 steps")
@@ -227,10 +222,8 @@ def test_run_pipeline_steps_mix_run_and_not_run(mock_invoke_step, mock_module):
     context = get_test_context()
     original_len = len(context)
 
-    logger_steps = logging.getLogger('pypyr.stepsrunner')
-    logger_dsl = logging.getLogger('pypyr.dsl')
-    with patch.object(logger_steps, 'debug') as mock_logger_debug:
-        with patch.object(logger_dsl, 'info') as mock_logger_info:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
+        with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
             pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
     mock_logger_debug.assert_any_call("executed 3 steps")
@@ -296,8 +289,7 @@ def test_run_pipeline_steps_complex_with_multistep_none_run(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
     mock_logger_info.assert_any_call(
@@ -337,10 +329,8 @@ def test_run_pipeline_steps_mix_skip_and_not_skip(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger_steps = logging.getLogger('pypyr.stepsrunner')
-    logger_dsl = logging.getLogger('pypyr.dsl')
-    with patch.object(logger_steps, 'debug') as mock_logger_debug:
-        with patch.object(logger_dsl, 'info') as mock_logger_info:
+    with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
+        with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
             pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
     mock_logger_debug.assert_any_call("executed 3 steps")
@@ -412,8 +402,7 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
     mock_logger_info.assert_any_call(
@@ -505,10 +494,9 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
-        with patch.object(logger, 'info') as mock_logger_info:
-            with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
+        with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+            with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
                 with pytest.raises(ValueError) as err_info:
                     pypyr.stepsrunner.run_pipeline_steps(steps, context)
 
@@ -573,8 +561,7 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
 @patch.object(Step, 'run_step')
 def test_run_pipeline_steps_simple(mock_run_step, mock_module):
     """Simple step run."""
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         pypyr.stepsrunner.run_pipeline_steps(['step1'], {'k1': 'v1'})
 
     mock_logger_debug.assert_any_call('step1 is a simple string.')

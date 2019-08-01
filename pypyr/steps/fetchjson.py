@@ -58,14 +58,15 @@ def run_step(context):
         file_path = fetch_json_input['path']
         destination_key_expression = fetch_json_input.get('key', None)
 
-    logger.debug(f"attempting to open file: {file_path}")
+    logger.debug("attempting to open file: %s", file_path)
     with open(file_path) as json_file:
         payload = json.load(json_file)
 
     if destination_key_expression:
         destination_key = context.get_formatted_iterable(
             destination_key_expression)
-        logger.debug(f"json file loaded. Writing to context {destination_key}")
+        logger.debug("json file loaded. Writing to context %s",
+                     destination_key)
         context[destination_key] = payload
     else:
         if not isinstance(payload, MutableMapping):
@@ -78,7 +79,8 @@ def run_step(context):
         logger.debug("json file loaded. Merging into pypyr context. . .")
         context.update(payload)
 
-    logger.info(f"json file written into pypyr context. Count: {len(payload)}")
+    logger.info("json file written into pypyr context. Count: %s",
+                len(payload))
     logger.debug("done")
 
 

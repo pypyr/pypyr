@@ -66,7 +66,7 @@ def run_step(context):
     total_found = 0
 
     for path in check_me:
-        logger.debug(f"checking path: {path}")
+        logger.debug("checking path: %s", path)
         formatted_path = context.get_formatted_string(path)
         found_paths = pypyr.utils.filesystem.get_glob(formatted_path)
         no_of_paths = len(found_paths)

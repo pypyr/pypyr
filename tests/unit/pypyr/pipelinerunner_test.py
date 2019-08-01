@@ -12,6 +12,7 @@ from unittest.mock import call, patch
 
 
 # ------------------------- parser mocks -------------------------------------#
+from tests.common.utils import patch_logger
 
 
 def mock_parser(context_arg):
@@ -421,8 +422,8 @@ def test_loader_no_get_pipeline_definition():
     import sys
     current_module = sys.modules[__name__]
 
-    logger = logging.getLogger('pypyr.pipelinerunner')
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger(
+            'pypyr.pipelinerunner', logging.ERROR) as mock_logger_error:
         with pytest.raises(AttributeError) as err:
             pypyr.pipelinerunner.load_and_run_pipeline(
                 pipeline_name='arb pipe',

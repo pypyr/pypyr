@@ -38,7 +38,7 @@ def run_step(context):
     # None.
     is_payload_specified = 'payload' in context['fileWriteJson']
 
-    logger.debug(f"opening destination file for writing: {out_path}")
+    logger.debug("opening destination file for writing: %s", out_path)
     os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
     with open(out_path, 'w') as outfile:
         if is_payload_specified:
@@ -49,5 +49,5 @@ def run_step(context):
 
         json.dump(formatted_iterable, outfile, indent=2, ensure_ascii=False)
 
-    logger.info(f"formatted context content and wrote to {out_path}")
+    logger.info("formatted context content and wrote to %s", out_path)
     logger.debug("done")

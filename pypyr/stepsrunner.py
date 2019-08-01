@@ -20,29 +20,32 @@ def get_pipeline_steps(pipeline, steps_group):
     assert pipeline
     assert steps_group
 
-    logger.debug(f"retrieving {steps_group} steps from pipeline")
+    logger.debug("retrieving %s steps from pipeline", steps_group)
     if steps_group in pipeline:
         steps = pipeline[steps_group]
 
         if steps is None:
-            logger.warn(
-                f"{steps_group}: sequence has no elements. So it won't do "
-                "anything.")
+            logger.warning(
+                "%s: sequence has no elements. So it won't do anything.",
+                steps_group,
+            )
             logger.debug("done")
             return None
 
         steps_count = len(steps)
 
-        logger.debug(f"{steps_count} steps found under {steps_group} in "
-                     "pipeline definition.")
+        logger.debug("%s steps found under %s in pipeline definition.",
+                     steps_count, steps_group)
 
         logger.debug("done")
         return steps
     else:
         logger.debug(
-            f"pipeline doesn't have a {steps_group} collection. Add a "
-            f"{steps_group}: sequence to the yaml if you want {steps_group} "
-            "actually to do something.")
+            "pipeline doesn't have a %(steps_group)s collection. Add a "
+            "%(steps_group)s: sequence to the yaml if you want "
+            "%(steps_group)s actually to do something.",
+            {"steps_group": steps_group}
+        )
         logger.debug("done")
         return None
 
@@ -88,14 +91,14 @@ def run_pipeline_steps(steps, context):
             step_instance.run_step(context)
             step_count += 1
 
-        logger.debug(f"executed {step_count} steps")
+        logger.debug("executed %s steps", step_count)
 
     logger.debug("done")
 
 
 def run_step_group(pipeline_definition, step_group_name, context):
     """Get the specified step group from the pipeline and run its steps."""
-    logger.debug(f"starting {step_group_name}")
+    logger.debug("starting %s", step_group_name)
     assert step_group_name
 
     steps = get_pipeline_steps(pipeline=pipeline_definition,
@@ -103,4 +106,4 @@ def run_step_group(pipeline_definition, step_group_name, context):
 
     run_pipeline_steps(steps=steps, context=context)
 
-    logger.debug(f"done {step_group_name}")
+    logger.debug("done %s", step_group_name)

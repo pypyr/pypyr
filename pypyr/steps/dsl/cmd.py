@@ -67,7 +67,7 @@ class CmdStep():
         if isinstance(cmd_config, str):
             self.cmd_text = context.get_formatted('cmd')
             self.cwd = None
-            self.logger.debug(f"Processing command string: {cmd_config}")
+            self.logger.debug("Processing command string: %s", cmd_config)
         elif isinstance(cmd_config, dict):
             context.assert_child_key_has_value(parent='cmd',
                                                child='run',
@@ -82,10 +82,10 @@ class CmdStep():
             if cwd_string:
                 self.cwd = context.get_formatted_string(cwd_string)
                 self.logger.debug("Processing command string in dir "
-                                  f"{self.cwd}: {run_string}")
+                                  "%s: %s", self.cwd, run_string)
             else:
                 self.cwd = None
-                self.logger.debug(f"Processing command string: {run_string}")
+                self.logger.debug("Processing command string: %s", run_string)
 
         else:
             raise ContextError(f"{name} cmd config should be either a simple "
@@ -127,9 +127,9 @@ class CmdStep():
             }
 
             # when capture is true, output doesn't write to stdout
-            self.logger.info(f"stdout: {completed_process.stdout}")
+            self.logger.info("stdout: %s", completed_process.stdout)
             if completed_process.stderr:
-                self.logger.error(f"stderr: {completed_process.stderr}")
+                self.logger.error("stderr: %s", completed_process.stderr)
 
             # don't swallow the error, because it's the Step swallow decorator
             # responsibility to decide to ignore or not.

@@ -1,16 +1,16 @@
 """debug.py unit tests."""
 import logging
-from unittest.mock import call, patch
+from unittest.mock import call
 from pypyr.context import Context
 import pypyr.steps.debug as debug
+from tests.common.utils import patch_logger
 
 
 def test_no_inputs():
     """Dump entire context with no input specified."""
     context = Context({'k1': 'v1', 'k2': 'x{k1}x', 'k3': [0, 1, 2]})
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -34,8 +34,7 @@ def test_no_keys_with_formatting():
                        'debug': {'format': True}
                        })
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -62,8 +61,7 @@ def test_key_str():
                        'debug': {'keys': 'k2'}
                        })
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -81,8 +79,7 @@ def test_key_str_format():
                        'debug': {'keys': 'k2', 'format': True}
                        })
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -100,8 +97,7 @@ def test_keys_list():
                        'debug': {'keys': ['k1', 'k2']}
                        })
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -120,8 +116,7 @@ def test_keys_list_format():
                        'debug': {'keys': ['k1', 'k2'], 'format': True}
                        })
 
-    logger = logging.getLogger('pypyr.steps.debug')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.debug', logging.INFO) as mock_logger_info:
         debug.run_step(context)
 
     assert mock_logger_info.mock_calls == [

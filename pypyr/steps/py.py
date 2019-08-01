@@ -22,7 +22,7 @@ def run_step(context):
     logger.debug("started")
     context.assert_key_has_value(key='pycode', caller=__name__)
 
-    logger.debug(f"Executing python string: {context['pycode']}")
+    logger.debug("Executing python string: %s", context['pycode'])
     locals_dictionary = locals()
     exec(context['pycode'], globals(), locals_dictionary)
 

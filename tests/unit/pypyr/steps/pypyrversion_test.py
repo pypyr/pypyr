@@ -1,15 +1,16 @@
 """pypyrversion.py unit tests."""
 import logging
 import platform
-from unittest.mock import patch
 from pypyr.context import Context
 import pypyr.steps.pypyrversion
 import pypyr.version
+from tests.common.utils import patch_logger
 
 
 def test_pypyr_version():
-    logger = logging.getLogger('pypyr.steps.pypyrversion')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.pypyrversion', logging.INFO
+    ) as mock_logger_info:
         pypyr.steps.pypyrversion.run_step({})
 
     mock_logger_info.assert_called_once_with(

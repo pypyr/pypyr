@@ -15,6 +15,6 @@ def run_step(context):
     logger.debug("started")
 
     context.clear()
-    logger.info(f"Context wiped. New context size: {len(context)}")
+    logger.info("Context wiped. New context size: %s", len(context))
 
     logger.debug("done")

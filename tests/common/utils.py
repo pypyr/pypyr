@@ -1,5 +1,7 @@
+import logging
+from contextlib import contextmanager
 from copy import deepcopy
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 
 class DeepCopyMagicMock(MagicMock):
@@ -21,3 +23,34 @@ class DeepCopyMagicMock(MagicMock):
         """Mock call override does deepcopy."""
         return super(DeepCopyMagicMock, self).__call__(*deepcopy(args),
                                                        **deepcopy(kwargs))
+
+
+@contextmanager
+def patch_logger(name, level=logging.DEBUG):
+    """Adds a new mocked handler to the logger, which will store
+    formatted log records with the only one specified level.
+
+    If logging level is DEBUG, will take care only about DEBUG
+    records and will not report other levels even higher(INFO, ERROR and etc).
+    """
+    logger = logging.getLogger(name)
+    logging_level = logger.level
+    if level < logging_level or not logging_level:
+        logger.setLevel(level)
+
+    mock = Mock()
+
+    class MockHandler(logging.NullHandler):
+        def handle(self, record):
+            if record.levelno == level:
+                mock(self.format(record))
+
+    handler = MockHandler(level)
+    logger.addHandler(handler)
+
+    try:
+        yield mock
+    finally:
+        # restore logger settings
+        logger.removeHandler(handler)
+        logger.setLevel(logging_level)

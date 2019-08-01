@@ -210,15 +210,16 @@ class Step:
                 # of course, it might not be a string. in line with duck
                 # typing, beg forgiveness later. as long as it loads
                 # the module, happy days.
-                logger.debug(f"{step} is a simple string.")
+                logger.debug("%s is a simple string.", step)
                 self.name = step
 
             self.module = pypyr.moduleloader.get_module(self.name)
             try:
                 self.run_step_function = getattr(self.module, 'run_step')
             except AttributeError:
-                logger.error(f"The step {self.name} in module {self.module} "
-                             "doesn't have a run_step(context) function.")
+                logger.error("The step %s in module %s "
+                             "doesn't have a run_step(context) function.",
+                             self.name, self.module)
                 raise
         except Exception:
             # Exceptions could also happened on the step init phase
@@ -229,12 +230,13 @@ class Step:
 
             if self.line_no:
                 logger.error(
-                    f"Error at pipeline step{name} yaml line: "
-                    f"{self.line_no}, col: {self.line_col}"
+                    "Error at pipeline step%s yaml line: "
+                    "%d, col: %d",
+                    name, self.line_no, self.line_col
                 )
             else:
                 logger.error(
-                    f"Error at pipeline step{name}"
+                    "Error at pipeline step%s", name
                 )
             raise
 
@@ -260,14 +262,14 @@ class Step:
         if not self.name:
             raise PipelineDefinitionError('step must have a name.')
 
-        logger.debug(f"{self.name} is complex.")
+        logger.debug("%s is complex.", self.name)
 
         self.in_parameters = step.get('in', None)
 
         # description: optional. Write to stdout if exists and flagged.
         self.description = step.get('description', None)
         if self.description:
-            logger.info(f"{self.name}: {self.description}")
+            logger.info("%s: %s", self.name, self.description)
 
         # foreach: optional value. None by default.
         self.foreach_items = step.get('foreach', None)
@@ -342,18 +344,18 @@ class Step:
 
         foreach_length = len(foreach)
 
-        logger.info(f"foreach decorator will loop {foreach_length} times.")
+        logger.info("foreach decorator will loop %s times.", foreach_length)
 
         for i in foreach:
-            logger.info(f"foreach: running step {i}")
+            logger.info("foreach: running step %s", i)
             # the iterator must be available to the step when it executes
             context['i'] = i
             # conditional operators apply to each iteration, so might be an
             # iteration run, skips or swallows.
             self.run_conditional_decorators(context)
-            logger.debug(f"foreach: done step {i}")
+            logger.debug("foreach: done step %s", i)
 
-        logger.debug(f"foreach decorator looped {foreach_length} times.")
+        logger.debug("foreach decorator looped %s times.", foreach_length)
         logger.debug("done")
 
     def invoke_step(self, context):
@@ -372,11 +374,11 @@ class Step:
         """
         logger.debug("starting")
 
-        logger.debug(f"running step {self.module}")
+        logger.debug("running step %s", self.module)
 
         self.run_step_function(context)
 
-        logger.debug(f"step {self.module} done")
+        logger.debug("step %s done", self.module)
 
     def run_conditional_decorators(self, context):
         """Evaluate the step decorators to decide whether to run step or not.
@@ -414,25 +416,28 @@ class Step:
                     )
                     if swallow_me:
                         logger.error(
-                            f"{self.name} Ignoring error because swallow "
+                            "%s Ignoring error because swallow "
                             "is True for this step.\n"
-                            f"{get_error_name(exc_info)}: {exc_info}")
+                            "%s: %s",
+                            self.name, get_error_name(exc_info), exc_info
+                        )
                     else:
-                        error_message = f"Error while running step {self.name}"
-
                         if self.line_no:
                             logger.error(
-                                f"{error_message} at pipeline yaml line: "
-                                f"{self.line_no}, col: {self.line_col}",
+                                "Error while running step %s "
+                                "at pipeline yaml line: %d, col: %d",
+                                self.name, self.line_no, self.line_col
                             )
                         else:
-                            logger.error(error_message)
+                            logger.error(
+                                "Error while running step %s", self.name
+                            )
                         raise
             else:
                 logger.info(
-                    f"{self.name} not running because skip is True.")
+                    "%s not running because skip is True.", self.name)
         else:
-            logger.info(f"{self.name} not running because run is False.")
+            logger.info("%s not running because run is False.", self.name)
 
         logger.debug("done")
 
@@ -490,8 +495,9 @@ class Step:
             parameter_count = len(self.in_parameters)
             if parameter_count > 0:
                 logger.debug(
-                    f"Updating context with {parameter_count} 'in' "
-                    "parameters.")
+                    "Updating context with %s 'in' parameters.",
+                    parameter_count,
+                )
                 context.update(self.in_parameters)
 
         logger.debug("done")
@@ -548,7 +554,7 @@ class RetryDecorator:
             self.retry_on = retry_definition.get('retryOn', None)
         else:
             # if it isn't a dict, pipeline configuration is wrong.
-            logger.error(f"retry decorator definition incorrect.")
+            logger.error("retry decorator definition incorrect.")
             raise PipelineDefinitionError("retry decorator must be a dict "
                                           "(i.e a map) type.")
 
@@ -579,15 +585,15 @@ class RetryDecorator:
         logger.debug("starting")
         context['retryCounter'] = counter
 
-        logger.info(f"retry: running step with counter {counter}")
+        logger.info("retry: running step with counter %s", counter)
         try:
             step_method(context)
             result = True
         except Exception as ex_info:
             if self.max:
                 if counter == self.max:
-                    logger.debug(f"retry: max {counter} retries exhausted. "
-                                 "raising error.")
+                    logger.debug("retry: max %s retries exhausted. "
+                                 "raising error.", counter)
                     # arguably shouldn't be using errs for control of flow.
                     # but would lose the err info if not, so lesser of 2 evils.
                     raise
@@ -598,27 +604,27 @@ class RetryDecorator:
                     formatted_stop_list = context.get_formatted_iterable(
                         self.stop_on)
                     if error_name in formatted_stop_list:
-                        logger.error(f"{error_name} in stopOn. Raising error "
-                                     "and exiting retry.")
+                        logger.error("%s in stopOn. Raising error "
+                                     "and exiting retry.", error_name)
                         raise
                     else:
-                        logger.debug(f"{error_name} not in stopOn. Continue.")
+                        logger.debug("%s not in stopOn. Continue.", error_name)
 
                 if self.retry_on:
                     formatted_retry_list = context.get_formatted_iterable(
                         self.retry_on)
                     if error_name not in formatted_retry_list:
-                        logger.error(f"{error_name} not in retryOn. Raising "
-                                     "error and exiting retry.")
+                        logger.error("%s not in retryOn. Raising "
+                                     "error and exiting retry.", error_name)
                         raise
                     else:
-                        logger.debug(f"{error_name} in retryOn. Retry again.")
+                        logger.debug("%s in retryOn. Retry again.", error_name)
 
             result = False
-            logger.error(f"retry: ignoring error because retryCounter < max.\n"
-                         f"{type(ex_info).__name__}: {ex_info}")
+            logger.error("retry: ignoring error because retryCounter < max.\n"
+                         "%s: %s", type(ex_info).__name__, ex_info)
 
-        logger.debug(f"retry: done step with counter {counter}")
+        logger.debug("retry: done step with counter %s", counter)
 
         logger.debug("done")
         return result
@@ -643,12 +649,12 @@ class RetryDecorator:
         if self.max:
             max = context.get_formatted_as_type(self.max, out_type=int)
 
-            logger.info(f"retry decorator will try {max} times at {sleep}s "
-                        "intervals.")
+            logger.info("retry decorator will try %d times at %ss "
+                        "intervals.", max, sleep)
         else:
             max = None
-            logger.info(f"retry decorator will try indefinitely at {sleep}s "
-                        "intervals.")
+            logger.info("retry decorator will try indefinitely at %ss "
+                        "intervals.", sleep)
 
         # this will never be false. because on counter == max,
         # exec_iteration raises an exception, breaking out of the loop.
@@ -714,7 +720,7 @@ class WhileDecorator:
             self.stop = while_definition.get('stop', None)
 
             if self.stop is None and self.max is None:
-                logger.error(f"while decorator missing both max and stop.")
+                logger.error("while decorator missing both max and stop.")
                 raise PipelineDefinitionError("the while decorator must have "
                                               "either max or stop, or both. "
                                               "But not neither. Note that "
@@ -724,7 +730,7 @@ class WhileDecorator:
                                               "what you want, set stop: False")
         else:
             # if it isn't a dict, pipeline configuration is wrong.
-            logger.error(f"while decorator definition incorrect.")
+            logger.error("while decorator definition incorrect.")
             raise PipelineDefinitionError("while decorator must be a dict "
                                           "(i.e a map) type.")
 
@@ -755,9 +761,9 @@ class WhileDecorator:
         logger.debug("starting")
         context['whileCounter'] = counter
 
-        logger.info(f"while: running step with counter {counter}")
+        logger.info("while: running step with counter %s", counter)
         step_method(context)
-        logger.debug(f"while: done step {counter}")
+        logger.debug("while: done step %s", counter)
 
         result = False
         # if no stop, just iterating to max)
@@ -788,7 +794,7 @@ class WhileDecorator:
         if self.stop is None and self.max is None:
             # the ctor already does this check, but guess theoretically
             # consumer could have messed with the props since ctor
-            logger.error(f"while decorator missing both max and stop.")
+            logger.error("while decorator missing both max and stop.")
             raise PipelineDefinitionError("the while decorator must have "
                                           "either max or stop, or both. "
                                           "But not neither.")
@@ -798,24 +804,26 @@ class WhileDecorator:
         sleep = context.get_formatted_as_type(self.sleep, out_type=float)
         if self.max is None:
             max = None
-            logger.info(f"while decorator will loop until {self.stop} "
-                        f"evaluates to True at {sleep}s intervals.")
+            logger.info("while decorator will loop until %s "
+                        "evaluates to True at %ss intervals.",
+                        self.stop, sleep)
         else:
             max = context.get_formatted_as_type(self.max, out_type=int)
 
             if max < 1:
                 logger.info(
-                    f"max {self.max} is {max}. while only runs when max > 0.")
+                    "max %s is %s. while only runs when max > 0.",
+                    self.max, max)
                 logger.debug("done")
                 return
 
             if self.stop is None:
-                logger.info(f"while decorator will loop {max} times at "
-                            f"{sleep}s intervals.")
+                logger.info("while decorator will loop %s times at "
+                            "%ss intervals.", max, sleep)
             else:
-                logger.info(f"while decorator will loop {max} times, or "
-                            f"until {self.stop} evaluates to True at "
-                            f"{sleep}s intervals.")
+                logger.info("while decorator will loop %s times, or "
+                            "until %s evaluates to True at "
+                            "%ss intervals.", max, self.stop, sleep)
 
         if not poll.while_until_true(interval=sleep,
                                      max_attempts=max)(
@@ -823,8 +831,8 @@ class WhileDecorator:
                                      step_method=step_method):
             # False means loop exhausted and stop never eval-ed True.
             if error_on_max:
-                logger.error(f"exhausted {max} iterations of while loop, "
-                             "and errorOnMax is True.")
+                logger.error("exhausted %s iterations of while loop, "
+                             "and errorOnMax is True.", max)
                 if self.stop and max:
                     raise LoopMaxExhaustedError("while loop reached "
                                                 f"{max} and {self.stop} "
@@ -834,12 +842,12 @@ class WhileDecorator:
             else:
                 if self.stop and max:
                     logger.info(
-                        f"while decorator looped {max} times, "
-                        f"and {self.stop} never evaluated to True.")
+                        "while decorator looped %s times, "
+                        "and %s never evaluated to True.", max, self.stop)
 
             logger.debug("while loop done")
         else:
-            logger.info(f"while loop done, stop condition {self.stop} "
-                        "evaluated True.")
+            logger.info("while loop done, stop condition %s "
+                        "evaluated True.", self.stop)
 
         logger.debug("done")

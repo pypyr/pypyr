@@ -15,12 +15,12 @@ def get_parsed_context(context_arg):
                          "like: "
                          "pypyr pipelinename './myyamlfile.yaml'")
     logger.debug("starting")
-    logger.debug(f"attempting to open file: {context_arg}")
+    logger.debug("attempting to open file: %s", context_arg)
     with open(context_arg) as yaml_file:
         yaml_loader = yaml.YAML(typ='safe', pure=True)
         payload = yaml_loader.load(yaml_file)
 
-    logger.debug(f"yaml file parsed. Count: {len(payload)}")
+    logger.debug("yaml file parsed. Count: %d", len(payload))
 
     if not isinstance(payload, MutableMapping):
         raise TypeError("yaml input should describe a dictionary at the top "

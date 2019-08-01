@@ -26,15 +26,12 @@ def get_module(module_abs_import):
 
     """
     logger.debug("starting")
-    logger.debug(f"loading module {module_abs_import}")
+    logger.debug("loading module %s", module_abs_import)
     try:
         imported_module = importlib.import_module(module_abs_import)
         logger.debug("done")
         return imported_module
     except ModuleNotFoundError as err:
-        msg = ("The module doesn't exist. Looking for a file like this: "
-               f"{module_abs_import}")
-
         extended_msg = (f"{module_abs_import}.py should be in your working "
                         "dir or it should be installed to the python path."
                         "\nIf you have 'package.sub.mod' your current working "
@@ -44,7 +41,9 @@ def get_module(module_abs_import):
                         "If the module is not in your current working dir, it "
                         "must exist in your current python path - so you "
                         "should have run pip install or setup.py")
-        logger.error(msg)
+        logger.error("The module doesn't exist. "
+                     "Looking for a file like this: %s",
+                     module_abs_import)
         raise PyModuleNotFoundError(extended_msg) from err
 
 
@@ -59,7 +58,7 @@ def set_working_directory(working_directory):
     """
     logger.debug("starting")
 
-    logger.debug(f"adding {working_directory} to sys.paths")
+    logger.debug("adding %s to sys.paths", working_directory)
     sys.path.append(working_directory)
 
     logger.debug("done")

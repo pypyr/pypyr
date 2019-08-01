@@ -50,7 +50,7 @@ def run_step(context):
         assert_result = context.get_formatted_as_type(assert_this,
                                                       out_type=bool)
 
-    logger.info(f"assert evaluated to {assert_result}")
+    logger.info("assert evaluated to %s", assert_result)
 
     if not assert_result:
         if is_equals_there:

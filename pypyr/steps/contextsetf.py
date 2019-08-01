@@ -36,10 +36,10 @@ def run_step(context):
     context.assert_key_has_value(key='contextSetf', caller=__name__)
 
     for k, v in context['contextSetf'].items():
-        logger.debug(f"setting context {k} to value from context {v}")
+        logger.debug("setting context %s to value from context %s", k, v)
         context[context.get_formatted_iterable(
             k)] = context.get_formatted_iterable(v)
 
-    logger.info(f"Set {len(context['contextSetf'])} context items.")
+    logger.info("Set %d context items.", len(context['contextSetf']))
 
     logger.debug("done")

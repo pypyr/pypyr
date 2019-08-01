@@ -36,25 +36,28 @@ def get_parsed_context(pipeline, context_in_string):
 
     if 'context_parser' in pipeline:
         parser_module_name = pipeline['context_parser']
-        logger.debug(f"context parser found: {parser_module_name}")
+        logger.debug("context parser found: %s", parser_module_name)
         parser_module = pypyr.moduleloader.get_module(parser_module_name)
 
         try:
-            logger.debug(f"running parser {parser_module_name}")
+            logger.debug("running parser %s", parser_module_name)
             result_context = parser_module.get_parsed_context(
                 context_in_string)
-            logger.debug(f"step {parser_module_name} done")
+            logger.debug("step %s done", parser_module_name)
             # Downstream steps likely to expect context not to be None, hence
             # empty rather than None.
             if result_context is None:
-                logger.debug(f"{parser_module_name} returned None. Using "
-                             "empty context instead")
+                logger.debug(
+                    "%s returned None. Using empty context instead",
+                    parser_module_name
+                )
                 return pypyr.context.Context()
             else:
                 return pypyr.context.Context(result_context)
         except AttributeError:
-            logger.error(f"The parser {parser_module_name} doesn't have a "
-                         "get_parsed_context(context) function.")
+            logger.error("The parser %s doesn't have a "
+                         "get_parsed_context(context) function.",
+                         parser_module_name)
             raise
     else:
         logger.debug("pipeline does not have custom context parser. Using "
@@ -169,14 +172,14 @@ def load_and_run_pipeline(pipeline_name,
         None
 
     """
-    logger.debug(f"you asked to run pipeline: {pipeline_name}")
+    logger.debug("you asked to run pipeline: %s", pipeline_name)
     if loader:
-        logger.debug(f"you set the pype loader to: {loader}")
+        logger.debug("you set the pype loader to: %s", loader)
     else:
         loader = 'pypyr.pypeloaders.fileloader'
-        logger.debug(f"use default pype loader: {loader}")
+        logger.debug("use default pype loader: %s", loader)
 
-    logger.debug(f"you set the initial context to: {pipeline_context_input}")
+    logger.debug("you set the initial context to: %s", pipeline_context_input)
 
     if context is None:
         context = pypyr.context.Context()
@@ -196,16 +199,18 @@ def load_and_run_pipeline(pipeline_name,
         )
     except AttributeError:
         logger.error(
-            f"The pipeline loader {loader_module} doesn't have a "
-            "get_pipeline_definition(pipeline_name, working_dir) function.")
+            "The pipeline loader %s doesn't have a "
+            "get_pipeline_definition(pipeline_name, working_dir) function.",
+            loader_module
+        )
         raise
 
-    logger.debug(f"loading the pipeline definition with {loader_module}")
+    logger.debug("loading the pipeline definition with %s", loader_module)
     pipeline_definition = get_pipeline_definition(
         pipeline_name=pipeline_name,
         working_dir=working_dir
     )
-    logger.debug(f"{loader_module} done")
+    logger.debug("%s done", loader_module)
 
     run_pipeline(
         pipeline=pipeline_definition,

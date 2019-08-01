@@ -14,7 +14,7 @@ from pypyr.dsl import (PyString,
                        RetryDecorator,
                        WhileDecorator)
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
-from tests.common.utils import DeepCopyMagicMock
+from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
 def arb_step_mock(context):
@@ -234,8 +234,8 @@ def mock_run_step_none_context(context):
 def test_simple_step_init_defaults(mocked_moduleloader):
     """Simple step initializes with defaults as expected."""
     mocked_moduleloader.return_value.run_step = arb_step_mock
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+
+    with patch_logger('pypyr.dsl') as mock_logger_debug:
         step = Step('blah')
 
     mock_logger_debug.assert_any_call("blah is a simple string.")
@@ -260,8 +260,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
 def test_complex_step_init_defaults(mocked_moduleloader):
     """Complex step initializes with defaults as expected."""
     mocked_moduleloader.return_value.run_step = arb_step_mock
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl') as mock_logger_debug:
         step = Step({'name': 'blah'})
 
     mock_logger_debug.assert_any_call("blah is complex.")
@@ -284,9 +283,8 @@ def test_complex_step_init_defaults(mocked_moduleloader):
 
 def test_complex_step_init_with_missing_name_round_trip():
     """Step can't get step name from the yaml pipeline."""
-    logger = logging.getLogger('pypyr.dsl')
     with pytest.raises(PipelineDefinitionError) as err_info:
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             step_info = CommentedMap({})
             step_info._yaml_set_line_col(6, 7)
             Step(step_info)
@@ -302,9 +300,8 @@ def test_complex_step_init_with_missing_name_round_trip():
 @patch('pypyr.moduleloader.get_module', return_value=3)
 def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module."""
-    logger = logging.getLogger('pypyr.dsl')
     with pytest.raises(AttributeError) as err_info:
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             Step('mocked.step')
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
@@ -323,9 +320,8 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module
     with round trip yaml loaded context.
     """
-    logger = logging.getLogger('pypyr.dsl')
     with pytest.raises(AttributeError) as err_info:
-        with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             commented_context = CommentedMap({'name': 'mocked.step'})
             commented_context._yaml_set_line_col(1, 2)
             Step(commented_context)
@@ -428,9 +424,7 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
                                                      mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
-    logger = logging.getLogger('pypyr.dsl')
-
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step = Step({'name': 'step1',
                      'description': 'test description',
                      'run': False})
@@ -440,7 +434,7 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call("step1 not running because run is False.")
@@ -502,8 +496,7 @@ def test_foreach_once(mock_run, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -531,8 +524,7 @@ def test_foreach_twice(mock_run, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -566,8 +558,7 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -606,8 +597,7 @@ def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
     context['list'] = [99, True, 'string here', 'formatted {key1}']
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -656,8 +646,7 @@ def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     context['dynamic_run_expression'] = True
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -693,8 +682,7 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     context['dynamic_skip_expression'] = False
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -724,8 +712,6 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     context['dynamic_swallow_expression'] = False
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-
     arb_error = ValueError('arb error')
 
     def mock_step_deliberate_error(context):
@@ -737,8 +723,8 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
 
     with patch.object(Step, 'invoke_step',
                       side_effect=mock_step_deliberate_error) as mock_invoke:
-        with patch.object(logger, 'info') as mock_logger_info:
-            with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+            with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
                 step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -785,8 +771,7 @@ def test_while_max(mock_invoke, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -816,8 +801,7 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     context['whileMax'] = 3
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -849,8 +833,7 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         with pytest.raises(ValueError) as err_info:
             step.run_step(context)
 
@@ -893,8 +876,7 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
     context['whileMax'] = 3
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         with pytest.raises(LoopMaxExhaustedError) as err_info:
             step.run_step(context)
 
@@ -929,8 +911,7 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     context['whileMax'] = 3
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         with pytest.raises(LoopMaxExhaustedError) as err_info:
             step.run_step(context)
 
@@ -964,8 +945,7 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
@@ -1123,8 +1103,7 @@ def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call("step1 not running because run is False.")
@@ -1148,8 +1127,7 @@ def test_run_pipeline_steps_complex_with_run_str_formatting_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call("step1 not running because run is False.")
@@ -1172,8 +1150,7 @@ def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1197,8 +1174,7 @@ def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1223,8 +1199,7 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1249,8 +1224,7 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1285,8 +1259,7 @@ def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1321,8 +1294,7 @@ def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1358,8 +1330,7 @@ def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1395,8 +1366,7 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1432,8 +1402,7 @@ def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1471,10 +1440,9 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
     mock_invoke_step.side_effect = [ValueError('arb'), None]
 
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1516,8 +1484,7 @@ def test_run_on_error(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             step.run_step(context)
 
@@ -1556,8 +1523,7 @@ def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1592,8 +1558,7 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1619,8 +1584,7 @@ def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1645,8 +1609,7 @@ def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1671,8 +1634,7 @@ def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1699,8 +1661,7 @@ def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1726,8 +1687,7 @@ def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1764,8 +1724,7 @@ def test_run_pipeline_steps_complex_with_skip_string_false(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1802,8 +1761,7 @@ def test_run_pipeline_steps_complex_with_skip_0_true(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1840,8 +1798,7 @@ def test_run_pipeline_steps_complex_with_skip_99_true(
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call(
@@ -1866,8 +1823,7 @@ def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
     mock_logger_info.assert_any_call("step1 not running because skip is True.")
@@ -1893,8 +1849,7 @@ def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1929,8 +1884,7 @@ def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -1964,12 +1918,11 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
     arb_error = ValueError('arb error here')
     with patch.object(
             Step, 'invoke_step', side_effect=arb_error) as mock_invoke_step:
-        with patch.object(logger, 'debug') as mock_logger_debug:
-            with patch.object(logger, 'error') as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
+            with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
                 step.run_step(context)
 
     mock_logger_debug.assert_any_call("done")
@@ -2056,8 +2009,7 @@ def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
     context = get_test_context()
     original_len = len(context)
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             step.run_step(context)
 
@@ -2120,8 +2072,7 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
 def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
                                               mock_get_module):
     """Simple step run with error should not swallow."""
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         step = Step('step1')
         with pytest.raises(ValueError) as err_info:
             step.run_step(Context({'k1': 'v1'}))
@@ -2395,9 +2346,8 @@ def test_retry_exec_iteration_returns_false_on_error():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
@@ -2417,9 +2367,8 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
@@ -2439,10 +2388,9 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
     context = Context({'k1': 'ValueError'})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
-        with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
             assert not rd.exec_iteration(2, context, mock)
 
     # context endures
@@ -2464,9 +2412,8 @@ def test_retry_exec_iteration_raises_on_error_not_in_retryon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(2, context, mock)
 
@@ -2489,9 +2436,8 @@ def test_retry_exec_iteration_raises_on_error_in_stopon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(2, context, mock)
 
@@ -2514,9 +2460,8 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_format():
     context = Context({'k1': ['KeyError', 'ValueError']})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(2, context, mock)
 
@@ -2540,9 +2485,8 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
@@ -2562,10 +2506,9 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
     context = Context({'k1': ['KeyError', 'ArbError']})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
-        with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
+        with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
             assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
@@ -2588,9 +2531,8 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(2, context, mock)
 
@@ -2612,9 +2554,8 @@ def test_retry_exec_iteration_raises_on_max_exhaust():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(3, context, mock)
 
@@ -2637,9 +2578,8 @@ def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
     context = Context({})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
-    logger = logging.getLogger('pypyr.dsl')
 
-    with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         with pytest.raises(ValueError) as err_info:
             rd.exec_iteration(3, context, mock)
 
@@ -2664,8 +2604,7 @@ def test_retry_loop_max_end_on_error(mock_time_sleep):
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         with pytest.raises(ValueError) as err_info:
             rd.retry_loop(context, mock)
 
@@ -2693,10 +2632,8 @@ def test_retry_loop_max_continue_on_success(mock_time_sleep):
     mock = MagicMock()
     mock.side_effect = [ValueError('arb'), None]
 
-    logger = logging.getLogger('pypyr.dsl')
-
-    with patch.object(logger, 'info') as mock_logger_info:
-        with patch.object(logger, 'debug') as mock_logger_debug:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
             rd.retry_loop(context, mock)
 
     assert context['retryCounter'] == 2
@@ -2723,8 +2660,7 @@ def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
     mock = MagicMock()
     mock.side_effect = [ValueError('arb1'), ValueError('arb2'), None]
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         rd.retry_loop(context, mock)
 
     assert context['retryCounter'] == 3
@@ -2759,8 +2695,7 @@ def test_retry_all_substitutions(mock_time_sleep):
         nonlocal step_count
         step_count += 1
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         rd.retry_loop(context, mock_step)
 
     assert context['retryCounter'] == 1
@@ -2914,8 +2849,7 @@ def test_while_loop_stop_true():
 
     mock = MagicMock()
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(Context(), mock)
 
     mock.assert_called_once()
@@ -2933,8 +2867,7 @@ def test_while_loop_max_0():
 
     mock = MagicMock()
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(Context(), mock)
 
     mock.assert_not_called()
@@ -2949,8 +2882,7 @@ def test_while_loop_max_0_with_formatting():
 
     mock = MagicMock()
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(Context({'x': -3}), mock)
 
     mock.assert_not_called()
@@ -2965,8 +2897,7 @@ def test_while_loop_stop_evals_true():
 
     mock = MagicMock()
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(Context({'thisistrue': True}), mock)
 
     mock.assert_called_once()
@@ -3001,8 +2932,7 @@ def test_while_loop_max_no_stop(mock_time_sleep):
     context = Context({'k1': 'v1'})
     mock = MagicMock()
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(context, mock)
 
     assert context['whileCounter'] == 3
@@ -3035,8 +2965,7 @@ def test_while_loop_stop_no_max(mock_time_sleep):
         if context['whileCounter'] == 3:
             context['k1'] = True
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
@@ -3073,8 +3002,7 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
         if context['whileCounter'] == 3:
             context['k1'] = True
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
@@ -3109,8 +3037,7 @@ def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
         step_count += 1
         step_context.append(deepcopy(context))
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
@@ -3149,9 +3076,8 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
         step_count += 1
         step_context.append(deepcopy(context))
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
-        with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             with pytest.raises(LoopMaxExhaustedError) as err_info:
                 wd.while_loop(context, mock_step)
 
@@ -3204,9 +3130,8 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
         step_count += 1
         step_context.append(deepcopy(context))
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
-        with patch.object(logger, 'error') as mock_logger_error:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             with pytest.raises(LoopMaxExhaustedError) as err_info:
                 wd.while_loop(context, mock_step)
 
@@ -3261,8 +3186,7 @@ def test_while_loop_all_substitutions(mock_time_sleep):
         nonlocal step_count
         step_count += 1
 
-    logger = logging.getLogger('pypyr.dsl')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 1

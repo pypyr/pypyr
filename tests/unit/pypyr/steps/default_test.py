@@ -1,10 +1,10 @@
 """default.py unit tests."""
 import logging
 import pytest
-from unittest.mock import patch
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
 import pypyr.steps.default
+from tests.common.utils import patch_logger
 
 
 def test_contextdefault_throws_on_empty_context():
@@ -56,8 +56,7 @@ def test_contextdefault_pass_different_types_with_log():
         }
     })
 
-    logger = logging.getLogger('pypyr.steps.default')
-    with patch.object(logger, 'info') as mock_logger_info:
+    with patch_logger('pypyr.steps.default', logging.INFO) as mock_logger_info:
         pypyr.steps.default.run_step(context)
 
     mock_logger_info.assert_called_once_with('set 3 context item defaults.')
