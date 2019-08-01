@@ -38,23 +38,19 @@ def patch_logger(name, level=logging.DEBUG):
     if level < logging_level or not logging_level:
         logger.setLevel(level)
 
-    stream = Mock()
-    stream.write = Mock()
+    mock = Mock()
 
-    handler = logging.StreamHandler(stream)
-    handler.terminator = ''
-    handler.setLevel(level)
+    class MockHandler(logging.NullHandler):
+        def handle(self, record):
+            if record.levelno == level:
+                mock(self.format(record))
 
-    def mock_handle(record):
-        if record.levelno == level:
-            logging.StreamHandler.handle(handler, record)
-
-    handler.handle = mock_handle
-    handler.setFormatter(logging.Formatter('%(message)s'))
+    handler = MockHandler(level)
     logger.addHandler(handler)
 
     try:
-        yield stream.write
+        yield mock
     finally:
+        # restore logger settings
         logger.removeHandler(handler)
         logger.setLevel(logging_level)

@@ -264,4 +264,4 @@ def test_fileformat_empty_outpath_raises_deprecated():
 # -------------------------------- deprecated ---------------------------------
 def teardown_module(module):
     """Teardown."""
-    os.rmdir('./tests/testfiles/out/')
+    shutil.rmtree('./tests/testfiles/out/')
