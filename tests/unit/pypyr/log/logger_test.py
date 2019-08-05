@@ -2,6 +2,7 @@
 import logging
 from unittest.mock import patch
 import pypyr.log.logger
+from tests.common.utils import patch_logger
 
 
 def test_logger_with_console_handler():
@@ -38,3 +39,21 @@ def test_logger_with_file_and_console_handler():
     assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
     assert isinstance(kwargs['handlers'][1], logging.FileHandler)
+
+
+def test_notice_log_level_available():
+    log_path = None
+    with patch.object(logging, 'basicConfig') as mock_logger:
+        pypyr.log.logger.set_root_logger(10, log_path)
+
+    mock_logger.assert_called_once()
+    assert logging.INFO < logging.NOTIFY < logging.WARNING
+
+    logger = logging.getLogger('pypyr')
+    with patch_logger('pypyr', logging.NOTIFY) as mock_logger_notify:
+        logger.notify("Arb message: %s", "arb value")
+
+        logger.setLevel(logging.WARNING)
+        logger.notify("Not logged record")
+
+    mock_logger_notify.assert_called_once_with("Arb message: arb value")

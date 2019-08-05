@@ -13,10 +13,11 @@ def test_echo_pass():
     context = Context({
         'echoMe': 'test value here'})
 
-    with patch_logger('pypyr.steps.echo', logging.INFO) as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.echo', logging.NOTIFY) as mock_logger_notify:
         pypyr.steps.echo.run_step(context)
 
-    mock_logger_info.assert_called_once_with('test value here')
+    mock_logger_notify.assert_called_once_with('test value here')
 
 
 def test_echo_substitutions_pass():
@@ -25,10 +26,11 @@ def test_echo_substitutions_pass():
         'key1': 'down the',
         'echoMe': 'piping {key1} valleys wild'})
 
-    with patch_logger('pypyr.steps.echo', logging.INFO) as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.echo', logging.NOTIFY) as mock_logger_notify:
         pypyr.steps.echo.run_step(context)
 
-    mock_logger_info.assert_called_once_with('piping down the valleys wild')
+    mock_logger_notify.assert_called_once_with('piping down the valleys wild')
 
 
 def test_echo_number_pass():
@@ -36,10 +38,11 @@ def test_echo_number_pass():
     context = Context({
         'echoMe': 77})
 
-    with patch_logger('pypyr.steps.echo', logging.INFO) as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.echo', logging.NOTIFY) as mock_logger_notify:
         pypyr.steps.echo.run_step(context)
 
-    mock_logger_info.assert_called_once_with(str(77))
+    mock_logger_notify.assert_called_once_with(str(77))
 
 
 def test_echo_bool_pass():
@@ -47,10 +50,11 @@ def test_echo_bool_pass():
     context = Context({
         'echoMe': False})
 
-    with patch_logger('pypyr.steps.echo', logging.INFO) as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.echo', logging.NOTIFY) as mock_logger_notify:
         pypyr.steps.echo.run_step(context)
 
-    mock_logger_info.assert_called_once_with(str(False))
+    mock_logger_notify.assert_called_once_with(str(False))
 
 
 def test_echo_empty_context_fails():
@@ -78,7 +82,8 @@ def test_echo_missing_echo_me_raises():
 def test_echo_echo_me_none_pass():
     """Echo can output None."""
     context = Context({'echoMe': None})
-    with patch_logger('pypyr.steps.echo', logging.INFO) as mock_logger_info:
+    with patch_logger(
+            'pypyr.steps.echo', logging.NOTIFY) as mock_logger_notify:
         pypyr.steps.echo.run_step(context)
 
-    mock_logger_info.assert_called_once_with(str(None))
+    mock_logger_notify.assert_called_once_with(str(None))

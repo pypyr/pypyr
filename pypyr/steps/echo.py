@@ -29,6 +29,6 @@ def run_step(context):
     else:
         val = context['echoMe']
 
-    logger.info(val)
+    logger.notify(val)
 
     logger.debug("done")

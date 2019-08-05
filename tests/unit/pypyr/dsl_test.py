@@ -263,7 +263,12 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     with patch_logger('pypyr.dsl') as mock_logger_debug:
         step = Step({'name': 'blah'})
 
-    mock_logger_debug.assert_any_call("blah is complex.")
+    assert mock_logger_debug.call_args_list == [
+        call("starting"),
+        call("blah is complex."),
+        call("step name: blah"),
+        call("done"),
+    ]
 
     assert step.name == 'blah'
     assert step.module == mocked_moduleloader.return_value
@@ -424,7 +429,7 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
                                                      mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
-    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+    with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_info:
         step = Step({'name': 'step1',
                      'description': 'test description',
                      'run': False})
