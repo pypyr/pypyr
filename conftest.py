@@ -7,3 +7,8 @@ first. This is because pytest makes the dir this file is in the root.
 What this file is actually for is per-directory fixture scopes:
 http://doc.pytest.org/en/latest/example/simple.html#package-directory-level-fixtures-setups
 """
+import logging
+
+from pypyr.log.logger import set_root_logger
+
+set_root_logger(logging.DEBUG)
