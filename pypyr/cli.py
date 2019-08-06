@@ -8,7 +8,20 @@ import pypyr.pipelinerunner
 import pypyr.version
 import signal
 import sys
+import textwrap
 import traceback
+
+
+def wrap(text, **kwargs):
+    """Wrap lines in argparse so they align nicely in 2 columns.
+
+    Default width is 70.
+
+    With gratitude to paul.j3 https://bugs.python.org/issue12806"""
+    # apply textwrap to each line individually
+    text = text.splitlines()
+    text = [textwrap.fill(line, **kwargs) for line in text]
+    return '\n'.join(text)
 
 
 def get_args(args):
@@ -20,24 +33,33 @@ def get_parser():
     """Return ArgumentParser for pypyr cli."""
     parser = argparse.ArgumentParser(
         allow_abbrev=True,
-        description='pypyr pipeline runner')
+        description='pypyr pipeline runner',
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('pipeline_name',
-                        help='Name of pipeline to run. It should exist in the '
-                        './pipelines directory.')
+                        help=wrap('Name of pipeline to run. It should exist '
+                                  'in the ./pipelines directory.'))
     parser.add_argument(dest='pipeline_context',
                         nargs='?',
-                        help='String for context values. Parsed by the '
-                        'pipeline\'s context_parser function.')
+                        help=wrap('String for context values. Parsed by the '
+                                  'pipeline\'s context_parser function.'))
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
-                        help='Working directory. Use if your pipelines '
-                        'directory is elsewhere. Defaults to cwd.')
+                        help=wrap('Working directory. Use if your pipelines '
+                                  'directory is elsewhere.\n'
+                                  'Defaults to cwd.'))
     parser.add_argument('--log', '--loglevel', dest='log_level', type=int,
-                        default=20,
-                        help='Integer log level. Defaults to 20 (INFO). '
-                        '10=DEBUG\n20=INFO\n30=WARNING\n40=ERROR\n50=CRITICAL'
-                        '.\n Log Level < 10 gives full traceback on errors.')
+                        default=25,
+                        help=wrap(
+                            'Integer log level. Defaults to 25 (NOTIFY).\n'
+                            '10=DEBUG \n'
+                            '20=INFO\n'
+                            '25=NOTIFY\n'
+                            '30=WARNING\n'
+                            '40=ERROR\n'
+                            '50=CRITICAL\n'
+                            'Log Level < 10 gives full traceback on errors.'))
     parser.add_argument('--logpath', dest='log_path',
-                        help='Log-file path. Append log output to this path')
+                        help=wrap(
+                            'Log-file path. Append log output to this path.'))
     parser.add_argument('--version', action='version',
                         help='Echo version number.',
                         version=f'{pypyr.version.get_version()}')

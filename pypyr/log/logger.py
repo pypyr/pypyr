@@ -13,7 +13,6 @@ def set_logging_config(log_level, handlers):
 
     Run this ONCE at the start of your process. It formats the python logging
     module's output.
-    Defaults logging level to INFO = 20)
     """
     logging.basicConfig(
         format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s',
