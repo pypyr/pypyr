@@ -9,11 +9,11 @@ from tests.common.utils import patch_logger
 
 def test_pypyr_version():
     with patch_logger(
-            'pypyr.steps.pypyrversion', logging.INFO
-    ) as mock_logger_info:
+            'pypyr.steps.pypyrversion', logging.NOTIFY
+    ) as mock_logger_notify:
         pypyr.steps.pypyrversion.run_step({})
 
-    mock_logger_info.assert_called_once_with(
+    mock_logger_notify.assert_called_once_with(
         'pypyr version is: '
         f'pypyr {pypyr.version.__version__} '
         f'python {platform.python_version()}')
