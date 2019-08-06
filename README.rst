@@ -88,7 +88,7 @@ pypyr assumes a pipelines directory in your current working directory.
   # log is an alias for loglevel, so less typing, wooohoo!
   $ pypyr mypipelinename --log 20
 
-  # If you don't specify --loglevel it defaults to 20 - INFO logging level.
+  # If you don't specify --loglevel it defaults to 25 - NOTIFY logging level.
   $ pypyr mypipelinename
 
   # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary string,
@@ -1061,6 +1061,9 @@ Pretty print the context to output.
 
 Print the pypyr context to the pypyr output. This is likely to be the console.
 This may assist in debugging when trying to see what values are what.
+
+debug prints to the INFO (20) log-level. This means you won't see debug output
+unless you specify ``pypyr mypype --log 20`` or lower.
 
 Obviously, be aware that if you have sensitive values like passwords in your
 context you probably want to be careful about this. No duh.

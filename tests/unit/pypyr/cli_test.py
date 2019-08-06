@@ -111,7 +111,7 @@ def test_main_pass_with_defaults_context_positional():
         pipeline_name='blah',
         pipeline_context_input='ctx string',
         working_dir=os.getcwd(),
-        log_level=20,
+        log_level=25,
         log_path=None
     )
 
@@ -127,7 +127,7 @@ def test_main_pass_with_no_context():
         pipeline_name='blah',
         pipeline_context_input=None,
         working_dir=os.getcwd(),
-        log_level=20,
+        log_level=25,
         log_path=None
     )
 
@@ -213,6 +213,6 @@ def test_main_pass_with_logpath():
         pipeline_name='blah',
         pipeline_context_input=None,
         working_dir=os.getcwd(),
-        log_level=20,
+        log_level=25,
         log_path='tmp.log'
     )
