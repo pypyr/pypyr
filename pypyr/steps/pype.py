@@ -71,7 +71,6 @@ def run_step(context):
             pipelinerunner.load_and_run_pipeline(
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
-                working_dir=context.working_dir,
                 parse_input=not skip_parse,
                 loader=loader
             )

@@ -32,6 +32,7 @@ class Context(dict):
     override anything in dict.
 
     Attributes:
+        pipeline_name (str): name of pipeline that is currently running
         working_dir (path-like): working directory path. Either CWD or
                                  initialized from the cli --dir arg.
 

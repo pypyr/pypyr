@@ -184,7 +184,6 @@ def test_pype_no_parent_context(mock_run_pipeline):
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
-        working_dir='arb/dir',
         parse_input=False,
         loader='test loader',
     )
@@ -206,14 +205,13 @@ def test_pype_no_skip_parse(mock_run_pipeline):
             'raiseError': True
         }
     })
-    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
-        working_dir='arb/dir',
         parse_input=True,
         loader=None
     )
@@ -235,14 +233,13 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
             'raiseError': True,
         }
     })
-    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input=None,
-        working_dir='arb/dir',
         parse_input=True,
         loader=None,
     )

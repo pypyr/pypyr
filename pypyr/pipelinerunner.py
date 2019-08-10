@@ -2,11 +2,17 @@
 
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
+
+Attributes:
+    pipeline_cache: global instance of the pipeline yaml cache.
+                    Use this attribute to access the cache from elsewhere.
 """
 import logging
 import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
+from pypyr.cache.parsercache import contextparser_cache
+from pypyr.cache.pipelinecache import pipeline_cache
 import pypyr.stepsrunner
 import pypyr.yaml
 
@@ -36,29 +42,23 @@ def get_parsed_context(pipeline, context_in_string):
 
     if 'context_parser' in pipeline:
         parser_module_name = pipeline['context_parser']
-        logger.debug("context parser found: %s", parser_module_name)
-        parser_module = pypyr.moduleloader.get_module(parser_module_name)
+        logger.debug("context parser specified: %s", parser_module_name)
+        get_parsed_context = contextparser_cache.get_context_parser(
+            parser_module_name)
 
-        try:
-            logger.debug("running parser %s", parser_module_name)
-            result_context = parser_module.get_parsed_context(
-                context_in_string)
-            logger.debug("step %s done", parser_module_name)
-            # Downstream steps likely to expect context not to be None, hence
-            # empty rather than None.
-            if result_context is None:
-                logger.debug(
-                    "%s returned None. Using empty context instead",
-                    parser_module_name
-                )
-                return pypyr.context.Context()
-            else:
-                return pypyr.context.Context(result_context)
-        except AttributeError:
-            logger.error("The parser %s doesn't have a "
-                         "get_parsed_context(context) function.",
-                         parser_module_name)
-            raise
+        logger.debug("running parser %s", parser_module_name)
+        result_context = get_parsed_context(context_in_string)
+        logger.debug("context parse %s done", parser_module_name)
+        # Downstream steps likely to expect context not to be None, hence
+        # empty rather than None.
+        if result_context is None:
+            logger.debug(
+                "%s returned None. Using empty context instead",
+                parser_module_name
+            )
+            return pypyr.context.Context()
+        else:
+            return pypyr.context.Context(result_context)
     else:
         logger.debug("pipeline does not have custom context parser. Using "
                      "empty context.")
@@ -105,8 +105,7 @@ def main(
     pypyr.moduleloader.set_working_directory(working_dir)
 
     load_and_run_pipeline(pipeline_name=pipeline_name,
-                          pipeline_context_input=pipeline_context_input,
-                          working_dir=working_dir)
+                          pipeline_context_input=pipeline_context_input)
 
     logger.debug("pypyr done")
 
@@ -138,7 +137,6 @@ def prepare_context(pipeline, context_in_string, context):
 
 def load_and_run_pipeline(pipeline_name,
                           pipeline_context_input=None,
-                          working_dir=None,
                           context=None,
                           parse_input=True,
                           loader=None):
@@ -151,14 +149,13 @@ def load_and_run_pipeline(pipeline_name,
     By default pypyr uses file loader. This means that pipeline_name.yaml
     should be in the working_dir/pipelines/ directory.
 
+    Look for pipelines and modules in the working_dir. Set the working_dir by
+    calling pypyr.moduleloader.set_working_directory('/my/dir')
+
     Args:
         pipeline_name (str): Name of pipeline, sans .yaml at end.
         pipeline_context_input (str): Initialize the pypyr context with this
                                  string.
-        working_dir (path): Look for pipelines and modules in this directory.
-                     If context arg passed, will use context.working_dir and
-                     ignore this argument. If context is None, working_dir
-                     must be specified.
         context (pypyr.context.Context): Use if you already have a
                  Context object, such as if you are running a pipeline from
                  within a pipeline and you want to re-use the same context
@@ -173,44 +170,21 @@ def load_and_run_pipeline(pipeline_name,
 
     """
     logger.debug("you asked to run pipeline: %s", pipeline_name)
-    if loader:
-        logger.debug("you set the pype loader to: %s", loader)
-    else:
-        loader = 'pypyr.pypeloaders.fileloader'
-        logger.debug("use default pype loader: %s", loader)
 
     logger.debug("you set the initial context to: %s", pipeline_context_input)
 
     if context is None:
         context = pypyr.context.Context()
-        context.working_dir = working_dir
-    else:
-        working_dir = context.working_dir
+        context.pipeline_name = pipeline_name
+        context.working_dir = pypyr.moduleloader.get_working_directory()
 
     # pipeline loading deliberately outside of try catch. The try catch will
     # try to run a failure-handler from the pipeline, but if the pipeline
     # doesn't exist there is no failure handler that can possibly run so this
     # is very much a fatal stop error.
-    loader_module = pypyr.moduleloader.get_module(loader)
-
-    try:
-        get_pipeline_definition = getattr(
-            loader_module, 'get_pipeline_definition'
-        )
-    except AttributeError:
-        logger.error(
-            "The pipeline loader %s doesn't have a "
-            "get_pipeline_definition(pipeline_name, working_dir) function.",
-            loader_module
-        )
-        raise
-
-    logger.debug("loading the pipeline definition with %s", loader_module)
-    pipeline_definition = get_pipeline_definition(
+    pipeline_definition = pipeline_cache.get_pipeline(
         pipeline_name=pipeline_name,
-        working_dir=working_dir
-    )
-    logger.debug("%s done", loader_module)
+        loader=loader)
 
     run_pipeline(
         pipeline=pipeline_definition,
