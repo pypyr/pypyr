@@ -13,7 +13,7 @@ import pypyr.log.logger
 import pypyr.moduleloader
 from pypyr.cache.parsercache import contextparser_cache
 from pypyr.cache.pipelinecache import pipeline_cache
-import pypyr.stepsrunner
+from pypyr.stepsrunner import StepsRunner
 import pypyr.yaml
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -219,6 +219,8 @@ def run_pipeline(pipeline,
     """
     logger.debug("starting")
 
+    steps_runner = StepsRunner(pipeline_definition=pipeline, context=context)
+
     try:
         if parse_input:
             logger.debug("executing context_parser")
@@ -227,29 +229,16 @@ def run_pipeline(pipeline,
                             context=context)
         else:
             logger.debug("skipping context_parser")
-
-        # run main steps
-        pypyr.stepsrunner.run_step_group(
-            pipeline_definition=pipeline,
-            step_group_name='steps',
-            context=context)
-
-        # if nothing went wrong, run on_success
-        logger.debug("pipeline steps complete. Running on_success steps now.")
-        pypyr.stepsrunner.run_step_group(
-            pipeline_definition=pipeline,
-            step_group_name='on_success',
-            context=context)
     except Exception:
         # yes, yes, don't catch Exception. Have to, though, to run the failure
         # handler. Also, it does raise it back up.
         logger.error("Something went wrong. Will now try to run on_failure.")
 
         # failure_step_group will log but swallow any errors
-        pypyr.stepsrunner.run_failure_step_group(
-            pipeline=pipeline,
-            context=context)
+        steps_runner.run_failure_step_group('on_failure')
         logger.debug("Raising original exception to caller.")
         raise
 
-    logger.debug("done")
+    steps_runner.run_step_groups(groups=['steps'],
+                                 success_group='on_success',
+                                 failure_group='on_failure')

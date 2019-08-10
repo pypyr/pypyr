@@ -1,17 +1,17 @@
 """pipelinerunner.py unit tests."""
 import logging
 import os
+import pytest
+from unittest.mock import patch
+from pypyr.cache.loadercache import pypeloader_cache
+from pypyr.cache.parsercache import contextparser_cache
+from pypyr.cache.pipelinecache import pipeline_cache
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           KeyNotInContextError,
                           PyModuleNotFoundError)
 import pypyr.moduleloader
 import pypyr.pipelinerunner
-from pypyr.cache.loadercache import pypeloader_cache
-from pypyr.cache.parsercache import contextparser_cache
-from pypyr.cache.pipelinecache import pipeline_cache
-import pytest
-from unittest.mock import call, patch
 
 
 # ------------------------- parser mocks -------------------------------------#
@@ -173,9 +173,9 @@ def test_prepare_context_with_parse_merge(mocked_get_parsed_context):
 # ------------------------- run_pipeline -------------------------------------#
 
 
-@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
 @patch('pypyr.pipelinerunner.get_parsed_context',
-       return_value=Context())
+       return_value=Context({'a': 'b'}))
 @patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
        return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
@@ -184,7 +184,7 @@ def test_load_and_run_pipeline_pass(mocked_get_work_dir,
                                     mocked_set_work_dir,
                                     mocked_get_pipe_def,
                                     mocked_get_parsed_context,
-                                    mocked_run_step_group):
+                                    mocked_steps_runner):
     """run_pipeline passes correct params to all methods."""
     pipeline_cache.clear()
     with patch('pypyr.context.Context') as mock_context:
@@ -203,18 +203,17 @@ def test_load_and_run_pipeline_pass(mocked_get_work_dir,
     # assure that freshly created context instance does have working dir set
     assert mock_context.return_value.working_dir == 'arb/dir'
 
-    # 1st called steps, then on_success
-    expected_run_step_groups = [call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='steps'),
-                                call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='on_success')]
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'a': 'b'})
+    # No called steps, just on_failure since err on parse context already
+    sr = mocked_steps_runner.return_value
+    sr.run_step_groups.assert_called_once_with(groups=['steps'],
+                                               success_group='on_success',
+                                               failure_group='on_failure')
+    sr.run_failure_step_group.assert_not_called()
 
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
 
-
-@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context())
 @patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
@@ -226,7 +225,7 @@ def test_load_and_run_pipeline_pass_skip_parse_context(
         mocked_set_work_dir,
         mocked_get_pipe_def,
         mocked_get_parsed_context,
-        mocked_run_step_group):
+        mocked_steps_runner):
     """run_pipeline passes correct params to all methods."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
@@ -239,18 +238,17 @@ def test_load_and_run_pipeline_pass_skip_parse_context(
                                                 working_dir='arb/dir')
     mocked_get_parsed_context.assert_not_called()
 
-    # 1st called steps, then on_success
-    expected_run_step_groups = [call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='steps'),
-                                call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='on_success')]
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={})
+    # No called steps, just on_failure since err on parse context already
+    sr = mocked_steps_runner.return_value
+    sr.run_step_groups.assert_called_once_with(groups=['steps'],
+                                               success_group='on_success',
+                                               failure_group='on_failure')
+    sr.run_failure_step_group.assert_not_called()
 
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
 
-
-@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
 @patch('pypyr.pipelinerunner.get_parsed_context')
 @patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
        return_value='pipe def')
@@ -261,7 +259,7 @@ def test_load_and_run_pipeline_parse_context_error(
         mocked_set_work_dir,
         mocked_get_pipe_def,
         mocked_get_parsed_context,
-        mocked_run_step_group):
+        mocked_steps_runner):
     """run_pipeline on_failure with empty Context if context parse fails."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
@@ -279,80 +277,33 @@ def test_load_and_run_pipeline_parse_context_error(
         pipeline='pipe def',
         context_in_string='arb context input')
 
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context=Context())
     # No called steps, just on_failure since err on parse context already
-    expected_run_step_groups = [call(context=Context(),
-                                     pipeline_definition='pipe def',
-                                     step_group_name='on_failure')]
-
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
-
-    call_args_tuple = mocked_run_step_group.call_args
-    args, kwargs = call_args_tuple
-    assert isinstance(kwargs['context'], Context)
+    sr = mocked_steps_runner.return_value
+    sr.run_step_groups.assert_not_called()
+    sr.run_failure_step_group.assert_called_once_with('on_failure')
 
 
-@patch('pypyr.stepsrunner.run_step_group')
-@patch('pypyr.pipelinerunner.get_parsed_context',
-       return_value=Context({'c1': 'cv1'}))
-@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
-       return_value='pipe def')
-@patch('pypyr.moduleloader.set_working_directory')
-@patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
-def test_load_and_run_pipeline_steps_error(mocked_get_work_dir,
-                                           mocked_set_work_dir,
-                                           mocked_get_pipe_def,
-                                           mocked_get_parsed_context,
-                                           mocked_run_step_group):
-    """run_pipeline runs on_failure if steps group fails."""
-    pipeline_cache.clear()
-    pypeloader_cache.clear()
-    # First time it runs is steps - give a KeyNotInContextError. After that it
-    # runs again to process the failure condition - thus None.
-    mocked_run_step_group.side_effect = [KeyNotInContextError, None]
-
-    with pytest.raises(KeyNotInContextError):
-        pypyr.pipelinerunner.load_and_run_pipeline(
-            pipeline_name='arb pipe',
-            pipeline_context_input='arb context input')
-
-    mocked_set_work_dir.assert_not_called()
-
-    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
-                                                working_dir='arb/dir')
-    mocked_get_parsed_context.assert_called_once_with(
-        pipeline='pipe def',
-        context_in_string='arb context input')
-
-    # 1st called steps, then on_success
-    expected_run_step_groups = [call(context={'c1': 'cv1'},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='steps'),
-                                call(context={'c1': 'cv1'},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='on_failure')]
-
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
-
-
-@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context())
 @patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
        return_value='pipe def')
 @patch('pypyr.moduleloader.set_working_directory')
 @patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
-def test_load_and_run_pipeline_steps_error_no_context(
+def test_load_and_run_pipeline_steps_error_raises(
         mocked_get_work_dir,
         mocked_set_work_dir,
         mocked_get_pipe_def,
         mocked_get_parsed_context,
-        mocked_run_step_group):
-    """run_pipeline runs on_failure if steps group fails."""
+        mocked_steps_runner):
+    """run_pipeline raises error if steps group fails."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
-    # First time it runs is steps - give a KeyNotInContextError. After that it
-    # runs again to process the failure condition - thus None.
-    mocked_run_step_group.side_effect = [KeyNotInContextError, None]
+    # First time it runs is steps - give a KeyNotInContextError.
+    mocked_steps_runner.return_value.run_step_groups.side_effect = (
+        KeyNotInContextError)
 
     with pytest.raises(KeyNotInContextError):
         pypyr.pipelinerunner.load_and_run_pipeline(
@@ -367,18 +318,16 @@ def test_load_and_run_pipeline_steps_error_no_context(
         pipeline='pipe def',
         context_in_string='arb context input')
 
-    # 1st called steps, then on_success
-    expected_run_step_groups = [call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='steps'),
-                                call(context={},
-                                     pipeline_definition='pipe def',
-                                     step_group_name='on_failure')]
-
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['steps'],
+        success_group='on_success',
+        failure_group='on_failure'
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={})
 
 
-@patch('pypyr.stepsrunner.run_step_group')
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context({'1': 'context 1', '2': 'context2'}))
 @patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
@@ -390,7 +339,7 @@ def test_load_and_run_pipeline_with_existing_context_pass(
         mocked_set_work_dir,
         mocked_get_pipe_def,
         mocked_get_parsed_context,
-        mocked_run_step_group):
+        mocked_steps_runner):
     """run_pipeline passes correct params to all methods"""
     pipeline_cache.clear()
     pypeloader_cache.clear()
@@ -410,17 +359,16 @@ def test_load_and_run_pipeline_with_existing_context_pass(
         pipeline='pipe def',
         context_in_string='arb context input')
 
-    # 1st called steps, then on_success. In both cases with merged context.
-    expected_run_step_groups = [call(
-        context={'1': 'context 1', '2': 'context2', '3': 'new'},
-        pipeline_definition='pipe def',
-        step_group_name='steps'),
-        call(
-        context={'1': 'context 1', '2': 'context2', '3': 'new'},
-        pipeline_definition='pipe def',
-        step_group_name='on_success')]
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['steps'],
+        success_group='on_success',
+        failure_group='on_failure'
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'1': 'context 1',
+                                                         '2': 'context2',
+                                                         '3': 'new'})
 
-    mocked_run_step_group.assert_has_calls(expected_run_step_groups)
 
 # ------------------------- run_pipeline -------------------------------------#
 
