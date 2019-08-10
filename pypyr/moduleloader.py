@@ -5,11 +5,20 @@ Load modules dynamically, find things on file-system.
 
 import importlib
 import logging
+from pathlib import Path
 import sys
 from pypyr.errors import PyModuleNotFoundError
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
+
+
+class WorkingDir():
+    def __init__(self, cwd=None):
+        self.cwd = cwd if cwd else Path.cwd()
+
+
+_working_dir = WorkingDir()
 
 
 def get_module(module_abs_import):
@@ -47,6 +56,11 @@ def get_module(module_abs_import):
         raise PyModuleNotFoundError(extended_msg) from err
 
 
+def get_working_directory():
+    """Return current working directory as Path."""
+    return _working_dir.cwd
+
+
 def set_working_directory(working_directory):
     """Add working_directory to sys.paths.
 
@@ -60,5 +74,6 @@ def set_working_directory(working_directory):
 
     logger.debug("adding %s to sys.paths", working_directory)
     sys.path.append(working_directory)
+    _working_dir.cwd = working_directory
 
     logger.debug("done")

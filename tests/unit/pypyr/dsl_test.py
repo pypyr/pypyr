@@ -3,9 +3,11 @@ from copy import deepcopy
 import logging
 import pytest
 from unittest.mock import call, patch, MagicMock
+from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 from ruamel.yaml.comments import CommentedMap
 
+import pypyr.cache.stepcache as stepcache
 from pypyr.context import Context
 from pypyr.dsl import (PyString,
                        SicString,
@@ -14,7 +16,6 @@ from pypyr.dsl import (PyString,
                        RetryDecorator,
                        WhileDecorator)
 from pypyr.errors import PipelineDefinitionError, LoopMaxExhaustedError
-from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
 def arb_step_mock(context):
@@ -241,7 +242,6 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     mock_logger_debug.assert_any_call("blah is a simple string.")
 
     assert step.name == 'blah'
-    assert step.module == mocked_moduleloader.return_value
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
     assert step.in_parameters is None
@@ -259,6 +259,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_defaults(mocked_moduleloader):
     """Complex step initializes with defaults as expected."""
+    stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
     with patch_logger('pypyr.dsl') as mock_logger_debug:
         step = Step({'name': 'blah'})
@@ -271,7 +272,6 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     ]
 
     assert step.name == 'blah'
-    assert step.module == mocked_moduleloader.return_value
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
     assert step.in_parameters is None
@@ -305,17 +305,21 @@ def test_complex_step_init_with_missing_name_round_trip():
 @patch('pypyr.moduleloader.get_module', return_value=3)
 def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module."""
+    stepcache.step_cache.clear()
     with pytest.raises(AttributeError) as err_info:
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-            Step('mocked.step')
+            with patch_logger('pypyr.cache.stepcache',
+                              logging.ERROR) as mock_cache_logger_error:
+                Step('mocked.step')
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
-    assert mock_logger_error.call_count == 2
-    assert mock_logger_error.mock_calls == [
-        call("The step mocked.step in module 3 doesn't have a "
-             "run_step(context) function."),
-        call('Error at pipeline step mocked.step'),
-    ]
+
+    mock_logger_error.assert_called_once_with(
+        'Error at pipeline step mocked.step')
+
+    mock_cache_logger_error.assert_called_once_with(
+        "The step mocked.step in module 3 doesn't have a "
+        "run_step(context) function.")
 
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
@@ -325,19 +329,21 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module
     with round trip yaml loaded context.
     """
+    stepcache.step_cache.clear()
     with pytest.raises(AttributeError) as err_info:
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-            commented_context = CommentedMap({'name': 'mocked.step'})
-            commented_context._yaml_set_line_col(1, 2)
-            Step(commented_context)
+            with patch_logger('pypyr.cache.stepcache',
+                              logging.ERROR) as mock_cache_logger_error:
+                commented_context = CommentedMap({'name': 'mocked.step'})
+                commented_context._yaml_set_line_col(1, 2)
+                Step(commented_context)
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
-    assert mock_logger_error.call_count == 2
-    assert mock_logger_error.mock_calls == [
-        call("The step mocked.step in module 3 doesn't have a "
-             "run_step(context) function."),
-        call("Error at pipeline step mocked.step yaml line: 1, col: 2"),
-    ]
+    mock_logger_error.assert_called_once_with(
+        "Error at pipeline step mocked.step yaml line: 1, col: 2")
+    mock_cache_logger_error.assert_called_once_with(
+        "The step mocked.step in module 3 doesn't have a "
+        "run_step(context) function.")
 
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
@@ -345,6 +351,7 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
+    stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
     step = Step({'name': 'blah',
                  'in': {'k1': 'v1', 'k2': 'v2'},
@@ -359,7 +366,6 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
                            'max': 4}
                  })
     assert step.name == 'blah'
-    assert step.module == mocked_moduleloader.return_value
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
@@ -380,6 +386,7 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
 def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     """Complex step initializes with decorators set with round trip
     yaml loaded context."""
+    stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
 
     context = CommentedMap({
@@ -391,19 +398,18 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
         'skip': True,
         'swallow': True,
         'while': {
-                'stop': 'stop condition',
-                'errorOnMax': True,
-                'sleep': 3,
-                'max': 4
-            }
+            'stop': 'stop condition',
+            'errorOnMax': True,
+            'sleep': 3,
+            'max': 4
         }
+    }
     )
 
     context._yaml_set_line_col(8, 9)
 
     step = Step(context)
     assert step.name == 'blah'
-    assert step.module == mocked_moduleloader.return_value
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
@@ -998,6 +1004,7 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_invoke_step_pass(mocked_moduleloader):
     """run_pipeline_step test pass."""
+    stepcache.step_cache.clear()
     step = Step('mocked.step')
     step.invoke_step(get_test_context())
 
@@ -1014,43 +1021,43 @@ def test_invoke_step_pass(mocked_moduleloader):
          'key7': 77})
 
 
-@patch('pypyr.moduleloader.get_module')
-def test_invoke_step_context_abides(mocked_moduleloader):
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_invoke_step_context_abides(mocked_stepcache):
     """Step mutates context & mutation abides after run_pipeline_step."""
-    mocked_moduleloader.return_value.run_step = mock_run_step
+    mocked_stepcache.return_value = mock_run_step
     context = get_test_context()
 
     step = Step('mocked.step')
     step.invoke_step(context)
 
-    mocked_moduleloader.assert_called_once_with('mocked.step')
+    mocked_stepcache.assert_called_once_with('mocked.step')
     assert context['test_run_step'] == 'this was set in step'
 
 
-@patch('pypyr.moduleloader.get_module')
-def test_invoke_step_empty_context(mocked_moduleloader):
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_invoke_step_empty_context(mocked_stepcache):
     """Empty context in step (i.e count == 0, but not is None)."""
-    mocked_moduleloader.return_value.run_step = mock_run_step_empty_context
+    mocked_stepcache.return_value = mock_run_step_empty_context
     context = get_test_context()
 
     step = Step('mocked.step')
     step.invoke_step(context)
 
-    mocked_moduleloader.assert_called_once_with('mocked.step')
+    mocked_stepcache.assert_called_once_with('mocked.step')
     assert len(context) == 0
     assert context is not None
 
 
-@patch('pypyr.moduleloader.get_module')
-def test_invoke_step_none_context(mocked_moduleloader):
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_invoke_step_none_context(mocked_stepcache):
     """Step rebinding context to None doesn't affect the caller Context."""
-    mocked_moduleloader.return_value.run_step = mock_run_step_none_context
+    mocked_stepcache.return_value = mock_run_step_none_context
     context = get_test_context()
 
     step = Step('mocked.step')
     step.invoke_step(False)
 
-    mocked_moduleloader.assert_called_once_with('mocked.step')
+    mocked_stepcache.assert_called_once_with('mocked.step')
     assert context == {'key1': 'value1',
                        'key2': 'value2',
                        'key3': 'value3',

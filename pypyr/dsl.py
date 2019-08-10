@@ -4,7 +4,7 @@ import logging
 from pypyr.errors import (get_error_name,
                           LoopMaxExhaustedError,
                           PipelineDefinitionError)
-import pypyr.moduleloader
+from pypyr.cache.stepcache import step_cache
 from pypyr.utils import expressions, poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -213,14 +213,7 @@ class Step:
                 logger.debug("%s is a simple string.", step)
                 self.name = step
 
-            self.module = pypyr.moduleloader.get_module(self.name)
-            try:
-                self.run_step_function = getattr(self.module, 'run_step')
-            except AttributeError:
-                logger.error("The step %s in module %s "
-                             "doesn't have a run_step(context) function.",
-                             self.name, self.module)
-                raise
+            self.run_step_function = step_cache.get_step(self.name)
         except Exception:
             # Exceptions could also happened on the step init phase
             # (ModuleNotFound, KeyError, etc..),
@@ -376,11 +369,11 @@ class Step:
         """
         logger.debug("starting")
 
-        logger.debug("running step %s", self.module)
+        logger.debug("running step %s", self.name)
 
         self.run_step_function(context)
 
-        logger.debug("step %s done", self.module)
+        logger.debug("step %s done", self.name)
 
     def run_conditional_decorators(self, context):
         """Evaluate the step decorators to decide whether to run step or not.
