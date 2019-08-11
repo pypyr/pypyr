@@ -630,6 +630,17 @@ def test_run_step_groups_single(mock_run_step_group):
 
 
 @patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_single_no_success_handler(mock_run_step_group):
+    """Single test group runs with no success handler."""
+    StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+        groups=['sg1'],
+        success_group=None,
+        failure_group='arb fail')
+
+    assert mock_run_step_group.mock_calls == [call('sg1')]
+
+
+@patch.object(StepsRunner, 'run_step_group')
 def test_run_step_groups_sequence(mock_run_step_group):
     """Sequence of test groups runs with success."""
     StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
@@ -662,6 +673,23 @@ def test_run_step_groups_sequence_with_fail(mock_run_step_group):
                                               call('arb fail')]
 
 
+@patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_sequence_with_fail_no_handler(mock_run_step_group):
+    """Sequence of test groups runs with failure when no failure handler."""
+    mock_run_step_group.side_effect = [None, None, ValueError('arb')]
+
+    with pytest.raises(ValueError) as err:
+        StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+            groups=['sg3', 'sg1', 'sg2', 'sg4'],
+            success_group='arb success',
+            failure_group=None)
+
+    assert str(err.value) == 'arb'
+    assert mock_run_step_group.mock_calls == [call('sg3'),
+                                              call('sg1'),
+                                              call('sg2')]
+
+
 def test_run_step_groups_sequence_with_mutate():
     """Sequence of test groups runs with success and mutates context."""
     context = Context({'counter': 5})
@@ -671,4 +699,17 @@ def test_run_step_groups_sequence_with_mutate():
         failure_group='arb fail')
 
     assert context['counter'] == 8
+
+
+def test_run_step_groups_none_groups():
+    """Raise error if groups None."""
+
+    with pytest.raises(ValueError) as err:
+        StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+            groups=None,
+            success_group='arb success',
+            failure_group='arb fail')
+
+    assert str(err.value) == (
+        'you must specify which step-groups you want to run. groups is None.')
 # ------------------------- END: run_step_groups -----------------------------#

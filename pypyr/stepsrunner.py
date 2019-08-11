@@ -137,24 +137,36 @@ class StepsRunner():
         """
         logger.debug("starting")
 
+        if not groups:
+            raise ValueError("you must specify which step-groups you want to "
+                             "run. groups is None.")
         try:
             # run main steps
             for step_group in groups:
                 self.run_step_group(step_group)
 
             # if nothing went wrong, run on_success
-            logger.debug(
-                "pipeline steps complete. Running %s steps now.",
-                success_group)
-            self.run_step_group(success_group)
+            if success_group:
+                logger.debug(
+                    "pipeline steps complete. Running %s steps now.",
+                    success_group)
+                self.run_step_group(success_group)
+            else:
+                logger.debug(
+                    "pipeline steps complete. No success group specified.")
         except Exception:
             # yes, yes, don't catch Exception. Have to, though, to run failure
             # handler. Also, it does raise it back up.
-            logger.error(
-                "Something went wrong. Will now try to run %s.", failure_group)
+            if failure_group:
+                logger.error(
+                    "Something went wrong. Will now try to run %s.",
+                    failure_group)
 
-            # failure_step_group will log but swallow any errors
-            self.run_failure_step_group(failure_group)
+                # failure_step_group will log but swallow any errors
+                self.run_failure_step_group(failure_group)
+            else:
+                logger.debug(
+                    "Something went wrong. No failure group specified.")
 
             logger.debug("Raising original exception to caller.")
             raise

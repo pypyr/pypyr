@@ -105,12 +105,18 @@ def test_main_pass(mocked_get_mocked_work_dir,
                               pipeline_context_input='arb context input',
                               working_dir='arb/dir',
                               log_level=77,
-                              log_path=None)
+                              log_path=None,
+                              groups=['g'],
+                              success_group='sg',
+                              failure_group='fg')
 
     mocked_set_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
-        pipeline_context_input='arb context input')
+        pipeline_context_input='arb context input',
+        groups=['g'],
+        success_group='sg',
+        failure_group='fg')
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline',
@@ -131,7 +137,10 @@ def test_main_fail(mocked_work_dir, mocked_run_pipeline):
     mocked_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
-        pipeline_context_input='arb context input')
+        pipeline_context_input='arb context input',
+        groups=None,
+        success_group=None,
+        failure_group=None)
 
 # ------------------------- main ---------------------------------------------#
 
@@ -370,6 +379,181 @@ def test_load_and_run_pipeline_with_existing_context_pass(
                                                          '3': 'new'})
 
 
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context',
+       return_value=Context({'1': 'context 1', '2': 'context2'}))
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='from/context')
+def test_load_and_run_pipeline_with_group_specified(
+        mocked_get_work_dir,
+        mocked_set_work_dir,
+        mocked_get_pipe_def,
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline passes runs with specified group."""
+    pipeline_cache.clear()
+    pypeloader_cache.clear()
+    existing_context = Context({'2': 'original', '3': 'new'})
+    existing_context.working_dir = 'from/context'
+
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        context=existing_context,
+        groups=['arb1', 'arb2'])
+
+    assert existing_context.working_dir == 'from/context'
+    mocked_set_work_dir.assert_not_called()
+    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
+                                                working_dir='from/context')
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='pipe def',
+        context_in_string='arb context input')
+
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['arb1', 'arb2'],
+        success_group=None,
+        failure_group=None
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'1': 'context 1',
+                                                         '2': 'context2',
+                                                         '3': 'new'})
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context',
+       return_value=Context({'1': 'context 1', '2': 'context2'}))
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='from/context')
+def test_load_and_run_pipeline_with_success_group_specified(
+        mocked_get_work_dir,
+        mocked_set_work_dir,
+        mocked_get_pipe_def,
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline passes runs with specified success group."""
+    pipeline_cache.clear()
+    pypeloader_cache.clear()
+    existing_context = Context({'2': 'original', '3': 'new'})
+    existing_context.working_dir = 'from/context'
+
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        context=existing_context,
+        success_group='arb1')
+
+    assert existing_context.working_dir == 'from/context'
+    mocked_set_work_dir.assert_not_called()
+    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
+                                                working_dir='from/context')
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='pipe def',
+        context_in_string='arb context input')
+
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['steps'],
+        success_group='arb1',
+        failure_group=None
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'1': 'context 1',
+                                                         '2': 'context2',
+                                                         '3': 'new'})
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context',
+       return_value=Context({'1': 'context 1', '2': 'context2'}))
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='from/context')
+def test_load_and_run_pipeline_with_failure_group_specified(
+        mocked_get_work_dir,
+        mocked_set_work_dir,
+        mocked_get_pipe_def,
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline passes runs with specified failure group."""
+    pipeline_cache.clear()
+    pypeloader_cache.clear()
+    existing_context = Context({'2': 'original', '3': 'new'})
+    existing_context.working_dir = 'from/context'
+
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        context=existing_context,
+        failure_group='arb1')
+
+    assert existing_context.working_dir == 'from/context'
+    mocked_set_work_dir.assert_not_called()
+    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
+                                                working_dir='from/context')
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='pipe def',
+        context_in_string='arb context input')
+
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['steps'],
+        success_group=None,
+        failure_group='arb1'
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'1': 'context 1',
+                                                         '2': 'context2',
+                                                         '3': 'new'})
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context',
+       return_value=Context({'1': 'context 1', '2': 'context2'}))
+@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition',
+       return_value='pipe def')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='from/context')
+def test_load_and_run_pipeline_with_group_and_failure_group_specified(
+        mocked_get_work_dir,
+        mocked_set_work_dir,
+        mocked_get_pipe_def,
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline passes runs with specified group and failure group."""
+    pipeline_cache.clear()
+    pypeloader_cache.clear()
+    existing_context = Context({'2': 'original', '3': 'new'})
+    existing_context.working_dir = 'from/context'
+
+    pypyr.pipelinerunner.load_and_run_pipeline(
+        pipeline_name='arb pipe',
+        pipeline_context_input='arb context input',
+        context=existing_context,
+        groups=['arb1'],
+        failure_group='arb2')
+
+    assert existing_context.working_dir == 'from/context'
+    mocked_set_work_dir.assert_not_called()
+    mocked_get_pipe_def.assert_called_once_with(pipeline_name='arb pipe',
+                                                working_dir='from/context')
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='pipe def',
+        context_in_string='arb context input')
+
+    mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
+        groups=['arb1'],
+        success_group=None,
+        failure_group='arb2'
+    )
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
+                                                context={'1': 'context 1',
+                                                         '2': 'context2',
+                                                         '3': 'new'})
 # ------------------------- run_pipeline -------------------------------------#
 
 # ------------------------- loader -------------------------------------------#
@@ -434,7 +618,10 @@ def test_empty_loader_set_up_to_default(mock_get_pipeline_definition,
         context={},
         parse_input=True,
         pipeline='pipe def',
-        pipeline_context_input='arb context input'
+        pipeline_context_input='arb context input',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
 
@@ -446,7 +633,10 @@ def test_arb_loader(mock_run_pipeline):
     pypyr.pipelinerunner.load_and_run_pipeline(
         pipeline_name='arb pipe',
         pipeline_context_input='arb context input',
-        loader='arbpack.arbloader'
+        loader='arbpack.arbloader',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     mock_run_pipeline.assert_called_once_with(
@@ -454,7 +644,10 @@ def test_arb_loader(mock_run_pipeline):
         parse_input=True,
         pipeline={'pipeline_name': 'arb pipe',
                   'working_dir': 'tests'},
-        pipeline_context_input='arb context input'
+        pipeline_context_input='arb context input',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
 

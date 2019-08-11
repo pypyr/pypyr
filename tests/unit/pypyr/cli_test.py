@@ -13,7 +13,15 @@ def test_main_pass_with_sysargv_context_positional():
                 '--loglevel',
                 '50',
                 '--dir',
-                'dir here']
+                'dir here',
+                '--groups',
+                'group1',
+                'group 2',
+                'group3',
+                '--success',
+                'sg',
+                '--failure',
+                'f g']
 
     with patch('sys.argv', arg_list):
         with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
@@ -24,7 +32,10 @@ def test_main_pass_with_sysargv_context_positional():
             pipeline_context_input='ctx string',
             working_dir='dir here',
             log_level=50,
-            log_path=None
+            log_path=None,
+            groups=['group1', 'group 2', 'group3'],
+            success_group='sg',
+            failure_group='f g'
         )
 
 
@@ -47,7 +58,10 @@ def test_main_pass_with_sysargv_context_positional_log_alias():
             pipeline_context_input='ctx string',
             working_dir='dir here',
             log_level=50,
-            log_path=None
+            log_path=None,
+            groups=None,
+            success_group=None,
+            failure_group=None
         )
 
 
@@ -72,7 +86,10 @@ def test_main_pass_with_sysargv_context_positional_abbreviations():
             pipeline_context_input='ctx string',
             working_dir='dir here',
             log_level=50,
-            log_path='/blah'
+            log_path='/blah',
+            groups=None,
+            success_group=None,
+            failure_group=None
         )
 
 
@@ -95,7 +112,10 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
             pipeline_context_input='ctx string',
             working_dir='dir here',
             log_level=50,
-            log_path=None
+            log_path=None,
+            groups=None,
+            success_group=None,
+            failure_group=None
         )
 
 
@@ -112,7 +132,10 @@ def test_main_pass_with_defaults_context_positional():
         pipeline_context_input='ctx string',
         working_dir=os.getcwd(),
         log_level=25,
-        log_path=None
+        log_path=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
 
@@ -128,7 +151,10 @@ def test_main_pass_with_no_context():
         pipeline_context_input=None,
         working_dir=os.getcwd(),
         log_level=25,
-        log_path=None
+        log_path=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
 
@@ -146,7 +172,10 @@ def test_main_pass_with_no_context_other_flags_set():
         pipeline_context_input=None,
         working_dir=os.getcwd(),
         log_level=11,
-        log_path=None
+        log_path=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
 
@@ -214,5 +243,8 @@ def test_main_pass_with_logpath():
         pipeline_context_input=None,
         working_dir=os.getcwd(),
         log_level=25,
-        log_path='tmp.log'
+        log_path='tmp.log',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
