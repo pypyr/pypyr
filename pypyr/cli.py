@@ -42,6 +42,28 @@ def get_parser():
                         nargs='?',
                         help=wrap('String for context values. Parsed by the '
                                   'pipeline\'s context_parser function.'))
+    parser.add_argument('--groups', dest='groups',
+                        nargs='*',
+                        default=None,
+                        help=wrap(
+                            'Step-Groups to run. defaults to "steps".\n'
+                            'You probably want to order --groups AFTER the '
+                            'pipeline name and context positional args. e.g\n'
+                            'pypyr pipename context --groups group1 group2\n'
+                            'If you prefer putting them before, use a -- to '
+                            'separate groups from the pipeline name, e.g\n'
+                            'pypyr --groups group1 group2 -- pipename context')
+                        )
+    parser.add_argument('--success', dest='success_group', default=None,
+                        help=wrap(
+                            'Step-Group to run on successful completion of '
+                            'pipeline.\n'
+                            'Defaults to "on_success"'))
+    parser.add_argument('--failure', dest='failure_group', default=None,
+                        help=wrap(
+                            'Step-Group to run on error completion of '
+                            'pipeline.\n'
+                            'Defaults to "on_failure"'))
     parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
                         help=wrap('Working directory. Use if your pipelines '
                                   'directory is elsewhere.\n'
@@ -84,7 +106,10 @@ def main(args=None):
             pipeline_context_input=parsed_args.pipeline_context,
             working_dir=parsed_args.working_dir,
             log_level=parsed_args.log_level,
-            log_path=parsed_args.log_path)
+            log_path=parsed_args.log_path,
+            groups=parsed_args.groups,
+            success_group=parsed_args.success_group,
+            failure_group=parsed_args.failure_group)
     except KeyboardInterrupt:
         # Shell standard is 128 + signum = 130 (SIGINT = 2)
         sys.stdout.write("\n")

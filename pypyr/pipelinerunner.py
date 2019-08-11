@@ -74,6 +74,9 @@ def main(
     working_dir,
     log_level,
     log_path,
+    groups=None,
+    success_group=None,
+    failure_group=None
 ):
     """Entry point for pypyr pipeline runner.
 
@@ -90,6 +93,9 @@ def main(
         working_dir: path. looks for ./pipelines and modules in this directory.
         log_level: int. Standard python log level enumerated value.
         log_path: os.path. Append log to this path.
+        groups: list of str. step-group names to run in pipeline.
+        success_group: str. step-group name to run on success completion.
+        failure_group: str. step-group name to run on pipeline failure.
 
     Returns:
         None
@@ -105,7 +111,10 @@ def main(
     pypyr.moduleloader.set_working_directory(working_dir)
 
     load_and_run_pipeline(pipeline_name=pipeline_name,
-                          pipeline_context_input=pipeline_context_input)
+                          pipeline_context_input=pipeline_context_input,
+                          groups=groups,
+                          success_group=success_group,
+                          failure_group=failure_group)
 
     logger.debug("pypyr done")
 
@@ -139,7 +148,10 @@ def load_and_run_pipeline(pipeline_name,
                           pipeline_context_input=None,
                           context=None,
                           parse_input=True,
-                          loader=None):
+                          loader=None,
+                          groups=None,
+                          success_group=None,
+                          failure_group=None):
     """Load and run the specified pypyr pipeline.
 
     This function runs the actual pipeline by name. If you are running another
@@ -164,6 +176,9 @@ def load_and_run_pipeline(pipeline_name,
         parse_input (bool): run context_parser in pipeline.
         loader (str): str. optional. Absolute name of pipeline loader module.
                 If not specified will use pypyr.pypeloaders.fileloader.
+        groups: list of str. step-group names to run in pipeline.
+        success_group: str. step-group name to run on success completion.
+        failure_group: str. step-group name to run on pipeline failure.
 
     Returns:
         None
@@ -190,21 +205,35 @@ def load_and_run_pipeline(pipeline_name,
         pipeline=pipeline_definition,
         pipeline_context_input=pipeline_context_input,
         context=context,
-        parse_input=parse_input
+        parse_input=parse_input,
+        groups=groups,
+        success_group=success_group,
+        failure_group=failure_group
     )
 
 
 def run_pipeline(pipeline,
                  context,
                  pipeline_context_input=None,
-                 parse_input=True):
+                 parse_input=True,
+                 groups=None,
+                 success_group=None,
+                 failure_group=None):
     """Run the specified pypyr pipeline.
 
     This function runs the actual pipeline. If you are running another
     pipeline from within a pipeline, call this, not main(). Do call main()
-    instead for your 1st pipeline if there are pipelines calling pipelines.
+    instead for your 1st pipeline, if there are subsequent pipelines calling
+    pipelines use load_and_run_pipeline or run_pipeline.
 
-    Pipeline and context should be already loaded.
+    Pipeline and context should be already loaded. If pipeline not loaded yet,
+    you probably want to call load_and_run_pipeline instead.
+
+    If none of groups, success_group & failure_group specified, defaults to
+    ['steps'], on_success, on_failure. If any of groups, success_group or
+    failure_group specified, will ONLY run the specified (i.e if you specify
+    groups you don't get on_success/on_failure groups unless you specify these
+    explicitly.)
 
     Args:
         pipeline (dict): Dictionary representing the pipeline.
@@ -212,12 +241,22 @@ def run_pipeline(pipeline,
         pipeline_context_input (str): Initialize the pypyr context with this
                                 string.
         parse_input (bool): run context_parser in pipeline.
+        groups: list of str. step-group names to run in pipeline.
+        success_group: str. step-group name to run on success completion.
+        failure_group: str. step-group name to run on pipeline failure.
 
     Returns:
         None
 
     """
     logger.debug("starting")
+
+    if not groups:
+        groups = ['steps']
+
+        if not success_group and not failure_group:
+            success_group = 'on_success'
+            failure_group = 'on_failure'
 
     steps_runner = StepsRunner(pipeline_definition=pipeline, context=context)
 
@@ -232,13 +271,14 @@ def run_pipeline(pipeline,
     except Exception:
         # yes, yes, don't catch Exception. Have to, though, to run the failure
         # handler. Also, it does raise it back up.
-        logger.error("Something went wrong. Will now try to run on_failure.")
+        logger.error("Something went wrong. Will now try to run %s",
+                     failure_group)
 
         # failure_step_group will log but swallow any errors
-        steps_runner.run_failure_step_group('on_failure')
+        steps_runner.run_failure_step_group(failure_group)
         logger.debug("Raising original exception to caller.")
         raise
 
-    steps_runner.run_step_groups(groups=['steps'],
-                                 success_group='on_success',
-                                 failure_group='on_failure')
+    steps_runner.run_step_groups(groups=groups,
+                                 success_group=success_group,
+                                 failure_group=failure_group)
