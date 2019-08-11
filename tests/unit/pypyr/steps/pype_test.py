@@ -19,7 +19,10 @@ def test_pype_get_arguments_all():
             'useParentContext': 'parent context bool',
             'skipParse': 'skip parse',
             'raiseError': 'raise err',
-            'loader': 'test loader'
+            'loader': 'test loader',
+            'groups': ['gr'],
+            'success': 'sg',
+            'failure': 'fg'
         }
     })
 
@@ -28,13 +31,19 @@ def test_pype_get_arguments_all():
      pipe_arg,
      skip_parse,
      raise_error,
-     loader) = pype.get_arguments(context)
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert use_parent_context == 'parent context bool'
     assert skip_parse == 'skip parse'
     assert raise_error == 'raise err'
     assert loader == 'test loader'
+    assert groups == ['gr']
+    assert success_group == 'sg'
+    assert failure_group == 'fg'
 
 
 def test_pype_get_arguments_all_with_interpolation():
@@ -46,13 +55,19 @@ def test_pype_get_arguments_all_with_interpolation():
         'skipParse': 'skip parse',
         'raiseErr': 'raise err',
         'loaderHere': 'test loader',
+        'groups': ['gr'],
+        'success': 'sg',
+        'failure': 'fg',
         'pype': {
             'name': '{pipeName}',
             'pipeArg': '{argHere}',
             'useParentContext': '{parentContext}',
             'skipParse': '{skipParse}',
             'raiseError': '{raiseErr}',
-            'loader': '{loaderHere}'
+            'loader': '{loaderHere}',
+            'groups': '{groups}',
+            'success': '{success}',
+            'failure': '{failure}',
         }
     })
 
@@ -61,7 +76,10 @@ def test_pype_get_arguments_all_with_interpolation():
      pipe_arg,
      skip_parse,
      raise_error,
-     loader) = pype.get_arguments(context)
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert use_parent_context == 'parent context bool'
@@ -69,6 +87,9 @@ def test_pype_get_arguments_all_with_interpolation():
     assert skip_parse == 'skip parse'
     assert raise_error == 'raise err'
     assert loader == 'test loader'
+    assert groups == ['gr']
+    assert success_group == 'sg'
+    assert failure_group == 'fg'
 
 
 def test_pype_get_arguments_defaults():
@@ -84,7 +105,10 @@ def test_pype_get_arguments_defaults():
      pipe_arg,
      skip_parse,
      raise_error,
-     loader) = pype.get_arguments(context)
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert use_parent_context
@@ -94,6 +118,9 @@ def test_pype_get_arguments_defaults():
     assert raise_error
     assert isinstance(raise_error, bool)
     assert loader is None
+    assert groups is None
+    assert success_group is None
+    assert failure_group is None
 
 
 def test_pype_get_arguments_missing_pype():
@@ -130,6 +157,72 @@ def test_pype_get_arguments_name_empty():
 
     assert str(err_info.value) == ("pypyr.steps.pype ['pype']['name'] exists "
                                    "but is empty.")
+
+
+def test_pype_get_arguments_group_str():
+    """Parse group as str input from context."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'groups': 'gr',
+        }
+    })
+
+    (pipeline_name,
+     use_parent_context,
+     pipe_arg,
+     skip_parse,
+     raise_error,
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
+
+    assert pipeline_name == 'pipe name'
+    assert use_parent_context
+    assert isinstance(use_parent_context, bool)
+    assert skip_parse
+    assert isinstance(skip_parse, bool)
+    assert raise_error
+    assert isinstance(raise_error, bool)
+    assert loader is None
+    assert groups == ['gr']
+    assert success_group is None
+    assert failure_group is None
+
+
+def test_pype_get_arguments_group_str_interpolate():
+    """Parse group as interpolated str input from context."""
+    context = Context({
+        'group': 'gr',
+        'pype': {
+            'name': 'pipe name',
+            'groups': '{group}',
+        }
+    })
+
+    (pipeline_name,
+     use_parent_context,
+     pipe_arg,
+     skip_parse,
+     raise_error,
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
+
+    assert pipeline_name == 'pipe name'
+    assert use_parent_context
+    assert isinstance(use_parent_context, bool)
+    assert skip_parse
+    assert isinstance(skip_parse, bool)
+    assert raise_error
+    assert isinstance(raise_error, bool)
+    assert loader is None
+    assert groups == ['gr']
+    assert success_group is None
+    assert failure_group is None
+
 # ------------------------ get_arguments --------------------------------------
 
 # ------------------------ run_step -------------------------------------------
@@ -156,7 +249,10 @@ def test_pype_use_parent_context(mock_run_pipeline):
         pipeline_context_input='argument here',
         context=context,
         parse_input=False,
-        loader='test loader'
+        loader='test loader',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     assert mock_logger_info.mock_calls == [
@@ -186,6 +282,9 @@ def test_pype_no_parent_context(mock_run_pipeline):
         pipeline_context_input='argument here',
         parse_input=False,
         loader='test loader',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     assert mock_logger_info.mock_calls == [
@@ -213,7 +312,10 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
         parse_input=True,
-        loader=None
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     assert mock_logger_info.mock_calls == [
@@ -242,6 +344,9 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         pipeline_context_input=None,
         parse_input=True,
         loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     assert mock_logger_info.mock_calls == [
@@ -274,6 +379,9 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         context=context,
         parse_input=False,
         loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     mock_logger_error.assert_called_once_with(
@@ -303,9 +411,46 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
         context=context,
         parse_input=False,
         loader='test loader',
+        groups=None,
+        success_group=None,
+        failure_group=None
     )
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+def test_pype_set_groups(mock_run_pipeline):
+    """pype use_parent_context True."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'pipeArg': 'argument here',
+            'useParentContext': True,
+            'skipParse': True,
+            'raiseError': True,
+            'loader': 'test loader',
+            'groups': 'testgroup',
+            'success': 'successgroup',
+            'failure': 'failuregroup'
+        }
+    })
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        pype.run_step(context)
+
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input='argument here',
+        context=context,
+        parse_input=False,
+        loader='test loader',
+        groups=['testgroup'],
+        success_group='successgroup',
+        failure_group='failuregroup'
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, using parent context.'),
+        call('pyped pipe name.')]
 # ------------------------ run_step --------------------------------------

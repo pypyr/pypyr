@@ -36,6 +36,18 @@ def run_step(context):
                 - loader: str. optional. Absolute name of pipeline loader
                   module. If not specified will use
                   pypyr.pypeloaders.fileloader.
+                - groups. list of str, or str. optional. Step-Groups to run in
+                  pipeline. If you specify a str, will convert it to a single
+                  entry list for you.
+                - success. str. optional. Step-Group to run on successful
+                  pipeline completion.
+                - failure. str. optional. Step-Group to run on pipeline error.
+
+    If none of groups, success & failure specified, will run the default pypyr
+    steps, on_success & on_failure sequence.
+
+    If groups specified, will only run groups, without a success or failure
+    sequence, unless you specifically set these also.
 
     Returns:
         None
@@ -54,6 +66,9 @@ def run_step(context):
      skip_parse,
      raise_error,
      loader,
+     step_groups,
+     success_group,
+     failure_group
      ) = get_arguments(context)
 
     try:
@@ -64,7 +79,10 @@ def run_step(context):
                 pipeline_context_input=pipe_arg,
                 context=context,
                 parse_input=not skip_parse,
-                loader=loader
+                loader=loader,
+                groups=step_groups,
+                success_group=success_group,
+                failure_group=failure_group
             )
         else:
             logger.info("pyping %s, without parent context.", pipeline_name)
@@ -72,7 +90,10 @@ def run_step(context):
                 pipeline_name=pipeline_name,
                 pipeline_context_input=pipe_arg,
                 parse_input=not skip_parse,
-                loader=loader
+                loader=loader,
+                groups=step_groups,
+                success_group=success_group,
+                failure_group=failure_group
             )
 
         logger.info("pyped %s.", pipeline_name)
@@ -104,6 +125,9 @@ def get_arguments(context):
                pipe_arg, #str
                skip_parse, #bool
                raise_error #bool
+               groups #list of str
+               success_group #str
+               failure_group #str
                )
 
     Raises:
@@ -131,6 +155,12 @@ def get_arguments(context):
     skip_parse = pype.get('skipParse', True)
     raise_error = pype.get('raiseError', True)
     loader = pype.get('loader', None)
+    groups = pype.get('groups', None)
+    if isinstance(groups, str):
+        groups = [groups]
+
+    success_group = pype.get('success', None)
+    failure_group = pype.get('failure', None)
 
     return (
         pipeline_name,
@@ -139,4 +169,7 @@ def get_arguments(context):
         skip_parse,
         raise_error,
         loader,
+        groups,
+        success_group,
+        failure_group
     )
