@@ -2030,6 +2030,9 @@ Example input context:
 
   pype:
     name: 'pipeline name' # mandatory. string.
+    groups: [group1, group2] # optional. Defaults "steps".
+    success: 'success group' # optional. Defaults "on_success".
+    failure: 'failure group' # optional. Defaults "on_failure".
     pipeArg: 'argument here' # optional. string.
     raiseError: True # optional. bool. Defaults True.
     skipParse: True # optional. bool. Defaults True.
@@ -2044,6 +2047,47 @@ All inputs supports string `Substitutions`_.
 +-----------------------+------------------------------------------------------+
 | name                  | Name of child pipeline to execute. This {name}.yaml  |
 |                       | must exist in the *working directory/pipelines* dir. |
++-----------------------+------------------------------------------------------+
+| groups                | Run only these step-groups in the child pipeline.    |
+|                       | Equivalent to *groups* arg on the pypyr cli.         |
+|                       |                                                      |
+|                       | If you don't set this, pypyr will just run the       |
+|                       | *steps* step-group as per usual.                     |
+|                       |                                                      |
+|                       | If you only want to run a single group, you can set  |
+|                       | it simply as a string, not a list, like this:        |
+|                       |                                                      |
+|                       | ``groups: mygroupname``                              |
+|                       |                                                      |
+|                       | If you set groups, success and failure do not default|
+|                       | to *on_success* and *on_failure* anymore. In other   |
+|                       | words, pype will only run the groups you specifically|
+|                       | specified. If you still want success/failure handlers|
+|                       | explicitly set these with *success* & *failure*.     |
++-----------------------+------------------------------------------------------+
+| success               | Run this step-group on successful completion of the  |
+|                       | child pipeline's step *groups*.                      |
+|                       |                                                      |
+|                       | Equivalent to *success* arg on the pypyr cli.        |
+|                       |                                                      |
+|                       | If you don't set this, pypyr will just run the       |
+|                       | *on_success* step-group as per usual if it exists.   |
+|                       |                                                      |
+|                       | If you specify *success*, but you don't set *groups*,|
+|                       | pypyr will default to running the standard *steps*   |
+|                       | group as entry-point for the child pipeline.         |
++-----------------------+------------------------------------------------------+
+| failure               | Run this step-group on an error occurring in the     |
+|                       | child pipeline's step *groups*.                      |
+|                       |                                                      |
+|                       | Equivalent to *failure* arg on the pypyr cli.        |
+|                       |                                                      |
+|                       | If you don't set this, pypyr will just run the       |
+|                       | *on_failure* step-group as per usual if it exists.   |
+|                       |                                                      |
+|                       | If you specify *failure*, but you don't set *groups*,|
+|                       | pypyr will default to running the standard *steps*   |
+|                       | group as entry-point for the child pipeline.         |
 +-----------------------+------------------------------------------------------+
 | pipeArg               | String to pass to the child pipeline context_parser. |
 |                       | Equivalent to *context* arg on the pypyr cli. Only   |
