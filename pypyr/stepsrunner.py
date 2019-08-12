@@ -5,6 +5,11 @@ pipelinerunner uses this to parse and run steps.
 
 import logging
 from pypyr.dsl import Step
+from pypyr.errors import (Call,
+                          ControlOfFlowInstruction,
+                          Jump,
+                          Stop,
+                          StopStepGroup)
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -105,7 +110,15 @@ class StepsRunner():
 
             for step in steps:
                 step_instance = Step(step)
-                step_instance.run_step(self.context)
+                try:
+                    step_instance.run_step(self.context)
+                except Call as call:
+                    logger.debug("call: calling %s", call.groups)
+                    self.run_step_groups(groups=call.groups,
+                                         success_group=call.success_group,
+                                         failure_group=call.failure_group)
+                    logger.debug("call: done calling %s", call.groups)
+
                 step_count += 1
 
             logger.debug("executed %s steps", step_count)
@@ -119,7 +132,16 @@ class StepsRunner():
 
         steps = self.get_pipeline_steps(step_group=step_group_name)
 
-        self.run_pipeline_steps(steps=steps)
+        try:
+            self.run_pipeline_steps(steps=steps)
+        except Jump as jump:
+            logger.debug("jump: jumping to %s", jump.groups)
+            self.run_step_groups(groups=jump.groups,
+                                 success_group=jump.success_group,
+                                 failure_group=jump.failure_group)
+            logger.debug("jump: done jumping to %s", jump.groups)
+        except StopStepGroup:
+            logger.debug("StopStepGroup: stopped %s", step_group_name)
 
         logger.debug("done %s", step_group_name)
 
@@ -154,6 +176,10 @@ class StepsRunner():
             else:
                 logger.debug(
                     "pipeline steps complete. No success group specified.")
+        except (ControlOfFlowInstruction, Stop):
+            # Control-of-Flow/Stop are instructions to go somewhere
+            # else, not errors per se.
+            raise
         except Exception:
             # yes, yes, don't catch Exception. Have to, though, to run failure
             # handler. Also, it does raise it back up.

@@ -9,7 +9,13 @@ from pypyr.errors import (
     PlugInError,
     PipelineDefinitionError,
     PipelineNotFoundError,
-    PyModuleNotFoundError)
+    PyModuleNotFoundError,
+    Stop,
+    StopStepGroup,
+    StopPipeline,
+    ControlOfFlowInstruction,
+    Call,
+    Jump)
 import pytest
 
 
@@ -120,3 +126,51 @@ def test_pymodule_not_found_error_raises():
         raise PyModuleNotFoundError("this is error text right here")
 
     assert str(err_info.value) == "this is error text right here"
+
+# -------------------------- Control of Flow Instructions ---------------------
+
+
+def test_stop_step_group_error_raises():
+    """StopErrorGroup error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(StopStepGroup(), Stop)
+
+    with pytest.raises(StopStepGroup) as err_info:
+        raise StopStepGroup("this is error text right here")
+
+    assert str(err_info.value) == "this is error text right here"
+
+
+def test_stop_pipeline_error_raises():
+    """StopPipeline error raises with correct message."""
+    # confirm subclassed from pypyr root error
+    assert isinstance(StopPipeline(), Stop)
+
+    with pytest.raises(StopPipeline) as err_info:
+        raise StopPipeline("this is error text right here")
+
+    assert str(err_info.value) == "this is error text right here"
+
+
+def test_jump_control_of_flow_instruction_raises():
+    """Jump instruction raises."""
+    try:
+        raise Jump(['one', 'two'], 'sg', 'fg')
+    except Jump as err_info:
+        assert isinstance(err_info, ControlOfFlowInstruction)
+        assert err_info.groups == ['one', 'two']
+        assert err_info.success_group == 'sg'
+        assert err_info.failure_group == 'fg'
+
+
+def test_call_control_of_flow_instruction_raises():
+    """Call instruction raises."""
+    try:
+        raise Call(['one', 'two'], 'sg', 'fg')
+    except Call as err_info:
+        assert isinstance(err_info, ControlOfFlowInstruction)
+        assert err_info.groups == ['one', 'two']
+        assert err_info.success_group == 'sg'
+        assert err_info.failure_group == 'fg'
+
+# -------------------------- END Control of Flow Instructions -----------------

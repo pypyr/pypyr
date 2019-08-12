@@ -1,9 +1,11 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 
 import logging
-from pypyr.errors import (get_error_name,
+from pypyr.errors import (ControlOfFlowInstruction,
+                          get_error_name,
                           LoopMaxExhaustedError,
-                          PipelineDefinitionError)
+                          PipelineDefinitionError,
+                          Stop)
 from pypyr.cache.stepcache import step_cache
 from pypyr.utils import expressions, poll
 
@@ -403,6 +405,10 @@ class Step:
                                                         self.invoke_step)
                     else:
                         self.invoke_step(context=context)
+                except (ControlOfFlowInstruction, Stop):
+                    # Control-of-Flow/Stop are instructions to go somewhere
+                    # else, not errors per se.
+                    raise
                 except Exception as exc_info:
                     self.save_error(
                         context=context,
