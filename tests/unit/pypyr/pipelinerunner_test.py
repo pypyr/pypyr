@@ -1,15 +1,16 @@
 """pipelinerunner.py unit tests."""
 import logging
-import os
 import pytest
-from unittest.mock import patch
+from unittest.mock import call, patch
 from pypyr.cache.loadercache import pypeloader_cache
 from pypyr.cache.parsercache import contextparser_cache
 from pypyr.cache.pipelinecache import pipeline_cache
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           KeyNotInContextError,
-                          PyModuleNotFoundError)
+                          PyModuleNotFoundError,
+                          Stop,
+                          StopPipeline)
 import pypyr.moduleloader
 import pypyr.pipelinerunner
 
@@ -196,6 +197,7 @@ def test_load_and_run_pipeline_pass(mocked_get_work_dir,
                                     mocked_steps_runner):
     """run_pipeline passes correct params to all methods."""
     pipeline_cache.clear()
+    pypeloader_cache.clear()
     with patch('pypyr.context.Context') as mock_context:
         mock_context.return_value = Context()
         pypyr.pipelinerunner.load_and_run_pipeline(
@@ -653,20 +655,103 @@ def test_arb_loader(mock_run_pipeline):
 
 # ------------------------- loader -------------------------------------------#
 
-# ------------------------- integration---------------------------------------#
+# ------------------------- Stop & StopPipeline ------------------------------#
+def get_step_pipeline():
+    """Test pipeline for jump."""
+    return {
+        'sg1': [
+            'sg1.step1',
+            'sg1.step2'
+        ],
+        'sg2': [
+            'sg2.step1',
+            'sg2.step2'
+        ],
+        'sg3': [
+            'sg3.step1',
+            'sg3.step2'
+        ],
+        'sg4': [
+            'sg4.step1',
+            'sg4.step2'
+        ],
+        'sg5': [
+            'sg5.step1'
+        ],
+        'sg6': [
+            'sg6.step1',
+            'sg6.step2'
+        ]
+    }
 
 
-def test_pipeline_runner_main():
-    """Smoke test for pipeline runner main.
+def nothing_step(context):
+    pass
 
-    Strictly speaking this is an integration test, not a unit test.
-    """
-    working_dir = os.path.join(
-        os.getcwd(),
-        'tests')
-    pypyr.pipelinerunner.main(pipeline_name='smoke',
-                              pipeline_context_input=None,
-                              working_dir=working_dir,
-                              log_level=50,
-                              log_path=None)
-# ------------------------- integration---------------------------------------#
+
+def stop_pipe_step(context):
+    raise StopPipeline()
+
+
+def stop_all_step(context):
+    raise Stop()
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_stop_pipeline(mock_step_cache):
+    """StopPipeline stops pipeline execution."""
+    # Sequence: sg2 - sg2.1, 2.2
+    #           sg3 - sg3.1 (StopPipeline)
+    mock_step_cache.side_effect = [
+        nothing_step,  # 2.1
+        nothing_step,  # 2.2
+        stop_pipe_step,  # 3.1
+    ]
+
+    context = Context()
+    context.pipeline_name = 'arb'
+    pypyr.pipelinerunner.run_pipeline(
+        pipeline=get_step_pipeline(),
+        context=context,
+        pipeline_context_input='arb context input',
+        groups=['sg2', 'sg3', 'sg4', 'sg1'],
+        success_group='sg5',
+        failure_group=None
+    )
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg2.step2'),
+                                          call('sg3.step1')
+                                          ]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+@patch('pypyr.cache.pipelinecache.pipeline_cache.get_pipeline',
+       return_value=get_step_pipeline())
+def test_stop_all(mock_get_pipe_def, mock_step_cache):
+    """StopPipeline stops pipeline execution."""
+    # Sequence: sg2 - sg2.1, 2.2
+    #           sg3 - sg3.1 (StopPipeline)
+    mock_step_cache.side_effect = [
+        nothing_step,  # 2.1
+        nothing_step,  # 2.2
+        stop_all_step,  # 3.1
+    ]
+
+    pypyr.pipelinerunner.main(
+        pipeline_name='arb',
+        pipeline_context_input='arb context input',
+        working_dir='/arb',
+        log_level=10,
+        log_path=None,
+        groups=['sg2', 'sg3', 'sg4', 'sg1'],
+        success_group='sg5',
+        failure_group=None
+    )
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg2.step2'),
+                                          call('sg3.step1')
+                                          ]
+
+# ------------------------- END Stop & StopPipeline --------------------------#

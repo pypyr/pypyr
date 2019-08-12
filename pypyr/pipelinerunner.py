@@ -12,6 +12,7 @@ import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 from pypyr.cache.parsercache import contextparser_cache
+from pypyr.errors import Stop, StopPipeline
 from pypyr.cache.pipelinecache import pipeline_cache
 from pypyr.stepsrunner import StepsRunner
 import pypyr.yaml
@@ -110,11 +111,14 @@ def main(
     # without needing to pip install a package 1st.
     pypyr.moduleloader.set_working_directory(working_dir)
 
-    load_and_run_pipeline(pipeline_name=pipeline_name,
-                          pipeline_context_input=pipeline_context_input,
-                          groups=groups,
-                          success_group=success_group,
-                          failure_group=failure_group)
+    try:
+        load_and_run_pipeline(pipeline_name=pipeline_name,
+                              pipeline_context_input=pipeline_context_input,
+                              groups=groups,
+                              success_group=success_group,
+                              failure_group=failure_group)
+    except Stop:
+        logger.debug("Stop: stopped pypyr")
 
     logger.debug("pypyr done")
 
@@ -222,7 +226,7 @@ def run_pipeline(pipeline,
     """Run the specified pypyr pipeline.
 
     This function runs the actual pipeline. If you are running another
-    pipeline from within a pipeline, call this, not main(). Do call main()
+    pipeline from within a pipeline don't call main(). Do call main()
     instead for your 1st pipeline, if there are subsequent pipelines calling
     pipelines use load_and_run_pipeline or run_pipeline.
 
@@ -279,6 +283,9 @@ def run_pipeline(pipeline,
         logger.debug("Raising original exception to caller.")
         raise
 
-    steps_runner.run_step_groups(groups=groups,
-                                 success_group=success_group,
-                                 failure_group=failure_group)
+    try:
+        steps_runner.run_step_groups(groups=groups,
+                                     success_group=success_group,
+                                     failure_group=failure_group)
+    except StopPipeline:
+        logger.debug("StopPipeline: stopped %s", context.pipeline_name)

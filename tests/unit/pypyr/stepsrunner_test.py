@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
 from pypyr.dsl import Step
-from pypyr.errors import ContextError
+from pypyr.errors import Call, ContextError, Jump, StopStepGroup
 from pypyr.stepsrunner import StepsRunner
 from tests.common.utils import DeepCopyMagicMock, patch_logger
 
@@ -713,3 +713,281 @@ def test_run_step_groups_none_groups():
     assert str(err.value) == (
         'you must specify which step-groups you want to run. groups is None.')
 # ------------------------- END: run_step_groups -----------------------------#
+
+# ------------------------- Jump ---------------------------------------------#
+
+
+def get_jump_pipeline():
+    """Test pipeline for jump."""
+    return {
+        'sg1': [
+            'sg1.step1',
+            'sg1.step2'
+        ],
+        'sg2': [
+            'sg2.step1',
+            'sg2.step2'
+        ],
+        'sg3': [
+            'sg3.step1',
+            'sg3.step2'
+        ],
+        'sg4': [
+            'sg4.step1',
+            'sg4.step2'
+        ],
+        'sg5': [
+            'sg5.step1'
+        ],
+        'sg6': [
+            'sg6.step1',
+            'sg6.step2'
+        ]
+    }
+
+
+def nothing_step(context):
+    pass
+
+
+def jump_step(groups, success=None, failure=None):
+    def run_step(context):
+        raise Jump(groups, success, failure)
+    return run_step
+
+
+def call_step(groups, success=None, failure=None):
+    def run_step(context):
+        raise Call(groups, success, failure)
+    return run_step
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_jump_with_success_handler(mock_step_cache):
+    """Jump between different step groups with success handler."""
+    # Sequence: sg2 - sg2.1 (JUMP)
+    #           sg1 - sg1.1, sg 1.2 (JUMP)
+    #           sg4 - sg4.1 (JUMP)
+    #           sg3 - sg3.1, sg 3.2
+    #           sg5 - sg5.1 (on_success)
+    mock_step_cache.side_effect = [
+        jump_step(['sg1']),  # 2.1
+        nothing_step,  # 1.1
+        jump_step(['sg4']),  # 1.2
+        jump_step(['sg3']),  # 4.1
+        nothing_step,  # 3.1
+        nothing_step,  # 3.2
+        nothing_step,  # 5.1
+    ]
+
+    context = Context()
+    StepsRunner(get_jump_pipeline(), context).run_step_groups(
+        groups=['sg2'],
+        success_group='sg5',
+        failure_group=None)
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg1.step1'),
+                                          call('sg1.step2'),
+                                          call('sg4.step1'),
+                                          call('sg3.step1'),
+                                          call('sg3.step2'),
+                                          call('sg5.step1')]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_jump_with_failure_handler(mock_step_cache):
+    """Jump between different step groups with failure handler."""
+    # Sequence: sg2 - sg2.1 (JUMP)
+    #           sg3 - sg3.1 (ERROR)
+    #           sg4 - sg4.1, sg4.2 (failure handler)
+    def err_step(context):
+        raise ValueError('3.1')
+
+    mock_step_cache.side_effect = [
+        jump_step(['sg3']),  # 2.1
+        err_step,  # 3.1
+        nothing_step,  # 4.1
+        nothing_step,  # 4.2
+    ]
+
+    context = Context()
+    with pytest.raises(ValueError) as err_info:
+        StepsRunner(get_jump_pipeline(), context).run_step_groups(
+            groups=['sg2', 'sg1'],
+            success_group='sg5',
+            failure_group='sg4')
+
+    assert str(err_info.value) == '3.1'
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg3.step1'),
+                                          call('sg4.step1'),
+                                          call('sg4.step2')]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_jump_with_group_sequences_and_success_jump(mock_step_cache):
+    """Jump between step groups with success handler and jump in success."""
+    # Sequence: sg2 - sg2.1, sg2.2
+    #           sg1 - sg1.1, sg 1.2 (JUMP)
+    #           sg4 - sg4.1, sg 4.2
+    #           sg3 - sg3.1, sg 3.2
+    #           sg6 - sg6.1 (JUMP) - on_success
+    #           sg5 - sg5.1
+    mock_step_cache.side_effect = [
+        nothing_step,  # 2.1
+        nothing_step,  # 2.2
+        nothing_step,  # 1.1
+        jump_step(['sg4', 'sg3']),  # 1.2
+        nothing_step,  # 4.1
+        nothing_step,  # 4.2
+        nothing_step,  # 3.1
+        nothing_step,  # 3.2
+        jump_step(['sg5']),  # 6.1
+        nothing_step,  # 5.1
+        nothing_step,  # 5.2
+    ]
+
+    context = Context()
+    StepsRunner(get_jump_pipeline(), context).run_step_groups(
+        groups=['sg2', 'sg1'],
+        success_group='sg6',
+        failure_group=None)
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg2.step2'),
+                                          call('sg1.step1'),
+                                          call('sg1.step2'),
+                                          call('sg4.step1'),
+                                          call('sg4.step2'),
+                                          call('sg3.step1'),
+                                          call('sg3.step2'),
+                                          call('sg6.step1'),
+                                          call('sg5.step1')]
+# ------------------------- END: Jump ----------------------------------------#
+
+# ------------------------- StopStepGroup ------------------------------------#
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_stop_step_group_with_success_handler(mock_step_cache):
+    """Stop step group with success handler."""
+    # Sequence: sg2 - sg2.1, sg2.2
+    #           sg1 - sg1.1 STOP
+    #           sg3 - sg3.1, sg3.2 - success handler
+    def stop_step_group_step(context):
+        raise StopStepGroup()
+
+    mock_step_cache.side_effect = [
+        nothing_step,  # 2.1
+        nothing_step,  # 2.2
+        stop_step_group_step,  # 1.1
+        nothing_step,  # 3.1
+        nothing_step,  # 3.2
+    ]
+
+    context = Context()
+    StepsRunner(get_jump_pipeline(), context).run_step_groups(
+        groups=['sg2', 'sg1'],
+        success_group='sg3',
+        failure_group=None)
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg2.step2'),
+                                          call('sg1.step1'),
+                                          call('sg3.step1'),
+                                          call('sg3.step2')
+                                          ]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_stop_step_group_with_jumps(mock_step_cache):
+    """Stop Step Group with jumps."""
+    # Sequence: sg2 - sg2.1 (JUMP)
+    #           sg1 - sg1.1, sg 1.2 - STOP
+    def stop_step_group_step(context):
+        raise StopStepGroup()
+
+    mock_step_cache.side_effect = [
+        jump_step(['sg1']),  # 2.1
+        nothing_step,  # 1.1
+        stop_step_group_step  # 1.2
+    ]
+
+    context = Context()
+    StepsRunner(get_jump_pipeline(), context).run_step_groups(
+        groups=['sg2'],
+        success_group=None,
+        failure_group=None)
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg1.step1'),
+                                          call('sg1.step2')]
+# ------------------------- END: StopStepGroup -------------------------------#
+
+# ------------------------- Call ---------------------------------------------#
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_call_with_success_handler(mock_step_cache):
+    """Call between different step groups with success handler."""
+    # Sequence: sg2 - sg2.1 (CALL)
+    #           sg1 - sg1.1, sg 1.2 (CALL)
+    #           sg4 - sg4.1 (CALL)
+    #           sg3 - sg3.1, sg 3.2
+    #           sg 4.2, sg2.2 (come back to call point)
+    #           sg5 - sg5.1 (on_success)
+    mock_step_cache.side_effect = [
+        call_step(['sg1']),  # 2.1
+        nothing_step,  # 1.1
+        call_step(['sg4']),  # 1.2
+        call_step(['sg3']),  # 4.1
+        nothing_step,  # 3.1
+        nothing_step,  # 3.2
+        nothing_step,  # 4.2
+        nothing_step,  # 2.2
+        nothing_step,  # 5.1
+    ]
+
+    context = Context()
+    StepsRunner(get_jump_pipeline(), context).run_step_groups(
+        groups=['sg2'],
+        success_group='sg5',
+        failure_group=None)
+
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg1.step1'),
+                                          call('sg1.step2'),
+                                          call('sg4.step1'),
+                                          call('sg3.step1'),
+                                          call('sg3.step2'),
+                                          call('sg4.step2'),
+                                          call('sg2.step2'),
+                                          call('sg5.step1')]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_call_with_failure_handler(mock_step_cache):
+    """Call between different step groups with failure handler."""
+    # Sequence: sg2 - sg2.1 (CALL)
+    #           sg3 - sg3.1 (ERROR)
+    #           sg4 - sg4.1, sg4.2 (failure handler)
+    def err_step(context):
+        raise ValueError('3.1')
+
+    mock_step_cache.side_effect = [
+        call_step(['sg3']),  # 2.1
+        err_step,  # 3.1
+        nothing_step,  # 4.1
+        nothing_step,  # 4.2
+    ]
+
+    context = Context()
+    with pytest.raises(ValueError) as err_info:
+        StepsRunner(get_jump_pipeline(), context).run_step_groups(
+            groups=['sg2', 'sg1'],
+            success_group='sg5',
+            failure_group='sg4')
+
+    assert str(err_info.value) == '3.1'
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg3.step1'),
+                                          call('sg4.step1'),
+                                          call('sg4.step2')]
+# ------------------------- END: Call ----------------------------------------#

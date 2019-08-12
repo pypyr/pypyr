@@ -65,3 +65,48 @@ class PlugInError(Error):
 
 class PyModuleNotFoundError(Error, ModuleNotFoundError):
     """Could not load python module because it wasn't found."""
+
+
+# -------------------------- Control of Flow Instructions ---------------------
+class Stop(Error):
+    """Control of flow. Stop all execution."""
+
+
+class StopPipeline(Stop):
+    """Control of flow. Stop current pipeline execution."""
+
+
+class StopStepGroup(Stop):
+    """Control of flow. Stop current step-group execution."""
+
+
+class ControlOfFlowInstruction(Error):
+    """Control of flow instructions should inherit from this.
+
+    Attributes:
+        groups: list of str. List of step-groups to execute.
+        success_group: str. Step-group to execute on success condition.
+        failure_group: str. Step-group to execute on failure condition.
+    """
+
+    def __init__(self, groups, success_group, failure_group):
+        """Initialize the control of flow instruction.
+
+        Args:
+            groups: list of str. List of step-groups to execute.
+            success_group: str. Step-group to execute on success condition.
+            failure_group: str. Step-group to execute on failure condition.
+        """
+        self.groups = groups
+        self.success_group = success_group
+        self.failure_group = failure_group
+
+
+class Call(ControlOfFlowInstruction):
+    """Stop current step, call a new step group, resume current step after."""
+
+
+class Jump(ControlOfFlowInstruction):
+    """Stop step execution and jump to a new step group."""
+
+# -------------------------- END Control of Flow Instructions -----------------
