@@ -590,6 +590,10 @@ class RetryDecorator:
         try:
             step_method(context)
             result = True
+        except (ControlOfFlowInstruction, Stop):
+            # Control-of-Flow/Stop are instructions to go somewhere
+            # else, not errors per se.
+            raise
         except Exception as ex_info:
             if self.max:
                 if counter == self.max:
