@@ -3,7 +3,10 @@ import logging
 import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import (
+    Stop,
+    KeyInContextHasNoValueError,
+    KeyNotInContextError)
 import pypyr.steps.pype as pype
 
 # ------------------------ get_arguments --------------------------------------
@@ -418,6 +421,39 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline',
+       side_effect=Stop())
+def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
+    """pype doesn't swallow stop error in child pipeline."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'pipeArg': 'argument here',
+            'useParentContext': True,
+            'skipParse': True,
+            'raiseError': False
+        }
+    })
+    with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
+        with pytest.raises(Stop) as err_info:
+            pype.run_step(context)
+
+        assert isinstance(err_info.value, Stop)
+
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input='argument here',
+        context=context,
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+    mock_logger_error.assert_not_called()
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
