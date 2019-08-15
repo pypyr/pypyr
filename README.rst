@@ -660,6 +660,12 @@ Built-in steps
 | `pypyr.steps.shell`_          | Runs the context value ``cmd`` in the default   | cmd (string or dict)         |
 |                               | shell. Use for pipes, wildcards, $ENVs, ~       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.stop`_           | Stop pypyr entirely.                            |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.stoppipeline`_   | Stop current pipeline.                          |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.stopstepgroup`_  | Stop current step-group.                        |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.tar`_            | Archive and/or extract tars with or without     | tar (dict)                   |
 |                               | compression. Supports gzip, bzip2, lzma.        |                              |
 |                               |                                                 |                              |
@@ -2403,6 +2409,89 @@ Example pipeline yaml using a pipe:
 
 See a worked example `for shell power here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/shell.yaml>`__.
+
+pypyr.steps.stop
+^^^^^^^^^^^^^^^^
+Stop all pypyr processing immediately. Doesn't run any success or failure
+handlers, it just stops everything in its tracks, even when you're nested
+in child pipelines or a step-group call-chain.
+
+You can always use ``pypyr.steps.stop`` as a simple step.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: you'll see me...
+  - pypyr.steps.stop
+  - name: pypyr.steps.echo
+    in:
+      echoMe: you WON'T see me...
+
+
+See a worked example `for stop here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/stop.yaml>`__.
+
+
+pypyr.steps.stoppipeline
+^^^^^^^^^^^^^^^^^^^^^^^^
+Stop current pipeline. Doesn't run any success or failure handlers, it just
+stops the current pipeline.
+
+This is handy if you are using ``pypyr.steps.pype`` to call child pipelines
+from a parent pipeline, allowing you to stop just a child pipeline but letting
+the parent pipeline continue.
+
+You can always use ``pypyr.steps.stoppipeline`` as a simple step.
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: you'll see me...
+  - pypyr.steps.stoppipeline
+  - name: pypyr.steps.echo
+    in:
+      echoMe: you WON'T see me...
+
+
+See a worked example `for stop pipeline here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/stop-pipeline.yaml>`__.
+
+pypyr.steps.stopstepgroup
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Stop current step-group. Doesn't run any success or failure handlers, it just
+stops the current step-group.
+
+This is handy if you are using ``pypyr.steps.call`` or ``pypyr.steps.jump``
+to run different step-groups, allowing you to stop just a child step-group but
+letting the parent step-group continue.
+
+You can always use ``pypyr.steps.stopstepgroup`` as a simple step.
+
+.. code-block:: yaml
+
+  steps:
+    - name: pypyr.steps.call
+      in:
+        call:
+          groups: arbgroup
+    - name: pypyr.steps.echo
+      in:
+       echoMe: You'll see me because only arbgroup was stopped.
+
+  arbgroup:
+      - name: pypyr.steps.echo
+        in:
+          echoMe: this is arb group
+      - pypyr.steps.stopstepgroup
+      - name: pypyr.steps.echo
+        in:
+          echoMe: if you see me something is WRONG.
+
+
+See a worked example `for stop step-group here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/stop-stepgroup.yaml>`__.
 
 pypyr.steps.tar
 ^^^^^^^^^^^^^^^

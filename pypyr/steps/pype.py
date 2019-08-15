@@ -1,6 +1,9 @@
 """pypyr step that runs another pipeline from within the current pipeline."""
 import logging
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import (ControlOfFlowInstruction,
+                          KeyInContextHasNoValueError,
+                          KeyNotInContextError,
+                          Stop)
 import pypyr.pipelinerunner as pipelinerunner
 
 # logger means the log level will be set correctly
@@ -97,6 +100,10 @@ def run_step(context):
             )
 
         logger.info("pyped %s.", pipeline_name)
+    except (ControlOfFlowInstruction, Stop):
+        # Control-of-Flow/Stop are instructions to go somewhere
+        # else, not errors per se.
+        raise
     except Exception as ex_info:
         # yes, yes, don't catch Exception. Have to, though, in order to swallow
         # errs if !raise_error
