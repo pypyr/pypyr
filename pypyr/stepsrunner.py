@@ -5,8 +5,7 @@ pipelinerunner uses this to parse and run steps.
 
 import logging
 from pypyr.dsl import Step
-from pypyr.errors import (Call,
-                          ControlOfFlowInstruction,
+from pypyr.errors import (ControlOfFlowInstruction,
                           Jump,
                           Stop,
                           StopStepGroup)
@@ -109,16 +108,8 @@ class StepsRunner():
             step_count = 0
 
             for step in steps:
-                step_instance = Step(step)
-                try:
-                    step_instance.run_step(self.context)
-                except Call as call:
-                    logger.debug("call: calling %s", call.groups)
-                    self.run_step_groups(groups=call.groups,
-                                         success_group=call.success_group,
-                                         failure_group=call.failure_group)
-                    logger.debug("call: done calling %s", call.groups)
-
+                step_instance = Step(step, self)
+                step_instance.run_step(self.context)
                 step_count += 1
 
             logger.debug("executed %s steps", step_count)

@@ -3,6 +3,7 @@ from pypyr.errors import Error as PypyrError
 from pypyr.errors import (
     ContextError,
     get_error_name,
+    HandledError,
     KeyInContextHasNoValueError,
     KeyNotInContextError,
     LoopMaxExhaustedError,
@@ -47,6 +48,22 @@ def test_context_error_raises():
         raise ContextError("this is error text right here")
 
     assert str(err_info.value) == "this is error text right here"
+
+
+def test_handled_error_raises():
+    """HandledError raises with correct message and with from."""
+    assert isinstance(HandledError(), PypyrError)
+
+    try:
+        try:
+            raise ContextError("this is error text right here")
+        except ContextError as e:
+            raise HandledError("handled") from e
+    except Exception as err_info:
+        assert str(err_info) == "handled"
+        inner = err_info.__cause__
+        assert isinstance(inner, ContextError)
+        assert str(inner) == "this is error text right here"
 
 
 def test_key_not_in_context_error_raises():

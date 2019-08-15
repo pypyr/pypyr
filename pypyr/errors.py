@@ -35,6 +35,10 @@ class ContextError(Error):
     """Error in the pypyr context."""
 
 
+class HandledError(Error):
+    """Error that has already been saved to errors context collection"""
+
+
 class KeyInContextHasNoValueError(ContextError):
     """pypyr context[key] doesn't have a value."""
 
@@ -60,7 +64,7 @@ class PipelineNotFoundError(Error):
 
 
 class PlugInError(Error):
-    """Pypyr plug-ins should sub-class this."""
+    """Pypyr plug - ins should sub - class this."""
 
 
 class PyModuleNotFoundError(Error, ModuleNotFoundError):
@@ -77,25 +81,25 @@ class StopPipeline(Stop):
 
 
 class StopStepGroup(Stop):
-    """Control of flow. Stop current step-group execution."""
+    """Control of flow. Stop current step - group execution."""
 
 
 class ControlOfFlowInstruction(Error):
     """Control of flow instructions should inherit from this.
 
     Attributes:
-        groups: list of str. List of step-groups to execute.
-        success_group: str. Step-group to execute on success condition.
-        failure_group: str. Step-group to execute on failure condition.
+        groups: list of str. List of step - groups to execute.
+        success_group: str. Step - group to execute on success condition.
+        failure_group: str. Step - group to execute on failure condition.
     """
 
     def __init__(self, groups, success_group, failure_group):
         """Initialize the control of flow instruction.
 
         Args:
-            groups: list of str. List of step-groups to execute.
-            success_group: str. Step-group to execute on success condition.
-            failure_group: str. Step-group to execute on failure condition.
+            groups: list of str. List of step - groups to execute.
+            success_group: str. Step - group to execute on success condition.
+            failure_group: str. Step - group to execute on failure condition.
         """
         self.groups = groups
         self.success_group = success_group

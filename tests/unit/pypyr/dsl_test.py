@@ -237,7 +237,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     mocked_moduleloader.return_value.run_step = arb_step_mock
 
     with patch_logger('pypyr.dsl') as mock_logger_debug:
-        step = Step('blah')
+        step = Step('blah', 'stepsrunner')
 
     mock_logger_debug.assert_any_call("blah is a simple string.")
 
@@ -248,6 +248,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     assert not step.retry_decorator
     assert step.run_me
     assert not step.skip_me
+    assert step.steps_runner == 'stepsrunner'
     assert not step.swallow_me
     assert not step.while_decorator
     assert step.line_no is None
@@ -262,7 +263,7 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
     with patch_logger('pypyr.dsl') as mock_logger_debug:
-        step = Step({'name': 'blah'})
+        step = Step({'name': 'blah'}, 'stepsrunner')
 
     assert mock_logger_debug.call_args_list == [
         call("starting"),
@@ -278,6 +279,7 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     assert not step.retry_decorator
     assert step.run_me
     assert not step.skip_me
+    assert step.steps_runner == 'stepsrunner'
     assert not step.swallow_me
     assert not step.while_decorator
     assert step.line_col is None
@@ -292,7 +294,7 @@ def test_complex_step_init_with_missing_name_round_trip():
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             step_info = CommentedMap({})
             step_info._yaml_set_line_col(6, 7)
-            Step(step_info)
+            Step(step_info, None)
 
     assert mock_logger_error.call_count == 1
     assert mock_logger_error.mock_calls == [
@@ -310,7 +312,7 @@ def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             with patch_logger('pypyr.cache.stepcache',
                               logging.ERROR) as mock_cache_logger_error:
-                Step('mocked.step')
+                Step('mocked.step', None)
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
 
@@ -336,7 +338,7 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
                               logging.ERROR) as mock_cache_logger_error:
                 commented_context = CommentedMap({'name': 'mocked.step'})
                 commented_context._yaml_set_line_col(1, 2)
-                Step(commented_context)
+                Step(commented_context, None)
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
     mock_logger_error.assert_called_once_with(
@@ -364,7 +366,8 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
                            'errorOnMax': True,
                            'sleep': 3,
                            'max': 4}
-                 })
+                 },
+                'stepsrunner')
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
@@ -373,6 +376,7 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     assert step.retry_decorator.sleep == 7
     assert not step.run_me
     assert step.skip_me
+    assert step.steps_runner == 'stepsrunner'
     assert step.swallow_me
     assert step.while_decorator.stop == 'stop condition'
     assert step.while_decorator.error_on_max
@@ -408,7 +412,7 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 
     context._yaml_set_line_col(8, 9)
 
-    step = Step(context)
+    step = Step(context, None)
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
@@ -438,7 +442,8 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_info:
         step = Step({'name': 'step1',
                      'description': 'test description',
-                     'run': False})
+                     'run': False},
+                    None)
 
     mock_logger_info.assert_called_once_with('step1: test description')
 
@@ -462,7 +467,7 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
 @patch.object(Step, 'foreach_loop')
 def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
     """Simple step with None foreach decorator doesn't loop."""
-    step = Step('step1')
+    step = Step('step1', None)
 
     context = get_test_context()
     original_len = len(context)
@@ -483,7 +488,8 @@ def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
 def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
     """Complex step with empty foreach decorator doesn't loop."""
     step = Step({'name': 'step1',
-                 'foreach': []})
+                 'foreach': []},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -502,7 +508,8 @@ def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
 def test_foreach_once(mock_run, mock_moduleloader):
     """The foreach loops once."""
     step = Step({'name': 'step1',
-                 'foreach': ['one']})
+                 'foreach': ['one']},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -530,7 +537,8 @@ def test_foreach_once(mock_run, mock_moduleloader):
 def test_foreach_twice(mock_run, mock_moduleloader):
     """The foreach loops twice."""
     step = Step({'name': 'step1',
-                 'foreach': ['one', 'two']})
+                 'foreach': ['one', 'two']},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -564,7 +572,8 @@ def test_foreach_twice(mock_run, mock_moduleloader):
 def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     """The foreach loops thrice with substitutions inside a list."""
     step = Step({'name': 'step1',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+                 'foreach': ['{key1}', '{key2}', 'key3']},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -602,7 +611,8 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
 def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
     """The foreach gets list from string format expression."""
     step = Step({'name': 'step1',
-                 'foreach': '{list}'})
+                 'foreach': '{list}'},
+                None)
 
     context = get_test_context()
     context['list'] = [99, True, 'string here', 'formatted {key1}']
@@ -651,7 +661,8 @@ def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'run': '{dynamic_run_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+                 'foreach': ['{key1}', '{key2}', 'key3']},
+                None)
 
     context = get_test_context()
     context['dynamic_run_expression'] = True
@@ -687,7 +698,8 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'skip': '{dynamic_skip_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+                 'foreach': ['{key1}', '{key2}', 'key3']},
+                None)
 
     context = get_test_context()
     context['dynamic_skip_expression'] = False
@@ -717,7 +729,8 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'swallow': '{dynamic_swallow_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+                 'foreach': ['{key1}', '{key2}', 'key3']},
+                None)
 
     context = get_test_context()
     context['dynamic_swallow_expression'] = False
@@ -777,7 +790,8 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
 def test_while_max(mock_invoke, mock_moduleloader):
     """The while runs to max."""
     step = Step({'name': 'step1',
-                 'while': {'max': 3}})
+                 'while': {'max': 3}},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -805,7 +819,8 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The while evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
                  'run': '{dynamic_run_expression}',
-                 'while': {'max': '{whileMax}', 'stop': '{key5}'}})
+                 'while': {'max': '{whileMax}', 'stop': '{key5}'}},
+                None)
 
     context = get_test_context()
     context['dynamic_run_expression'] = True
@@ -839,7 +854,8 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
 def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     """Error during while kicks loop."""
     step = Step({'name': 'step1',
-                 'while': {'max': 3}})
+                 'while': {'max': 3}},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -881,7 +897,8 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
     step = Step({'name': 'step1',
                  'while': {'max': '{whileMax}',
                            'stop': '{key5}',
-                           'errorOnMax': '{key6}'}})
+                           'errorOnMax': '{key6}'}},
+                None)
 
     context = get_test_context()
     context['whileMax'] = 3
@@ -916,7 +933,8 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     step = Step({'name': 'step1',
                  'while': {'max': '{whileMax}',
                            'stop': False,
-                           'errorOnMax': True}})
+                           'errorOnMax': True}},
+                None)
 
     context = get_test_context()
     context['whileMax'] = 3
@@ -951,7 +969,8 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     step = Step({'name': 'step1',
                  'foreach': ['{key1}', '{key2}', 'key3'],
                  'while': {'max': 2}
-                 })
+                 },
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1005,7 +1024,7 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
 def test_invoke_step_pass(mocked_moduleloader):
     """run_pipeline_step test pass."""
     stepcache.step_cache.clear()
-    step = Step('mocked.step')
+    step = Step('mocked.step', None)
     step.invoke_step(get_test_context())
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
@@ -1027,7 +1046,7 @@ def test_invoke_step_context_abides(mocked_stepcache):
     mocked_stepcache.return_value = mock_run_step
     context = get_test_context()
 
-    step = Step('mocked.step')
+    step = Step('mocked.step', None)
     step.invoke_step(context)
 
     mocked_stepcache.assert_called_once_with('mocked.step')
@@ -1040,7 +1059,7 @@ def test_invoke_step_empty_context(mocked_stepcache):
     mocked_stepcache.return_value = mock_run_step_empty_context
     context = get_test_context()
 
-    step = Step('mocked.step')
+    step = Step('mocked.step', None)
     step.invoke_step(context)
 
     mocked_stepcache.assert_called_once_with('mocked.step')
@@ -1054,7 +1073,7 @@ def test_invoke_step_none_context(mocked_stepcache):
     mocked_stepcache.return_value = mock_run_step_none_context
     context = get_test_context()
 
-    step = Step('mocked.step')
+    step = Step('mocked.step', None)
     step.invoke_step(False)
 
     mocked_stepcache.assert_called_once_with('mocked.step')
@@ -1079,7 +1098,8 @@ def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
                                                   mock_get_module):
     """Complex step with run decorator set true will run step."""
     step = Step({'name': 'step1',
-                 'run': True})
+                 'run': True},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1110,7 +1130,8 @@ def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
                                                    mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
     step = Step({'name': 'step1',
-                 'run': False})
+                 'run': False},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1134,7 +1155,8 @@ def test_run_pipeline_steps_complex_with_run_str_formatting_false(
     step = Step({
         'name': 'step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': '{key1}'})
+        'run': '{key1}'},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1157,7 +1179,8 @@ def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
     step = Step({
         'name': 'step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': 'False'})
+        'run': 'False'},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1181,7 +1204,8 @@ def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
     step = Step({
         'name': 'step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': 'false'})
+        'run': 'false'},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1206,7 +1230,8 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
     step = Step({
         'name': 'step1',
                 # key5 will evaluate False because it's a bool and it's False
-                'run': '{key5}'})
+                'run': '{key5}'},
+                None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1231,7 +1256,8 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
     step = Step({
         'name': 'step1',
         # key6 will evaluate True because it's a bool and it's True
-        'run': '{key6}'})
+        'run': '{key6}'},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1266,7 +1292,8 @@ def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
     step = Step({
         'name': 'step1',
         # 'True' will evaluate bool True
-        'run': 'True'})
+        'run': 'True'},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1301,7 +1328,8 @@ def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
     step = Step({
         'name': 'step1',
         # 1 will evaluate True because it's an int and 1
-        'run': 1})
+        'run': 1},
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1337,7 +1365,8 @@ def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
         'name': 'step1',
         # 99 will evaluate True because it's an int and > 0
         'run': 99
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1373,7 +1402,8 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
         'name': 'step1',
         # -1 will evaluate True because it's an int and != 0
         'run': -1
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1409,7 +1439,8 @@ def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
         'name': 'step1',
         # -1 will evaluate True because it's an int and != 0
         'retry': {'max': 10}
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1447,7 +1478,8 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
         'name': 'step1',
         # -1 will evaluate True because it's an int and != 0
         'retry': {'max': 0}
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1491,7 +1523,7 @@ def test_run_on_error(mock_invoke_step,
 
     complex_step_info._yaml_set_line_col(5, 6)
 
-    step = Step(complex_step_info)
+    step = Step(complex_step_info, None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1530,7 +1562,8 @@ def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
     step = Step({
         'name': 'step1',
         'skip': False
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1565,7 +1598,8 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
     step = Step({
         'name': 'step1',
         'skip': True
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1591,7 +1625,8 @@ def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
         'name': 'step1',
         # name will evaluate True
         'skip': '{key6}'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1616,7 +1651,8 @@ def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
         'name': 'step1',
         # skip evaluates True because it's a string and TRUE parses to True.
         'skip': 'TRUE'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1641,7 +1677,8 @@ def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
         'name': 'step1',
         # skip will evaluate true because it's a string and true is True.
         'skip': 'true'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1668,7 +1705,8 @@ def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
         # key5 will evaluate False because it's a bool and it's False
         'run': '{key5}',
         'skip': True
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1694,7 +1732,8 @@ def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
         'name': 'step1',
         # key5 will evaluate False because it's a bool and it's False
         'skip': '{key5}'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1731,7 +1770,8 @@ def test_run_pipeline_steps_complex_with_skip_string_false(
         'name': 'step1',
         # 'False' will evaluate bool False
         'skip': 'False'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1768,7 +1808,8 @@ def test_run_pipeline_steps_complex_with_skip_0_true(
         'name': 'step1',
         # 0 will evaluate False because it's an int and 0
         'skip': 0
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1805,7 +1846,8 @@ def test_run_pipeline_steps_complex_with_skip_99_true(
         'name': 'step1',
         # 99 will evaluate True because it's an int and > 0
         'skip': 99
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1830,7 +1872,8 @@ def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
         'name': 'step1',
         # -1 will evaluate True because it's an int and != 0
         'skip': -1
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1856,7 +1899,8 @@ def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
     step = Step({
         'name': 'step1',
         'swallow': True
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1891,7 +1935,8 @@ def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
     step = Step({
         'name': 'step1',
         'swallow': False
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1925,7 +1970,8 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     step = Step({
         'name': 'step1',
         'swallow': 1
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -1979,7 +2025,8 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
     step = Step({
         'name': 'step1',
         'swallow': 0
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -2016,7 +2063,7 @@ def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
 
     complex_step_info._yaml_set_line_col(5, 6)
 
-    step = Step(complex_step_info)
+    step = Step(complex_step_info, None)
 
     context = get_test_context()
     original_len = len(context)
@@ -2053,7 +2100,8 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
     """Complex step with swallow not specified still raises error."""
     step = Step({
         'name': 'step1'
-    })
+    },
+        None)
 
     context = get_test_context()
     original_len = len(context)
@@ -2085,7 +2133,7 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
                                               mock_get_module):
     """Simple step run with error should not swallow."""
     with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-        step = Step('step1')
+        step = Step('step1', None)
         with pytest.raises(ValueError) as err_info:
             step.run_step(Context({'k1': 'v1'}))
 
@@ -2103,7 +2151,7 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_no_in_simple(mocked_moduleloader):
     """Set step context does nothing if no in key found in simple step."""
-    step = Step('blah')
+    step = Step('blah', None)
     context = get_test_context()
     step.set_step_input_context(context)
 
@@ -2113,7 +2161,7 @@ def test_set_step_input_context_no_in_simple(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_no_in_complex(mocked_moduleloader):
     """Set step context does nothing if no in key found in complex step."""
-    step = Step({'name': 'blah'})
+    step = Step({'name': 'blah'}, None)
     context = get_test_context()
     step.set_step_input_context(context)
 
@@ -2123,7 +2171,7 @@ def test_set_step_input_context_no_in_complex(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_in_empty(mocked_moduleloader):
     """Set step context does nothing if in key found but it's empty."""
-    step = Step({'name': 'blah', 'in': {}})
+    step = Step({'name': 'blah', 'in': {}}, None)
     context = get_test_context()
     step.set_step_input_context(context)
 
@@ -2142,7 +2190,7 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
                'key5': True,
                'key6': False,
                'key7': 88}
-    step = Step({'name': 'blah', 'in': in_args})
+    step = Step({'name': 'blah', 'in': in_args}, None)
     step.set_step_input_context(context)
 
     assert len(context) - 2 == original_len
@@ -2162,7 +2210,7 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
 # ------------------- Step: save_error ---------------------------#
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
-    step = Step({'name': 'blah'})
+    step = Step({'name': 'blah'}, None)
     context = get_test_context()
     original_len = len(context)
     arb_error = ValueError("arb error")
@@ -2190,7 +2238,7 @@ def test_save_error_round_trip(mocked_moduleloader):
     context = get_test_context()
     step_info = CommentedMap({'name': 'arb step'})
     step_info._yaml_set_line_col(6, 7)
-    step = Step(step_info)
+    step = Step(step_info, None)
     original_len = len(context)
     arb_error = ValueError("arb error")
     step.save_error(context, exception=arb_error, swallowed=True)
@@ -2212,7 +2260,7 @@ def test_save_error_round_trip(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_formatted(mocked_moduleloader):
-    step = Step({'name': 'blah', 'onError': {'key': '{key1}'}})
+    step = Step({'name': 'blah', 'onError': {'key': '{key1}'}}, None)
     context = get_test_context()
     original_len = len(context)
     arb_error = ValueError("arb error")
@@ -2235,7 +2283,7 @@ def test_save_error_formatted(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_multiple_call(mocked_moduleloader):
-    step = Step({'name': 'blah'})
+    step = Step({'name': 'blah'}, None)
     context = get_test_context()
     original_len = len(context)
 

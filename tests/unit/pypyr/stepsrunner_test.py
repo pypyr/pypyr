@@ -1347,7 +1347,9 @@ def test_call_with_success_handler_for(mock_step_cache):
     #           sg1 - sg1.1, sg 1.2 (CALL)
     #           sg4 - sg4.1 (CALL)
     #           sg3 - sg3.1, sg 3.2
-    #           sg 4.2, sg2.2 (come back to call point)
+    #           sg 4.2, (come back to call point)
+    #           sg2.1 x1 (back in for iterator)
+    #           sg2.2 (complete sg2)
     #           sg5 - sg5.1 (on_success)
     mock21 = DeepCopyMagicMock()
 
@@ -1356,6 +1358,12 @@ def test_call_with_success_handler_for(mock_step_cache):
         if context['i'] == 'two':
             call_step(['sg1'])(context)
 
+    def mutate_step(context):
+        context['a'] = 'changed'
+
+    def mutate_after_loop(context):
+        context['a'] = 'after loop'
+
     mock_step_cache.side_effect = [
         step21,  # 2.1
         nothing_step,  # 1.1
@@ -1363,8 +1371,8 @@ def test_call_with_success_handler_for(mock_step_cache):
         call_step(['sg3']),  # 4.1
         nothing_step,  # 3.1
         nothing_step,  # 3.2
-        nothing_step,  # 4.2
-        nothing_step,  # 2.2
+        mutate_step,  # 4.2
+        mutate_after_loop,  # 2.2
         nothing_step,  # 5.1
     ]
 
@@ -1375,8 +1383,9 @@ def test_call_with_success_handler_for(mock_step_cache):
         failure_group=None)
 
     assert mock21.mock_calls == [call({'a': 'b', 'i': 'one'}),
-                                 call({'a': 'b', 'i': 'two'})]
-    assert context == {'a': 'b', 'i': 'two'}
+                                 call({'a': 'b', 'i': 'two'}),
+                                 call({'a': 'changed', 'i': 'three'})]
+    assert context == {'a': 'after loop', 'i': 'three'}
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
                                           call('sg1.step1'),
                                           call('sg1.step2'),
