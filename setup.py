@@ -37,8 +37,8 @@ setup(
     url='https://github.com/pypyr/pypyr-cli',
 
     # Author details
-    author='345',
-    author_email='pypyr@345.systems',
+    author='Thomas Gaigher',
+    author_email='info@pypyr.io',
 
     # Choose your license
     license='Apache License 2.0',
