@@ -589,6 +589,9 @@ Built-in steps
 | `pypyr.steps.assert`_         | Stop pipeline if item in context is not as      | assert (dict)                |
 |                               | expected.                                       |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.call`_           | Call another step-group. Continue with current  | call (dict or str)           |
+|                               | execution after the called groups are done.     |                              |
++-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.cmd`_            | Runs the program and args specified in the      | cmd (string or dict)         |
 |                               | context value ``cmd`` as a subprocess.          |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -638,6 +641,9 @@ Built-in steps
 | `pypyr.steps.filewriteyaml`_  | Write payload to file in yaml format.           | fileWriteYaml (dict)         |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.glob`_           | Get paths from glob expression.                 | glob (string or list)        |
++-------------------------------+-------------------------------------------------+------------------------------+
+| `pypyr.steps.jump`_           | Jump to another step-group. This means the rest | jump (dict or str)           |
+|                               | of the current step-group doesn't run.          |                              |
 +-------------------------------+-------------------------------------------------+------------------------------+
 | `pypyr.steps.pathcheck`_      | Check if path exists on filesystem.             | pathCheck (string or dict)   |
 +-------------------------------+-------------------------------------------------+------------------------------+
@@ -782,6 +788,85 @@ Complex types:
 
 See a worked example `for assert here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/assert.yaml>`__.
+
+pypyr.steps.call
+^^^^^^^^^^^^^^^^
+Call another step-group. Once the called group(s) are complete, continues
+processing from the point where you called.
+
+If you want to jump to a different step-group and ignore the rest of the
+step-group you're in, use `pypyr.steps.jump`_ instead.
+
+*call* expects a context item *call*. It can take one of two forms:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.call
+    comment: simple string means just call the step-group named "callme"
+    in:
+      call: callme
+  - name: pypyr.steps.call
+    comment: specify groups, success and failure.
+    in:
+      call:
+        groups: ['callme', 'noreally'] # list. Step-groups to call.
+        success: group_to_call_on_success # string. Single step-group name.
+        failure: group_to_call_on_failure # string. Single step-group name.
+
+*call.groups* can be a simple string if you're just calling a single group -
+i.e you don't need to make it a list of one item.
+
+Call can be handy if you use it in conjunction with looping step decorators
+like *while* or *foreach*:
+
+.. code-block:: yaml
+
+  steps:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: this is the 1st step of steps
+    - name: pypyr.steps.call
+      in:
+        call: arbgroup
+    - name: pypyr.steps.echo
+      in:
+       echoMe: You'll see me AFTER arbgroup is done.
+    - name: pypyr.steps.call
+      foreach: ['one', 'two', 'three']
+      in:
+        call: repeatme
+  arbgroup:
+      - name: pypyr.steps.echo
+        in:
+          echoMe: this is arb group
+      - pypyr.steps.stopstepgroup
+      - name: pypyr.steps.echo
+        in:
+          echoMe: if you see me something is WRONG.
+  repeatme:
+      - name: pypyr.steps.echo
+        in:
+          echoMe: this is iteration {i}
+
+
+This will result in:
+
+.. code-block:: text
+
+  NOTIFY:pypyr.steps.echo:run_step: this is the 1st step of steps
+  NOTIFY:pypyr.steps.echo:run_step: this is arb group
+  NOTIFY:pypyr.steps.echo:run_step: You'll see me AFTER arbgroup is done.
+  NOTIFY:pypyr.steps.echo:run_step: this is iteration one
+  NOTIFY:pypyr.steps.echo:run_step: this is iteration two
+  NOTIFY:pypyr.steps.echo:run_step: this is iteration three
+
+
+Call only runs success or failure groups if you actually specify these.
+
+All inputs support string `Substitutions`_.
+
+See a worked example for `call here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/call.yaml>`__.
 
 pypyr.steps.cmd
 ^^^^^^^^^^^^^^^
@@ -1915,6 +2000,73 @@ item to be an individual path, or part of a path, or the entire path list.
 See a worked
 example for `glob here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/glob.yaml>`_.
+
+pypyr.steps.jump
+^^^^^^^^^^^^^^^^
+Jump to another step-group. This effectively stops processing on the current
+step-group you are jumping from.
+
+If you want to return to the point of origin after the step-group you
+jumped to completes, use `pypyr.steps.call`_ instead.
+
+*jump* expects a context item *jump*. It can take one of two forms:
+
+.. code-block:: yaml
+
+  - name: pypyr.steps.jump
+    comment: simple string means just call the step-group named "jumphere"
+    in:
+      jump: jumphere
+  - name: pypyr.steps.call
+    comment: specify groups, success and failure.
+    in:
+      jump:
+        groups: ['jumphere', 'andhere'] # list. Step-group sequence to jump to.
+        success: group_to_call_on_success # string. Single step-group name.
+        failure: group_to_call_on_failure # string. Single step-group name.
+
+*jump.groups* can be a simple string if you're just jumping a single group -
+i.e you don't need to make it a list of one item.
+
+Jump is handy when you want to transfer control from a current step-group to
+a different sequence of steps. So you can jump around to your heart's content.
+
+.. code-block:: yaml
+
+  steps:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: this is the 1st step of steps
+    - name: pypyr.steps.jump
+      in:
+        jump: arbgroup
+    - name: pypyr.steps.echo
+      in:
+       echoMe: You WON'T see me because we jumped.
+  arbgroup:
+      - name: pypyr.steps.echo
+        in:
+          echoMe: this is arb group
+      - pypyr.steps.stopstepgroup
+      - name: pypyr.steps.echo
+        in:
+          echoMe: if you see me something is WRONG.
+
+
+This will result in:
+
+.. code-block:: text
+
+  NOTIFY:pypyr.steps.echo:run_step: this is the 1st step of steps
+  NOTIFY:pypyr.steps.echo:run_step: this is arb group
+
+
+Jump only runs success or failure groups if you actually specify these.
+
+All inputs support string `Substitutions`_.
+
+See a worked example for `jump here
+<https://github.com/pypyr/pypyr-example/blob/master/pipelines/jump.yaml>`__.
 
 pypyr.steps.pathcheck
 ^^^^^^^^^^^^^^^^^^^^^
