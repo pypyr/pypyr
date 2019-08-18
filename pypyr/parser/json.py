@@ -19,4 +19,4 @@ def get_parsed_context(args):
 
     logger.debug("starting")
     # deserialize the input context string into json
-    return json.loads(''.join(args))
+    return json.loads(' '.join(args))
