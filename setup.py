@@ -55,6 +55,7 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         'Topic :: System :: Shells',
+        'Topic :: Utilities'
 
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: Apache Software License',

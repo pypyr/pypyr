@@ -26,4 +26,4 @@ integrations:
       type: ssh-key
 
   generic:
-    - integrationName: pypi
+    - integrationName: pypi-pypyr
