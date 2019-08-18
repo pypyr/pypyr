@@ -20,12 +20,12 @@ from tests.common.utils import DeepCopyMagicMock
 from tests.common.utils import patch_logger
 
 
-def mock_parser(context_arg):
+def mock_parser(args):
     """Arbitrary mock function to execute instead of get_parsed_context"""
-    return Context({'key1': 'created in mock parser', 'key2': context_arg})
+    return Context({'key1': 'created in mock parser', 'key2': args})
 
 
-def mock_parser_none(context_arg):
+def mock_parser_none(args):
     """Return None, mocking get_parsed_context"""
     return None
 # ------------------------- parser mocks -------------------------------------#
@@ -54,7 +54,7 @@ def test_get_parsed_context_parser_returns_none(mocked_moduleloader):
     mocked_moduleloader.return_value.get_parsed_context = mock_parser_none
 
     context = pypyr.pipelinerunner.get_parsed_context(
-        {'context_parser': 'specifiedparserhere'}, 'in arg here')
+        {'context_parser': 'specifiedparserhere'}, ['in arg here'])
 
     mocked_moduleloader.assert_called_once_with('specifiedparserhere')
 
@@ -155,12 +155,12 @@ def test_prepare_context_empty_parse(mocked_get_parsed_context):
     """Empty parsed_context works."""
     context = Context({'c1': 'cv1', 'c2': 'cv2'})
     pypyr.pipelinerunner.prepare_context(pipeline='pipe def',
-                                         context_in_string='arb context input',
+                                         context_in_args='arb context input',
                                          context=context)
 
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     assert context == {'c1': 'cv1', 'c2': 'cv2'}
 
@@ -171,12 +171,12 @@ def test_prepare_context_with_parse_merge(mocked_get_parsed_context):
     """parsed_context overrides context."""
     context = Context({'c1': 'cv1', 'c2': 'cv2'})
     pypyr.pipelinerunner.prepare_context(pipeline='pipe def',
-                                         context_in_string='arb context input',
+                                         context_in_args='arb context input',
                                          context=context)
 
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     assert context == {'a': 'av1', 'c1': 'new value from parsed', 'c2': 'cv2'}
 # ------------------------- prepare_context - --------------------------------#
@@ -210,7 +210,7 @@ def test_load_and_run_pipeline_pass(mocked_get_work_dir,
                                                 working_dir='arb/dir')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     # assure that freshly created context instance does have working dir set
     assert mock_context.return_value.working_dir == 'arb/dir'
@@ -287,7 +287,7 @@ def test_load_and_run_pipeline_parse_context_error(
                                                 working_dir='arb/dir')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.assert_called_once_with(pipeline_definition='pipe def',
                                                 context=Context())
@@ -328,7 +328,7 @@ def test_load_and_run_pipeline_steps_error_raises(
                                                 working_dir='arb/dir')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['steps'],
@@ -369,7 +369,7 @@ def test_load_and_run_pipeline_with_existing_context_pass(
                                                 working_dir='from/context')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['steps'],
@@ -413,7 +413,7 @@ def test_load_and_run_pipeline_with_group_specified(
                                                 working_dir='from/context')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['arb1', 'arb2'],
@@ -457,7 +457,7 @@ def test_load_and_run_pipeline_with_success_group_specified(
                                                 working_dir='from/context')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['steps'],
@@ -501,7 +501,7 @@ def test_load_and_run_pipeline_with_failure_group_specified(
                                                 working_dir='from/context')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['steps'],
@@ -546,7 +546,7 @@ def test_load_and_run_pipeline_with_group_and_failure_group_specified(
                                                 working_dir='from/context')
     mocked_get_parsed_context.assert_called_once_with(
         pipeline='pipe def',
-        context_in_string='arb context input')
+        context_in_args='arb context input')
 
     mocked_steps_runner.return_value.run_step_groups.assert_called_once_with(
         groups=['arb1'],

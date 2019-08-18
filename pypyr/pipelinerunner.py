@@ -21,7 +21,7 @@ import pypyr.yaml
 logger = logging.getLogger(__name__)
 
 
-def get_parsed_context(pipeline, context_in_string):
+def get_parsed_context(pipeline, context_in_args):
     """Execute get_parsed_context handler if specified.
 
     Dynamically load the module specified by the context_parser key in pipeline
@@ -29,7 +29,7 @@ def get_parsed_context(pipeline, context_in_string):
 
     Args:
         pipeline: dict. Pipeline object.
-        context_in_string: string. Argument string used to initialize context.
+        context_in_args: list of string. Input arguments from console.
 
     Returns:
         pypyr.context.Context() instance.
@@ -48,7 +48,7 @@ def get_parsed_context(pipeline, context_in_string):
             parser_module_name)
 
         logger.debug("running parser %s", parser_module_name)
-        result_context = get_parsed_context(context_in_string)
+        result_context = get_parsed_context(context_in_args)
         logger.debug("context parse %s done", parser_module_name)
         # Downstream steps likely to expect context not to be None, hence
         # empty rather than None.
@@ -123,7 +123,7 @@ def main(
     logger.debug("pypyr done")
 
 
-def prepare_context(pipeline, context_in_string, context):
+def prepare_context(pipeline, context_in_args, context):
     """Prepare context for pipeline run.
 
     Args:
@@ -141,7 +141,7 @@ def prepare_context(pipeline, context_in_string, context):
 
     parsed_context = get_parsed_context(
         pipeline=pipeline,
-        context_in_string=context_in_string)
+        context_in_args=context_in_args)
 
     context.update(parsed_context)
 
@@ -268,7 +268,7 @@ def run_pipeline(pipeline,
         if parse_input:
             logger.debug("executing context_parser")
             prepare_context(pipeline=pipeline,
-                            context_in_string=pipeline_context_input,
+                            context_in_args=pipeline_context_input,
                             context=context)
         else:
             logger.debug("skipping context_parser")

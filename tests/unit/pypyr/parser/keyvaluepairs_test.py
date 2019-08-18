@@ -3,33 +3,32 @@ import pypyr.parser.keyvaluepairs
 import pytest
 
 
-def test_comma_string_parses_to_dict():
+def test_kvp_args_parses_to_dict():
     """Comma delimited input kvp string should return dictionary."""
-    out = pypyr.parser.keyvaluepairs.get_parsed_context('key1=value1'
-                                                        ',key2=value2'
-                                                        ',key3=value3')
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(['key1=value1',
+                                                         'key2=value2',
+                                                         ',key3=value3'])
     assert out['key1'] == 'value1', "key1 should be value1."
     assert out['key2'] == 'value2', "key2 should be value2."
-    assert out['key3'] == 'value3', "key3 should be value3."
+    assert out[',key3'] == 'value3', "key3 should be value3."
     assert len(out) == 3, "3 items expected"
 
 
-def test_no_commas_string_parses_to_single_entry():
+def test_kvp_args_single_parses_to_single_entry():
     """No commas input kvp string should return dictionary with 1 item."""
-    out = pypyr.parser.keyvaluepairs.get_parsed_context('key 1=value 2 '
-                                                        'value3')
-    assert out['key 1'] == 'value 2 value3', "key 1 isnt 'value 2 value3'."
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(['key 1=value 2 '])
+    assert out['key 1'] == 'value 2 ', "key 1 isnt 'value 2 '."
     assert len(out) == 1, "1 item expected"
 
 
-def test_no_equals_string_parses_to_single_entry():
-    """No equals input kvp string fails with ValueError."""
+def test_no_equals_arg_parses_to_single_entry_fail():
+    """No equals input kvp args fails with ValueError."""
     with pytest.raises(ValueError):
         pypyr.parser.keyvaluepairs.get_parsed_context(
-            'key1value2,value3')
+            ['key1value2,value3'])
 
 
-def test_empty_string_empty_dict():
-    """Empty input string should returbn empty dict."""
+def test_kvp_empty_args_empty_dict():
+    """Empty input args should return empty dict."""
     out = pypyr.parser.keyvaluepairs.get_parsed_context(None)
     assert not out

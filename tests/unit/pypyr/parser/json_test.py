@@ -11,6 +11,12 @@ def test_json_cant_parse_from_arbitrary_string():
 
 
 def test_json_parser_empty_string_empty_dict():
-    """Empty inpout string creates empty dict."""
+    """Empty input creates empty dict."""
     out = pypyr.parser.json.get_parsed_context(None)
     assert not out
+
+
+def test_json_parse_ok():
+    """Valid json input parses."""
+    out = pypyr.parser.json.get_parsed_context(['{', '"a": "b"', '}'])
+    assert out == {'a': 'b'}

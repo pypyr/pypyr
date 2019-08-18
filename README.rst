@@ -91,16 +91,17 @@ pypyr assumes a pipelines directory in your current working directory.
   # If you don't specify --loglevel it defaults to 25 - NOTIFY logging level.
   $ pypyr mypipelinename
 
-  # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary string,
-  # known as the input context argument. For this input argument to be available
+  # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary
+  # sequence of strings, known as the input context arguments.
+  # For this input argument to be available
   # to your pipeline you need to specify a context parser in your pipeline yaml.
-  $ pypyr mypipelinename arbitrary_string_here
+  $ pypyr mypipelinename arbitrary string here
 
   # run pipelines/mypipelinename.yaml with an input context in key-value
   # pair format. For this input to be available to your pipeline you need to
   # specify a context_parser like pypyr.parser.keyvaluepairs in your
   # pipeline yaml.
-  $ pypyr mypipelinename "mykey=value"
+  $ pypyr mypipelinename mykey=value anotherkey=anothervalue
 
 Get cli help
 ============
@@ -166,7 +167,7 @@ Built-in pipelines
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |``pypyr echo "text goes here"``                                                      |
+| echo                        | Echos context value echoMe to output.           |``pypyr echo text goes here``                                                      |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyrversion                | Prints the python cli version number.           |``pypyr pypyrversion``                                                               |
 |                             |                                                 |                                                                                     |
@@ -181,11 +182,11 @@ context_parser
 ==============
 Optional.
 
-A context_parser parses the pypyr command's context input argument. This is the
-second positional argument from the command line.
+A context_parser parses the pypyr command's context input arguments. This is
+all the positional arguments after the pipeline-name from the command line.
 
 The chances are pretty good that the context_parser will take the context
-command argument and put in into the pypyr context.
+command arguments and put in into the pypyr context.
 
 The pypyr context is a dictionary that is in scope for the duration of the entire
 pipeline. The context_parser can initialize the context. Any step in the pipeline
@@ -196,47 +197,47 @@ Built-in context parsers
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | **context parser**          | **description**                                 | **example input**                                                                   |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.commas         | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
-|                             | dictionary where each element becomes the key,  |                                                                                     |
-|                             | with value to true.                             |This will create a context dictionary like this:                                     |
+| pypyr.parser.dict           | Takes a key=value pair string and returns a     |``pypyr pipelinename param1=value1 param2="value 2" param3=value3``                  |
+|                             | dictionary where each pair becomes a dictionary |                                                                                     |
+|                             | element inside a dict with name *argDict*.      |This will create a context dictionary like this:                                     |
 |                             |                                                 |                                                                                     |
-|                             | Don't have spaces between commas unless you     |.. code-block:: python                                                               |
-|                             | really mean it. \"k1, k2\" will result in       |                                                                                     |
-|                             | a context key name of \' k2\' not \'k2\'.       |  {'param1': True, 'param2': True, 'param3': True}                                   |
-+-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.dict           | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
-|                             | and returns a dictionary where each pair becomes|                                                                                     |
-|                             | a dictionary element inside a dict with name    |This will create a context dictionary like this:                                     |
-|                             | *argDict*.                                      |                                                                                     |
-|                             |                                                 |.. code-block:: python                                                               |
-|                             | Don't have spaces between commas unless you     |                                                                                     |
-|                             | really mean it. \"k1=v1, k2=v2\" will result in |  {'argDict': {'param1': 'value1',                                                   |
-|                             | a context key name of \' k2\' not \'k2\'.       |               'param2': 'value2',                                                   |
+|                             | Escape literal spaces with single or double     |.. code-block:: python                                                               |
+|                             | quotes.                                         |                                                                                     |
+|                             |                                                 |  {'argDict': {'param1': 'value1',                                                   |
+|                             |                                                 |               'param2': 'value 2',                                                  |
 |                             |                                                 |               'param3': 'value3'}}                                                  |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename '{"key1":"value1","key2":"value2"}'``                           |
+| pypyr.parser.json           | Takes a json string and returns a dictionary.   |``pypyr pipelinename {"key1":"value1","key2":"value2"}``                             |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyr.parser.jsonfile       | Opens json file and returns a dictionary.       |``pypyr pipelinename "./path/sample.json"``                                          |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.keyvaluepairs  | Takes a comma delimited key=value pair string   |``pypyr pipelinename "param1=value1,param2=value2,param3=value3"``                   |
-|                             | and returns a dictionary where each pair becomes|                                                                                     |
-|                             | a dictionary element.                           |This will create a context dictionary like this:                                     |
+| pypyr.parser.keys           | For each input argument, create a dictionary    |``pypyr pipelinename param1 'par am2' param3``                                       |
+|                             | where each element becomes the key, with value  |                                                                                     |
+|                             | set to true.                                    |This will create a context dictionary like this:                                     |
 |                             |                                                 |                                                                                     |
-|                             | Don't have spaces between commas unless you     |.. code-block:: python                                                               |
-|                             | really mean it. \"k1=v1, k2=v2\" will result in |                                                                                     |
-|                             | a context key name of \' k2\' not \'k2\'.       | {'param1': 'value1',                                                                |
-|                             |                                                 |  'param2': 'value2',                                                                |
-|                             |                                                 |  'param3': 'value3'}                                                                |
+|                             | Escape literal spaces with single or double     |.. code-block:: python                                                               |
+|                             | quotes.                                         |                                                                                     |
+|                             |                                                 |  {'param1': True, 'par am2': True, 'param3': True}                                  |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.list           | Takes a comma delimited string and returns a    |``pypyr pipelinename "param1,param2,param3"``                                        |
-|                             | list in context with name *argList*.            |                                                                                     |
+| pypyr.parser.keyvaluepairs  | Takes a key=value pair string and returns a     |``pypyr pipelinename param1=value1 param2=value2 "param 3"=value3``                  |
+|                             | dictionary where each pair becomes a dictionary |                                                                                     |
+|                             | element.                                        |This will create a context dictionary like this:                                     |
+|                             |                                                 |                                                                                     |
+|                             | Escape literal spaces with single or double     |.. code-block:: python                                                               |
+|                             | quotes.                                         |                                                                                     |
+|                             |                                                 | {'param1': 'value1',                                                                |
+|                             |                                                 |  'param2': 'value2',                                                                |
+|                             |                                                 |  'param 3': 'value3'}                                                               |
++-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
+| pypyr.parser.list           | Takes the input arguments and returns a list in |``pypyr pipelinename param1 param2 param3``                                          |
+|                             | context with name *argList*.                    |                                                                                     |
 |                             |                                                 |This will create a context dictionary like this:                                     |
-|                             | Don't have spaces between commas unless you     |                                                                                     |
-|                             | really mean it. \"v1, v2\" will result in       |.. code-block:: python                                                               |
-|                             | argList[1] being \' v2\' not \'v2\'.            |                                                                                     |
+|                             | Escape literal spaces with single or double     |                                                                                     |
+|                             | quotes.                                         |.. code-block:: python                                                               |
+|                             |                                                 |                                                                                     |
 |                             |                                                 | {'argList': ['param1', 'param2', 'param3']}                                         |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.string         | Takes any arbitrary string and returns a        |``pypyr pipelinename "arbitrary string here"``                                       |
+| pypyr.parser.string         | Takes any arbitrary input and returns a single  |``pypyr pipelinename arbitrary string here``                                         |
 |                             | string in context with name *argString*.        |                                                                                     |
 |                             |                                                 |This will create a context dictionary like this:                                     |
 |                             |                                                 |                                                                                     |
@@ -244,7 +245,7 @@ Built-in context parsers
 |                             |                                                 |                                                                                     |
 |                             |                                                 |  {'argString': 'arbitrary string here'}                                             |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename "./path/sample.yaml"``                                          |
+| pypyr.parser.yamlfile       | Opens a yaml file and writes the contents into  |``pypyr pipelinename ./path/sample.yaml``                                            |
 |                             | the pypyr context dictionary.                   |                                                                                     |
 |                             |                                                 |                                                                                     |
 |                             | The top (or root) level yaml should describe a  |                                                                                     |
@@ -278,21 +279,22 @@ Roll your own context_parser
   logger = logging.getLogger(__name__)
 
 
-  def get_parsed_context(context_arg):
+  def get_parsed_context(args):
       """This is the signature for a context parser.
 
       Args:
-        context_arg: string. Passed from command-line invocation where
-                     pypyr pipelinename 'this is the context_arg'
+        args: list of string. Passed from command-line invocation where
+              pypyr pipelinename this is the context_arg
+              This would result in args == ['this', 'is', 'the', 'context_arg']
 
       Returns:
         dict. This dict will initialize the context for the pipeline run.
       """
-      assert context_arg, ("pipeline must be invoked with context set.")
+      assert args, ("pipeline must be invoked with context arg set.")
       logger.debug("starting")
 
       # your clever code here. Chances are pretty good you'll be doing things
-      # with the input context_arg string to create a dictionary.
+      # with the input args list to create a dictionary.
 
       # function signature returns a dictionary
       return {'key1': 'value1', 'key2':'value2'}
