@@ -45,14 +45,14 @@ def test_get_pipeline_yaml_custom_types():
 def test_get_yaml_parser_safe():
     """Create yaml parser safe."""
     obj = pypyr_yaml.get_yaml_parser_safe()
-    assert obj.typ == 'safe'
+    assert obj.typ == ['safe']
     assert obj.pure
 
 
 def test_get_yaml_parser_roundtrip():
     """Create yaml parser roundtrip."""
     obj = pypyr_yaml.get_yaml_parser_roundtrip()
-    assert obj.typ == 'rt'
+    assert obj.typ == ['rt']
     assert obj.pure
     assert obj.map_indent == 2
     assert obj.sequence_indent == 4
@@ -62,7 +62,7 @@ def test_get_yaml_parser_roundtrip():
 def test_get_yaml_parser_roundtrip_context():
     """Create yaml parser roundtrip with Context representer."""
     obj = pypyr_yaml.get_yaml_parser_roundtrip_for_context()
-    assert obj.typ == 'rt'
+    assert obj.typ == ['rt']
     assert obj.pure
     assert obj.map_indent == 2
     assert obj.sequence_indent == 4
