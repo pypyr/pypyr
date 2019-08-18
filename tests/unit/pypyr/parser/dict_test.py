@@ -3,24 +3,23 @@ import pypyr.parser.dict
 import pytest
 
 
-def test_comma_string_parses_to_argdict():
-    """Comma delimited input kvp string should return dictionary."""
-    out = pypyr.parser.dict.get_parsed_context('key1=value1'
-                                               ',key2=value2'
-                                               ',key3=value3')
+def test_arg_string_parses_to_argdict():
+    """Args input kvp string should return dictionary."""
+    out = pypyr.parser.dict.get_parsed_context(['key1=value1',
+                                                'key 2=value2',
+                                                'key3=value3'])
     arg_dict = out['argDict']
     assert arg_dict
     assert arg_dict['key1'] == 'value1', "key1 should be value1."
-    assert arg_dict['key2'] == 'value2', "key2 should be value2."
+    assert arg_dict['key 2'] == 'value2', "key2 should be value2."
     assert arg_dict['key3'] == 'value3', "key3 should be value3."
     assert len(out) == 1
     assert len(arg_dict) == 3, "3 items expected"
 
 
-def test_no_commas_string_parses_to_single_entry_argdict():
-    """No commas input kvp string should return dictionary with 1 item."""
-    out = pypyr.parser.dict.get_parsed_context('key 1=value 2 '
-                                               'value3')
+def test_arg_string_parses_to_single_entry_argdict():
+    """Input kvp string should return dictionary with 1 item."""
+    out = pypyr.parser.dict.get_parsed_context(['key 1=value 2 value3'])
     arg_dict = out['argDict']
     assert arg_dict
     assert arg_dict['key 1'] == 'value 2 value3'

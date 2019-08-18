@@ -18,7 +18,7 @@ def test_yaml_file_open_fails_on_empty_string():
 def test_yaml_pass():
     """Relative path to yaml should succeed"""
     context = pypyr.parser.yamlfile.get_parsed_context(
-        './tests/testfiles/dict.yaml')
+        ['./tests/testfiles/dict.yaml'])
 
     assert context, "context shouldn't be None"
     assert len(context) == 5, "context should have 5 items"
@@ -34,4 +34,4 @@ def test_list_yaml_fails():
     """Yaml describing a list rather than a dict should fail."""
     with pytest.raises(TypeError):
         pypyr.parser.yamlfile.get_parsed_context(
-            './tests/testfiles/list.yaml')
+            ['./tests/testfiles/list.yaml'])

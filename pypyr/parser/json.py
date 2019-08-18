@@ -7,9 +7,9 @@ import json
 logger = logging.getLogger(__name__)
 
 
-def get_parsed_context(context_arg):
-    """Parse input context string and returns context as dictionary."""
-    if not context_arg:
+def get_parsed_context(args):
+    """Parse input context args and returns context as dictionary."""
+    if not args:
         logger.debug("pipeline invoked without context arg set. For "
                      "this json parser you're looking for something "
                      "like: "
@@ -19,4 +19,4 @@ def get_parsed_context(context_arg):
 
     logger.debug("starting")
     # deserialize the input context string into json
-    return json.loads(context_arg)
+    return json.loads(''.join(args))

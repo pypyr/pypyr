@@ -38,10 +38,12 @@ def get_parser():
     parser.add_argument('pipeline_name',
                         help=wrap('Name of pipeline to run. It should exist '
                                   'in the ./pipelines directory.'))
-    parser.add_argument(dest='pipeline_context',
-                        nargs='?',
-                        help=wrap('String for context values. Parsed by the '
-                                  'pipeline\'s context_parser function.'))
+    parser.add_argument(dest='context_args',
+                        nargs='*',
+                        default=None,
+                        help=wrap('Initialize context with this. Parsed by '
+                                  'the pipeline\'s context_parser function.\n'
+                                  'Separate multiple args with spaces.'))
     parser.add_argument('--groups', dest='groups',
                         nargs='*',
                         default=None,
@@ -103,7 +105,7 @@ def main(args=None):
     try:
         return pypyr.pipelinerunner.main(
             pipeline_name=parsed_args.pipeline_name,
-            pipeline_context_input=parsed_args.pipeline_context,
+            pipeline_context_input=parsed_args.context_args,
             working_dir=parsed_args.working_dir,
             log_level=parsed_args.log_level,
             log_path=parsed_args.log_path,
