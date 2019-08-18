@@ -105,8 +105,9 @@ def test_assert_passes_on_assertthis_true_string():
 
 def test_assert_raises_on_assertthis_not_equals():
     """Assert this does not equal assertEquals."""
-    context = Context({'assertThis': 'boom',
-                       'assertEquals': 'BOOM'})
+    context = Context({'assert': {
+        'this': 'boom',
+        'equals': 'BOOM'}})
     with pytest.raises(ContextError) as err_info:
         assert_step.run_step(context)
 
@@ -131,8 +132,9 @@ def test_assert_passes_on_assertthis_equals_bools():
 
 def test_assert_passes_on_assertthis_equals_bools_false():
     """Assert this equals assertEquals false bools."""
-    context = Context({'assertThis': False,
-                       'assertEquals': False})
+    context = Context({'assert':
+                       {'this': False,
+                        'equals': False}})
     assert_step.run_step(context)
 
 
@@ -416,17 +418,3 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict_substitutions():
     assert str(err_info.value) == (
         "assert assert['this'] is of type dict and does "
         "not equal assert['equals'] of type dict.")
-
-# --------------------- deprecated --------------------------------------------
-
-
-def test_assert_passes_on_assertthis_true_deprecated():
-    """Assert this boolean True passes."""
-    context = Context({'assertThis': True})
-    assert_step.run_step(context)
-
-
-def test_assert_passes_on_assertthis_equals_true_deprecated():
-    """Assert this boolean True passes."""
-    context = Context({'assertThis': True, 'assertEquals': True})
-    assert_step.run_step(context)

@@ -1,5 +1,4 @@
 """fileformatyaml.py unit tests."""
-import logging
 import os
 import shutil
 import ruamel.yaml as yaml
@@ -7,8 +6,6 @@ from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformatyaml as fileformat
 import pytest
-
-from tests.common.utils import patch_logger
 
 
 def test_fileformatyaml_no_inpath_raises():
@@ -223,99 +220,6 @@ def test_fileformatyaml_pass_with_path_substitutions():
     # atrociously lazy test clean-up
     os.remove('./tests/testfiles/out/outsubst.yaml')
 
-# --------------------------- deprecated -------------------------------------
-
-
-def test_fileformatyaml_pass_with_path_substitutions_deprecated():
-    """Relative path to file should succeed with path subsitutions.
-
-    Strictly speaking not a unit test.
-    """
-    context = Context({
-        'k1': 'v1',
-        'k2': 'v2',
-        'k3': 'v3',
-        'k4': 'v4',
-        'k5': 'v5',
-        'pathIn': 'testsubst',
-        'pathOut': 'outsubst',
-        'fileFormatYamlIn': './tests/testfiles/{pathIn}.yaml',
-        'fileFormatYamlOut': './tests/testfiles/out/{pathOut}.yaml'})
-
-    with patch_logger(
-            'pypyr.steps.fileformatyaml', logging.WARNING
-    ) as mock_logger_warn:
-        fileformat.run_step(context)
-
-    mock_logger_warn.assert_called_once_with(
-        "fileFormatYamlIn and fileFormatYamlOut are deprecated. "
-        "They will stop "
-        "working upon the next major release. Use the new context key "
-        "fileFormatYaml instead. It's a lot better, promise! "
-        "For the moment pypyr "
-        "is creating the new fileFormatYaml key for you under the hood.")
-
-    assert context, "context shouldn't be None"
-    assert len(context) == 10, "context should have 10 items"
-    assert context['k1'] == 'v1'
-    assert context['fileFormatYamlIn'] == './tests/testfiles/{pathIn}.yaml'
-    assert context['fileFormatYamlOut'] == ('./tests/testfiles/out/'
-                                            '{pathOut}.yaml')
-    assert context['fileFormatYaml'] == {
-        'in': './tests/testfiles/{pathIn}.yaml',
-        'out': './tests/testfiles/out/{pathOut}.yaml'}
-
-    with open('./tests/testfiles/out/outsubst.yaml') as outfile:
-        yaml_loader = yaml.YAML(typ='rt', pure=True)
-        outcontents = yaml_loader.load(outfile)
-
-    expected = {
-        'key': 'v1value1 !£$%# *',
-        'key2v2': 'blah',
-        # there is a comment here
-        'key3': [
-            'l1',
-            # and another
-            '!£$% * v3',
-            'l2', ['l31v4',
-                   {'l32': ['l321',
-                            'l322v5']
-                    }
-                   ]
-        ]
-    }
-
-    assert outcontents == expected
-
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outsubst.yaml')
-
-
-def test_fileformatyaml_no_outpath_raises_deprecated():
-    """None out path raises."""
-    context = Context({
-        'fileFormatYamlIn': 'blah',
-        'k1': 'v1'})
-
-    with pytest.raises(KeyNotInContextError) as err_info:
-        fileformat.run_step(context)
-
-    assert str(err_info.value) == ("context['fileFormatYamlOut'] "
-                                   "doesn't exist. It must exist for "
-                                   "pypyr.steps.fileformatyaml.")
-
-
-def test_fileformatyaml_empty_outpath_raises_deprecated():
-    """Empty in path raises."""
-    context = Context({
-        'fileFormatYamlIn': 'blah',
-        'fileFormatYamlOut': None})
-
-    with pytest.raises(KeyInContextHasNoValueError) as err_info:
-        fileformat.run_step(context)
-
-    assert str(err_info.value) == ("context['fileFormatYamlOut'] must have "
-                                   "a value for pypyr.steps.fileformatyaml.")
 # --------------------------- teardown ---------------------------------------
 
 

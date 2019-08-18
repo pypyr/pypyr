@@ -67,8 +67,8 @@ def test_tar_throws_if_tar_context_no_value():
     """Tar context keys must exist."""
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.tar.run_step(
-            Context({'tarExtract': None,
-                     'tarArchive': None}))
+            Context({'tar': {'extract': None,
+                             'archive': None}}))
 
     assert str(err_info.value) == (
         "pypyr.steps.tar must have either extract or archive specified under "
@@ -358,71 +358,3 @@ def test_tar_archive_pass():
      __enter__().add.assert_any_call('.', arcname='.'))
 
 # ------------------------- tar archive --------------------------------------#
-
-# ------------------------- deprecated ---------------------------------------#
-
-
-def test_tar_extract_one_pass_deprecated():
-    """Tar extract success case with deprecasted in."""
-    context = Context({
-        'key1': 'value1',
-        'key2': 'value2',
-        'key3': 'value3',
-        'tarExtract': [
-            {'in': './blah.tar.xz',
-             'out': 'path/to/dir'}
-        ]
-    })
-
-    with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.run_step(context)
-
-    mock_tarfile.assert_called_once_with('./blah.tar.xz', 'r:*')
-    (mock_tarfile.return_value.
-     __enter__().extractall.assert_called_once_with('path/to/dir'))
-
-
-def test_tar_archive_one_pass_deprecated():
-    """Tar extract success case with deprecated in."""
-    context = Context({
-        'key1': 'value1',
-        'key2': 'value2',
-        'key3': 'value3',
-        'tarArchive': [
-            {'in': 'path/to/dir',
-             'out': './blah.tar.xz'}
-        ]
-    })
-
-    with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.run_step(context)
-
-    mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:xz')
-    (mock_tarfile.return_value.
-     __enter__().add.assert_called_once_with('path/to/dir', arcname='.'))
-
-
-def test_tar_archive_both_pass_with_format_deprecated():
-    """Tar extract and archive both success case deprecated."""
-    context = Context({
-        'key1': 'value1',
-        'key2': 'value2',
-        'key3': 'value3',
-        'tarArchive': [
-            {'in': 'path/to/dir/a',
-             'out': './a/blah.tar.xz'}
-        ],
-        'tarExtract': [
-            {'in': './e/blah.tar.xz',
-             'out': 'path/to/dir/e'}
-        ],
-        'tarFormat': 'blah'
-    })
-
-    with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.run_step(context)
-
-    mock_tarfile.assert_any_call('./a/blah.tar.xz', 'w:blah')
-    mock_tarfile.assert_any_call('./e/blah.tar.xz', 'r:blah')
-    (mock_tarfile.return_value.
-     __enter__().add.assert_called_with('path/to/dir/a', arcname='.'))

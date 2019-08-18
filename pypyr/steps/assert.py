@@ -33,7 +33,6 @@ def run_step(context):
     logger.debug("started")
     assert context, f"context must have value for {__name__}"
 
-    deprecated(context)
     context.assert_key_has_value('assert', __name__)
 
     assert_this = context['assert']['this']
@@ -69,23 +68,3 @@ def run_step(context):
         raise ContextError(error_text)
 
     logger.debug("done")
-
-
-def deprecated(context):
-    """Handle deprecated context input."""
-    assert_context = context.get('assert', None)
-    # specifically do "key in dict" to avoid python bool eval thinking
-    # None/Empty values mean the key isn't there.
-    if 'assertThis' in context:
-        assert_this = context['assertThis']
-        assert_context = context['assert'] = {'this': assert_this}
-
-        if 'assertEquals' in context:
-            assert_equals = context['assertEquals']
-            assert_context['equals'] = assert_equals
-
-        logger.warning("assertThis and assertEquals are deprecated. They will "
-                       "stop working upon the next major release. "
-                       "Use the new context key assert instead. It's a lot "
-                       "better, promise! For the moment pypyr is creating the "
-                       "new assert key for you under the hood.")

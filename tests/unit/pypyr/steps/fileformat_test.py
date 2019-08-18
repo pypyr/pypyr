@@ -1,12 +1,10 @@
 """fileformat.py unit tests."""
-import logging
 import os
 import pytest
 import shutil
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformat as fileformat
-from tests.common.utils import patch_logger
 
 
 def test_fileformat_no_inpath_raises():
@@ -170,98 +168,6 @@ def test_fileformat_pass_with_path_substitutions():
     os.remove('./tests/testfiles/out/outsubst.txt')
 
 
-# -------------------------- deprecated ---------------------------------------
-
-def test_fileformat_pass_with_path_substitutions_deprecated():
-    """Relative path to file should succeed with path substitutions.
-
-    Strictly speaking not a unit test.
-    """
-    context = Context({
-        'k1': 'v1',
-        'k2': 'v2',
-        'k3': 'v3',
-        'k4': 'v4',
-        'k5': 'v5',
-        'inFileName': 'testsubst',
-        'outFileName': 'outsubst',
-        'fileFormatIn': './tests/testfiles/{inFileName}.txt',
-        'fileFormatOut': './tests/testfiles/out/{outFileName}.txt'})
-
-    with patch_logger(
-            'pypyr.steps.fileformat', logging.WARNING
-    ) as mock_logger_warn:
-        fileformat.run_step(context)
-
-    assert context, "context shouldn't be None"
-    assert len(context) == 10, "context should have 10 items"
-    assert context['k1'] == 'v1'
-    assert context['fileFormatIn'] == './tests/testfiles/{inFileName}.txt'
-    assert context['fileFormatOut'] == (
-        './tests/testfiles/out/{outFileName}.txt')
-    assert context['fileFormat'] == {
-        'in': './tests/testfiles/{inFileName}.txt',
-        'out': './tests/testfiles/out/{outFileName}.txt'
-    }
-
-    with open('./tests/testfiles/out/outsubst.txt') as outfile:
-        outcontents = list(outfile)
-
-    mock_logger_warn.assert_called_once_with(
-        "fileFormatIn and fileFormatOut are deprecated. They will stop "
-        "working upon the next major release. Use the new context key "
-        "fileFormat instead. It's a lot better, promise! For the moment pypyr "
-        "is creating the new fileFormat key for you under the hood.")
-    assert outcontents[0] == "this v1 is line 1\n"
-    assert outcontents[1] == "this is line 2 v2\n"
-    assert outcontents[2] == "this is line 3\n"
-    assert outcontents[3] == "this v3 is  v4 line 4\n"
-    assert outcontents[4] == "this !£$% * is v5 line 5\n"
-
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outsubst.txt')
-
-
-def test_fileformat_empty_inpath_raises_dewprecated():
-    """Empty in path raises."""
-    context = Context({
-        'fileFormatIn': None})
-
-    with pytest.raises(KeyInContextHasNoValueError) as err_info:
-        fileformat.run_step(context)
-
-    assert str(err_info.value) == ("context['fileFormatIn'] must have a "
-                                   "value for pypyr.steps.fileformat.")
-
-
-def test_fileformat_no_outpath_raises_deprecated():
-    """None out path raises."""
-    context = Context({
-        'fileFormatIn': 'blah',
-        'k1': 'v1'})
-
-    with pytest.raises(KeyNotInContextError) as err_info:
-        fileformat.run_step(context)
-
-    assert str(err_info.value) == ("context['fileFormatOut'] "
-                                   "doesn't exist. It must exist for "
-                                   "pypyr.steps.fileformat.")
-
-
-def test_fileformat_empty_outpath_raises_deprecated():
-    """Empty in path raises."""
-    context = Context({
-        'fileFormatIn': 'blah',
-        'fileFormatOut': None})
-
-    with pytest.raises(KeyInContextHasNoValueError) as err_info:
-        fileformat.run_step(context)
-
-    assert str(err_info.value) == ("context['fileFormatOut'] must have a "
-                                   "value for pypyr.steps.fileformat.")
-
-
-# -------------------------------- deprecated ---------------------------------
 def teardown_module(module):
     """Teardown."""
     shutil.rmtree('./tests/testfiles/out/')

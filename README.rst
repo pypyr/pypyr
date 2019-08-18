@@ -167,7 +167,7 @@ Built-in pipelines
 |                             |                                                 |                                                                                     |
 |                             |                                                 |                                                                                     |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
-| echo                        | Echos context value echoMe to output.           |``pypyr echo text goes here``                                                      |
+| echo                        | Echos context value echoMe to output.           |``pypyr echo text goes here``                                                        |
 +-----------------------------+-------------------------------------------------+-------------------------------------------------------------------------------------+
 | pypyrversion                | Prints the python cli version number.           |``pypyr pypyrversion``                                                               |
 |                             |                                                 |                                                                                     |
@@ -1474,9 +1474,6 @@ All inputs support `Substitutions`_.
 See a worked example for `getting environment variables with defaults here
 <https://github.com/pypyr/pypyr-example/tree/master/pipelines/envget.yaml>`__.
 
-Friendly warning: if you still have the legacy *pypyr.steps.env* ``envGet`` in
-context in old pipelines, be careful with *pypyr.steps.envget* until you've
-upgraded to the new awesome style ``env[get]``. It's worth it, promise.
 
 pypyr.steps.fetchjson
 ^^^^^^^^^^^^^^^^^^^^^
