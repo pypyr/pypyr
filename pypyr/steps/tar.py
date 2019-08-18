@@ -43,17 +43,16 @@ def run_step(context):
 
     assert context, f"context must have value for {__name__}"
 
-    deprecated(context)
     found_at_least_one = False
 
     context.assert_key_has_value('tar', __name__)
 
     tar = context['tar']
-    if 'extract' in tar:
+    if tar.get('extract', None):
         found_at_least_one = True
         tar_extract(context)
 
-    if 'archive' in tar:
+    if tar.get('archive', None):
         found_at_least_one = True
         tar_archive(context)
 
@@ -176,36 +175,3 @@ def tar_extract(context):
             logger.info("Extracted '%s' to '%s'", source, destination)
 
     logger.debug("end")
-
-
-def deprecated(context):
-    """Handle deprecated context input."""
-    tar = context.get('tar', None)
-
-    # at least 1 of tarExtract or tarArchive must exist in context
-    tar_extract, tar_archive = context.keys_of_type_exist(
-        ('tarExtract', list),
-        ('tarArchive', list))
-
-    found_at_least_one = (tar_extract.key_in_context
-                          or tar_archive.key_in_context)
-
-    if tar and not found_at_least_one:
-        return
-    elif found_at_least_one:
-        tar = context['tar'] = {}
-
-    if tar_extract.key_in_context and tar_extract.is_expected_type:
-        tar['extract'] = context[tar_extract.key]
-
-    if tar_archive.key_in_context and tar_archive.is_expected_type:
-        tar['archive'] = context[tar_archive.key]
-
-    if 'tarFormat' in context:
-        tar['format'] = context['tarFormat']
-
-    logger.warning("tarExtract and tarArchive are deprecated. They will "
-                   "stop working upon the next major release. "
-                   "Use the new context key env instead. It's a lot "
-                   "better, promise! For the moment pypyr is creating the "
-                   "new env key for you under the hood.")

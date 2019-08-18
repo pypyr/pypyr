@@ -44,27 +44,7 @@ def run_step(context):
     """
     logger.debug("started")
 
-    deprecated(context)
-
     ObjectRewriterStep(__name__, 'fileFormatYaml', context).run_step(
         YamlRepresenter())
 
     logger.debug("done")
-
-
-def deprecated(context):
-    """Create new style in params from deprecated."""
-    if 'fileFormatYamlIn' in context:
-        context.assert_keys_have_values(__name__,
-                                        'fileFormatYamlIn',
-                                        'fileFormatYamlOut')
-
-        context['fileFormatYaml'] = {'in': context['fileFormatYamlIn'],
-                                     'out': context['fileFormatYamlOut']}
-
-        logger.warning("fileFormatYamlIn and fileFormatYamlOut "
-                       "are deprecated. They will stop working upon the next "
-                       "major release. Use the new context key fileFormatYaml "
-                       "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new fileFormatYaml key for you "
-                       "under the hood.")

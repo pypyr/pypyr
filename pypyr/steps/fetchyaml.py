@@ -40,8 +40,6 @@ def run_step(context):
     """
     logger.debug("started")
 
-    deprecated(context)
-
     context.assert_key_has_value(key='fetchYaml', caller=__name__)
 
     fetch_yaml_input = context.get_formatted('fetchYaml')
@@ -81,21 +79,3 @@ def run_step(context):
     logger.info("yaml file written into pypyr context. Count: %s",
                 len(payload))
     logger.debug("done")
-
-
-def deprecated(context):
-    """Create new style in params from deprecated."""
-    if 'fetchYamlPath' in context:
-        context.assert_key_has_value(key='fetchYamlPath', caller=__name__)
-
-        context['fetchYaml'] = {'path': context['fetchYamlPath']}
-
-        if 'fetchYamlKey' in context:
-            context['fetchYaml']['key'] = context.get('fetchYamlKey', None)
-
-        logger.warning("fetchYamlPath and fetchYamlKey "
-                       "are deprecated. They will stop working upon the next "
-                       "major release. Use the new context key fetchYaml "
-                       "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new fetchYaml key for you "
-                       "under the hood.")

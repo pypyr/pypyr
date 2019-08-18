@@ -50,27 +50,7 @@ def run_step(context):
 
     """
     logger.debug("started")
-    deprecated(context)
+
     StreamReplacePairsRewriterStep(__name__, 'fileReplace', context).run_step()
 
     logger.debug("done")
-
-
-def deprecated(context):
-    """Create new style in params from deprecated."""
-    if 'fileReplaceIn' in context:
-        context.assert_keys_have_values(__name__,
-                                        'fileReplaceIn',
-                                        'fileReplaceOut',
-                                        'fileReplacePairs')
-
-        context['fileReplace'] = {'in': context['fileReplaceIn'],
-                                  'out': context['fileReplaceOut'],
-                                  'replacePairs': context['fileReplacePairs']}
-
-        logger.warning("fileReplaceIn, fileReplaceOut and fileReplacePairs "
-                       "are deprecated. They will stop working upon the next "
-                       "major release. Use the new context key fileReplace "
-                       "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new fileReplace key for you "
-                       "under the hood.")

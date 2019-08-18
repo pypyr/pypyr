@@ -44,27 +44,7 @@ def run_step(context):
     """
     logger.debug("started")
 
-    deprecated(context)
-
     ObjectRewriterStep(__name__, 'fileFormatJson', context).run_step(
         JsonRepresenter())
 
     logger.debug("done")
-
-
-def deprecated(context):
-    """Create new style in params from deprecated."""
-    if 'fileFormatJsonIn' in context:
-        context.assert_keys_have_values(__name__,
-                                        'fileFormatJsonIn',
-                                        'fileFormatJsonOut')
-
-        context['fileFormatJson'] = {'in': context['fileFormatJsonIn'],
-                                     'out': context['fileFormatJsonOut']}
-
-        logger.warning("fileFormatJsonIn and fileFormatJsonOut "
-                       "are deprecated. They will stop working upon the next "
-                       "major release. Use the new context key fileFormatJson "
-                       "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new fileFormatJson key for you "
-                       "under the hood.")

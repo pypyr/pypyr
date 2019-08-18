@@ -39,26 +39,7 @@ def run_step(context):
 
     """
     logger.debug("started")
-    deprecated(context)
 
     StreamRewriterStep(__name__, 'fileFormat', context).run_step()
 
     logger.debug("done")
-
-
-def deprecated(context):
-    """Create new style in params from deprecated."""
-    if 'fileFormatIn' in context:
-        context.assert_keys_have_values(__name__,
-                                        'fileFormatIn',
-                                        'fileFormatOut')
-
-        context['fileFormat'] = {'in': context['fileFormatIn'],
-                                 'out': context['fileFormatOut']}
-
-        logger.warning("fileFormatIn and fileFormatOut "
-                       "are deprecated. They will stop working upon the next "
-                       "major release. Use the new context key fileFormat "
-                       "instead. It's a lot better, promise! For the moment "
-                       "pypyr is creating the new fileFormat key for you "
-                       "under the hood.")
