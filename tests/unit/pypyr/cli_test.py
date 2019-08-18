@@ -1,5 +1,5 @@
 """cli.py unit tests."""
-import os
+from pathlib import Path
 import pypyr.cli
 import pytest
 from unittest.mock import patch
@@ -130,7 +130,7 @@ def test_main_pass_with_defaults_context_positional():
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=['ctx string'],
-        working_dir=os.getcwd(),
+        working_dir=Path.cwd(),
         log_level=25,
         log_path=None,
         groups=None,
@@ -149,7 +149,7 @@ def test_main_pass_with_no_context():
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
-        working_dir=os.getcwd(),
+        working_dir=Path.cwd(),
         log_level=25,
         log_path=None,
         groups=None,
@@ -170,7 +170,7 @@ def test_main_pass_with_no_context_other_flags_set():
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
-        working_dir=os.getcwd(),
+        working_dir=Path.cwd(),
         log_level=11,
         log_path=None,
         groups=None,
@@ -241,7 +241,7 @@ def test_main_pass_with_logpath():
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
-        working_dir=os.getcwd(),
+        working_dir=Path.cwd(),
         log_level=25,
         log_path='tmp.log',
         groups=None,

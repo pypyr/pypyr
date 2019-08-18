@@ -3,7 +3,7 @@
 Parse command line arguments in, invoke pipelinerunner.
 """
 import argparse
-import os
+from pathlib import Path
 import pypyr.pipelinerunner
 import pypyr.version
 import signal
@@ -66,7 +66,7 @@ def get_parser():
                             'Step-Group to run on error completion of '
                             'pipeline.\n'
                             'Defaults to "on_failure"'))
-    parser.add_argument('--dir', dest='working_dir', default=os.getcwd(),
+    parser.add_argument('--dir', dest='working_dir', default=Path.cwd(),
                         help=wrap('Working directory. Use if your pipelines '
                                   'directory is elsewhere.\n'
                                   'Defaults to cwd.'))

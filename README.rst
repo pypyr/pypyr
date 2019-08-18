@@ -77,31 +77,38 @@ Check here `pypyr.steps.echo`_ to see yaml that does this.
 
 Run a pipeline
 ==============
-pypyr assumes a pipelines directory in your current working directory.
+pypyr runs the pipeline specified by the name that you pass to the cli.
+
+To make your pipelines edit easier in your favorite yaml editor, use a .yaml
+extension, but to save on typing you don't need to enter the .yaml bit at the
+command line. You can use your usual directory separators if you're running
+a pipeline in a sub-directory, like ``pypyr subdir/subsubdir/pipeline``
 
 .. code-block:: bash
 
-  # run pipelines/mypipelinename.yaml with DEBUG logging level
+  # run ./mypipelinename.yaml with DEBUG logging level
   $ pypyr mypipelinename --loglevel 10
 
-  # run pipelines/mypipelinename.yaml with INFO logging level.
+  # run ./mypipelinename.yaml with INFO logging level.
   # log is an alias for loglevel, so less typing, wooohoo!
   $ pypyr mypipelinename --log 20
 
   # If you don't specify --loglevel it defaults to 25 - NOTIFY logging level.
   $ pypyr mypipelinename
 
-  # run pipelines/mypipelinename.yaml. The 2nd argument is any arbitrary
-  # sequence of strings, known as the input context arguments.
+  # run ./mydir/mypipelinename.yaml
+  # The 2nd argument is any arbitrary sequence of strings, known as the input
+  # context arguments.
   # For this input argument to be available
   # to your pipeline you need to specify a context parser in your pipeline yaml.
-  $ pypyr mypipelinename arbitrary string here
+  $ pypyr mydir/mypipelinename arbitrary string here
 
-  # run pipelines/mypipelinename.yaml with an input context in key-value
+  # run ./mypipelinename.yaml with an input context in key-value
   # pair format. For this input to be available to your pipeline you need to
   # specify a context_parser like pypyr.parser.keyvaluepairs in your
   # pipeline yaml.
   $ pypyr mypipelinename mykey=value anotherkey=anothervalue
+
 
 Get cli help
 ============
@@ -115,6 +122,26 @@ here:
 Examples
 ========
 If you prefer reading code to reading words, https://github.com/pypyr/pypyr-example
+
+*********************************************
+Pipeline directory locations look-up sequence
+*********************************************
+pypyr looks for pipelines in a sequence where it searches different directories
+in a specific order. pypyr runs the 1st pipeline it finds in the look-up
+sequence.
+
+Working dir is your current directory, unless you use the ``--dir`` flag to
+tell pypyr something different.
+
+Assuming you run ``pypyr pipeline-name``, this is the look-up sequence:
+
+1. {working dir}/{pipeline-name}.yaml
+2. {working dir}/pipelines/{pipeline-name}.yaml
+3. {pypyr install directory}/pipelines/{pipeline-name}.yaml
+
+The last look-up is for pypyr built-in pipelines. You probably shouldn't be
+saving your own pipelines there, they might get over-written by upgrades or
+re-installs.
 
 ***************************
 Anatomy of a pypyr pipeline
