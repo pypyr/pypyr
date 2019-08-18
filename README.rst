@@ -2188,6 +2188,12 @@ Example input context:
 
   pype:
     name: 'pipeline name' # mandatory. string.
+    args: # optional. Defaults None.
+      inputkey: value
+      anotherkey: anothervalue
+    out: # optional. Defaults None.
+      parentkey: childkey
+      parentkey2: childkey2
     groups: [group1, group2] # optional. Defaults "steps".
     success: 'success group' # optional. Defaults "on_success".
     failure: 'failure group' # optional. Defaults "on_failure".
@@ -2205,6 +2211,35 @@ All inputs supports string `Substitutions`_.
 +-----------------------+------------------------------------------------------+
 | name                  | Name of child pipeline to execute. This {name}.yaml  |
 |                       | must exist in the *working directory/pipelines* dir. |
++-----------------------+------------------------------------------------------+
+| args                  | Run child pipeline with these args. These args       |
+|                       | create a fresh context for the child pipeline that   |
+|                       | contains only the key/values that you set here.      |
+|                       |                                                      |
+|                       | If you set *args*, you implicitly set                |
+|                       | *useParentContext* to False. If you explicitly set   |
+|                       | *useParentContext* to True AND you specify *args*,   |
+|                       | the args will be merged into the parent context      |
+|                       | and {formatting expressions} applied before running  |
+|                       | the child pipeline.                                  |
++-----------------------+------------------------------------------------------+
+| out                   | If the child pipeline ran with a fresh new Context,  |
+|                       | because you set *args* or you set *useParentContext* |
+|                       | to False, *out* saves values from the child pipeline |
+|                       | context back to the parent context.                  |
+|                       |                                                      |
+|                       | *out* can take 3 forms:                              |
+|                       |                                                      |
+|                       | .. code-block:: yaml                                 |
+|                       |                                                      |
+|                       |   # save key1 from child to parent                   |
+|                       |   out: 'key1'                                        |
+|                       |   # or save list of keys from child to parent        |
+|                       |   out: ['key1', 'key2']                              |
+|                       |   # or map child keys to different parent keys       |
+|                       |   out:                                               |
+|                       |     'parent-destination-key1': 'child-key1'          |
+|                       |     'parent-destination-key2': 'child-key2'          |
 +-----------------------+------------------------------------------------------+
 | groups                | Run only these step-groups in the child pipeline.    |
 |                       | Equivalent to *groups* arg on the pypyr cli.         |

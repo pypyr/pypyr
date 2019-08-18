@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
 from pypyr.errors import (
+    ContextError,
     Stop,
     KeyInContextHasNoValueError,
     KeyNotInContextError)
@@ -18,8 +19,10 @@ def test_pype_get_arguments_all():
     context = Context({
         'pype': {
             'name': 'pipe name',
+            'args': {'a': 'b'},
+            'out': 'out value',
             'pipeArg': 'argument here',
-            'useParentContext': 'parent context bool',
+            'useParentContext': False,
             'skipParse': 'skip parse',
             'raiseError': 'raise err',
             'loader': 'test loader',
@@ -30,6 +33,8 @@ def test_pype_get_arguments_all():
     })
 
     (pipeline_name,
+     args,
+     out,
      use_parent_context,
      pipe_arg,
      skip_parse,
@@ -40,7 +45,9 @@ def test_pype_get_arguments_all():
      failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
-    assert use_parent_context == 'parent context bool'
+    assert args == {'a': 'b'}
+    assert out == 'out value'
+    assert not use_parent_context
     assert skip_parse == 'skip parse'
     assert raise_error == 'raise err'
     assert loader == 'test loader'
@@ -53,8 +60,10 @@ def test_pype_get_arguments_all_with_interpolation():
     """Parse all input from context."""
     context = Context({
         'pipeName': 'pipe name',
+        'argsHere': {'a': '{pipeName}'},
+        'outHere': 'out here',
         'argHere': 'argument here',
-        'parentContext': 'parent context bool',
+        'parentContext': False,
         'skipParse': 'skip parse',
         'raiseErr': 'raise err',
         'loaderHere': 'test loader',
@@ -63,6 +72,8 @@ def test_pype_get_arguments_all_with_interpolation():
         'failure': 'fg',
         'pype': {
             'name': '{pipeName}',
+            'args': '{argsHere}',
+            'out': '{outHere}',
             'pipeArg': '{argHere}',
             'useParentContext': '{parentContext}',
             'skipParse': '{skipParse}',
@@ -75,6 +86,8 @@ def test_pype_get_arguments_all_with_interpolation():
     })
 
     (pipeline_name,
+     args,
+     out,
      use_parent_context,
      pipe_arg,
      skip_parse,
@@ -85,7 +98,9 @@ def test_pype_get_arguments_all_with_interpolation():
      failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
-    assert use_parent_context == 'parent context bool'
+    assert args == {'a': 'pipe name'}
+    assert out == 'out here'
+    assert not use_parent_context
     assert pipe_arg == 'argument here'
     assert skip_parse == 'skip parse'
     assert raise_error == 'raise err'
@@ -104,6 +119,8 @@ def test_pype_get_arguments_defaults():
     })
 
     (pipeline_name,
+     args,
+     out,
      use_parent_context,
      pipe_arg,
      skip_parse,
@@ -114,6 +131,8 @@ def test_pype_get_arguments_defaults():
      failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
+    assert not args
+    assert not out
     assert use_parent_context
     assert isinstance(use_parent_context, bool)
     assert skip_parse
@@ -136,6 +155,37 @@ def test_pype_get_arguments_missing_pype():
     assert str(err_info.value) == ("context['pype'] "
                                    "doesn't exist. It must exist for "
                                    "pypyr.steps.pype.")
+
+
+def test_pype_get_args_not_a_dict():
+    """When args not a dict raise."""
+    context = Context({'pype': {'name': 'blah', 'args': 'arb'}})
+
+    with pytest.raises(ContextError) as err_info:
+        pype.get_arguments(context)
+
+    assert str(err_info.value) == (
+        "pypyr.steps.pype 'args' in the 'pype' context item "
+        "must be a dict.")
+
+
+def test_pype_get_out_set_with_use_parent_context():
+    """When out is present useParentContext must be false."""
+    context = Context({'pype': {'name': 'blah',
+                                'out': 'arb',
+                                'useParentContext': True}})
+
+    with pytest.raises(ContextError) as err_info:
+        pype.get_arguments(context)
+
+    assert str(err_info.value) == (
+        "pypyr.steps.pype pype.out is only "
+        "relevant if useParentContext = False. If you're using the parent "
+        "context, no need to have out args since their values will already be "
+        "in context. If you're NOT using parent context and you've specified "
+        "pype.args, just leave off the useParentContext key and it'll default "
+        "to False under the hood, or set it to False yourself if you keep it "
+        "in.")
 
 
 def test_pype_get_arguments_missing_name():
@@ -172,6 +222,8 @@ def test_pype_get_arguments_group_str():
     })
 
     (pipeline_name,
+     args,
+     out,
      use_parent_context,
      pipe_arg,
      skip_parse,
@@ -182,6 +234,8 @@ def test_pype_get_arguments_group_str():
      failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
+    assert not args
+    assert not out
     assert use_parent_context
     assert isinstance(use_parent_context, bool)
     assert skip_parse
@@ -205,6 +259,8 @@ def test_pype_get_arguments_group_str_interpolate():
     })
 
     (pipeline_name,
+     args,
+     out,
      use_parent_context,
      pipe_arg,
      skip_parse,
@@ -215,6 +271,8 @@ def test_pype_get_arguments_group_str_interpolate():
      failure_group) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
+    assert not args
+    assert not out
     assert use_parent_context
     assert isinstance(use_parent_context, bool)
     assert skip_parse
@@ -225,6 +283,39 @@ def test_pype_get_arguments_group_str_interpolate():
     assert groups == ['gr']
     assert success_group is None
     assert failure_group is None
+
+
+def test_pype_get_args_no_parent_context():
+    """If args set use_parent_context should default False."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'},
+        }
+    })
+
+    (pipeline_name,
+     args,
+     out,
+     use_parent_context,
+     pipe_arg,
+     skip_parse,
+     raise_error,
+     loader,
+     groups,
+     success_group,
+     failure_group) = pype.get_arguments(context)
+
+    assert pipeline_name == 'pipe name'
+    assert args == {'a': 'b'}
+    assert not out
+    assert not use_parent_context
+    assert skip_parse
+    assert raise_error
+    assert not loader
+    assert not groups
+    assert not success_group
+    assert not failure_group
 
 # ------------------------ get_arguments --------------------------------------
 
@@ -264,6 +355,53 @@ def test_pype_use_parent_context(mock_run_pipeline):
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
+def test_pype_use_parent_context_with_args(mock_run_pipeline):
+    """pype use_parent_context True with args."""
+    context = Context({
+        'k1': 'v1',
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'},
+            'pipeArg': 'argument here',
+            'useParentContext': True,
+            'skipParse': True,
+            'raiseError': True,
+            'loader': 'test loader'
+        }
+    })
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        pype.run_step(context)
+
+    merged_context = {
+        'a': 'b',
+        'k1': 'v1',
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'},
+            'pipeArg': 'argument here',
+            'useParentContext': True,
+            'skipParse': True,
+            'raiseError': True,
+            'loader': 'test loader'
+        }
+    }
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input='argument here',
+        context=merged_context,
+        parse_input=False,
+        loader='test loader',
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, using parent context.'),
+        call('pyped pipe name.')]
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_parent_context(mock_run_pipeline):
     """pype use_parent_context False."""
     context = Context({
@@ -283,6 +421,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
+        context={},
         parse_input=False,
         loader='test loader',
         groups=None,
@@ -293,6 +432,118 @@ def test_pype_no_parent_context(mock_run_pipeline):
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
         call('pyped pipe name.')]
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+def test_pype_args(mock_run_pipeline):
+    """pype args used as context."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'}
+        }
+    })
+    context.working_dir = 'arb/dir'
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        pype.run_step(context)
+
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input=None,
+        context={'a': 'b'},
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, without parent context.'),
+        call('pyped pipe name.')]
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+def test_pype_args_with_out(mock_run_pipeline):
+    """pype args used as context with out."""
+    context = Context({
+        'parentkey': 'parentvalue',
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'},
+            'out': 'a'
+        }
+    })
+    context.working_dir = 'arb/dir'
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        pype.run_step(context)
+
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input=None,
+        context={'a': 'b'},
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, without parent context.'),
+        call('pyped pipe name.')]
+
+    assert context == {'parentkey': 'parentvalue',
+                       'a': 'b',
+                       'pype': {
+                            'name': 'pipe name',
+                            'args': {'a': 'b'},
+                            'out': 'a'
+                       }
+                       }
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+def test_pype_args_with_mapping_out(mock_run_pipeline):
+    """pype args used as context with mapping out."""
+    context = Context({
+        'parentkey': 'parentvalue',
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'av', 'b': 'bv', 'c': 'cv'},
+            'out': {'new-a': 'a',
+                    'new-c': 'c'}
+        }
+    })
+    context.working_dir = 'arb/dir'
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        pype.run_step(context)
+
+    mock_run_pipeline.assert_called_once_with(
+        pipeline_name='pipe name',
+        pipeline_context_input=None,
+        context={'a': 'av', 'b': 'bv', 'c': 'cv'},
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, without parent context.'),
+        call('pyped pipe name.')]
+
+    assert context == {'parentkey': 'parentvalue',
+                       'new-a': 'av',
+                       'new-c': 'cv',
+                       'pype': {
+                           'name': 'pipe name',
+                           'args': {'a': 'av', 'b': 'bv', 'c': 'cv'},
+                           'out': {'new-a': 'a',
+                                   'new-c': 'c'}
+                       }
+                       }
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
@@ -308,12 +559,15 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         }
     })
 
+    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input='argument here',
+        context={},
         parse_input=True,
         loader=None,
         groups=None,
@@ -339,12 +593,15 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         }
     })
 
+    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
         pipeline_context_input=None,
+        context={},
         parse_input=True,
         loader=None,
         groups=None,
@@ -370,6 +627,7 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
             'raiseError': True
         }
     })
+
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(RuntimeError) as err_info:
             pype.run_step(context)
@@ -490,3 +748,77 @@ def test_pype_set_groups(mock_run_pipeline):
         call('pyping pipe name, using parent context.'),
         call('pyped pipe name.')]
 # ------------------------ run_step --------------------------------------
+
+
+# ------------------------ write_child_context_to_parent --------------------
+
+def test_write_child_context_to_parent_wrong_type():
+    """When out not a str, list or dict raise."""
+
+    with pytest.raises(ContextError) as err_info:
+        pype.write_child_context_to_parent(3, None, None)
+
+    assert str(err_info.value) == (
+        "pypyr.steps.pype pype.out should be a string, or a list or a dict. "
+        "Instead, it's a <class 'int'>")
+
+
+def test_write_child_context_to_parent_string():
+    """Single string writes single key to parent."""
+    parent = Context({'a': 'b'})
+    child = Context({'c': 'd',
+                     'e': 'f'})
+
+    pype.write_child_context_to_parent('c', parent, child)
+
+    assert parent == {'a': 'b',
+                      'c': 'd'}
+
+
+def test_write_child_context_to_parent_list():
+    """Single string writes list of keys to parent."""
+    parent = Context({'a': 'b'})
+    child = Context({'c': 'd',
+                     'e': 'f',
+                     'g': 'h'})
+
+    pype.write_child_context_to_parent(['c', 'g'], parent, child)
+
+    assert parent == {'a': 'b',
+                      'c': 'd',
+                      'g': 'h'}
+
+
+def test_write_child_context_to_parent_dict():
+    """Single string maps keys to parent."""
+    parent = Context({'a': 'b'})
+    child = Context({'c': 'd',
+                     'e': 'f',
+                     'g': 'h'})
+
+    pype.write_child_context_to_parent({'new-c': 'c',
+                                        'new-g': 'g'},
+                                       parent,
+                                       child)
+
+    assert parent == {'a': 'b',
+                      'new-c': 'd',
+                      'new-g': 'h'}
+
+
+def test_write_child_context_to_parent_dict_with_formatting():
+    """Single string maps keys to parent and formats child."""
+    parent = Context({'a': 'b'})
+    child = Context({'c': 'd',
+                     'e': 'f',
+                     'g': 'h and {e}'})
+
+    pype.write_child_context_to_parent({'new-c': 'c',
+                                        'new-g': 'g'},
+                                       parent,
+                                       child)
+
+    assert parent == {'a': 'b',
+                      'new-c': 'd',
+                      'new-g': 'h and f'}
+# ------------------------ write_child_context_to_parent --------------------
