@@ -73,7 +73,8 @@ def set_working_directory(working_directory):
     logger.debug("starting")
 
     logger.debug("adding %s to sys.paths", working_directory)
-    sys.path.append(working_directory)
+    # sys path doesn't accept Path
+    sys.path.append(str(working_directory))
     _working_dir.cwd = working_directory
 
     logger.debug("done")

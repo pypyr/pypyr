@@ -1,44 +1,51 @@
-"""pipelinerunner.py unit tests."""
+"""fileloader.py unit tests."""
+from pathlib import Path
+from unittest.mock import mock_open, patch
 from pypyr.errors import PipelineNotFoundError
 import pypyr.pypeloaders.fileloader
 import pytest
-import os
-from unittest.mock import mock_open, patch
 
 
 # ------------------------- get_pipeline_path --------------------------------#
 
+cwd = Path.cwd()
+
 
 def test_get_pipeline_path_in_working_dir():
     """Find a pipeline in the working dir"""
-    working_dir = os.path.join(
-        os.getcwd(),
-        'tests')
+    working_dir = cwd.joinpath('tests')
+    path_found = pypyr.pypeloaders.fileloader.get_pipeline_path(
+        'testpipelinewd',
+        working_dir)
+
+    expected_path = cwd.joinpath('tests',
+                                 'testpipelinewd.yaml')
+
+    assert path_found == expected_path
+
+
+def test_get_pipeline_path_in_working_dir_pipelines():
+    """Find a pipeline in the working dir pipelines"""
+    working_dir = cwd.joinpath('tests')
     path_found = pypyr.pypeloaders.fileloader.get_pipeline_path('testpipeline',
                                                                 working_dir)
 
-    expected_path = os.path.join(
-        os.getcwd(),
-        'tests',
-        'pipelines',
-        'testpipeline.yaml')
+    expected_path = cwd.joinpath('tests',
+                                 'pipelines',
+                                 'testpipeline.yaml')
 
     assert path_found == expected_path
 
 
 def test_get_pipeline_path_in_pypyr_dir():
     """Find a pipeline in the pypyr install dir"""
-    working_dir = os.path.join(
-        os.getcwd(),
-        'tests')
+    working_dir = cwd.joinpath('tests')
     path_found = pypyr.pypeloaders.fileloader.get_pipeline_path('donothing',
                                                                 working_dir)
 
-    expected_path = os.path.join(
-        os.getcwd(),
-        'pypyr',
-        'pipelines',
-        'donothing.yaml')
+    expected_path = cwd.joinpath('pypyr',
+                                 'pipelines',
+                                 'donothing.yaml')
 
     assert path_found == expected_path
 
@@ -47,19 +54,16 @@ def test_get_pipeline_path_raises():
     """Failure to find pipeline should raise PipelineNotFoundError"""
     with pytest.raises(PipelineNotFoundError) as err:
         pypyr.pypeloaders.fileloader.get_pipeline_path('unlikelypipeherexyz',
-                                                       os.getcwd())
+                                                       cwd)
 
-    current_path = os.path.join(
-        os.getcwd(),
-        'pipelines')
+    current_path = cwd.joinpath('pipelines')
 
-    pypyr_path = os.path.join(
-        os.getcwd(),
-        'pypyr',
-        'pipelines')
+    pypyr_path = cwd.joinpath('pypyr',
+                              'pipelines')
 
-    expected_msg = (f'unlikelypipeherexyz.yaml not found in either '
-                    f'{current_path} or {pypyr_path}')
+    expected_msg = (
+        f'unlikelypipeherexyz.yaml not found in any of the following:\n'
+        f'{cwd}\n{current_path}\n{pypyr_path}')
 
     assert str(err.value) == f"{expected_msg}"
 

@@ -1,8 +1,8 @@
 import logging
+from pathlib import Path
 from pypyr.errors import PipelineNotFoundError
 import pypyr.moduleloader
 import pypyr.yaml
-import os
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -30,32 +30,41 @@ def get_pipeline_path(pipeline_name, working_directory):
     # look for name.yaml in the pipelines/ sub-directory
     logger.debug("current directory is %s", working_directory)
 
-    # looking for {cwd}/pipelines/[pipeline_name].yaml
-    pipeline_path = os.path.abspath(os.path.join(
-        working_directory,
-        'pipelines',
-        pipeline_name + '.yaml'))
+    cwd = Path(working_directory)
 
-    if os.path.isfile(pipeline_path):
+    # look for cwd/{pipeline_name}.yaml
+    pipeline_path = cwd.joinpath(f'{pipeline_name}.yaml')
+
+    if pipeline_path.is_file():
         logger.debug("Found %s", pipeline_path)
     else:
-        logger.debug("%s not found in current "
-                     "directory/pipelines folder. Looking in pypyr install "
-                     "directory instead.", pipeline_name)
-        pypyr_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        logger.debug("pypyr installation directory is: %s", pypyr_dir)
-        pipeline_path = os.path.abspath(os.path.join(
-            pypyr_dir,
-            'pipelines',
-            pipeline_name + '.yaml'))
+        logger.debug("%s not found in working directory. "
+                     "Looking in '{working dir}/pipelines' instead.",
+                     pipeline_name)
+        # looking for {cwd}/pipelines/[pipeline_name].yaml
+        pipeline_path = cwd.joinpath('pipelines',
+                                     f'{pipeline_name}.yaml').resolve()
 
-        if os.path.isfile(pipeline_path):
+        if pipeline_path.is_file():
             logger.debug("Found %s", pipeline_path)
         else:
-            raise PipelineNotFoundError(f"{pipeline_name}.yaml not found in "
-                                        "either "
-                                        f"{working_directory}/pipelines "
-                                        f"or {pypyr_dir}/pipelines")
+            logger.debug("%s not found in working directory/pipelines folder. "
+                         "Looking in pypyr install directory instead.",
+                         pipeline_name)
+            pypyr_dir = Path(__file__).resolve().parents[1]
+            logger.debug("pypyr installation directory is: %s", pypyr_dir)
+            pipeline_path = pypyr_dir.joinpath('pipelines',
+                                               f'{pipeline_name}.yaml')
+
+            if pipeline_path.is_file():
+                logger.debug("Found %s", pipeline_path)
+            else:
+                raise PipelineNotFoundError(
+                    f"{pipeline_name}.yaml not found in any of the "
+                    "following:\n"
+                    f"{working_directory}\n"
+                    f"{working_directory}/pipelines\n"
+                    f"{pypyr_dir}/pipelines")
 
     logger.debug("done")
     return pipeline_path
@@ -66,13 +75,13 @@ def get_pipeline_definition(pipeline_name, working_dir):
 
     Parses pipeline yaml and returns dictionary representing the pipeline.
 
-    pipeline_name.yaml should be in the working_dir/pipelines/ directory.
+    pipeline_name.yaml should be in the working_dir/ directory.
 
     Args:
         pipeline_name: string. Name of pipeline. This will be the file-name of
                        the pipeline - i.e {pipeline_name}.yaml
         working_dir: path. Start looking in
-                           ./working_dir/pipelines/pipeline_name.yaml
+                           ./working_dir/pipeline_name.yaml
 
     Returns:
         dict describing the pipeline, parsed from the pipeline yaml.
@@ -98,7 +107,7 @@ def get_pipeline_definition(pipeline_name, working_dir):
     except FileNotFoundError:
         logger.error(
             "The pipeline doesn't exist. Looking for a file here: "
-            "%s.yaml in the /pipelines sub directory.", pipeline_name)
+            "%s", pipeline_path)
         raise
 
     logger.debug("pipeline definition loaded")
