@@ -2,7 +2,7 @@
 pypyr cli pipeline runner
 #########################
 
-.. image:: https://cdn.345.systems/wp-content/uploads/2017/03/pypyr-logo-small.png
+.. image:: https://pypyr.io/images/pypyr-logo-small.png
     :alt: pypyr-logo
     :align: left
 
