@@ -140,8 +140,8 @@ Assuming you run ``pypyr pipeline-name``, this is the look-up sequence:
 3. {pypyr install directory}/pipelines/{pipeline-name}.yaml
 
 The last look-up is for pypyr built-in pipelines. You probably shouldn't be
-saving your own pipelines there, they might get over-written by upgrades or
-re-installs.
+saving your own pipelines there, they might get over-written or wiped by
+upgrades or re-installs.
 
 ***************************
 Anatomy of a pypyr pipeline
@@ -150,12 +150,13 @@ Pipeline yaml structure
 =======================
 A pipeline is a .yaml file. pypyr uses YAML version 1.2.
 
-Save pipelines to a `pipelines` directory in your working directory.
+Save pipelines wherever you please. To run a pipeline, execute
+``pypyr pipelinename`` from the directory where you saved ``pipelinename.yaml``
 
 .. code-block:: yaml
 
   # This is an example showing the anatomy of a pypyr pipeline
-  # A pipeline should be saved as {working dir}/pipelines/mypipelinename.yaml.
+  # A pipeline should be saved as {working dir}/mypipelinename.yaml.
   # Run the pipeline from {working dir} like this: pypyr mypipelinename
 
   # optional
@@ -183,6 +184,103 @@ Save pipelines to a `pipelines` directory in your working directory.
   on_failure:
     - my.failure.handler.step
     - my.failure.handler.notifier
+
+
+Custom step groups
+==================
+pypyr looks for 3 different step groups on a default run:
+
+- steps
+- on_success
+- on_failure
+
+.. code-block:: yaml
+
+  # the default pypyr step-groups
+  steps: # 'steps' is the default step-group that runs
+    - steps.step1 # will run ./steps/step1.py
+    - arb.step2 # will run ./arb/step2.py
+
+  on_success: # on_success executes when the pipeline completes successfully
+    - success_step # will run ./success_step.py
+
+  on_failure: # on_failure executes whenever pipeline processing hits an error
+    - steps.failure_step # will run ./steps/failure_step.py
+
+You don't have to stick to these default step-groups, though. You can specify
+your own step-groups, or mix in your own step-groups with the defaults.
+
+.. code-block:: yaml
+
+  # ./step-groups-example.yaml
+  sg1:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg1.1
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg1.2
+  sg2:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg2.1
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg2.2
+  sg3:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg3.1
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg3.2
+  sg4:
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg4.1
+    - name: pypyr.steps.echo
+      in:
+        echoMe: sg4.2
+
+You can use the ``--groups`` switch to specify which groups you want to run and
+in what order:
+
+``pypyr step-groups-example --groups sg2 sg1 sg3``
+
+If you don't specify ``--groups`` pypyr will just look for the standard
+*steps* group as per usual. You can still call other step-groups from the
+default *steps* group, so you could think of *steps* a bit like the ``main()``
+entrypoint in traditional programming.
+
+Control-of-Flow
+---------------
+You can control the flow of pypyr pipeline execution between step-groups with
+the following handy steps:
+
+- `pypyr.steps.call`_
+- `pypyr.steps.jump`_
+- `pypyr.steps.stopstepgroup`_
+- `pypyr.steps.stoppipeline`_
+- `pypyr.steps.stop`_
+
+You can call other pipelines from within a pipeline with:
+
+- `pypyr.steps.pype`_
+
+On top of this, you can control which individual steps should run or not using
+the conditional `Step decorators`_ :
+
+- ``run``
+- ``skip``
+
+Looping happens on the step-level, using the following `Step decorators`_ :
+
+- ``while``
+- ``foreach``
+
+You can set a ``while`` or ``foreach`` loop on any given step, including on a
+`pypyr.steps.call`_ step or a `pypyr.steps.pype`_ step, which lets you call
+another step-group or pipeline repeatedly in a loop.
 
 Built-in pipelines
 ==================
@@ -2236,7 +2334,7 @@ All inputs supports string `Substitutions`_.
 | **pype property**     | **description**                                      |
 +-----------------------+------------------------------------------------------+
 | name                  | Name of child pipeline to execute. This {name}.yaml  |
-|                       | must exist in the *working directory/pipelines* dir. |
+|                       | must exist in the *working directory* dir.           |
 +-----------------------+------------------------------------------------------+
 | args                  | Run child pipeline with these args. These args       |
 |                       | create a fresh context for the child pipeline that   |
