@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 def get_pipeline_path(pipeline_name, working_directory):
     """Look for the pipeline in the various places it could be.
 
-    First checks the cwd. Then checks pypyr/pipelines dir.
+    First checks the cwd
+    Then check cwd/pipelines
+    Then checks {pypyr install dir}/pipelines dir.
 
     Args:
         pipeline_name: string. Name of pipeline to find
@@ -75,7 +77,8 @@ def get_pipeline_definition(pipeline_name, working_dir):
 
     Parses pipeline yaml and returns dictionary representing the pipeline.
 
-    pipeline_name.yaml should be in the working_dir/ directory.
+    pipeline_name.yaml should be in the working_dir/ directory, or in the
+    fileloader directory look-up sequence.
 
     Args:
         pipeline_name: string. Name of pipeline. This will be the file-name of
