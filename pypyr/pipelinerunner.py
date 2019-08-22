@@ -128,7 +128,7 @@ def prepare_context(pipeline, context_in_args, context):
 
     Args:
         pipeline: dict. Dictionary representing the pipeline.
-        context_in_string: string. Argument string used to initialize context.
+        context_in_args: list of str. Args used to initialize context.
         context: pypyr.context.Context. Merge any new context generated from
                  context_in_string into this context instance.
 
@@ -163,7 +163,7 @@ def load_and_run_pipeline(pipeline_name,
     instead for your 1st pipeline if there are pipelines calling pipelines.
 
     By default pypyr uses file loader. This means that pipeline_name.yaml
-    should be in the working_dir/pipelines/ directory.
+    should be in the working_dir/ directory if you're using fileloader.
 
     Look for pipelines and modules in the working_dir. Set the working_dir by
     calling pypyr.moduleloader.set_working_directory('/my/dir')

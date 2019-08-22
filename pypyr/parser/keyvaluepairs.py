@@ -1,6 +1,6 @@
 """Context parser that returns a dictionary from a key-value pair string.
 
-Takes a comma delimited key=value pair string and returns a dictionary where
+Takes list of key=value pair string and returns a dictionary where
 each pair becomes a dictionary element.
 
 Don't have spaces in your values unless your really mean it. "k1=v1 ' k2'=v2"
