@@ -666,8 +666,8 @@ class Context(dict):
                         current[k] = (
                             current[k] | self.get_formatted_iterable(v))
                     else:
-                        # at this point it's not mergable nor a known iterable
-                        current[k] = v
+                        # at this point it's not mergable
+                        current[k] = self.get_formatted_iterable(v)
                 else:
                     # at this point it's not mergable, nor in context
                     current[k] = self.get_formatted_iterable(v)

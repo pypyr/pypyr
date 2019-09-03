@@ -1410,14 +1410,19 @@ def test_merge_pass_nested_with_substitutions():
         'key3': {
             'k31': 'value31',
             'k32': 'value32',
-        }})
+        },
+        'key5': False
+    })
 
     add_me = {
         'key2': 'value4',
         'key3': {
             'k33': 'value33'
         },
-        'key4': '444_{key1}_444'
+        'key4': '444_{key1}_444',
+        'key5': {
+            'k51': PyString('key1')
+        }
     }
 
     context.merge(add_me)
@@ -1430,7 +1435,10 @@ def test_merge_pass_nested_with_substitutions():
             'k32': 'value32',
             'k33': 'value33'
         },
-        'key4': '444_value1_444'
+        'key4': '444_value1_444',
+        'key5': {
+            'k51': 'value1'
+        }
     }
 
 
