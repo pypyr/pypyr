@@ -13,7 +13,7 @@ debug:
     format: Boolean, defaults False. Applies formatting expressions on output.
 
 """
-import json
+import pprint
 import logging
 
 # logger means the log level will be set correctly
@@ -59,6 +59,8 @@ def run_step(context):
     else:
         payload = context
 
-    logger.info('\n%s', json.dumps(payload, indent=2, ensure_ascii=False))
+    if logger.isEnabledFor(logging.INFO):
+        # call pformat only if logging is enabled
+        logger.info('\n%s', pprint.pformat(payload))
 
     logger.debug("done")
