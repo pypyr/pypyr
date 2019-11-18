@@ -41,18 +41,26 @@ def get_module(module_abs_import):
         logger.debug("done")
         return imported_module
     except ModuleNotFoundError as err:
-        extended_msg = (f"{module_abs_import}.py should be in your working "
-                        "dir or it should be installed to the python path."
-                        "\nIf you have 'package.sub.mod' your current working "
-                        "dir should contain ./package/sub/mod.py\n"
-                        "If you specified 'mymodulename', your current "
-                        "working dir should contain ./mymodulename.py\n"
-                        "If the module is not in your current working dir, it "
-                        "must exist in your current python path - so you "
-                        "should have run pip install or setup.py")
-        logger.error("The module doesn't exist. "
-                     "Looking for a file like this: %s",
-                     module_abs_import)
+        if err.name != module_abs_import:
+            extended_msg = (
+                f'error importing module {err.name} in {module_abs_import}')
+            logger.error("Couldn't import module %s in this module: %s",
+                         err.name,
+                         module_abs_import)
+        else:
+            extended_msg = (
+                f"{module_abs_import}.py should be in your working "
+                "dir or it should be installed to the python path."
+                "\nIf you have 'package.sub.mod' your current working "
+                "dir should contain ./package/sub/mod.py\n"
+                "If you specified 'mymodulename', your current "
+                "working dir should contain ./mymodulename.py\n"
+                "If the module is not in your current working dir, it "
+                "must exist in your current python path - so you "
+                "should have run pip install or setup.py")
+            logger.error("The module doesn't exist. "
+                         "Looking for a file like this: %s",
+                         module_abs_import)
         raise PyModuleNotFoundError(extended_msg) from err
 
 
