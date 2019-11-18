@@ -1,9 +1,9 @@
 """moduleloader.py unit tests."""
+from pathlib import Path
+import pytest
+import sys
 from pypyr.errors import PyModuleNotFoundError
 import pypyr.moduleloader
-import pytest
-import os
-import sys
 
 
 # ------------------------- get_module ---------------------------------------#
@@ -11,8 +11,19 @@ import sys
 
 def test_get_module_raises():
     """get_module ModuleNotFoundError on module not found."""
-    with pytest.raises(PyModuleNotFoundError):
+    with pytest.raises(PyModuleNotFoundError) as err:
         pypyr.moduleloader.get_module('unlikelyblahmodulenameherexxssz')
+
+    assert str(err.value) == (
+        "unlikelyblahmodulenameherexxssz.py should be in your working "
+        "dir or it should be installed to the python path."
+        "\nIf you have 'package.sub.mod' your current working "
+        "dir should contain ./package/sub/mod.py\n"
+        "If you specified 'mymodulename', your current "
+        "working dir should contain ./mymodulename.py\n"
+        "If the module is not in your current working dir, it "
+        "must exist in your current python path - so you "
+        "should have run pip install or setup.py")
 
 
 def test_get_module_raises_compatible_error():
@@ -21,27 +32,59 @@ def test_get_module_raises_compatible_error():
         pypyr.moduleloader.get_module('unlikelyblahmodulenameherexxssz')
 
 
+def test_get_module_raises_friendly_on_package_import():
+    """get_module should not obscure missing module in existing package."""
+    p = Path.cwd().joinpath('tests')
+    pypyr.moduleloader.set_working_directory(p)
+
+    with pytest.raises(PyModuleNotFoundError) as err:
+        pypyr.moduleloader.get_module('arbpack.idontexist')
+
+    assert str(err.value) == (
+        "arbpack.idontexist.py should be in your working "
+        "dir or it should be installed to the python path."
+        "\nIf you have 'package.sub.mod' your current working "
+        "dir should contain ./package/sub/mod.py\n"
+        "If you specified 'mymodulename', your current "
+        "working dir should contain ./mymodulename.py\n"
+        "If the module is not in your current working dir, it "
+        "must exist in your current python path - so you "
+        "should have run pip install or setup.py")
+
+    sys.path.remove(str(p))
+
+
+def test_get_module_raises_on_inner_import():
+    """get_module should not hide failing import statements in imported mod."""
+    p = Path.cwd().joinpath('tests')
+    pypyr.moduleloader.set_working_directory(p)
+
+    with pytest.raises(PyModuleNotFoundError) as err:
+        pypyr.moduleloader.get_module('arbpack.arbinvalidimportmod')
+
+    assert str(err.value) == (
+        'error importing module blahblah in arbpack.arbinvalidimportmod')
+
+    sys.path.remove(str(p))
+
+
 def test_get_module_pass():
     """get_module finds a module in cwd"""
-    p = os.path.join(
-        os.getcwd(),
-        'tests',
-        'testfiles')
+    p = Path.cwd().joinpath('tests', 'testfiles')
     pypyr.moduleloader.set_working_directory(p)
+
     arb_module = pypyr.moduleloader.get_module('arb')
 
     assert arb_module
     assert arb_module.__name__ == 'arb'
     assert hasattr(arb_module, 'arb_attribute')
 
-    sys.path.remove(p)
+    sys.path.remove(str(p))
 
 
 def test_get_module_in_package_pass():
     """get_module finds a module in a package in cwd using dot notation."""
-    p = os.path.join(
-        os.getcwd(),
-        'tests')
+    p = Path.cwd().joinpath('tests')
     pypyr.moduleloader.set_working_directory(p)
     arb_module = pypyr.moduleloader.get_module('arbpack.arbmod')
 
@@ -49,7 +92,7 @@ def test_get_module_in_package_pass():
     assert arb_module.__name__ == 'arbpack.arbmod'
     assert hasattr(arb_module, 'arbmod_attribute')
 
-    sys.path.remove(p)
+    sys.path.remove(str(p))
 
 # ------------------------- get_module ---------------------------------------#
 
