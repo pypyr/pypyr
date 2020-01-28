@@ -4,21 +4,20 @@ language: python
 python:
  - "3.6"
  - "3.7"
+ - "3.8"
 
 build:
   ci:
       # Shippable uses special folders for test and cov reports. Dist is for twine.
-    - mkdir -p dist
-    - mkdir -p shippable/testresults
-    - mkdir -p shippable/codecoverage
+    - mkdir -p dist shippable/testresults shippable/codecoverage
     - pip install tox
     # tox ci flakes, tests and covs.
     - tox -e ci -- --cov=pypyr --cov-report xml:shippable/codecoverage/coverage.xml --junitxml=shippable/testresults/junitresults.xml tests
     # all checks cleared on master and this is a merge commit (branch is protected and not in the midst of a PR), tag for release.
-    - if [ "$IS_PULL_REQUEST" == false ] && [ "$SHIPPABLE_PYTHON_VERSION" == "3.7" ] && [ "$BRANCH" == "master" ] ; then ./ops/shippable-tag-release.sh; fi
+    - if [ "$IS_PULL_REQUEST" == false ] && [ "$SHIPPABLE_PYTHON_VERSION" == "3.8" ] && [ "$BRANCH" == "master" ] ; then ./ops/shippable-tag-release.sh; fi
 
   on_success:
-    - if [ "$IS_RELEASE" == "true" ] && [ "$SHIPPABLE_PYTHON_VERSION" == "3.7" ] ; then ./ops/shippable-pypi-release.sh; fi;
+    - if [ "$IS_RELEASE" == "true" ] && [ "$SHIPPABLE_PYTHON_VERSION" == "3.8" ] ; then ./ops/shippable-pypi-release.sh; fi;
 
 integrations:
   key:
