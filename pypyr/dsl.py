@@ -627,6 +627,9 @@ class RetryDecorator:
                     # but would lose the err info if not, so lesser of 2 evils.
                     raise
 
+            if isinstance(ex_info, HandledError):
+                ex_info = ex_info.__cause__
+
             if self.stop_on or self.retry_on:
                 error_name = get_error_name(ex_info)
                 if self.stop_on:
