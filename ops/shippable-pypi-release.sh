@@ -17,10 +17,10 @@ TAG_NAME="v${NEW_VERSION}"
 pip uninstall -y pypyr
 
 # Build wheel in dist/
-python setup.py bdist_wheel
+python setup.py bdist_wheel sdist
 
-# Deploy wheel
-twine upload --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD} dist/pypyr-${NEW_VERSION}-py3-none-any.whl
+# Deploy wheel & source tarball
+twine upload --username ${PYPI_USERNAME} --password ${PYPI_PASSWORD} dist/pypyr-${NEW_VERSION}*
 
 echo "----------Done with twine upload-------------------------------------"
 
