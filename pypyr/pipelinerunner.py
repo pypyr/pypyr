@@ -73,8 +73,6 @@ def main(
     pipeline_name,
     pipeline_context_input,
     working_dir,
-    log_level,
-    log_path,
     groups=None,
     success_group=None,
     failure_group=None
@@ -85,6 +83,15 @@ def main(
     from your own code. This function does some one-off 1st time initialization
     before running the actual pipeline.
 
+    If you're invoking pypyr from your own application via the API,
+    it's your responsibility to set up and configure logging. If you just want
+    to replicate the log handlers & formatters that the pypyr cli uses, you can
+    call pypyr.log.logger.set_root_logger() before invoking this function
+    (pipelinerunner.main())
+
+    Be aware that if you invoke this method, pypyr adds a NOTIFY - 25 custom
+    log-level and notify() function to logging.
+
     pipeline_name.yaml should be in the working_dir/pipelines/ directory.
 
     Args:
@@ -92,8 +99,6 @@ def main(
         pipeline_context_input: string. Initialize the pypyr context with this
                                 string.
         working_dir: path. looks for ./pipelines and modules in this directory.
-        log_level: int. Standard python log level enumerated value.
-        log_path: os.path. Append log to this path.
         groups: list of str. step-group names to run in pipeline.
         success_group: str. step-group name to run on success completion.
         failure_group: str. step-group name to run on pipeline failure.
@@ -102,7 +107,7 @@ def main(
         None
 
     """
-    pypyr.log.logger.set_root_logger(log_level, log_path)
+    pypyr.log.logger.set_up_notify_log_level()
 
     logger.debug("starting pypyr")
 

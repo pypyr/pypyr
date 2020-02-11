@@ -14,7 +14,5 @@ def test_pipeline_runner_main():
         'tests')
     pypyr.pipelinerunner.main(pipeline_name='smoke',
                               pipeline_context_input=None,
-                              working_dir=working_dir,
-                              log_level=50,
-                              log_path=None)
+                              working_dir=working_dir)
 # ------------------------- integration---------------------------------------#
