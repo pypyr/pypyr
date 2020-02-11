@@ -95,23 +95,24 @@ def test_get_parser_context_signature_wrong(mocked_moduleloader):
 # ------------------------- main ---------------------------------------------#
 
 
+@patch('pypyr.log.logger.set_up_notify_log_level')
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 @patch('pypyr.moduleloader.set_working_directory')
 @patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
 def test_main_pass(mocked_get_mocked_work_dir,
                    mocked_set_work_dir,
-                   mocked_run_pipeline):
+                   mocked_run_pipeline,
+                   mocked_set_up_notify):
     """main initializes and runs pipelines."""
     pipeline_cache.clear()
     pypyr.pipelinerunner.main(pipeline_name='arb pipe',
                               pipeline_context_input='arb context input',
                               working_dir='arb/dir',
-                              log_level=77,
-                              log_path=None,
                               groups=['g'],
                               success_group='sg',
                               failure_group='fg')
 
+    mocked_set_up_notify.assert_called_once()
     mocked_set_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
@@ -130,9 +131,7 @@ def test_main_fail(mocked_work_dir, mocked_run_pipeline):
     with pytest.raises(ContextError) as err_info:
         pypyr.pipelinerunner.main(pipeline_name='arb pipe',
                                   pipeline_context_input='arb context input',
-                                  working_dir='arb/dir',
-                                  log_level=77,
-                                  log_path=None)
+                                  working_dir='arb/dir')
 
     assert str(err_info.value) == "arb"
 
@@ -864,8 +863,6 @@ def test_stop_all(mock_get_pipe_def, mock_step_cache):
         pipeline_name='arb',
         pipeline_context_input='arb context input',
         working_dir='/arb',
-        log_level=10,
-        log_path=None,
         groups=['sg2', 'sg3', 'sg4', 'sg1'],
         success_group='sg5',
         failure_group=None
@@ -934,8 +931,6 @@ def test_stop_all_while(mock_get_pipe_def, mock_step_cache):
         pipeline_name='arb',
         pipeline_context_input='arb context input',
         working_dir='/arb',
-        log_level=10,
-        log_path=None,
         groups=['sg2', 'sg3', 'sg4', 'sg1'],
         success_group='sg5',
         failure_group=None
@@ -1010,8 +1005,6 @@ def test_stop_all_for(mock_get_pipe_def, mock_step_cache):
         pipeline_name='arb',
         pipeline_context_input='arb context input',
         working_dir='/arb',
-        log_level=10,
-        log_path=None,
         groups=['sg2', 'sg3', 'sg4', 'sg1'],
         success_group='sg5',
         failure_group=None

@@ -25,18 +25,20 @@ def test_main_pass_with_sysargv_context_positional():
 
     with patch('sys.argv', arg_list):
         with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-            pypyr.cli.main()
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
 
-        mock_pipeline_main.assert_called_once_with(
-            pipeline_name='blah',
-            pipeline_context_input=['ctx string'],
-            working_dir='dir here',
-            log_level=50,
-            log_path=None,
-            groups=['group1', 'group 2', 'group3'],
-            success_group='sg',
-            failure_group='f g'
-        )
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=['group1', 'group 2', 'group3'],
+        success_group='sg',
+        failure_group='f g'
+    )
 
 
 def test_main_pass_with_sysargv_context_positional_log_alias():
@@ -51,18 +53,20 @@ def test_main_pass_with_sysargv_context_positional_log_alias():
 
     with patch('sys.argv', arg_list):
         with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-            pypyr.cli.main()
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
 
-        mock_pipeline_main.assert_called_once_with(
-            pipeline_name='blah',
-            pipeline_context_input=['ctx string'],
-            working_dir='dir here',
-            log_level=50,
-            log_path=None,
-            groups=None,
-            success_group=None,
-            failure_group=None
-        )
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
 
 
 def test_main_pass_with_sysargv_context_positional_abbreviations():
@@ -79,18 +83,20 @@ def test_main_pass_with_sysargv_context_positional_abbreviations():
 
     with patch('sys.argv', arg_list):
         with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-            pypyr.cli.main()
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
 
-        mock_pipeline_main.assert_called_once_with(
-            pipeline_name='blah',
-            pipeline_context_input=['ctx string'],
-            working_dir='dir here',
-            log_level=50,
-            log_path='/blah',
-            groups=None,
-            success_group=None,
-            failure_group=None
-        )
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path='/blah')
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
 
 
 def test_main_pass_with_sysargv_context_positional_flags_last():
@@ -105,34 +111,38 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
 
     with patch('sys.argv', arg_list):
         with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-            pypyr.cli.main()
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
 
-        mock_pipeline_main.assert_called_once_with(
-            pipeline_name='blah',
-            pipeline_context_input=['ctx string'],
-            working_dir='dir here',
-            log_level=50,
-            log_path=None,
-            groups=None,
-            success_group=None,
-            failure_group=None
-        )
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
 
 
 def test_main_pass_with_defaults_context_positional():
-    """Default values assigned - log 20 and cwd"""
+    """Default values assigned - log 25 and cwd"""
     arg_list = ['blah',
                 'ctx string']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-        pypyr.cli.main(arg_list)
+        with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+            pypyr.cli.main(arg_list)
+
+    mock_logger.assert_called_once_with(log_level=25,
+                                        log_path=None)
 
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=['ctx string'],
         working_dir=Path.cwd(),
-        log_level=25,
-        log_path=None,
         groups=None,
         success_group=None,
         failure_group=None
@@ -144,14 +154,16 @@ def test_main_pass_with_no_context():
     arg_list = ['blah']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-        pypyr.cli.main(arg_list)
+        with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+            pypyr.cli.main(arg_list)
+
+    mock_logger.assert_called_once_with(log_level=25,
+                                        log_path=None)
 
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
         working_dir=Path.cwd(),
-        log_level=25,
-        log_path=None,
         groups=None,
         success_group=None,
         failure_group=None
@@ -165,14 +177,16 @@ def test_main_pass_with_no_context_other_flags_set():
                 '11']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-        pypyr.cli.main(arg_list)
+        with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+            pypyr.cli.main(arg_list)
+
+    mock_logger.assert_called_once_with(log_level=11,
+                                        log_path=None)
 
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
         working_dir=Path.cwd(),
-        log_level=11,
-        log_path=None,
         groups=None,
         success_group=None,
         failure_group=None
@@ -236,14 +250,15 @@ def test_main_pass_with_logpath():
                 'tmp.log']
 
     with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
-        pypyr.cli.main(arg_list)
+        with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+            pypyr.cli.main(arg_list)
 
+    mock_logger.assert_called_once_with(log_level=25,
+                                        log_path='tmp.log',)
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=[],
         working_dir=Path.cwd(),
-        log_level=25,
-        log_path='tmp.log',
         groups=None,
         success_group=None,
         failure_group=None

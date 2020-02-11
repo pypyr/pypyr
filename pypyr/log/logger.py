@@ -36,12 +36,17 @@ def set_up_notify_log_level():
     with description.
     """
 
+    # could (should?) be checking hasattr like so:
+    # hasattr(logging, levelName):
+    # hasattr(logging, methodName):
+    # hasattr(logging.getLoggerClass(), methodName):
+    # but this extra check is arguably *more* overhead than just assigning it?
     logging.addLevelName(NOTIFY, "NOTIFY")
     logging.NOTIFY = NOTIFY
     logging.getLoggerClass().notify = notify
 
 
-def set_root_logger(root_log_level, log_path=None):
+def set_root_logger(log_level, log_path=None):
     """Set the root logger 'pypyr'. Do this before you do anything else.
 
     Run once and only once at initialization.
@@ -54,10 +59,9 @@ def set_root_logger(root_log_level, log_path=None):
         file_handler = logging.FileHandler(log_path)
         handlers.append(file_handler)
 
-    set_logging_config(root_log_level, handlers=handlers)
-    set_up_notify_log_level()
+    set_logging_config(log_level, handlers=handlers)
 
     root_logger = logging.getLogger("pypyr")
     root_logger.debug(
         "Root logger %s configured with level %s",
-        root_logger.name, root_log_level)
+        root_logger.name, log_level)

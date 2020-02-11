@@ -4,6 +4,7 @@ Parse command line arguments in, invoke pipelinerunner.
 """
 import argparse
 from pathlib import Path
+import pypyr.log.logger
 import pypyr.pipelinerunner
 import pypyr.version
 import signal
@@ -103,12 +104,13 @@ def main(args=None):
     parsed_args = get_args(args)
 
     try:
+        pypyr.log.logger.set_root_logger(log_level=parsed_args.log_level,
+                                         log_path=parsed_args.log_path)
+
         return pypyr.pipelinerunner.main(
             pipeline_name=parsed_args.pipeline_name,
             pipeline_context_input=parsed_args.context_args,
             working_dir=parsed_args.working_dir,
-            log_level=parsed_args.log_level,
-            log_path=parsed_args.log_path,
             groups=parsed_args.groups,
             success_group=parsed_args.success_group,
             failure_group=parsed_args.failure_group)

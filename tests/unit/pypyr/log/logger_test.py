@@ -42,11 +42,11 @@ def test_logger_with_file_and_console_handler():
 
 
 def test_notice_log_level_available():
-    log_path = None
-    with patch.object(logging, 'basicConfig') as mock_logger:
-        pypyr.log.logger.set_root_logger(10, log_path)
+    """Notify log level added."""
+    # actually redundant, coz ./conftest.py actually already calls
+    # set_up_notify_log_level. Might as well test re-entrancy then, thus:
+    pypyr.log.logger.set_up_notify_log_level()
 
-    mock_logger.assert_called_once()
     assert logging.INFO < logging.NOTIFY < logging.WARNING
 
     logger = logging.getLogger('pypyr')
