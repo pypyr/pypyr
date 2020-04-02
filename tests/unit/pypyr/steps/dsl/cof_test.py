@@ -77,6 +77,7 @@ def test_cof_str_input():
     assert cof.groups == ['b']
     assert not cof.success_group
     assert not cof.failure_group
+    assert cof.original_config == ('key', 'b')
 
 
 def test_cof_list_input():
@@ -92,6 +93,33 @@ def test_cof_list_input():
     assert cof.groups == ['b', 'c']
     assert not cof.success_group
     assert not cof.failure_group
+    assert cof.original_config == ('key', ['b', 'c'])
+
+
+def test_cof_mutating_original_config():
+    """Original config abides even when context mutates."""
+    input_list = ['b', 'c']
+    context = Context({'key': input_list})
+    with pytest.raises(Call) as err:
+        cof_func(name='blah',
+                 instruction_type=Call,
+                 context=context,
+                 context_key='key')
+
+    cof = err.value
+    assert isinstance(cof, Call)
+    assert cof.groups == ['b', 'c']
+    assert not cof.success_group
+    assert not cof.failure_group
+
+    # mutate the list instance
+    input_list[0] = 'changed'
+    assert context['key'][0] == 'changed'
+
+    # new list instance creates new object, original remains intact
+    input_list = ['d', 'e']
+    assert context['key'][0] == 'changed'
+    assert cof.original_config == ('key', ['changed', 'c'])
 
 
 def test_cof_dict_with_str_input():
@@ -107,6 +135,7 @@ def test_cof_dict_with_str_input():
     assert cof.groups == ['b']
     assert not cof.success_group
     assert not cof.failure_group
+    assert cof.original_config == ('key', {'groups': 'b'})
 
 
 def test_cof_dict_with_list_input():
@@ -122,6 +151,7 @@ def test_cof_dict_with_list_input():
     assert cof.groups == ['b', 'c']
     assert not cof.success_group
     assert not cof.failure_group
+    assert cof.original_config == ('key', {'groups': ['b', 'c']})
 
 
 def test_cof_dict_with_all_args():
@@ -140,6 +170,9 @@ def test_cof_dict_with_all_args():
     assert cof.groups == ['b', 'c']
     assert cof.success_group == 'sg'
     assert cof.failure_group == 'fg'
+    assert cof.original_config == ('key', {'groups': ['b', 'c'],
+                                           'success': 'sg',
+                                           'failure': 'fg'})
 
     mock_logger_info.assert_called_once_with(
         "step blah about to hand over control with key: Will run groups: "
@@ -193,6 +226,10 @@ def test_cof_dict_with_all_args_formatting():
     assert cof.groups == ['b', 'c']
     assert cof.success_group == 'sgv'
     assert cof.failure_group == 'fgv'
+    assert cof.original_config == ('key', {'groups': '{list}',
+                                           'success': '{sg}',
+                                           'failure': '{fg}'
+                                           })
 
 
 def test_cof_dict_with_all_args_formatting_to_string():
@@ -216,3 +253,7 @@ def test_cof_dict_with_all_args_formatting_to_string():
     assert cof.groups == ['abc']
     assert cof.success_group == 'sgv'
     assert cof.failure_group == 'fgv'
+    assert cof.original_config == ('key', {'groups': '{list}',
+                                           'success': '{sg}',
+                                           'failure': '{fg}'
+                                           })

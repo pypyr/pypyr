@@ -277,6 +277,9 @@ class Step:
 
         # foreach: optional value. None by default.
         self.foreach_items = step.get('foreach', None)
+        if self.foreach_items:
+            # current item in loops
+            self.for_counter = None
 
         # retry: optional, defaults none.
         retry_definition = step.get('retry', None)
@@ -354,6 +357,8 @@ class Step:
             logger.info("foreach: running step %s", i)
             # the iterator must be available to the step when it executes
             context['i'] = i
+            self.for_counter = i
+
             # conditional operators apply to each iteration, so might be an
             # iteration run, skips or swallows.
             self.run_conditional_decorators(context)
@@ -393,9 +398,62 @@ class Step:
                 # don't want to log error twice - would've been logged already
                 # in called step-group.
                 raise HandledError from ex_info
+            finally:
+                self.reset_context_counters(context, call)
+
             logger.debug("call: done calling %s", call.groups)
 
         logger.debug("step %s done", self.name)
+
+    def reset_context_counters(self, context, call):
+        """Set loop counters in context to current counters on self.
+
+        Set the following context properties to current:
+        - whileCounter
+        - i
+        - retryCounter
+
+        Also resets pypyr.steps.call config. In context 'call' MUST exist,
+        because this method is only meant to be called stemming from a Call
+        control-of-flow instruction.
+
+        This method exists because in nested pypyr.steps.call invocations
+        the child overwrites the parent's context config and similarly nested
+        loop counters get overwritten. So when the called child group is done,
+        use this method will reset context to continue with the parent.
+
+        This is necessary for nested calls in loops. A nested call step's
+        context config (under key 'call') will override the parent's, so when
+        the nested call finishes, in order to continue the parent call you need
+        to reset the config under key 'call' to what it was before the child
+        got its hands on it.
+
+        Args:
+        context: (pypyr.context.Context) The pypyr context. This arg will
+                 mutate.
+        call: pypyr.errors.Call The control-of-flow call instruction.
+
+        """
+        if self.while_decorator:
+            while_counter = self.while_decorator.while_counter
+            if context['whileCounter'] != while_counter:
+                context['whileCounter'] = while_counter
+
+        if self.foreach_items:
+            # an individual item could be None, so no bool check on
+            # counter itself, use foreach_items instead.
+            if context['i'] != self.for_counter:
+                context['i'] = self.for_counter
+
+        if self.retry_decorator:
+            retry_counter = self.retry_decorator.retry_counter
+            if context['retryCounter'] != retry_counter:
+                context['retryCounter'] = retry_counter
+
+        # this might be a nested call instruction, so a child call
+        # might have overwritten the 'call' context item.
+        if context[call.original_config[0]] is not call.original_config[1]:
+            context[call.original_config[0]] = call.original_config[1]
 
     def run_conditional_decorators(self, context):
         """Evaluate the step decorators to decide whether to run step or not.
@@ -583,6 +641,8 @@ class RetryDecorator:
             raise PipelineDefinitionError("retry decorator must be a dict "
                                           "(i.e a map) type.")
 
+        self.retry_counter = None
+
         logger.debug("done")
 
     def exec_iteration(self, counter, context, step_method):
@@ -609,6 +669,7 @@ class RetryDecorator:
         """
         logger.debug("starting")
         context['retryCounter'] = counter
+        self.retry_counter = counter
 
         logger.info("retry: running step with counter %s", counter)
         try:
@@ -676,6 +737,7 @@ class RetryDecorator:
         logger.debug("starting")
 
         context['retryCounter'] = 0
+        self.retry_counter = 0
 
         sleep = context.get_formatted_as_type(self.sleep, out_type=float)
         if self.max:
@@ -766,6 +828,8 @@ class WhileDecorator:
             raise PipelineDefinitionError("while decorator must be a dict "
                                           "(i.e a map) type.")
 
+        self.while_counter = None
+
         logger.debug("done")
 
     def exec_iteration(self, counter, context, step_method):
@@ -792,6 +856,7 @@ class WhileDecorator:
         """
         logger.debug("starting")
         context['whileCounter'] = counter
+        self.while_counter = counter
 
         logger.info("while: running step with counter %s", counter)
         step_method(context)
@@ -822,6 +887,7 @@ class WhileDecorator:
         logger.debug("starting")
 
         context['whileCounter'] = 0
+        self.while_counter = 0
 
         if self.stop is None and self.max is None:
             # the ctor already does this check, but guess theoretically

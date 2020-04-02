@@ -172,22 +172,24 @@ def test_stop_pipeline_error_raises():
 def test_jump_control_of_flow_instruction_raises():
     """Jump instruction raises."""
     try:
-        raise Jump(['one', 'two'], 'sg', 'fg')
+        raise Jump(['one', 'two'], 'sg', 'fg', 'og')
     except Jump as err_info:
         assert isinstance(err_info, ControlOfFlowInstruction)
         assert err_info.groups == ['one', 'two']
         assert err_info.success_group == 'sg'
         assert err_info.failure_group == 'fg'
+        assert err_info.original_config == 'og'
 
 
 def test_call_control_of_flow_instruction_raises():
     """Call instruction raises."""
     try:
-        raise Call(['one', 'two'], 'sg', 'fg')
+        raise Call(['one', 'two'], 'sg', 'fg', 'og')
     except Call as err_info:
         assert isinstance(err_info, ControlOfFlowInstruction)
         assert err_info.groups == ['one', 'two']
         assert err_info.success_group == 'sg'
         assert err_info.failure_group == 'fg'
+        assert err_info.original_config == 'og'
 
 # -------------------------- END Control of Flow Instructions -----------------

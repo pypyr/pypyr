@@ -1,0 +1,14 @@
+begin
+sg1.1
+sg2.a
+sg2.b
+sg2.c
+sg1.2
+sg2.a
+sg2.b
+sg2.c
+sg1.3
+sg2.a
+sg2.b
+sg2.c
+end

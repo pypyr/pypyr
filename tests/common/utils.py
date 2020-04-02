@@ -54,3 +54,16 @@ def patch_logger(name, level=logging.DEBUG):
         # restore logger settings
         logger.removeHandler(handler)
         logger.setLevel(logging_level)
+
+
+def read_file_to_list(path):
+    """Read path and write each line to list.
+
+    Args:
+        path: path-like. Path to file to read.
+
+    Returns:
+        list of str. Each line in file is an item on the list.
+    """
+    with open(path, 'r') as file:
+        return [line.rstrip() for line in file.readlines()]

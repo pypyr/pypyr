@@ -1,0 +1,37 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    while:
+      max: 3
+    foreach: ['a','b','c']
+    in:
+      call:
+        groups: sg1
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+sg1:
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        outerwhile: '{whileCounter}'
+        sg1i: '{i}'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg1.{whileCounter}.{i}'
+  - name: pypyr.steps.call
+    foreach: ['i', 'ii', 'iii']
+    while:
+      max: 4
+    in:
+      call:
+        groups: sg2
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg1 end
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}'

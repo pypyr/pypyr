@@ -1,0 +1,27 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    while:
+      max: 3
+    in:
+      call:
+        groups: sg1
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg1.{whileCounter}'
+  - name: pypyr.steps.call
+    while:
+      max: 3
+    in:
+      call:
+        groups: sg2
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg2.{whileCounter}'
