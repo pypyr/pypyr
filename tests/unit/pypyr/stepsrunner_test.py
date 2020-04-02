@@ -752,13 +752,16 @@ def nothing_step(context):
 
 def jump_step(groups, success=None, failure=None):
     def run_step(context):
-        raise Jump(groups, success, failure)
+        raise Jump(groups, success, failure, 'jumparb')
     return run_step
 
 
-def call_step(groups, success=None, failure=None):
+def call_step(groups,
+              success=None,
+              failure=None,
+              original_config=('call', 'arb')):
     def run_step(context):
-        raise Call(groups, success, failure)
+        raise Call(groups, success, failure, original_config)
     return run_step
 
 
@@ -1239,7 +1242,7 @@ def test_call_with_success_handler(mock_step_cache):
         nothing_step,  # 5.1
     ]
 
-    context = Context()
+    context = Context({'call': {'groups': 'sg1'}})
     StepsRunner(get_jump_pipeline(), context).run_step_groups(
         groups=['sg2'],
         success_group='sg5',
@@ -1272,7 +1275,7 @@ def test_call_with_failure_handler(mock_step_cache):
         nothing_step,  # 4.2
     ]
 
-    context = Context()
+    context = Context({'call': {'groups': 'sg3'}})
     with pytest.raises(ValueError) as err_info:
         StepsRunner(get_jump_pipeline(), context).run_step_groups(
             groups=['sg2', 'sg1'],
@@ -1300,6 +1303,7 @@ def test_call_with_failure_handler_while(mock_step_cache):
     def step21(context):
         mock21(context)
         if context['whileCounter'] == 2:
+            context['call'] = "step21"
             call_step(['sg3'])(context)
 
     mock_step_cache.side_effect = [
@@ -1322,11 +1326,16 @@ def test_call_with_failure_handler_while(mock_step_cache):
                                           call('sg4.step1'),
                                           call('sg4.step2')]
 
-    assert mock21.mock_calls == [call({'a': 'b', 'whileCounter': 1}),
-                                 call({'a': 'b', 'whileCounter': 2})]
+    assert mock21.mock_calls == [call({'a': 'b',
+                                       'whileCounter': 1
+                                       }),
+                                 call({'a': 'b',
+                                       'whileCounter': 2
+                                       })]
 
     assert repr(context) == repr({'a': 'b',
                                   'whileCounter': 2,
+                                  'call': 'arb',
                                   'runErrors': [
                                       {'name': 'ValueError',
                                        'description': '3.1',
@@ -1336,8 +1345,7 @@ def test_call_with_failure_handler_while(mock_step_cache):
                                        'step': 'sg3.step1',
                                        'exception': ValueError('3.1'),
                                        'swallowed': False}
-                                  ]
-                                  })
+                                  ]})
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
@@ -1356,6 +1364,7 @@ def test_call_with_success_handler_for(mock_step_cache):
     def step21(context):
         mock21(context)
         if context['i'] == 'two':
+            context['call'] = 'sg1'
             call_step(['sg1'])(context)
 
     def mutate_step(context):
@@ -1382,10 +1391,14 @@ def test_call_with_success_handler_for(mock_step_cache):
         success_group='sg5',
         failure_group=None)
 
-    assert mock21.mock_calls == [call({'a': 'b', 'i': 'one'}),
-                                 call({'a': 'b', 'i': 'two'}),
-                                 call({'a': 'changed', 'i': 'three'})]
-    assert context == {'a': 'after loop', 'i': 'three'}
+    assert mock21.mock_calls == [call({'a': 'b',
+                                       'i': 'one'}),
+                                 call({'a': 'b',
+                                       'i': 'two'}),
+                                 call({'a': 'changed',
+                                       'i': 'three',
+                                       'call': 'arb'})]
+    assert context == {'a': 'after loop', 'i': 'three', 'call': 'arb'}
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
                                           call('sg1.step1'),
                                           call('sg1.step2'),
@@ -1431,7 +1444,7 @@ def get_retry_pipeline():
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_call_with_success_handler_retry(mock_step_cache):
-    """Call between different step groups with success handler in for."""
+    """Call between different step groups with success handler in retry."""
     # Sequence: sg2 - sg2.1 x2 (CALL)
     #           sg1 - sg1.1, sg 1.2 (CALL)
     #           sg4 - sg4.1 (CALL)
@@ -1443,6 +1456,7 @@ def test_call_with_success_handler_retry(mock_step_cache):
     def step21(context):
         mock21(context)
         if context['retryCounter'] == 2:
+            context['call'] = 'sg1'
             call_step(['sg1'])(context)
         else:
             raise ValueError(context['retryCounter'])
@@ -1465,9 +1479,13 @@ def test_call_with_success_handler_retry(mock_step_cache):
         success_group='sg5',
         failure_group=None)
 
-    assert mock21.mock_calls == [call({'a': 'b', 'retryCounter': 1}),
-                                 call({'a': 'b', 'retryCounter': 2})]
-    assert context == {'a': 'b', 'retryCounter': 2}
+    assert mock21.mock_calls == [call({'a': 'b',
+                                       'retryCounter': 1}),
+                                 call({'a': 'b',
+                                       'retryCounter': 2})]
+    assert context == {'a': 'b',
+                       'retryCounter': 2,
+                       'call': 'arb'}
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
                                           call('sg1.step1'),
                                           call('sg1.step2'),
@@ -1477,4 +1495,5 @@ def test_call_with_success_handler_retry(mock_step_cache):
                                           call('sg4.step2'),
                                           call('sg2.step2'),
                                           call('sg5.step1')]
+
 # ------------------------- END: Call ----------------------------------------#

@@ -1,0 +1,57 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    while:
+      max: 3
+    foreach: ['a','b','c']
+    retry:
+      max: 4
+    in:
+      call:
+        groups: sg1
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'root.{whileCounter}.{i}.{retryCounter}'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+sg1:
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        outerwhile: '{whileCounter}'
+        sg1i: '{i}'
+  - name: pypyr.steps.call
+    foreach: ['i', 'ii', 'iii']
+    while:
+      max: 2
+    retry:
+      max: 3
+    in:
+      call:
+        groups: sg2
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg1.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
+  - name: pypyr.steps.assert
+    run: !py 'retryCounter < 2'
+    in:
+      assert:
+        this: false
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg1 end
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
+  - name: pypyr.steps.assert
+    run: !py 'retryCounter < 3'
+    in:
+      assert:
+        this: false
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg2 end

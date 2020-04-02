@@ -1,0 +1,55 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    foreach: [1,2,3]
+    in:
+      call:
+        groups: A
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+A:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'A.{i}'
+  - name: pypyr.steps.call
+    foreach: ['a', 'b', 'c']
+    in:
+      call:
+        groups: B
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end A
+B:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'B.{i}'
+  - name: pypyr.steps.call
+    foreach: ['i', 'ii', 'iii']
+    in:
+      call:
+        groups: C
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end B
+C:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'C.{i}'
+  - name: pypyr.steps.call
+    foreach: ['x', 'xx', 'xxx']
+    in:
+      call:
+        groups: D
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end C
+D:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'D.{i}'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end D

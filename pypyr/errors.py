@@ -91,19 +91,25 @@ class ControlOfFlowInstruction(Error):
         groups: list of str. List of step - groups to execute.
         success_group: str. Step - group to execute on success condition.
         failure_group: str. Step - group to execute on failure condition.
+        original_config: tuple. (key, value). Key-Value pair of context dict
+                        item used as input on the step that created this
+                        ControlOfFlowInstruction.
     """
 
-    def __init__(self, groups, success_group, failure_group):
+    def __init__(self, groups, success_group, failure_group, original_config):
         """Initialize the control of flow instruction.
 
         Args:
             groups: list of str. List of step - groups to execute.
             success_group: str. Step - group to execute on success condition.
             failure_group: str. Step - group to execute on failure condition.
+            original_config: tuple. (key, value). Key/Value pair of Context
+                             input for the control-of-flow step.
         """
         self.groups = groups
         self.success_group = success_group
         self.failure_group = failure_group
+        self.original_config = original_config
 
 
 class Call(ControlOfFlowInstruction):

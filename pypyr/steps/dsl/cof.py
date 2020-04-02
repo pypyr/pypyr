@@ -34,6 +34,7 @@ def control_of_flow_instruction(name, instruction_type, context, context_key):
     logger.debug("starting")
 
     context.assert_key_has_value(key=context_key, caller=name)
+    original_config = (context_key, context[context_key])
 
     config = context.get_formatted(context_key)
 
@@ -85,4 +86,5 @@ def control_of_flow_instruction(name, instruction_type, context, context_key):
         failure_group)
     raise instruction_type(groups=groups,
                            success_group=success_group,
-                           failure_group=failure_group)
+                           failure_group=failure_group,
+                           original_config=original_config)

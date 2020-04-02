@@ -15,7 +15,8 @@ from pypyr.dsl import (PyString,
                        Step,
                        RetryDecorator,
                        WhileDecorator)
-from pypyr.errors import (HandledError,
+from pypyr.errors import (Call,
+                          HandledError,
                           LoopMaxExhaustedError,
                           PipelineDefinitionError)
 
@@ -246,6 +247,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     assert step.name == 'blah'
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
+    assert not hasattr(step, 'for_counter')
     assert step.in_parameters is None
     assert not step.retry_decorator
     assert step.run_me
@@ -277,6 +279,7 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     assert step.name == 'blah'
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
+    assert not hasattr(step, 'for_counter')
     assert step.in_parameters is None
     assert not step.retry_decorator
     assert step.run_me
@@ -373,9 +376,11 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
+    assert step.foreach_items == [0]
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
     assert step.retry_decorator.max == 5
     assert step.retry_decorator.sleep == 7
+    assert step.retry_decorator.retry_counter is None
     assert not step.run_me
     assert step.skip_me
     assert step.steps_runner == 'stepsrunner'
@@ -384,6 +389,7 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     assert step.while_decorator.error_on_max
     assert step.while_decorator.sleep == 3
     assert step.while_decorator.max == 4
+    assert step.while_decorator.while_counter is None
 
     mocked_moduleloader.assert_called_once_with('blah')
 
@@ -418,9 +424,11 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
+    assert step.for_counter is None
     assert step.in_parameters == {'k1': 'v1', 'k2': 'v2'}
     assert step.retry_decorator.max == 5
     assert step.retry_decorator.sleep == 7
+    assert step.retry_decorator.retry_counter is None
     assert not step.run_me
     assert step.skip_me
     assert step.swallow_me
@@ -428,6 +436,7 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     assert step.while_decorator.error_on_max
     assert step.while_decorator.sleep == 3
     assert step.while_decorator.max == 4
+    assert step.while_decorator.while_counter is None
     assert step.line_no == 8
     assert step.line_col == 9
 
@@ -531,6 +540,8 @@ def test_foreach_once(mock_run, mock_moduleloader):
     # validate all the in params ended up in context as intended, plus i
     assert len(context) == original_len + 1
     assert context['i'] == 'one'
+    assert step.for_counter == 'one'
+    assert step.for_counter == 'one'
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -566,6 +577,7 @@ def test_foreach_twice(mock_run, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'two'
+    assert step.for_counter == 'two'
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -605,6 +617,7 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert step.for_counter == 'key3'
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -650,6 +663,7 @@ def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'formatted value1'
+    assert step.for_counter == 'formatted value1'
 
 
 def mock_step_mutating_run(context):
@@ -687,6 +701,7 @@ def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert step.for_counter == 'key3'
 
 
 def mock_step_mutating_skip(context):
@@ -724,6 +739,7 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert step.for_counter == 'key3'
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -771,6 +787,7 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     assert len(context) == original_len + 2
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert step.for_counter == 'key3'
     assert context['runErrors'] == [{
         'col': None,
         'customError': {},
@@ -813,6 +830,7 @@ def test_while_max(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the counter value will be the last iterator
     assert context['whileCounter'] == 3
+    assert step.while_decorator.while_counter == 3
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -849,6 +867,7 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['whileCounter'] == 3
+    assert step.while_decorator.while_counter == 3
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -878,8 +897,9 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     # validate all the in params ended up in context as intended, plus i
     # plus runErrors
     assert len(context) == original_len + 2
-    # after the looping's done, the i value will be the last iterator value
+    # after the looping's done, the counter will be the last iterator value
     assert context['whileCounter'] == 2
+    assert step.while_decorator.while_counter == 2
     assert context['runErrors'] == [{
         'col': None,
         'customError': {},
@@ -926,6 +946,7 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['whileCounter'] == 3
+    assert step.while_decorator.while_counter == 3
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -961,6 +982,7 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     assert len(context) == original_len + 1
     # after the looping's done, the i value will be the last iterator value
     assert context['whileCounter'] == 3
+    assert step.while_decorator.while_counter == 3
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -1015,7 +1037,9 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     assert len(context) == original_len + 2
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
+    assert step.for_counter == 'key3'
     assert context['whileCounter'] == 2
+    assert step.while_decorator.while_counter == 2
 
 # ------------------- Step: run_step: while ----------------------------------#
 
@@ -1090,6 +1114,119 @@ def test_invoke_step_none_context(mocked_stepcache):
                        'key7': 77}
 
 # ------------------- Step: invoke_step---------------------------------------#
+
+# ------------------- Step: reset_context_counters ---------------------------#
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters(mock_step_cache):
+    """Reset all counters in context."""
+    context = {'a': 'b',
+               'c': 'd',
+               'whileCounter': 99,
+               'retryCounter': 999,
+               'i': '9999'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('a', 'changed'))
+
+    step_config = {'name': 'blah',
+                   'while': {
+                       'max': 4
+                   },
+                   'foreach': ['one', 'two'],
+                   'retry': {
+                       'max': 5
+                   }
+                   }
+
+    step = Step(step_config, None)
+    step.while_decorator.while_counter = 6
+    step.for_counter = 'seven'
+    step.retry_decorator.retry_counter = 8
+
+    step.reset_context_counters(context, call)
+
+    assert context == {'a': 'changed',
+                       'c': 'd',
+                       'whileCounter': 6,
+                       'i': 'seven',
+                       'retryCounter': 8}
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters_dont_need_updating(mock_step_cache):
+    """Reset all counters in context when they don't need to update."""
+    context = {'a': 'b',
+               'c': 'd',
+               'whileCounter': 99,
+               'retryCounter': 999,
+               'i': '9999'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('a', 'b'))
+
+    step_config = {'name': 'blah',
+                   'while': {
+                       'max': 4
+                   },
+                   'foreach': ['one', 'two'],
+                   'retry': {
+                       'max': 5
+                   }
+                   }
+
+    step = Step(step_config, None)
+    step.while_decorator.while_counter = 99
+    step.for_counter = '9999'
+    step.retry_decorator.retry_counter = 999
+
+    step.reset_context_counters(context, call)
+
+    assert context == {'a': 'b',
+                       'c': 'd',
+                       'whileCounter': 99,
+                       'i': '9999',
+                       'retryCounter': 999}
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters_none(mock_step_cache):
+    """Reset but no counters available."""
+    arb_mutable = ['b']
+    context = {'a': arb_mutable,
+               'c': 'd'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('a', arb_mutable))
+
+    step_config = {'name': 'blah'}
+
+    step = Step(step_config, None)
+
+    step.reset_context_counters(context, call)
+
+    assert context == {'a': ['b'],
+                       'c': 'd'}
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters_mutate(mock_step_cache):
+    """Reset to a mutating mutable."""
+    arb_mutable = ['b']
+    context = {'a': arb_mutable,
+               'c': 'd'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('a', arb_mutable))
+
+    step_config = {'name': 'blah'}
+
+    step = Step(step_config, None)
+
+    arb_mutable[0] = 'changed'
+
+    step.reset_context_counters(context, call)
+
+    assert context == {'a': ['changed'],
+                       'c': 'd'}
+# ------------------- END Step: reset_context_counters -----------------------#
 
 # ------------------- Step: run_step: run ------------------------------------#
 
@@ -2336,6 +2473,7 @@ def test_retry_init_defaults_stop():
     assert rd.max is None
     assert rd.stop_on is None
     assert rd.retry_on is None
+    assert rd.retry_counter is None
 
 
 def test_retry_init_defaults_max():
@@ -2345,6 +2483,7 @@ def test_retry_init_defaults_max():
     assert rd.max == 3
     assert rd.stop_on is None
     assert rd.retry_on is None
+    assert rd.retry_counter is None
 
 
 def test_retry_init_all_attributes():
@@ -2357,6 +2496,7 @@ def test_retry_init_all_attributes():
     assert rd.max == 3
     assert rd.stop_on == [4, 5, 6]
     assert rd.retry_on == [1, 2, 3]
+    assert rd.retry_counter is None
 
 
 def test_retry_init_not_a_dict():
@@ -2385,6 +2525,7 @@ def test_retry_exec_iteration_returns_true_on_success():
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
+    assert rd.retry_counter == 2
 
 
 def test_retry_exec_iteration_returns_true_on_max_success():
@@ -2396,6 +2537,7 @@ def test_retry_exec_iteration_returns_true_on_max_success():
     assert rd.exec_iteration(3, context, mock)
     # context endures
     assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 3})
@@ -2413,6 +2555,7 @@ def test_retry_exec_iteration_returns_false_on_error():
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2434,6 +2577,7 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon():
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2457,6 +2601,7 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'k1': 'ValueError', 'retryCounter': 2})
@@ -2483,6 +2628,7 @@ def test_retry_exec_iteration_raises_on_error_not_in_retryon():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2507,6 +2653,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2531,6 +2678,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_format():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'k1': ['KeyError', 'ValueError'],
@@ -2552,6 +2700,7 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2574,6 +2723,7 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
             assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'k1': ['KeyError', 'ArbError'],
@@ -2602,6 +2752,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2625,6 +2776,7 @@ def test_retry_exec_iteration_raises_on_max_exhaust():
 
     # context endures
     assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 3})
@@ -2649,6 +2801,7 @@ def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
 
     # context endures
     assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 3})
@@ -2671,6 +2824,7 @@ def test_retry_exec_iteration_handlederror():
         assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2695,6 +2849,7 @@ def test_retry_exec_iteration_handlederror_with_stopon():
             assert not rd.exec_iteration(2, context, mock)
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'k1': ['KeyError', 'ArbError'],
@@ -2725,6 +2880,7 @@ def test_retry_exec_iteration_handlederror_stopon_raises():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2752,6 +2908,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 
     # context endures
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
@@ -2776,6 +2933,7 @@ def test_retry_loop_max_end_on_error(mock_time_sleep):
         assert str(err_info.value) == 'arb'
 
     assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
     assert mock.call_count == 3
     mock.assert_called_with({'k1': 'v1', 'retryCounter': 3})
 
@@ -2802,6 +2960,7 @@ def test_retry_loop_max_continue_on_success(mock_time_sleep):
             rd.retry_loop(context, mock)
 
     assert context['retryCounter'] == 2
+    assert rd.retry_counter == 2
     assert mock.call_count == 2
     mock.assert_called_with({'k1': 'v1', 'retryCounter': 2})
 
@@ -2829,6 +2988,7 @@ def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
         rd.retry_loop(context, mock)
 
     assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
     assert mock.call_count == 3
     mock.assert_called_with({'k1': 'v1', 'retryCounter': 3})
 
@@ -2864,6 +3024,7 @@ def test_retry_all_substitutions(mock_time_sleep):
         rd.retry_loop(context, mock_step)
 
     assert context['retryCounter'] == 1
+    assert rd.retry_counter == 1
     assert step_count == 1
 
     assert mock_time_sleep.call_count == 0
@@ -2888,6 +3049,7 @@ def test_while_init_defaults_stop():
     assert wd.sleep == 0
     assert wd.max is None
     assert not wd.error_on_max
+    assert wd.while_counter is None
 
 
 def test_while_init_defaults_max():
@@ -2897,6 +3059,7 @@ def test_while_init_defaults_max():
     assert wd.sleep == 0
     assert wd.max == 3
     assert not wd.error_on_max
+    assert wd.while_counter is None
 
 
 def test_while_init_all_attributes():
@@ -2907,6 +3070,7 @@ def test_while_init_all_attributes():
     assert wd.sleep == 4.4
     assert wd.max == 3
     assert wd.error_on_max
+    assert wd.while_counter is None
 
 
 def test_while_init_not_a_dict():
@@ -2942,6 +3106,7 @@ def test_while_exec_iteration_no_stop():
     assert not wd.exec_iteration(2, context, mock)
     # context endures
     assert context['whileCounter'] == 2
+    assert wd.while_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'whileCounter': 2})
@@ -2956,6 +3121,7 @@ def test_while_exec_iteration_stop_true():
     assert wd.exec_iteration(2, context, mock)
     # context endures
     assert context['whileCounter'] == 2
+    assert wd.while_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'whileCounter': 2})
@@ -2970,6 +3136,7 @@ def test_while_exec_iteration_stop_evals_true():
     assert wd.exec_iteration(2, context, mock)
     # context endures
     assert context['whileCounter'] == 2
+    assert wd.while_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'stop': True, 'whileCounter': 2})
@@ -2984,6 +3151,7 @@ def test_while_exec_iteration_stop_false():
     assert not wd.exec_iteration(2, context, mock)
     # context endures
     assert context['whileCounter'] == 2
+    assert wd.while_counter == 2
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'whileCounter': 2})
@@ -2999,6 +3167,7 @@ def test_while_exec_iteration_stop_evals_false():
     assert not wd.exec_iteration(2, context, mock)
     # context endures
     assert context['whileCounter'] == 2
+    assert wd.while_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'stop': False, 'whileCounter': 2})
@@ -3025,6 +3194,8 @@ def test_while_loop_stop_true():
         call('while: running step with counter 1'),
         call('while loop done, stop condition True evaluated True.')]
 
+    assert wd.while_counter == 1
+
 
 def test_while_loop_max_0():
     """Max 0 doesn't run even once."""
@@ -3039,6 +3210,8 @@ def test_while_loop_max_0():
 
     assert mock_logger_info.mock_calls == [
         call('max 0 is 0. while only runs when max > 0.')]
+
+    assert wd.while_counter == 0
 
 
 def test_while_loop_max_0_with_formatting():
@@ -3055,6 +3228,8 @@ def test_while_loop_max_0_with_formatting():
     assert mock_logger_info.mock_calls == [
         call('max {x} is -3. while only runs when max > 0.')]
 
+    assert wd.while_counter == 0
+
 
 def test_while_loop_stop_evals_true():
     """Stop evaluates True from formatting expr runs once."""
@@ -3066,6 +3241,8 @@ def test_while_loop_stop_evals_true():
         wd.while_loop(Context({'thisistrue': True}), mock)
 
     mock.assert_called_once()
+
+    assert wd.while_counter == 1
 
     assert mock_logger_info.mock_calls == [
         call('while decorator will loop until {thisistrue} evaluates to True '
@@ -3101,6 +3278,7 @@ def test_while_loop_max_no_stop(mock_time_sleep):
         wd.while_loop(context, mock)
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert mock.call_count == 3
     mock.assert_called_with({'k1': 'v1', 'whileCounter': 3})
 
@@ -3134,6 +3312,7 @@ def test_while_loop_stop_no_max(mock_time_sleep):
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert step_count == 3
     assert step_context == [{'k1': False, 'k2': 0.3, 'whileCounter': 1},
                             {'k1': False, 'k2': 0.3, 'whileCounter': 2},
@@ -3171,6 +3350,7 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert step_count == 3
     assert step_context == [{'k1': False, 'k2': 0.3, 'whileCounter': 1},
                             {'k1': False, 'k2': 0.3, 'whileCounter': 2},
@@ -3206,6 +3386,7 @@ def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert step_count == 3
     assert step_context == [{'k1': False, 'k2': 0.3, 'whileCounter': 1},
                             {'k1': False, 'k2': 0.3, 'whileCounter': 2},
@@ -3250,6 +3431,7 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
         "while loop reached 3 and {k1} never evaluated to True.")
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert step_count == 3
     assert step_context == [{'k1': False,
                              'k2': 0.3,
@@ -3303,6 +3485,7 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
     assert str(err_info.value) == "while loop reached 3."
 
     assert context['whileCounter'] == 3
+    assert wd.while_counter == 3
     assert step_count == 3
     assert step_context == [{'k1': False,
                              'k2': 0.3,
@@ -3355,6 +3538,7 @@ def test_while_loop_all_substitutions(mock_time_sleep):
         wd.while_loop(context, mock_step)
 
     assert context['whileCounter'] == 1
+    assert wd.while_counter == 1
     assert step_count == 1
 
     assert mock_time_sleep.call_count == 0

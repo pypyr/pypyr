@@ -1,0 +1,51 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    in:
+      call:
+        groups: A
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end.
+A:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - name: pypyr.steps.call
+    in:
+      call:
+        groups: B
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end A
+B:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: B
+  - name: pypyr.steps.call
+    in:
+      call:
+        groups: C
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end B
+C:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C
+  - name: pypyr.steps.call
+    in:
+      call:
+        groups: D
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end C
+D:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: D
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end D

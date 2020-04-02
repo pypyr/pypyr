@@ -1,0 +1,37 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.jump
+    foreach: [1,2,3]
+    in:
+      jump:
+        groups: sg1
+        success: sg1_success
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+on_success:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: on success
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg1.{i}'
+  - name: pypyr.steps.jump
+    foreach: ['a', 'b', 'c']
+    swallow: true
+    retries:
+      max: 3
+    in:
+      jump:
+        groups: sg2
+sg1_success:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg1 success
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg2.{i}'

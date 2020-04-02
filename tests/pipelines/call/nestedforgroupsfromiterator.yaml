@@ -1,0 +1,43 @@
+steps:
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        fr1: [1,2,3]
+        fr2: ['a', 'b', 'c']
+        gr1: 'sg1'
+        gr2: 'sg2'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: begin
+  - name: pypyr.steps.call
+    foreach: '{fr1}'
+    in:
+      call:
+        groups: '{gr1}'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'sg1.{i}'
+  - name: pypyr.steps.call
+    foreach: '{fr2}'
+    in:
+      call:
+        groups: '{i}'
+  - name: pypyr.steps.echo
+    in:
+      echoMe: end SG1
+a:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'A: {i}'
+b:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'B: {i}'
+c:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: 'C: {i}'

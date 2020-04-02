@@ -1,0 +1,242 @@
+begin
+A.1
+B.a
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.b
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.c
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+end A
+A.2
+B.a
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.b
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.c
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+end A
+A.3
+B.a
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.b
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+B.c
+C.i
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.ii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+C.iii
+D.x
+end D
+D.xx
+end D
+D.xxx
+end D
+end C
+end B
+end A
+end
