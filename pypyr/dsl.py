@@ -1,6 +1,7 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 
 import logging
+import os
 from pypyr.errors import (Call,
                           ControlOfFlowInstruction,
                           get_error_name,
@@ -14,6 +15,10 @@ from pypyr.utils import expressions, poll
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
+
+# os.getenv's dict fills on 1st import of os.
+skip_clean_in_on_step_done = (os.getenv('PYPYR_IN_CLEAN', '0')
+                              not in {'true', 'TRUE', '1'})
 # ------------------------ custom yaml tags -----------------------------------
 
 
@@ -450,9 +455,12 @@ class Step:
             if context['retryCounter'] != retry_counter:
                 context['retryCounter'] = retry_counter
 
+        # if call does not have a value something is seriously wrong.
+        assert call.original_config[1]
+
         # this might be a nested call instruction, so a child call
         # might have overwritten the 'call' context item.
-        if context[call.original_config[0]] is not call.original_config[1]:
+        if context.get(call.original_config[0]) is not call.original_config[1]:
             context[call.original_config[0]] = call.original_config[1]
 
     def run_conditional_decorators(self, context):
@@ -558,12 +566,15 @@ class Step:
         else:
             self.run_foreach_or_conditional(context)
 
+        # the in params should be removed from context after step execution.
+        self.unset_step_input_context(context)
+
         logger.debug("done")
 
     def set_step_input_context(self, context):
         """Append step's 'in' parameters to context, if they exist.
 
-        Append the[in] dictionary to the context. This will overwrite
+        Append the [in] dictionary to the context. This will overwrite
         existing values if the same keys are already in there. I.e if
         in_parameters has {'eggs': 'boiled'} and key 'eggs' already
         exists in context, context['eggs'] hereafter will be 'boiled'.
@@ -582,6 +593,40 @@ class Step:
                     parameter_count,
                 )
                 context.update(self.in_parameters)
+
+        logger.debug("done")
+
+    def unset_step_input_context(self, context):
+        """Remove step's 'in' parameters from context, if they exist.
+
+        Remove the [in] dictionary from the context.
+
+        Args:
+            context: (pypyr.context.Context) The pypyr context. This arg will
+                     mutate - after method execution will contain the new
+                     updated context with the [in] args removed.
+        """
+        logger.debug("starting")
+
+        if skip_clean_in_on_step_done:
+            logger.debug("skipping 'in' removal after step because "
+                         "$PYPYR_IN_CLEAN is not set or 0.")
+            logger.debug("done")
+            return
+
+        if self.in_parameters is not None:
+            # len is O(1), so not all that unecessarily duplicated cpu time
+            parameter_count = len(self.in_parameters)
+            if parameter_count > 0:
+                logger.debug(
+                    "Removing %s 'in' parameters from context.",
+                    parameter_count,
+                )
+                for key in self.in_parameters:
+                    # slightly unorthodox pop returning None means you don't
+                    # get a KeyError if key doesn't exist. The step might have
+                    # removed the key from context.
+                    context.pop(key, None)
 
         logger.debug("done")
 

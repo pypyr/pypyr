@@ -168,7 +168,7 @@ Save pipelines wherever you please. To run a pipeline, execute
     - mymodule # simple step pointing at a python file
     - name: my.package.another.module # complex step. It contains a description and in parameters.
       description: Optional description is for humans. It's any text that makes your life easier.
-      in: # optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+      in: # optional. In parameters are added to the context so that this step can use these key-value pairs.
         parameter1: value1
         parameter2: value2
       run: True # optional. Runs this step if True, skips step if False. Defaults to True if not specified.
@@ -460,7 +460,7 @@ You can specify a step in the pipeline yaml in two ways:
                        Outputs to the console during runtime as INFO.
           comment: Optional comments for pipeline developers.
                    Does not output to console during run-time.
-          in: #optional. In parameters are added to the context so that this step and subsequent steps can use these key-value pairs.
+          in: #optional. In parameters are added to the context so that this step can use these key-value pairs.
             parameter1: value1
             parameter2: value2
 
@@ -488,7 +488,7 @@ Don't bother specifying these unless you want to deviate from the default values
       comment: Optional comments for pipeline developers. Like code comments.
                Does not output to console during run.
       in: # optional. In parameters are added to the context.
-          # this step and subsequent steps can use these key-value pairs.
+          # this step can use these key-value pairs. subsequent steps can't.
         parameter1: value1
         parameter2: value2
       foreach: [] # optional. Repeat the step once for each item in this list.
@@ -522,8 +522,8 @@ Don't bother specifying these unless you want to deviate from the default values
 |               |          | execute on the next iteration.              |                |
 +---------------+----------+---------------------------------------------+----------------+
 | in            | dict     | Add this to the context so that this        | None           |
-|               |          | step and subsequent steps can use these     |                |
-|               |          | key-value pairs.                            |                |
+|               |          | step can use these key-value pairs.         |                |
+|               |          |                                             |                |
 |               |          |                                             |                |
 |               |          | *in* evaluates once at the beginning of step|                |
 |               |          | execution, before the *foreach* and *while* |                |

@@ -3,7 +3,7 @@ import logging
 import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
-from pypyr.dsl import Step
+from pypyr.dsl import skip_clean_in_on_step_done, Step
 from pypyr.errors import Call, ContextError, Jump, StopStepGroup
 from pypyr.stepsrunner import StepsRunner
 from tests.common.utils import DeepCopyMagicMock, patch_logger
@@ -191,6 +191,7 @@ def test_run_pipeline_steps_complex(mock_invoke_step, mock_module):
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
     """Complex step run with in args. In args added to context for run_step."""
     steps = [{
@@ -203,25 +204,62 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
                'key6': False,
                'key7': 88}
     }]
-    context = get_test_context()
-    original_len = len(context)
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'key4': [
+            {'k4lk1': 'value4',
+             'k4lk2': 'value5'},
+            {'k4lk1': 'value6',
+             'k4lk2': 'value7'}
+        ],
+        'key5': False,
+        'key6': True,
+        'key7': 77,
+        'key8': None,
+        'key9': 'arb'
+    })
 
     with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         StepsRunner(None, context).run_pipeline_steps(steps)
 
     mock_logger_debug.assert_any_call("executed 1 steps")
-    mock_invoke_step.assert_called_once_with(context={'key1': 'value1',
-                                                      'key2': 'value2',
-                                                      'key3': 'updated in',
-                                                      'key4': [0, 1, 2, 3],
-                                                      'key5': True,
-                                                      'key6': False,
-                                                      'key7': 88,
-                                                      'newkey1': 'v1',
-                                                      'newkey2': 'v2'})
+    assert mock_invoke_step.call_count == 1
+    # step invoked with the context updated from 'in'
+    assert mock_invoke_step.call_args_list[0] == call(
+        context={'key1': 'value1',
+                 'key2': 'value2',
+                 'key3': 'updated in',
+                 'key4': [0, 1, 2, 3],
+                 'key5': True,
+                 'key6': False,
+                 'key7': 88,
+                 'key8': None,
+                 'key9': 'arb',
+                 'newkey1': 'v1',
+                 'newkey2': 'v2'})
 
     # validate all the in params ended up in context as intended
-    assert len(context) - 2 == original_len
+    if skip_clean_in_on_step_done:
+        assert context == {'newkey1': 'v1',
+                           'newkey2': 'v2',
+                           'key1': 'value1',
+                           'key2': 'value2',
+                           'key3': 'updated in',
+                           'key4': [0, 1, 2, 3],
+                           'key5': True,
+                           'key6': False,
+                           'key7': 88,
+                           'key8': None,
+                           'key9': 'arb'}
+    else:
+        # once default behavior is to clean 'in' on step done,this is the test.
+        # all items keys 'in' purged from context.
+        assert context == {'key1': 'value1',
+                           'key2': 'value2',
+                           'key8': None,
+                           'key9': 'arb'}
 
 # -----------------------  run_pipeline_steps: run ---------------------------#
 
