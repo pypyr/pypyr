@@ -10,6 +10,7 @@ from ruamel.yaml.comments import CommentedMap
 import pypyr.cache.stepcache as stepcache
 from pypyr.context import Context
 from pypyr.dsl import (PyString,
+                       skip_clean_in_on_step_done,
                        SicString,
                        SpecialTagDirective,
                        Step,
@@ -1190,7 +1191,43 @@ def test_reset_context_counters_dont_need_updating(mock_step_cache):
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_none(mock_step_cache):
-    """Reset but no counters available."""
+    """Reset but no counters available & key not found in context."""
+    context = {'a': 'b',
+               'c': 'd'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('x', 'z'))
+
+    step_config = {'name': 'blah'}
+
+    step = Step(step_config, None)
+
+    step.reset_context_counters(context, call)
+
+    # reset added the key that didn't exist to context
+    assert context == {'a': 'b',
+                       'c': 'd',
+                       'x': 'z'}
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters_none_none(mock_step_cache):
+    """Reset key to none should not be possible."""
+    context = {'a': 'b',
+               'c': 'd'}
+
+    call = Call(['one', 'two'], 'sg', 'fg', ('x', None))
+
+    step_config = {'name': 'blah'}
+
+    step = Step(step_config, None)
+
+    with pytest.raises(AssertionError):
+        step.reset_context_counters(context, call)
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_reset_context_counters_mutable(mock_step_cache):
+    """Reset to a mutable object."""
     arb_mutable = ['b']
     context = {'a': arb_mutable,
                'c': 'd'}
@@ -2284,6 +2321,109 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
 
 # ------------------- Step: run_step: swallow --------------------------------#
 
+# ------------------- Step: run_step: input context --------------------------#
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@patch('pypyr.dsl.skip_clean_in_on_step_done', True)
+def test_run_step_in_with_no_clean(mock_invoke_step, mock_get_module):
+    """Step sets 'in' arguments in context, does not unset when done."""
+    step = Step({
+        'name': 'step1',
+        'in': {
+            'key1': 'updated1',
+            'key2': 'updated2',
+            'keyadded': 'added3'
+        }
+    },
+        None)
+
+    context = get_test_context()
+    step.run_step(context)
+
+    # step called with context updated with 'in' arguments
+    assert mock_invoke_step.call_count == 1
+    assert mock_invoke_step.call_args_list[0] == call(context={
+        'key1': 'updated1',
+        'key2': 'updated2',
+        'key3': 'value3',
+        'key4': [
+                {'k4lk1': 'value4',
+                 'k4lk2': 'value5'},
+                {'k4lk1': 'value6',
+                 'k4lk2': 'value7'}
+        ],
+        'key5': False,
+        'key6': True,
+        'key7': 77,
+        'keyadded': 'added3'})
+
+    # context when done has original context plus 'in' args.
+    assert context == {'key1': 'updated1',
+                       'key2': 'updated2',
+                       'key3': 'value3',
+                       'key4': [
+                           {'k4lk1': 'value4',
+                            'k4lk2': 'value5'},
+                           {'k4lk1': 'value6',
+                            'k4lk2': 'value7'}
+                       ],
+                       'key5': False,
+                       'key6': True,
+                       'key7': 77,
+                       'keyadded': 'added3'}
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@patch('pypyr.dsl.skip_clean_in_on_step_done', False)
+def test_run_step_in_with_clean(mock_invoke_step, mock_get_module):
+    """Step sets 'in' arguments in context, unset from context when done."""
+    step = Step({
+        'name': 'step1',
+        'in': {
+            'key1': 'updated1',
+            'key2': 'updated2',
+            'keyadded': 'added3'
+        }
+    },
+        None)
+
+    context = get_test_context()
+    step.run_step(context)
+
+    # step called with context updated with 'in' arguments
+    assert mock_invoke_step.call_count == 1
+    assert mock_invoke_step.call_args_list[0] == call(context={
+        'key1': 'updated1',
+        'key2': 'updated2',
+        'key3': 'value3',
+        'key4': [
+                {'k4lk1': 'value4',
+                 'k4lk2': 'value5'},
+                {'k4lk1': 'value6',
+                 'k4lk2': 'value7'}
+        ],
+        'key5': False,
+        'key6': True,
+        'key7': 77,
+        'keyadded': 'added3'})
+
+    # context when done has 'in' args removed.
+    assert context == {'key3': 'value3',
+                       'key4': [
+                           {'k4lk1': 'value4',
+                            'k4lk2': 'value5'},
+                           {'k4lk1': 'value6',
+                            'k4lk2': 'value7'}
+                       ],
+                       'key5': False,
+                       'key6': True,
+                       'key7': 77}
+
+# ------------------- Step: run_step: input context --------------------------#
+
 # ------------------- Step: set_step_input_context ---------------------------#
 
 
@@ -2345,6 +2485,76 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
 
 # ------------------- Step: set_step_input_context ---------------------------#
 
+# ------------------- Step: unset_step_input_context -------------------------#
+
+
+def test_unset_step_input_context_default():
+    """In parameters do not unset by default.
+
+    Note, this default will change in next major release.
+    """
+    assert skip_clean_in_on_step_done
+
+
+@patch('pypyr.dsl.skip_clean_in_on_step_done', True)
+def test_unset_step_input_context_skip_clean():
+    """Unset skips and doesn't remove anything."""
+    context = get_test_context()
+    in_args = {'newkey1': 'v1',
+               'newkey2': 'v2',
+               'key3': 'updated in',
+               'key4': [0, 1, 2, 3],
+               'key5': True,
+               'key6': False,
+               'key7': 88}
+    step = Step({'name': 'blah', 'in': in_args}, None)
+    step.unset_step_input_context(context)
+
+    # Nothing removed because skip clean for 'in' is True.
+    assert context == get_test_context()
+
+
+@patch('pypyr.dsl.skip_clean_in_on_step_done', False)
+def test_unset_step_input_context_in_none():
+    """Unset works when in parameters None."""
+    context = get_test_context()
+    step = Step({'name': 'blah', 'in': None}, None)
+    step.unset_step_input_context(context)
+
+    # Nothing removed because 'in' was None
+    assert context == get_test_context()
+
+
+@patch('pypyr.dsl.skip_clean_in_on_step_done', False)
+def test_unset_step_input_context_in_empty():
+    """Unset works when in parameters exists but is empty."""
+    context = get_test_context()
+    step = Step({'name': 'blah', 'in': {}}, None)
+    step.unset_step_input_context(context)
+
+    # Nothing removed because 'in' was empty list
+    assert context == get_test_context()
+
+
+@patch('pypyr.dsl.skip_clean_in_on_step_done', False)
+def test_unset_step_input_context():
+    """Unset works when in parameters specified."""
+    context = get_test_context()
+    in_args = {'newkey1': 'v1',
+               'newkey2': 'v2',
+               'key3': 'updated in',
+               'key4': [0, 1, 2, 3],
+               'key5': True,
+               'key6': False,
+               'key7': 88}
+    step = Step({'name': 'blah', 'in': in_args}, None)
+    step.unset_step_input_context(context)
+
+    # Removed existing keys & non-existing keys specified in 'in' from context
+    assert context == {'key1': 'value1',
+                       'key2': 'value2'}
+
+# ------------------- Step: unset_step_input_context -------------------------#
 
 # ------------------- Step: save_error ---------------------------#
 @patch('pypyr.moduleloader.get_module')
