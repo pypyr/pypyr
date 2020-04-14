@@ -267,6 +267,11 @@ class Context(dict):
 
         Then this will return string: "Piping down the valleys wild"
 
+        get_formatted gets a context[key] value with formatting applied.
+        get_formatted_value is for any object.
+        get_formatted_string is for formatting any arbitrary string.
+        get_formatted_iterable. formats an input iterable.
+
         Args:
             key: dictionary key to retrieve.
 
@@ -323,7 +328,9 @@ class Context(dict):
                         recursive loops.
 
         Returns:
-            Iterable identical in structure to the input iterable.
+            Iterable identical in structure to the input iterable, except
+            where formatting changed a value from a string to the
+            formatting expression's evaluated value.
 
         """
         if memo is None:
@@ -344,7 +351,7 @@ class Context(dict):
             # dicts
             new = obj.__class__()
             for k, v in obj.items():
-                new[self.get_formatted_string(
+                new[self.get_formatted_value(
                     k)] = self.get_formatted_iterable(v, memo)
         elif isinstance(obj, (Sequence, Set)):
             # list, set, tuple. Bytes and str won't fall into this branch coz
@@ -364,9 +371,10 @@ class Context(dict):
     def get_formatted_string(self, input_string):
         """Return formatted value for input_string.
 
-        get_formatted gets a context[key] value.
-        get_formatted_string is for any arbitrary string that is not in the
-        context.
+        get_formatted gets a context[key] value with formatting applied.
+        get_formatted_value is for any object.
+        get_formatted_string is for formatting any arbitrary string.
+        get_formatted_iterable. formats an input iterable.
 
         Only valid if input_string is a type string.
         Return a string interpolated from the context dictionary.
@@ -441,8 +449,45 @@ class Context(dict):
         else:
             return out_type(value)
 
+    def get_formatted_value(self, input_value):
+        """Run token subsitution on the input against context.
+
+        If input_value is a formattable string or SpecialTagDirective,
+        will return the formatted result.
+
+        If input_value is an iterable, will call get_formatted_iterable
+        under the hood.
+
+        If input_value is not a string with a formatting expression
+        'mystring{expr}morestring', will just return the input object
+        in the case of scalar values. An int input will return the same
+        int.
+
+        get_formatted gets a context[key] value with formatting applied.
+        get_formatted_value is for any object.
+        get_formatted_string is for formatting any arbitrary string.
+        get_formatted_iterable. formats an input iterable.
+
+        If you know input_value is a string, use get_formatted_string instead.
+        For any other type, use this function.
+
+        get_formatted_value is really just a friendlier function name for
+        get_formatted_iterable, which actually does the same thing under the
+        covers.
+
+        Args:
+            input_value: Any object to format.
+
+        Returns:
+            any given type: Formatted value with {substitutions} made from
+            context. If input was not a string, will just return input_value
+            untouched.
+
+        """
+        return self.get_formatted_iterable(input_value)
+
     def get_processed_string(self, input_string):
-        """Run token substitution on input_string against context.
+        """Run token substitution on an input_string against context.
 
         You probably don't want to call this directly yourself - rather use
         get_formatted, get_formatted_iterable, or get_formatted_string because
@@ -636,7 +681,7 @@ class Context(dict):
             """
             for k, v in add_me.items():
                 # key supports interpolation
-                k = self.get_formatted_string(k)
+                k = self.get_formatted_value(k)
 
                 # str not mergable, so it doesn't matter if it exists in dest
                 if isinstance(v, (str, SpecialTagDirective)):
