@@ -853,6 +853,60 @@ def test_get_formatted_iterable_nested_with_sic():
     assert output['k7'] == 'mutate 7 on new'
 
 
+def test_get_formatted_iterable_non_string_key():
+    """Format context with non-strings in keys."""
+    input_obj = {'k1': 'v1',
+                 'k2': 'v2_{ctx1}',
+                 'k3': bytes('v3{ctx1}', encoding='utf-8'),
+                 'k4': [
+                     1,
+                     2,
+                     '3_{ctx4}here',
+                     {'key4.1': 'value4.1',
+                      '{ctx2}_key4.2': SicString("value_{ctx3}_4.2"),
+                      'key4.3': {
+                          '4.3.1': '4.3.1value',
+                          '4.3.2': '4.3.2_{ctx1}_value',
+                          7: '4.3.3_{ctx4}_value'}}
+                 ],
+                 'k5': {'key5.1': 'value5.1', 'key5.2': 'value5.2'},
+                 'k6': ('six6.1', False, [0, 1, 2], 77, 'six_{ctx1}_end'),
+                 'k7': 'simple string to close 7',
+                 6: {7, 89}
+                 }
+
+    context = Context(
+        {'ctx1': 'ctxvalue1',
+         'ctx2': 'ctxvalue2',
+         'ctx3': 'ctxvalue3',
+         'ctx4': 'ctxvalue4',
+         5: [1, 2, 3]})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output != input_obj
+    assert output == {'k1': 'v1',
+                      'k2': 'v2_ctxvalue1',
+                      'k3': bytes('v3{ctx1}', encoding='utf-8'),
+                      'k4': [
+                          1,
+                          2,
+                          '3_ctxvalue4here',
+                          {'key4.1': 'value4.1',
+                           'ctxvalue2_key4.2': "value_{ctx3}_4.2",
+                           'key4.3': {
+                               '4.3.1': '4.3.1value',
+                               '4.3.2': '4.3.2_ctxvalue1_value',
+                               7: '4.3.3_ctxvalue4_value'}}
+                      ],
+                      'k5': {'key5.1': 'value5.1', 'key5.2': 'value5.2'},
+                      'k6': ('six6.1', False, [0, 1, 2], 77,
+                             'six_ctxvalue1_end'),
+                      'k7': 'simple string to close 7',
+                      6: {7, 89}
+                      }
+
+
 def test_get_formatted_iterable_with_memo():
     """Straight deepish copy with formatting."""
     arb_dict = {'key4.1': 'value4.1',
@@ -1170,6 +1224,44 @@ def test_get_formatted_as_type_default_with_subst_str():
     assert result == 'xx10xx'
 
 
+def test_get_formatted_value_string():
+    """Format input strings."""
+    context = Context({'k1': 10})
+    assert context.get_formatted_value('{k1}') == 10
+
+
+def test_get_formatted_value_int():
+    """Format input int."""
+    context = Context({'k1': 10})
+    assert context.get_formatted_value(11) == 11
+
+
+def test_get_formatted_value_pystring():
+    """Format input pystring."""
+    context = Context({'k1': 10})
+    out = context.get_formatted_value(PyString('11'))
+    assert out == 11
+    assert isinstance(out, int)
+
+
+def test_get_formatted_value_bool():
+    """Format input int."""
+    context = Context({'k1': 10})
+    assert not context.get_formatted_value(False)
+
+
+def test_get_formatted_value_dict():
+    """Format input dict."""
+    context = Context({'k1': 10})
+    assert context.get_formatted_value({'{k1}', 12}) == {10, 12}
+
+
+def test_get_formatted_value_list():
+    """Format input list."""
+    context = Context({'k1': 10})
+    assert context.get_formatted_value(['{k1}', 12, 13]) == [10, 12, 13]
+
+
 def test_get_processed_string_no_interpolation():
     """get_processed_string on plain string returns plain."""
     context = Context(
@@ -1387,6 +1479,7 @@ def test_merge_pass_no_substitutions():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
+        6: 6
     })
 
     add_me = {
@@ -1400,6 +1493,7 @@ def test_merge_pass_no_substitutions():
     assert context['key2'] == 'value4'
     assert context['key3'] == 'value3'
     assert context['key4'] == 'value5'
+    assert context[6] == 6
 
 
 def test_merge_pass_nested_with_substitutions():
@@ -1411,7 +1505,8 @@ def test_merge_pass_nested_with_substitutions():
             'k31': 'value31',
             'k32': 'value32',
         },
-        'key5': False
+        'key5': False,
+        15: 16
     })
 
     add_me = {
@@ -1422,7 +1517,9 @@ def test_merge_pass_nested_with_substitutions():
         'key4': '444_{key1}_444',
         'key5': {
             'k51': PyString('key1')
-        }
+        },
+        13: 14,
+        15: 17
     }
 
     context.merge(add_me)
@@ -1438,7 +1535,9 @@ def test_merge_pass_nested_with_substitutions():
         'key4': '444_value1_444',
         'key5': {
             'k51': 'value1'
-        }
+        },
+        13: 14,
+        15: 17
     }
 
 
@@ -1639,9 +1738,30 @@ def test_merge_interpolate_py_with_substitutions():
     assert context["key"] == 5
 
 
+def test_merge_non_string_keys():
+    """Merge when key is not string."""
+    context = Context({1: False, 2: 'two', 3: '{two}'})
+    context.merge({2: 'merged'})
+    assert context == {1: False, 2: 'merged', 3: '{two}'}
+
+
+def test_merge_key_substitutions():
+    """Merge when keys substitute."""
+    context = Context({'k1': 'v1', 'k2': 'k1', 'k3': 'value3'})
+    context.merge({'{k2}': 'newvalue', '{k1}': 'k1merged', '{k3}': '3new'})
+    # notice that k1 resolves to newvalue because it evaluates after k2 merge.
+    assert context == {'k1': 'newvalue',
+                       'k2': 'k1',
+                       'newvalue': 'k1merged',
+                       'k3': 'value3',
+                       'value3': '3new'}
+
+
 # ------------------- merge --------------------------------------------------#
 
 # ------------------- set_defaults -------------------------------------------#
+
+
 def test_set_defaults_pass_no_substitutions():
     """Defaults success case with no substitutions."""
     context = Context({
