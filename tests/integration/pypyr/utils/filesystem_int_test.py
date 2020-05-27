@@ -125,7 +125,7 @@ def test_filerewriter_files_in_to_out_no_in_found_no_out():
         rewriter.files_in_to_out('./arb/*')
 
     assert mock_logger_info.mock_calls == [
-        call(f"./arb/* found no files")]
+        call("./arb/* found no files")]
 
     assert not rewriter.in_out_calls
 
@@ -140,7 +140,7 @@ def test_filerewriter_files_in_to_out_no_in_found_with_out():
         rewriter.files_in_to_out('./arb/*', './arb2/*')
 
     assert mock_logger_info.mock_calls == [
-        call(f"./arb/* found no files")]
+        call("./arb/* found no files")]
 
     assert not rewriter.in_out_calls
 
@@ -463,7 +463,7 @@ def test_objectrewriter_in_to_out_no_out_path(temp_file_creator):
 
     assert mock_logger_debug.mock_calls == [
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()
@@ -491,7 +491,7 @@ def test_objectrewriter_in_to_out_no_out_str(temp_file_creator):
 
     assert mock_logger_debug.mock_calls == [
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()
@@ -523,7 +523,7 @@ def test_objectrewriter_in_to_out_same_path(temp_file_creator):
         call("in path and out path are the same file. writing to temp "
              "file and then replacing in path with the temp file."),
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()
@@ -593,7 +593,7 @@ def test_streamrewriter_in_to_out_no_out_path(temp_file_creator):
 
     assert mock_logger_debug.mock_calls == [
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()
@@ -614,7 +614,7 @@ def test_streamrewriter_in_to_out_no_out_str(temp_file_creator):
 
     assert mock_logger_debug.mock_calls == [
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()
@@ -639,7 +639,7 @@ def test_streamrewriter_in_to_out_same_path(temp_file_creator):
         call("in path and out path are the same file. writing to temp "
              "file and then replacing in path with the temp file."),
         call(f"opening source file: {path_in}"),
-        call(f"opening temp file for writing..."),
+        call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
 
     assert path_in.is_file()

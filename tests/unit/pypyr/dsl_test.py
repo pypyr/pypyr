@@ -2321,6 +2321,7 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
 
 # ------------------- Step: run_step: swallow --------------------------------#
 
+
 # ------------------- Step: run_step: input context --------------------------#
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
@@ -2555,6 +2556,7 @@ def test_unset_step_input_context():
                        'key2': 'value2'}
 
 # ------------------- Step: unset_step_input_context -------------------------#
+
 
 # ------------------- Step: save_error ---------------------------#
 @patch('pypyr.moduleloader.get_module')
@@ -3126,6 +3128,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
         'ValueError not in retryOn. Raising error and exiting retry.')
 
 # ------------------- RetryDecorator: exec_iteration -------------------------#
+
 
 # ------------------- RetryDecorator: retry_loop -----------------------------#
 @patch('time.sleep')
