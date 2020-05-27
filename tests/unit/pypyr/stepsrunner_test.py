@@ -1060,6 +1060,7 @@ def test_jump_with_for(mock_step_cache):
     assert context == {'a': 'b', 'i': 'two'}
 # ------------------------- END: Jump ----------------------------------------#
 
+
 # ------------------------- StopStepGroup ------------------------------------#
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_stop_step_group_with_success_handler(mock_step_cache):
@@ -1257,6 +1258,7 @@ def test_stop_step_group_with_success_handler_while(mock_step_cache):
                                           call('sg3.step2')
                                           ]
 # ------------------------- END: StopStepGroup -------------------------------#
+
 
 # ------------------------- Call ---------------------------------------------#
 @patch('pypyr.cache.stepcache.step_cache.get_step')
