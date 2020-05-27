@@ -7,6 +7,7 @@ from pypyr.errors import (
     KeyInContextHasNoValueError,
     KeyNotInContextError)
 import pytest
+import typing
 
 # ------------------- behaves like a dictionary-------------------------------#
 
@@ -682,6 +683,34 @@ def test_get_formatted_iterable_set():
     diffs = output - input_obj
     assert len(diffs) == 1
     assert 'ctxvalue3' in diffs
+
+
+def test_get_formatted_immutable_mapping():
+    """Simple read-only mapping test."""
+
+    class ReadOnlyMapping(typing.Mapping):
+        def __init__(self, *args, **kwargs):
+            self._data = dict(*args, **kwargs)
+
+        def __getitem__(self, key):
+            return self._data[key]
+
+        def __len__(self):
+            return len(self._data)
+
+        def __iter__(self):
+            return iter(self._data)
+
+    input_obj = {'key': '{ctx}'}
+
+    context = Context(
+        {'ctx': ReadOnlyMapping({'arb': 1})})
+
+    output = context.get_formatted_iterable(input_obj)
+
+    assert output is not input_obj
+    assert isinstance(output['key'], ReadOnlyMapping)
+    assert output['key'] == {'arb': 1}
 
 
 def test_get_formatted_iterable_nested():

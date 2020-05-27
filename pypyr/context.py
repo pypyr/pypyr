@@ -349,10 +349,13 @@ class Context(dict):
             new = obj
         elif isinstance(obj, Mapping):
             # dicts
-            new = obj.__class__()
-            for k, v in obj.items():
-                new[self.get_formatted_value(
-                    k)] = self.get_formatted_iterable(v, memo)
+            new = obj.__class__(
+                (
+                    self.get_formatted_value(k),
+                    self.get_formatted_iterable(v, memo)
+                )
+                for k, v in obj.items()
+            )
         elif isinstance(obj, (Sequence, Set)):
             # list, set, tuple. Bytes and str won't fall into this branch coz
             # they're expicitly checked further up in the if.
