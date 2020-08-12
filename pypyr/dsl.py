@@ -259,10 +259,10 @@ class Step:
         if hasattr(step, 'lc'):
             # line_no: optional. Has value only when the yaml
             # round trip parser is in use.
-            self.line_no = step.lc.line
+            self.line_no = step.lc.line + 1
             # line_col: optional. Has value only when the yaml
             # round trip parser is in use.
-            self.line_col = step.lc.col
+            self.line_col = step.lc.col + 1
 
         self.name = step.get('name', None)
 

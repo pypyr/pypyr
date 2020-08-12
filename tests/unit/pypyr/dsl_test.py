@@ -304,7 +304,7 @@ def test_complex_step_init_with_missing_name_round_trip():
 
     assert mock_logger_error.call_count == 1
     assert mock_logger_error.mock_calls == [
-        call('Error at pipeline step yaml line: 6, col: 7'),
+        call('Error at pipeline step yaml line: 7, col: 8'),
     ]
 
     assert str(err_info.value) == "step must have a name."
@@ -348,7 +348,7 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
     mock_logger_error.assert_called_once_with(
-        "Error at pipeline step mocked.step yaml line: 1, col: 2")
+        "Error at pipeline step mocked.step yaml line: 2, col: 3")
     mock_cache_logger_error.assert_called_once_with(
         "The step mocked.step in module 3 doesn't have a "
         "run_step(context) function.")
@@ -438,8 +438,8 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     assert step.while_decorator.sleep == 3
     assert step.while_decorator.max == 4
     assert step.while_decorator.while_counter is None
-    assert step.line_no == 8
-    assert step.line_col == 9
+    assert step.line_no == 9
+    assert step.line_col == 10
 
     mocked_moduleloader.assert_called_once_with('blah')
 
@@ -1711,17 +1711,17 @@ def test_run_on_error(mock_invoke_step,
             assert str(err_info.value) == "arb error here"
 
     mock_logger_error.assert_called_once_with(
-        "Error while running step step1 at pipeline yaml line: 5, col: 6")
+        "Error while running step step1 at pipeline yaml line: 6, col: 7")
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
     assert context['runErrors'] == [{
-        'col': 6,
+        'col': 7,
         'customError': {'arb': 'value'},
         'description': 'arb error here',
         'exception': err_info.value,
-        'line': 5,
+        'line': 6,
         'name': 'ValueError',
         'step': step.name,
         'swallowed': False,
@@ -2251,17 +2251,17 @@ def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
             assert str(err_info.value) == "arb error here"
 
     mock_logger_error.assert_called_once_with(
-        "Error while running step step1 at pipeline yaml line: 5, col: 6")
+        "Error while running step step1 at pipeline yaml line: 6, col: 7")
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
     assert context['runErrors'] == [{
-        'col': 6,
+        'col': 7,
         'customError': {},
         'description': 'arb error here',
         'exception': err_info.value,
-        'line': 5,
+        'line': 6,
         'name': 'ValueError',
         'step': step.name,
         'swallowed': False,
@@ -2598,11 +2598,11 @@ def test_save_error_round_trip(mocked_moduleloader):
     assert get_test_context().items() <= context.items()
 
     assert context['runErrors'] == [{
-        'col': 7,
+        'col': 8,
         'customError': {},
         'description': 'arb error',
         'exception': arb_error,
-        'line': 6,
+        'line': 7,
         'name': 'ValueError',
         'step': step.name,
         'swallowed': True,

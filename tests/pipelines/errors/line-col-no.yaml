@@ -1,0 +1,19 @@
+steps:
+  - name: pypyr.steps.assert
+    swallow: true
+    in:
+      assert:
+        this: False
+  - name: pypyr.steps.assert
+    in:
+      assert: 
+        this: '{runErrors[0][line]}'
+        equals: 2
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{runErrors[0][col]}'
+        equals: 5
+  - name: pypyr.steps.echo
+    in:
+      echoMe: done
