@@ -160,7 +160,7 @@ check out the `contribution guide <CONTRIBUTING.rst>`_.
 Bugs
 ====
 Well, you know. No one's perfect. Feel free to `create an issue
-<https://github.com/pypyr/pypyr-cli/issues/new>`_.
+<https://github.com/pypyr/pypyr/issues/new>`_.
 
 *******
 License
@@ -174,11 +174,11 @@ Copyright 2017 the pypyr contributors.
 
 .. |build-status| image:: https://api.shippable.com/projects/58efdfe130eb380700e559a6/badge?branch=master
                     :alt: build status
-                    :target: https://app.shippable.com/github/pypyr/pypyr-cli
+                    :target: https://app.shippable.com/github/pypyr/pypyr/
 
 .. |coverage| image:: https://api.shippable.com/projects/58efdfe130eb380700e559a6/coverageBadge?branch=master
                 :alt: coverage status
-                :target: https://app.shippable.com/github/pypyr/pypyr-cli
+                :target: https://app.shippable.com/github/pypyr/pypyr/
 
 .. |pypi| image:: https://badge.fury.io/py/pypyr.svg
                 :alt: pypi version
