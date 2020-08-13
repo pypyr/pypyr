@@ -15,7 +15,8 @@ import pypyr.version
 
 here = path.abspath(path.dirname(__file__))
 
-short_description = """task-runner cli to run pipelines defined in yaml"""
+short_description = (
+    "task-runner for automation pipelines defined in yaml. cli & api.")
 
 # Get the long description from the README file
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
@@ -33,7 +34,14 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/pypyr/pypyr-cli',
+    url='https://pypyr.io',
+
+    project_urls={
+        'Documentation': 'https://pypyr.io/docs/',
+        'Source': 'https://github.com/pypyr/pypyr/',
+        'Release notes': 'https://pypyr.io/updates/releases/',
+        'Tracker': 'https://github.com/pypyr/pypyr/issues',
+    },
 
     # Author details
     author='Thomas Gaigher',
@@ -67,7 +75,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='devops pipeline runner',
+    keywords='task-runner,automation,devops,ci/cd,pipeline runner',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
@@ -113,11 +121,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'pypyr=pypyr.cli:main',
-            'pypyr-cli=pypyr.cli:main'
-        ],
-        'pypyr': [
-            'pypyr=pypyrcli'
+            'pypyr=pypyr.cli:main'
         ]
     },
 )
