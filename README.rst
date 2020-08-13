@@ -162,6 +162,15 @@ Bugs
 Well, you know. No one's perfect. Feel free to `create an issue
 <https://github.com/pypyr/pypyr-cli/issues/new>`_.
 
+*******
+License
+*******
+pypyr is free & open-source software distributed under the Apache License.
+
+Please see `LICENSE file <LICENSE>`_.
+
+Copyright 2017 the pypyr contributors.
+    
 
 .. |build-status| image:: https://api.shippable.com/projects/58efdfe130eb380700e559a6/badge?branch=master
                     :alt: build status
