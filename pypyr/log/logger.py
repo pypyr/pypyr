@@ -14,10 +14,18 @@ def set_logging_config(log_level, handlers):
     Run this ONCE at the start of your process. It formats the python logging
     module's output.
     """
+    if log_level is None:
+        level = 25
+        format_string = '%(message)s'
+    else:
+        level = log_level
+        format_string = (
+            '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
+
     logging.basicConfig(
-        format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s',
+        format=format_string,
         datefmt='%Y-%m-%d %H:%M:%S',
-        level=log_level,
+        level=level,
         handlers=handlers)
 
 

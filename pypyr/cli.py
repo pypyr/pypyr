@@ -72,7 +72,7 @@ def get_parser():
                                   'directory is elsewhere.\n'
                                   'Defaults to cwd.'))
     parser.add_argument('--log', '--loglevel', dest='log_level', type=int,
-                        default=25,
+                        default=None,
                         help=wrap(
                             'Integer log level. Defaults to 25 (NOTIFY).\n'
                             '10=DEBUG \n'
@@ -124,8 +124,9 @@ def main(args=None):
         sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}\033[0;0m")
         sys.stderr.write("\n")
         # at this point, you're guaranteed to have args and thus log_level
-        if parsed_args.log_level < 10:
-            # traceback prints to stderr by default
-            traceback.print_exc()
+        if parsed_args.log_level:
+            if parsed_args.log_level < 10:
+                # traceback prints to stderr by default
+                traceback.print_exc()
 
         return 255
