@@ -1,0 +1,42 @@
+steps:
+  - name: pypyr.steps.call
+    in:
+      call:
+        groups:
+          - sg1
+          - sg2
+        failure: sg1_failure
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C
+
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: False
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+sg1_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: B
+  - pypyr.steps.stopstepgroup
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable

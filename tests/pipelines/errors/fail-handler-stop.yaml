@@ -1,0 +1,17 @@
+steps:
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: False
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - pypyr.steps.stop
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable

@@ -1,0 +1,42 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A.parent
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        name: errors/fail-handler-stoppipeline
+  - name: pypyr.steps.echo
+    in:
+      echoMe: B.parent
+  - name: pypyr.steps.py
+    in:
+      pycode: raise ValueError('arb')
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C.parent
+  - pypyr.steps.debug
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{runErrors[0][name]}'
+        equals: pypyr.errors.ContextError
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{runErrors[1][name]}'
+        equals: ValueError
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{runErrors[1][description]}'
+        equals: arb
+  - pypyr.steps.stoppipeline
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable

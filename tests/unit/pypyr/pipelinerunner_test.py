@@ -10,7 +10,8 @@ from pypyr.errors import (ContextError,
                           KeyNotInContextError,
                           PyModuleNotFoundError,
                           Stop,
-                          StopPipeline)
+                          StopPipeline,
+                          StopStepGroup)
 import pypyr.moduleloader
 import pypyr.pipelinerunner
 from tests.common.utils import DeepCopyMagicMock
@@ -556,6 +557,93 @@ def test_load_and_run_pipeline_with_group_and_failure_group_specified(
                                                 context={'1': 'context 1',
                                                          '2': 'context2',
                                                          '3': 'new'})
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context')
+def test_run_pipeline_parse_context_error_failure(
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline on_failure raises."""
+    mocked_get_parsed_context.side_effect = ValueError('arb')
+    sr = mocked_steps_runner.return_value
+    ctx = pypyr.context.Context()
+    with pytest.raises(ValueError) as err:
+        pypyr.pipelinerunner.run_pipeline(
+            pipeline='arb pipe',
+            context=ctx,
+            pipeline_context_input='arb context input',
+            groups=['gr'],
+            success_group='sg',
+            failure_group='fg')
+
+    assert str(err.value) == 'arb'
+
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='arb pipe',
+        context_in_args='arb context input')
+
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='arb pipe',
+                                                context=ctx)
+    # No called steps, just on_failure since err on parse context already
+    sr.run_step_groups.assert_not_called()
+    sr.run_failure_step_group.assert_called_once_with('fg')
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context')
+def test_run_pipeline_parse_context_error_failure_stop(
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline on_failure raises Stop."""
+    mocked_get_parsed_context.side_effect = ValueError('arb')
+    sr = mocked_steps_runner.return_value
+    sr.run_failure_step_group.side_effect = Stop()
+    ctx = pypyr.context.Context()
+    with pytest.raises(Stop):
+        pypyr.pipelinerunner.run_pipeline(
+            pipeline='arb pipe',
+            context=ctx,
+            pipeline_context_input='arb context input')
+
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='arb pipe',
+        context_in_args='arb context input')
+
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='arb pipe',
+                                                context=ctx)
+    # No called steps, just on_failure since err on parse context already
+    sr.run_step_groups.assert_not_called()
+    sr.run_failure_step_group.assert_called_once_with('on_failure')
+
+
+@patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
+@patch('pypyr.pipelinerunner.get_parsed_context')
+def test_run_pipeline_parse_context_error_failure_stopstepgroup(
+        mocked_get_parsed_context,
+        mocked_steps_runner):
+    """run_pipeline on_failure swallows StopStepGroup."""
+    mocked_get_parsed_context.side_effect = ValueError('arb')
+    sr = mocked_steps_runner.return_value
+    sr.run_failure_step_group.side_effect = StopStepGroup()
+    ctx = pypyr.context.Context()
+    with pytest.raises(ValueError) as err:
+        pypyr.pipelinerunner.run_pipeline(
+            pipeline='arb pipe',
+            context=ctx,
+            pipeline_context_input='arb context input')
+
+    assert str(err.value) == 'arb'
+    mocked_get_parsed_context.assert_called_once_with(
+        pipeline='arb pipe',
+        context_in_args='arb context input')
+
+    mocked_steps_runner.assert_called_once_with(pipeline_definition='arb pipe',
+                                                context=ctx)
+    # No called steps, just on_failure since err on parse context already
+    sr.run_step_groups.assert_not_called()
+    sr.run_failure_step_group.assert_called_once_with('on_failure')
+
 # ------------------------- run_pipeline -------------------------------------#
 
 # ------------------------- loader -------------------------------------------#

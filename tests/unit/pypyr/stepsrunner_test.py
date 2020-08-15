@@ -4,7 +4,12 @@ import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
 from pypyr.dsl import skip_clean_in_on_step_done, Step
-from pypyr.errors import Call, ContextError, Jump, StopStepGroup
+from pypyr.errors import (Call,
+                          ContextError,
+                          Jump,
+                          Stop,
+                          StopPipeline,
+                          StopStepGroup)
 from pypyr.stepsrunner import StepsRunner
 from tests.common.utils import DeepCopyMagicMock, patch_logger
 
@@ -144,7 +149,7 @@ def test_run_failure_step_group_pass():
         StepsRunner({'pipe': 'val'},
                     Context()).run_failure_step_group('on_failure')
 
-    mock_run_group.assert_called_once_with('on_failure')
+    mock_run_group.assert_called_once_with('on_failure', raise_stop=True)
 
 
 def test_run_failure_step_group_swallows():
@@ -162,7 +167,27 @@ def test_run_failure_step_group_swallows():
 
     assert runner.pipeline == {'pipe': 'val'}
     assert runner.context == Context()
-    mock_run_group.assert_called_once_with('arb_failure')
+    mock_run_group.assert_called_once_with('arb_failure', raise_stop=True)
+
+
+def test_run_failure_step_group_stop():
+    """Failure step group runner does Stop."""
+    with patch.object(StepsRunner,
+                      'run_step_group') as mock_run_group:
+        with patch_logger(
+                'pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
+            mock_run_group.side_effect = StopStepGroup
+            runner = StepsRunner({'pipe': 'val'}, Context())
+
+            with pytest.raises(StopStepGroup):
+                runner.run_failure_step_group('arb_failure')
+
+        mock_logger_debug.assert_any_call(
+            "Stop instruction: done with failure handler arb_failure.")
+
+    assert runner.pipeline == {'pipe': 'val'}
+    assert runner.context == Context()
+    mock_run_group.assert_called_once_with('arb_failure', raise_stop=True)
 
 # ------------------------- run_failure_step_group----------------------------#
 
@@ -635,10 +660,9 @@ def test_run_pipeline_steps_simple(mock_run_step, mock_module):
 
 # ------------------------- run_step_group------------------------------------#
 
-
 @patch.object(StepsRunner, 'run_pipeline_steps')
 def test_run_step_group_pass(mock_run_steps):
-    """run_step_groups gets and runs steps for group."""
+    """run_step_group gets and runs steps for group."""
     StepsRunner(get_valid_test_pipeline(), Context()).run_step_group(
         step_group_name='sg1')
 
@@ -650,6 +674,44 @@ def test_run_step_group_pass(mock_run_steps):
             {'in3k1_1': 'v3k1', 'in3k1_2': 'v3k2'}},
         'step4'
     ])
+
+
+@patch.object(StepsRunner, 'run_pipeline_steps')
+def test_run_step_group_no_raise(mock_run_steps):
+    """run_step_group with raise_stop False"""
+    mock_run_steps.side_effect = StopStepGroup()
+    StepsRunner(get_valid_test_pipeline(),
+                Context()).run_step_group(step_group_name='sg1',
+                                          raise_stop=False)
+
+    mock_run_steps.assert_called_once_with(steps=[
+        'step1',
+        'step2',
+        {'name': 'step3key1',
+         'in':
+            {'in3k1_1': 'v3k1', 'in3k1_2': 'v3k2'}},
+        'step4'
+    ])
+
+
+@patch.object(StepsRunner, 'run_pipeline_steps')
+def test_run_step_group_raise(mock_run_steps):
+    """run_step_group with raise_stop True"""
+    mock_run_steps.side_effect = StopStepGroup()
+    with pytest.raises(StopStepGroup):
+        StepsRunner(get_valid_test_pipeline(),
+                    Context()).run_step_group(step_group_name='sg1',
+                                              raise_stop=True)
+
+    mock_run_steps.assert_called_once_with(steps=[
+        'step1',
+        'step2',
+        {'name': 'step3key1',
+         'in':
+            {'in3k1_1': 'v3k1', 'in3k1_2': 'v3k2'}},
+        'step4'
+    ])
+
 # ------------------------- run_step_group------------------------------------#
 
 # ------------------------- run_step_groups ----------------------------------#
@@ -708,7 +770,99 @@ def test_run_step_groups_sequence_with_fail(mock_run_step_group):
     assert mock_run_step_group.mock_calls == [call('sg3'),
                                               call('sg1'),
                                               call('sg2'),
-                                              call('arb fail')]
+                                              call('arb fail', raise_stop=True)
+                                              ]
+
+
+@patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_sequence_with_failing_fail(mock_run_step_group):
+    """Sequence of test groups runs with failure, failure handler fails."""
+    mock_run_step_group.side_effect = [None,
+                                       None,
+                                       ValueError('arb'),
+                                       KeyError('arb failure handler err')]
+
+    with pytest.raises(ValueError) as err:
+        StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+            groups=['sg3', 'sg1', 'sg2', 'sg4'],
+            success_group='arb success',
+            failure_group='arb fail')
+
+    # failure handler swallows arb KeyError
+    assert str(err.value) == 'arb'
+    assert mock_run_step_group.mock_calls == [call('sg3'),
+                                              call('sg1'),
+                                              call('sg2'),
+                                              call('arb fail', raise_stop=True)
+                                              ]
+
+
+@patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_sequence_with_failing_stop(
+        mock_run_step_group):
+    """Groups run with failure, failure handler Stop."""
+    mock_run_step_group.side_effect = [None,
+                                       None,
+                                       ValueError('arb'),
+                                       Stop]
+
+    with pytest.raises(Stop):
+        StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+            groups=['sg3', 'sg1', 'sg2', 'sg4'],
+            success_group='arb success',
+            failure_group='arb fail')
+
+    # failure handler swallows arb KeyError
+    assert mock_run_step_group.mock_calls == [call('sg3'),
+                                              call('sg1'),
+                                              call('sg2'),
+                                              call('arb fail', raise_stop=True)
+                                              ]
+
+
+@patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_sequence_with_failing_stoppipeline(
+        mock_run_step_group):
+    """Groups run with failure, failure handler StopPipeline."""
+    mock_run_step_group.side_effect = [None,
+                                       None,
+                                       ValueError('arb'),
+                                       StopPipeline]
+
+    with pytest.raises(StopPipeline):
+        StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+            groups=['sg3', 'sg1', 'sg2', 'sg4'],
+            success_group='arb success',
+            failure_group='arb fail')
+
+    # failure handler swallows arb KeyError
+    assert mock_run_step_group.mock_calls == [call('sg3'),
+                                              call('sg1'),
+                                              call('sg2'),
+                                              call('arb fail', raise_stop=True)
+                                              ]
+
+
+@patch.object(StepsRunner, 'run_step_group')
+def test_run_step_groups_sequence_with_failing_stopstepgroup(
+        mock_run_step_group):
+    """Test groups runs with failure, failure handler raises StopStepGroup."""
+    mock_run_step_group.side_effect = [None,
+                                       None,
+                                       ValueError('arb'),
+                                       StopStepGroup]
+
+    StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
+        groups=['sg3', 'sg1', 'sg2', 'sg4'],
+        success_group='arb success',
+        failure_group='arb fail')
+
+    # failure handler swallows arb ValueError
+    assert mock_run_step_group.mock_calls == [call('sg3'),
+                                              call('sg1'),
+                                              call('sg2'),
+                                              call('arb fail', raise_stop=True)
+                                              ]
 
 
 @patch.object(StepsRunner, 'run_step_group')
