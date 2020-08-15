@@ -57,3 +57,38 @@ def test_notice_log_level_available():
         logger.notify("Not logged record")
 
     mock_logger_notify.assert_called_once_with("Arb message: arb value")
+
+# ----------------------- set_logging_config ----------------------------------
+
+
+def test_set_logging_log_level_none():
+    """Level None should default to simplified log output."""
+    log_path = None
+    with patch.object(logging, 'basicConfig') as mock_logger:
+        pypyr.log.logger.set_root_logger(None, log_path)
+
+    mock_logger.assert_called_once()
+    args, kwargs = mock_logger.call_args
+    assert kwargs['format'] == ('%(message)s')
+    assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
+    assert kwargs['level'] == 25
+    assert len(kwargs['handlers']) == 1
+    assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+
+
+def test_set_logging_log_level_25():
+    """Level 25 should default to standard full log output."""
+    log_path = None
+    with patch.object(logging, 'basicConfig') as mock_logger:
+        pypyr.log.logger.set_root_logger(25, log_path)
+
+    mock_logger.assert_called_once()
+    args, kwargs = mock_logger.call_args
+    assert kwargs['format'] == (
+        '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
+    assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
+    assert kwargs['level'] == 25
+    assert len(kwargs['handlers']) == 1
+    assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+
+# ----------------------- END set_logging_config ------------------------------

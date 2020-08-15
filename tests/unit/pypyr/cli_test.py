@@ -136,7 +136,7 @@ def test_main_pass_with_defaults_context_positional():
         with patch('pypyr.log.logger.set_root_logger') as mock_logger:
             pypyr.cli.main(arg_list)
 
-    mock_logger.assert_called_once_with(log_level=25,
+    mock_logger.assert_called_once_with(log_level=None,
                                         log_path=None)
 
     mock_pipeline_main.assert_called_once_with(
@@ -157,7 +157,7 @@ def test_main_pass_with_no_context():
         with patch('pypyr.log.logger.set_root_logger') as mock_logger:
             pypyr.cli.main(arg_list)
 
-    mock_logger.assert_called_once_with(log_level=25,
+    mock_logger.assert_called_once_with(log_level=None,
                                         log_path=None)
 
     mock_pipeline_main.assert_called_once_with(
@@ -227,7 +227,7 @@ def test_arb_error():
         assert val == 255
 
 
-def test_trace_log_level():
+def test_trace_log_level_less_10():
     """Log Level < 10 produces traceback on error."""
     arg_list = ['blah',
                 'ctx string',
@@ -243,6 +243,36 @@ def test_trace_log_level():
     mock_traceback.assert_called_once()
 
 
+def test_trace_log_level_over_10():
+    """Log Level > 10 doesn't produce traceback on error."""
+    arg_list = ['blah',
+                'ctx string',
+                '--loglevel',
+                '11']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        with patch('traceback.print_exc') as mock_traceback:
+            mock_pipeline_main.side_effect = AssertionError('Test Error Mock')
+            val = pypyr.cli.main(arg_list)
+            assert val == 255
+
+    mock_traceback.assert_not_called()
+
+
+def test_trace_log_level_none():
+    """Log Level None doesn't produce traceback on error."""
+    arg_list = ['blah',
+                'ctx string']
+
+    with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+        with patch('traceback.print_exc') as mock_traceback:
+            mock_pipeline_main.side_effect = AssertionError('Test Error Mock')
+            val = pypyr.cli.main(arg_list)
+            assert val == 255
+
+    mock_traceback.assert_not_called()
+
+
 def test_main_pass_with_logpath():
     """logpath set to tempfile"""
     arg_list = ['blah',
@@ -253,7 +283,7 @@ def test_main_pass_with_logpath():
         with patch('pypyr.log.logger.set_root_logger') as mock_logger:
             pypyr.cli.main(arg_list)
 
-    mock_logger.assert_called_once_with(log_level=25,
+    mock_logger.assert_called_once_with(log_level=None,
                                         log_path='tmp.log',)
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
