@@ -1,7 +1,6 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 
 import logging
-import os
 from pypyr.errors import (Call,
                           ControlOfFlowInstruction,
                           get_error_name,
@@ -15,10 +14,6 @@ from pypyr.utils import expressions, poll
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
-
-# os.getenv's dict fills on 1st import of os.
-skip_clean_in_on_step_done = (os.getenv('PYPYR_IN_CLEAN', '0')
-                              not in {'true', 'TRUE', '1'})
 # ------------------------ custom yaml tags -----------------------------------
 
 
@@ -608,14 +603,8 @@ class Step:
         """
         logger.debug("starting")
 
-        if skip_clean_in_on_step_done:
-            logger.debug("skipping 'in' removal after step because "
-                         "$PYPYR_IN_CLEAN is not set or 0.")
-            logger.debug("done")
-            return
-
         if self.in_parameters is not None:
-            # len is O(1), so not all that unecessarily duplicated cpu time
+            # len is O(1), so not all that unnecessarily duplicated cpu time
             parameter_count = len(self.in_parameters)
             if parameter_count > 0:
                 logger.debug(

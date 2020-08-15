@@ -3,7 +3,7 @@ import logging
 import pytest
 from unittest.mock import call, patch
 from pypyr.context import Context
-from pypyr.dsl import skip_clean_in_on_step_done, Step
+from pypyr.dsl import Step
 from pypyr.errors import (Call,
                           ContextError,
                           Jump,
@@ -265,26 +265,11 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
                  'newkey1': 'v1',
                  'newkey2': 'v2'})
 
-    # validate all the in params ended up in context as intended
-    if skip_clean_in_on_step_done:
-        assert context == {'newkey1': 'v1',
-                           'newkey2': 'v2',
-                           'key1': 'value1',
-                           'key2': 'value2',
-                           'key3': 'updated in',
-                           'key4': [0, 1, 2, 3],
-                           'key5': True,
-                           'key6': False,
-                           'key7': 88,
-                           'key8': None,
-                           'key9': 'arb'}
-    else:
-        # once default behavior is to clean 'in' on step done,this is the test.
-        # all items keys 'in' purged from context.
-        assert context == {'key1': 'value1',
-                           'key2': 'value2',
-                           'key8': None,
-                           'key9': 'arb'}
+    # all items keys 'in' purged from context.
+    assert context == {'key1': 'value1',
+                       'key2': 'value2',
+                       'key8': None,
+                       'key9': 'arb'}
 
 # -----------------------  run_pipeline_steps: run ---------------------------#
 
