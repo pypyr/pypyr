@@ -271,7 +271,7 @@ class Step:
         # description: optional. Write to stdout if exists and flagged.
         self.description = step.get('description', None)
         if self.description:
-            logger.notify("%s: %s", self.name, self.description)
+            logger.notify(self.description)
         else:
             logger.debug("step name: %s", self.name)
 

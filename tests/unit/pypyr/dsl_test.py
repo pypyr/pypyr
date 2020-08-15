@@ -456,7 +456,7 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
                      'run': False},
                     None)
 
-    mock_logger_info.assert_called_once_with('step1: test description')
+    mock_logger_info.assert_called_once_with('test description')
 
     context = get_test_context()
     original_len = len(context)
