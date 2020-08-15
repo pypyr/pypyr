@@ -1,0 +1,39 @@
+steps:
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: False
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: B
+  - name: pypyr.steps.jump
+    in:
+      jump: sg2
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C
+  - pypyr.steps.stoppipeline
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - name: pypyr.steps.jump
+    in:
+      jump: sg1
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable

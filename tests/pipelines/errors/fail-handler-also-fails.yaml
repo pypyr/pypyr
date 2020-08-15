@@ -1,0 +1,18 @@
+steps:
+  - name: pypyr.steps.py
+    in:
+      pycode: raise TypeError('O.G err')
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - name: pypyr.steps.py
+    in:
+      pycode: raise ValueError('arb')
+  - name: pypyr.steps.echo
+    in:
+      echoMe: unreachable

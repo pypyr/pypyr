@@ -12,7 +12,7 @@ import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 from pypyr.cache.parsercache import contextparser_cache
-from pypyr.errors import Stop, StopPipeline
+from pypyr.errors import Stop, StopPipeline, StopStepGroup
 from pypyr.cache.pipelinecache import pipeline_cache
 from pypyr.stepsrunner import StepsRunner
 import pypyr.yaml
@@ -283,8 +283,14 @@ def run_pipeline(pipeline,
         logger.error("Something went wrong. Will now try to run %s",
                      failure_group)
 
-        # failure_step_group will log but swallow any errors
-        steps_runner.run_failure_step_group(failure_group)
+        # failure_step_group will log but swallow any errors except Stop
+        try:
+            steps_runner.run_failure_step_group(failure_group)
+        except StopStepGroup:
+            pass
+        except Stop:
+            raise
+
         logger.debug("Raising original exception to caller.")
         raise
 

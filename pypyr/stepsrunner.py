@@ -85,7 +85,11 @@ class StepsRunner():
         logger.debug("starting")
         try:
             # if no group_name exists, it'll do nothing.
-            self.run_step_group(group_name)
+            self.run_step_group(group_name, raise_stop=True)
+        except Stop:
+            logger.debug("Stop instruction: done with failure handler %s.",
+                         group_name)
+            raise
         except Exception as exception:
             logger.error("Failure handler also failed. Swallowing.")
             logger.error(exception)
@@ -116,7 +120,7 @@ class StepsRunner():
 
         logger.debug("done")
 
-    def run_step_group(self, step_group_name):
+    def run_step_group(self, step_group_name, raise_stop=False):
         """Get the specified step group from the pipeline and run its steps."""
         logger.debug("starting %s", step_group_name)
         assert step_group_name
@@ -133,6 +137,8 @@ class StepsRunner():
             logger.debug("jump: done jumping to %s", jump.groups)
         except StopStepGroup:
             logger.debug("StopStepGroup: stopped %s", step_group_name)
+            if raise_stop:
+                raise
 
         logger.debug("done %s", step_group_name)
 
@@ -174,18 +180,25 @@ class StepsRunner():
         except Exception:
             # yes, yes, don't catch Exception. Have to, though, to run failure
             # handler. Also, it does raise it back up.
+            do_raise = True
             if failure_group:
                 logger.error(
                     "Something went wrong. Will now try to run %s.",
                     failure_group)
 
-                # failure_step_group will log but swallow any errors
-                self.run_failure_step_group(failure_group)
+                # failure_step_group will log but swallow any errors except
+                # Stop. This so that pipeline can quit failure_handler
+                # via stop without raising an error.
+                try:
+                    self.run_failure_step_group(failure_group)
+                except StopStepGroup:
+                    do_raise = False
             else:
                 logger.debug(
                     "Something went wrong. No failure group specified.")
 
-            logger.debug("Raising original exception to caller.")
-            raise
+            if do_raise:
+                logger.debug("Raising original exception to caller.")
+                raise
 
         logger.debug("done")
