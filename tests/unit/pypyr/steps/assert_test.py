@@ -2,9 +2,7 @@
 import importlib
 import pytest
 from pypyr.context import Context
-from pypyr.errors import (ContextError,
-                          KeyNotInContextError,
-                          KeyInContextHasNoValueError)
+from pypyr.errors import KeyNotInContextError, KeyInContextHasNoValueError
 
 
 # loading assert dynamically because it clashes with built-in assert
@@ -34,7 +32,7 @@ def test_assert_raises_on_empty_assert():
 def test_assert_raises_on_empty_assertthis():
     """Assert this must not be empty."""
     context = Context({'assert': {'this': None}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert None evaluated to False."
@@ -43,7 +41,7 @@ def test_assert_raises_on_empty_assertthis():
 def test_assert_raises_on_assertthis_false():
     """Assert this boolean False raises."""
     context = Context({'assert': {'this': False}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert False evaluated to False."
@@ -82,7 +80,7 @@ def test_assert_passes_on_assertthis_float():
 def test_assert_raises_on_assertthis_false_string():
     """Assert this arbitrary string isn't True raises."""
     context = Context({'assert': {'this': 'arb string'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert arb string evaluated to False."
@@ -91,7 +89,7 @@ def test_assert_raises_on_assertthis_false_string():
 def test_assert_raises_on_assertthis_false_int():
     """Assert this int 0 is False."""
     context = Context({'assert': {'this': 0}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert 0 evaluated to False."
@@ -108,7 +106,7 @@ def test_assert_raises_on_assertthis_not_equals():
     context = Context({'assert': {
         'this': 'boom',
         'equals': 'BOOM'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -142,7 +140,7 @@ def test_assert_raises_on_assertthis_not_equals_bools():
     """Assert this does not equal assertEquals bools."""
     context = Context({'assert': {'this': True,
                                   'equals': False}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -161,7 +159,7 @@ def test_assert_raises_on_assertthis_not_equals_ints():
     """Assert this does not equal assertEquals ints."""
     context = Context({'assert': {'this': 0,
                                   'equals': 23}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -180,7 +178,7 @@ def test_assert_raises_on_assertthis_not_equals_floats():
     """Assert this does not equal assertEquals ints."""
     context = Context({'assert': {'this': 123.45,
                                   'equals': 5.432}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -192,7 +190,7 @@ def test_assert_raises_on_assertthis_not_equals_string_to_int():
     """Assert this does not equal assertEquals string to int conversion."""
     context = Context({'assert': {'this': '23',
                                   'equals': 23}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -204,7 +202,7 @@ def test_assert_raises_on_assertthis_not_equals_string_to_bool():
     """Assert this string does not equal assertEquals bool."""
     context = Context({'assert': {'this': True,
                                   'equals': 'True'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -223,7 +221,7 @@ def test_assert_raises_on_assertthis_not_equals_lists():
     """Assert this string does not equal assertEquals list."""
     context = Context({'assert': {'this': [1, 2, 8, 4.5],
                                   'equals': [1, 2, 3, 4.5]}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -243,7 +241,7 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_list():
     """Assert this string does not equal assertEquals dict."""
     context = Context({'assert': {'this': {'k1': 1, 'k2': [2, 3], 'k3': False},
                                   'equals': [1, 2, 3, 4.5]}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -256,7 +254,7 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
     context = Context({'assert': {
         'this': {'k1': 1, 'k2': [2, 3], 'k3': False},
         'equals': {'k1': 1, 'k2': [2, 55], 'k3': False}}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -281,7 +279,7 @@ def test_assert_raises_on_assertthis_not_equals_ints_substitutions():
                        'k2': 34,
                        'assert': {'this': '{k1}',
                                   'equals': '{k2}'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -296,7 +294,7 @@ def test_assert_passes_on_assertthis_not_equals_bools_substitutions():
                        'assert': {'this': '{k1}',
                                   'equals': '{k2}'}})
 
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
@@ -327,7 +325,7 @@ def test_assert_raises_on_assertthis_not_equals_none_substitutions():
                        'k2': 34,
                        'assert': {'this': '{k1}',
                                   'equals': '{k2}'}})
-    with pytest.raises(ContextError):
+    with pytest.raises(AssertionError):
         assert_step.run_step(context)
 
 
@@ -336,7 +334,7 @@ def test_assert_raises_on_assertthis_bool_substitutions():
     context = Context({'k1': False,
                        'k2': 34,
                        'assert': {'this': '{k1}'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert {k1} evaluated to False."
@@ -348,7 +346,7 @@ def test_assert_raises_on_assertthis_substitutions_int():
                        'k2': 'True',
                        'assert': {'this': '{k1}'}})
 
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert {k1} evaluated to False."
@@ -368,7 +366,7 @@ def test_assert_raises_on_assertthis_none_substitutions():
     context = Context({'k1': None,
                        'k2': 34,
                        'assert': {'this': '{k1}'}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert {k1} evaluated to False."
@@ -412,7 +410,7 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict_substitutions():
                                   'equals': {'k1': 1,
                                              'k2': [2, '{k2}'],
                                              'k3': False}}})
-    with pytest.raises(ContextError) as err_info:
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
 
     assert str(err_info.value) == (
