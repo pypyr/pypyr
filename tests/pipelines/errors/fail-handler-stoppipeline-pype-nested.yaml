@@ -25,7 +25,7 @@ on_failure:
     in:
       assert:
         this: '{runErrors[0][name]}'
-        equals: pypyr.errors.ContextError
+        equals: AssertionError
   - name: pypyr.steps.assert
     in:
       assert:

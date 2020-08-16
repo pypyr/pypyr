@@ -1,6 +1,5 @@
 """Error handling integration tests. Pipelines in ./tests/pipelines/errors."""
 import tests.common.pipeline_runner as test_pipe_runner
-from pypyr.errors import ContextError
 # ------------------------- runErrors ----------------------------------------#
 
 expected_file_name = '{0}_expected_output.txt'
@@ -99,7 +98,7 @@ def test_fail_handler_call_from_handler():
     """
     pipename = 'errors/fail-handler-call-from-handler'
     test_pipe_runner.assert_pipeline_raises(pipename,
-                                            ContextError,
+                                            AssertionError,
                                             'assert False evaluated to False.',
                                             ['A', 'B', 'C', 'D', 'E'])
 
@@ -111,7 +110,7 @@ def test_fail_handler_call_from_handler_nest_fail():
     """
     pipename = 'errors/fail-handler-call-from-handler-nest-fail'
     test_pipe_runner.assert_pipeline_raises(pipename,
-                                            ContextError,
+                                            AssertionError,
                                             'assert False evaluated to False.',
                                             ['A', 'B', 'C', 'D'])
 
@@ -126,7 +125,7 @@ def test_fail_handler_call_from_handler_nest_fail_handler():
     """
     pipename = 'errors/fail-handler-call-from-handler-nest-fail-handler'
     test_pipe_runner.assert_pipeline_raises(pipename,
-                                            ContextError,
+                                            AssertionError,
                                             'assert False evaluated to False.',
                                             ['A', 'B', 'C', 'D', 'E', 'F'])
 
@@ -153,7 +152,7 @@ def test_fail_handler_jump():
     """
     pipename = 'errors/fail-handler-jump'
     test_pipe_runner.assert_pipeline_raises(pipename,
-                                            ContextError,
+                                            AssertionError,
                                             'assert False evaluated to False.',
                                             ['A', 'B', 'C'])
 

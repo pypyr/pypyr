@@ -1,6 +1,5 @@
 """Step that asserts something is true or equal to something else."""
 import logging
-from pypyr.errors import ContextError
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -41,8 +40,8 @@ def run_step(context):
         assert_equals = context['assert']['equals']
         # compare assertThis to assertEquals
         logger.debug("comparing assert['this'] to assert['equals'].")
-        assert_result = (context.get_formatted_iterable(assert_this)
-                         == context.get_formatted_iterable(assert_equals))
+        assert_result = (context.get_formatted_iterable(assert_this) ==
+                         context.get_formatted_iterable(assert_equals))
     else:
         # nothing to compare means treat assertThis as a bool.
         logger.debug("evaluating assert['this'] as a boolean.")
@@ -65,6 +64,6 @@ def run_step(context):
             # if it's a bool it's presumably not a sensitive value.
             error_text = (
                 f"assert {assert_this} evaluated to False.")
-        raise ContextError(error_text)
+        raise AssertionError(error_text)
 
     logger.debug("done")
