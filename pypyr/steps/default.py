@@ -23,7 +23,7 @@ Will result in context:
         key2.2: value2.2
     key3: None
 
-By comparison, the in step decorator, contextset, contextsetf and contextmerge
+By comparison, the in step decorator, contextcopy, contextsetf and contextmerge
 overwrite values that are in context already.
 
 Applies string interpolation as it adds. String interpolation applies to keys

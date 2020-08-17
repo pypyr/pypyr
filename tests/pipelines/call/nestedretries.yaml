@@ -18,9 +18,9 @@ sg1:
   - name: pypyr.steps.echo
     in:
       echoMe: 'sg1.{retryCounter}'
-  - name: pypyr.steps.contextset
+  - name: pypyr.steps.contextcopy
     in:
-      contextSet:
+      contextCopy:
         counterCopy: retryCounter
   - name: pypyr.steps.call
     retry:
