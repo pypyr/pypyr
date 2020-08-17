@@ -62,7 +62,7 @@ def test_contextsetf_pass_substitutions():
 
 
 def test_contextsetf_pass_different_types():
-    """contextset success case with substitutions of non strings."""
+    """contextsetf success case with substitutions of non strings."""
     context = Context({
         'k1': 33,
         'k2': 123.45,

@@ -18,7 +18,7 @@ def test_context_clear_throws_on_contextset_missing():
 
 
 def test_context_clear_pass():
-    """contextset success case"""
+    """context clear success case"""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -43,7 +43,7 @@ def test_context_clear_pass():
 
 
 def test_context_clear_no_raise_if_keys_dont_exist():
-    """contextset passes even if keys not in context"""
+    """context clear passes even if keys not in context"""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',

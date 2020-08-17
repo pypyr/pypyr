@@ -1,6 +1,6 @@
 """pypyr step that merges the input mappings into context.
 
-Whereas contextset and contextsetf overwrites values that are in context
+Whereas contextcopy and contextsetf overwrites values that are in context
 already, contextmerge merges its input into context, preserving the existing
 hierarchy while just updating the values where specified in the contextmerge
 input.
