@@ -24,7 +24,7 @@ steps:
         run: git tag -l "v{version}"
         save: True
   - name: pypyr.steps.stopstepgroup
-    description: --> check if tag already exists
+    description: --> tag already exists
     run: !py cmdOut['stdout'].rstrip('\r\n') == f'v{version}'
   - name: pypyr.steps.cmd
     comment: tag current HEAD
