@@ -452,22 +452,69 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
                                                      mock_get_module):
-    """Complex step with run decorator set false doesn't run step."""
-    with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_info:
-        step = Step({'name': 'step1',
-                     'description': 'test description',
-                     'run': False},
-                    None)
+    """Complex step with run decorator outputs notify description."""
+    step = Step({'name': 'step1',
+                 'description': 'test {key1} description'},
+                None)
 
-    mock_logger_info.assert_called_once_with('test description')
+    context = get_test_context()
+    original_len = len(context)
+
+    with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_notify:
+        step.run_step(context)
+
+    mock_logger_notify.assert_called_once_with('test value1 description')
+    mock_invoke_step.assert_called_once()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
+                                                             mock_get_module):
+    """Complex step with run decorator set false doesn't run step."""
+    step = Step({'name': 'step1',
+                 'description': 'test description',
+                 'run': '{key5}'},
+                None)
 
     context = get_test_context()
     original_len = len(context)
 
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
-        step.run_step(context)
+        with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_notify:
+            step.run_step(context)
 
+    mock_logger_notify.assert_called_once_with('(skipping): test description')
     mock_logger_info.assert_any_call("step1 not running because run is False.")
+    mock_invoke_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_complex_with_description_skip(mock_invoke_step,
+                                                          mock_get_module):
+    """Complex step with run decorator set false doesn't run step."""
+    step = Step({'name': 'step1',
+                 'description': 'test {key5} description',
+                 'skip': True},
+                None)
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_notify:
+            step.run_step(context)
+
+    mock_logger_notify.assert_called_once_with(
+        '(skipping): test False description')
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -476,9 +523,9 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
 # ------------------- Step: run_step: foreach --------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch.object(Step, 'foreach_loop')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch.object(Step, 'foreach_loop')
 def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
     """Simple step with None foreach decorator doesn't loop."""
     step = Step('step1', None)
@@ -496,9 +543,9 @@ def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch.object(Step, 'foreach_loop')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch.object(Step, 'foreach_loop')
 def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
     """Complex step with empty foreach decorator doesn't loop."""
     step = Step({'name': 'step1',
@@ -517,8 +564,8 @@ def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
 def test_foreach_once(mock_run, mock_moduleloader):
     """The foreach loops once."""
     step = Step({'name': 'step1',
@@ -547,9 +594,9 @@ def test_foreach_once(mock_run, mock_moduleloader):
     assert step.for_counter == 'one'
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_twice(mock_run, mock_moduleloader):
     """The foreach loops twice."""
     step = Step({'name': 'step1',
@@ -583,9 +630,9 @@ def test_foreach_twice(mock_run, mock_moduleloader):
     assert step.for_counter == 'two'
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     """The foreach loops thrice with substitutions inside a list."""
     step = Step({'name': 'step1',
@@ -623,9 +670,9 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     assert step.for_counter == 'key3'
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
     """The foreach gets list from string format expression."""
     step = Step({'name': 'step1',
@@ -674,8 +721,8 @@ def mock_step_mutating_run(context):
     context['dynamic_run_expression'] = False
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
@@ -712,8 +759,8 @@ def mock_step_mutating_skip(context):
     context['dynamic_skip_expression'] = True
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_skip)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_skip)
 def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
@@ -745,7 +792,7 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     assert step.for_counter == 'key3'
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
     step = Step({'name': 'step1',
@@ -807,8 +854,8 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
 # ------------------- Step: run_step: while ----------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_while_max(mock_invoke, mock_moduleloader):
     """The while runs to max."""
     step = Step({'name': 'step1',
@@ -836,8 +883,8 @@ def test_while_max(mock_invoke, mock_moduleloader):
     assert step.while_decorator.while_counter == 3
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The while evaluates run_me expression on each loop iteration."""
     step = Step({'name': 'step1',
@@ -873,8 +920,8 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     assert step.while_decorator.while_counter == 3
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=[None, ValueError('whoops')])
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=[None, ValueError('whoops')])
 def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     """Error during while kicks loop."""
     step = Step({'name': 'step1',
@@ -915,8 +962,8 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_while_exhausts(mock_invoke, mock_moduleloader):
     """While exhausts throws error on errorOnMax."""
     step = Step({'name': 'step1',
@@ -952,8 +999,8 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
     assert step.while_decorator.while_counter == 3
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     """While evaluates run_me expression on each loop iteration, no format."""
     step = Step({'name': 'step1',
@@ -988,9 +1035,9 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     assert step.while_decorator.while_counter == 3
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_conditional_decorators')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'run_conditional_decorators')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     """While loops twice, foreach thrice with substitutions inside a list."""
     step = Step({'name': 'step1',
@@ -1049,7 +1096,7 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
 # ------------------- Step: invoke_step---------------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_invoke_step_pass(mocked_moduleloader):
     """run_pipeline_step test pass."""
     stepcache.step_cache.clear()
@@ -1069,7 +1116,7 @@ def test_invoke_step_pass(mocked_moduleloader):
          'key7': 77})
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_invoke_step_context_abides(mocked_stepcache):
     """Step mutates context & mutation abides after run_pipeline_step."""
     mocked_stepcache.return_value = mock_run_step
@@ -1082,7 +1129,7 @@ def test_invoke_step_context_abides(mocked_stepcache):
     assert context['test_run_step'] == 'this was set in step'
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_invoke_step_empty_context(mocked_stepcache):
     """Empty context in step (i.e count == 0, but not is None)."""
     mocked_stepcache.return_value = mock_run_step_empty_context
@@ -1096,7 +1143,7 @@ def test_invoke_step_empty_context(mocked_stepcache):
     assert context is not None
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_invoke_step_none_context(mocked_stepcache):
     """Step rebinding context to None doesn't affect the caller Context."""
     mocked_stepcache.return_value = mock_run_step_none_context
@@ -1121,7 +1168,7 @@ def test_invoke_step_none_context(mocked_stepcache):
 # ------------------- Step: reset_context_counters ---------------------------#
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters(mock_step_cache):
     """Reset all counters in context."""
     context = {'a': 'b',

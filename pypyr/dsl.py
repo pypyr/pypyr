@@ -270,10 +270,6 @@ class Step:
 
         # description: optional. Write to stdout if exists and flagged.
         self.description = step.get('description', None)
-        if self.description:
-            logger.notify(self.description)
-        else:
-            logger.debug("step name: %s", self.name)
 
         # foreach: optional value. None by default.
         self.foreach_items = step.get('foreach', None)
@@ -302,6 +298,8 @@ class Step:
         while_definition = step.get('while', None)
         if while_definition:
             self.while_decorator = WhileDecorator(while_definition)
+
+        logger.debug("step name: %s", self.name)
 
     def save_error(self, context, exception, swallowed):
         """Append step's exception information to the context.
@@ -552,6 +550,19 @@ class Step:
                      mutate.
         """
         logger.debug("starting")
+
+        # give user helpful output if step will actually run or not.
+        if self.description:
+            description = context.get_formatted_value(self.description)
+            run_me = context.get_formatted_as_type(self.run_me, out_type=bool)
+            skip_me = context.get_formatted_as_type(self.skip_me,
+                                                    out_type=bool)
+
+            if run_me and not skip_me:
+                logger.notify(description)
+            else:
+                logger.notify("(skipping): %s", description)
+
         # the in params should be added to context before step execution.
         self.set_step_input_context(context)
 
