@@ -19,7 +19,7 @@ short_description = (
     "task-runner for automation pipelines defined in yaml. cli & api.")
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
@@ -32,6 +32,7 @@ setup(
 
     description=short_description,
     long_description=long_description,
+    long_description_content_type='text/markdown',
 
     # The project's main homepage.
     url='https://pypyr.io',
@@ -98,9 +99,17 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'dev': ['check-manifest', 'flake8'],
-        'test': ['pytest', 'tox'],
-        'deploy': ['bumpversion', 'twine']
+        'dev': [
+            'bumpversion',
+            'codecov',
+            'flake8',
+            'flake8-docstrings',
+            'pytest',
+            'pytest-cov',
+            'setuptools',
+            'twine',
+            'wheel'
+        ]
     },
 
     # If there are data files included in your packages that need to be

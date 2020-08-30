@@ -1,0 +1,161 @@
+context_parser: pypyr.parser.list
+steps:
+  - name: pypyr.steps.call
+    comment: set default config & environment values.
+    in:
+      call: set_config
+  - name: pypyr.steps.call
+    comment: lint & test code. this runs on every pipeline invocation.
+    in:
+      call: 
+        - lint
+        - test
+  - name: pypyr.steps.call
+    comment: optionally do extras like package & publish after lint & test.
+    run: '{argList}'
+    in:
+      call: '{argList}'
+
+lint:
+  - name: pypyr.steps.cmd
+    comment: verify setup.py
+             this will soon (?) deprecate in favor of twine --check. 
+             For the moment twine still only checks README validity, and not 
+             metadata.
+    description: --> verify setup.py metadata
+    in:
+      cmd: python setup.py check -m -s
+  - name: pypyr.steps.cmd
+    comment: lint with flake8
+    description: --> flake8 linting
+    in:
+      cmd: flake8
+
+test:
+  - name: pypyr.steps.cmd
+    comment: test & coverage
+    description: --> tests, output to terminal with line nos.
+    skip: '{isCi}'
+    in:
+      cmd: pytest --cov={package_name} --cov-report term-missing {test_dir}
+  - name: pypyr.steps.cmd
+    comment: test & coverage but with file output
+    description: --> tests, output to file
+    run: '{isCi}'
+    in:
+      cmd: pytest --cov={package_name} --cov-report term-missing --cov-report {output_coverage} --junitxml={output_test_results} {test_dir}
+  - name: pypyr.steps.cmd
+    comment: coverage upload only works like this on CI. if you want to run local you need to give -t upload-token switch.
+    description: --> upload coverage report output to codecov if CI.
+    run: '{isCi}'
+    in:
+      cmd: codecov
+  
+package:
+  - name: pypyr.steps.cmd
+    comment: build wheel + sdist 
+    description: --> build wheel + sdist to dist/
+    in:
+      cmd: python setup.py bdist_wheel sdist
+  - name: pypyr.steps.cmd
+    comment: verify README/long_description
+    description: --> verify/check new package in dist/
+    in:
+      cmd: twine check dist/*
+
+publish:
+  - name: pypyr.steps.call
+    in:
+      call: get_version
+  - name: pypyr.steps.cmd
+    description: --> publishing package to pypi
+    in:
+      cmd: twine upload dist/{package_name}-{version}*
+  - name: pypyr.steps.cmd
+    description: --> uninstall current version of package before attempting to reinstall from pypi
+    in:
+      cmd: pip uninstall -y {package_name}
+  - name: pypyr.steps.contextcopy
+    in:
+      contextCopy:
+        expected_version: version
+  - name: pypyr.steps.cmd
+    description: --> giving pypi 10s before testing release
+    in:
+      cmd: sleep 10
+  - name: pypyr.steps.cmd
+    description: --> installing just published release from pypi for smoke-test
+    retry:
+      max: 5
+      sleep: 10
+    in:
+      cmd: pip install --upgrade --no-cache-dir {package_name}=={expected_version}
+  - name: pypyr.steps.call
+    in:
+      call: get_version
+  - name: pypyr.steps.assert
+    description: --> checking published package version as expected
+    in:
+      assert:
+        this: '{version}'
+        equals: '{expected_version}'
+
+get_version:
+  - name: pypyr.steps.default
+    comment: initialize isConfigSet only if it doesn't exist in context already
+    in:
+      defaults:
+        isConfigSet: false
+  - name: pypyr.steps.call
+    comment: set default config & environment values only if not already set.
+    skip: '{isConfigSet}'
+    in:
+      call: set_config
+  - name: pypyr.steps.py
+    description: --> get version
+    in:
+      pycode: |
+        import importlib
+        version_module = importlib.import_module(context['version_module_name'])
+        if context.get('is_version_module_loaded'): 
+          importlib.reload(version_module)
+        context['version'] = f'{version_module.__version__}'
+        context['is_version_module_loaded'] = True
+  - name: pypyr.steps.echo
+    in:
+      echoMe: version is {version}
+
+set_config:
+  - name: pypyr.steps.default
+    comment: set configuration parameters & vars used throughout pipeline.
+    in:
+      defaults:
+        test_dir: tests
+        output_results_dir: .test-results
+        output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
+        output_test_results: "{output_results_dir}/testresults/junitresults.xml"
+        argList: null
+  - name: pypyr.steps.fetchyaml
+    description: --> loading repo pypyr-config.yaml
+    in:
+      fetchYaml: ./pypyr-config.yaml
+  - name: pypyr.steps.assert
+    description: --> check expected keys in pypyr-config.yaml
+    foreach:
+      - package_name
+      - version_module_name
+    in:
+      assert:
+        this: !py i in locals()
+  - name: pypyr.steps.envget
+    comment: CI is true in a github action environment.
+    in:
+      envGet:
+        env: CI
+        key: isCi
+        default: False
+  - name: pypyr.steps.contextsetf
+    comment: flag that config has been set.
+    in:
+      contextSetf:
+        isConfigSet: True

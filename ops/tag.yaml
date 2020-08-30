@@ -1,0 +1,53 @@
+steps:
+  - name: pypyr.steps.pype
+    description: --> getting current version
+    in:
+      pype:
+          name: ops/build
+          groups: get_version
+  - name: pypyr.steps.envget
+    comment: CI is true in a github action environment.
+    in:
+      envGet:
+        env: CI
+        key: isCi
+        default: False
+  - name: pypyr.steps.cmd
+    comment: on ci tags will already be latest.
+    description: --> make sure local branch has latest tags from origin if local dev.
+    skip: '{isCi}'
+    in:
+      cmd: git pull --tags
+  - name: pypyr.steps.cmd
+    in:
+      cmd:
+        run: git tag -l "v{version}"
+        save: True
+  - name: pypyr.steps.stopstepgroup
+    description: --> check if tag already exists
+    run: !py cmdOut['stdout'].rstrip('\r\n') == f'v{version}'
+  - name: pypyr.steps.cmd
+    comment: tag current HEAD
+    description: --> create new tag for release
+    in:
+      cmd: git tag "v{version}"
+  - name: pypyr.steps.call
+    comment: set git info only on ci, not local dev.
+    run: '{isCi}'
+    in:
+      call: set_git_config
+  - name: pypyr.steps.cmd
+    comment: push tags only if push true
+    description: --> pushing new tag to origin
+    in:
+      cmd: git push --tags
+
+set_git_config:
+  - name: pypyr.steps.cmd
+    description: --> setting git user.name
+    in:
+      cmd: git config user.name github-actions
+  - name: pypyr.steps.cmd
+    description: --> setting git user.email
+    in:
+      cmd: git config user.email github-actions@github.com
