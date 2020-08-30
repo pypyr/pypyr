@@ -482,6 +482,7 @@ def test_assert_keys_type_value_raises_with_extra_error_text():
 
 
 def test_get_eval_string_bool():
+    """Bool eval."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'key1 == \'down\''
     output = context.get_eval_string(input_string)
@@ -490,6 +491,7 @@ def test_get_eval_string_bool():
 
 
 def test_get_eval_string_builtins():
+    """Built-in on eval."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'len(key1)'
     assert context.get_eval_string(input_string) == 4
@@ -500,6 +502,7 @@ def test_get_eval_string_builtins():
 
 
 def test_string_interpolate_works():
+    """Interpolate works."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = 'Piping {key1} the {key2} wild'
     output = context.get_formatted('input_string')
@@ -508,6 +511,7 @@ def test_string_interpolate_works():
 
 
 def test_string_interpolate_works_with_no_swaps():
+    """Interpolate no swap."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = 'Piping down the valleys wild'
     output = context.get_formatted('input_string')
@@ -516,6 +520,7 @@ def test_string_interpolate_works_with_no_swaps():
 
 
 def test_string_interpolate_escapes_double_curly():
+    """Interpolate double curly escape."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = 'Piping {{ down the valleys wild'
     output = context.get_formatted('input_string')
@@ -524,6 +529,7 @@ def test_string_interpolate_escapes_double_curly():
 
 
 def test_string_interpolate_escapes_double_curly_pair():
+    """Interpolate double double curly."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = 'Piping {{down}} the valleys wild'
     output = context.get_formatted('input_string')
@@ -532,6 +538,7 @@ def test_string_interpolate_escapes_double_curly_pair():
 
 
 def test_string_interpolate_sic():
+    """Interpolate ignore sic."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = SicString("Piping {key1} the {key2} wild")
     output = context.get_formatted('input_string')
@@ -540,6 +547,7 @@ def test_string_interpolate_sic():
 
 
 def test_string_interpolate_py():
+    """Interpolate do py."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     context['input_string'] = PyString("len(key1) + len(key2)")
     output = context.get_formatted('input_string')
@@ -548,6 +556,7 @@ def test_string_interpolate_py():
 
 
 def test_single_curly_should_throw():
+    """Interpolate single curly raise."""
     with pytest.raises(ValueError):
         context = Context({'key1': 'value1'})
         context['input_string'] = '{key1} this { is {key2} string'
@@ -555,6 +564,7 @@ def test_single_curly_should_throw():
 
 
 def test_tag_not_in_context_should_throw():
+    """Interpolate key not in context raises."""
     with pytest.raises(KeyNotInContextError) as err:
         context = Context({'key1': 'value1'})
         context['input_string'] = '{key1} this is {key2} string'
@@ -567,6 +577,7 @@ def test_tag_not_in_context_should_throw():
 
 
 def test_context_item_not_a_string_should_return_as_is():
+    """Interpolate non-string."""
     context = Context({'key1': 'value1'})
     context['input_string'] = 77
     val = context.get_formatted('input_string')
@@ -574,6 +585,7 @@ def test_context_item_not_a_string_should_return_as_is():
 
 
 def test_context_item_list_should_iterate():
+    """Interpolate iterable."""
     context = Context({'key1': 'value1'})
     context['input_string'] = ['string1', '{key1}', 'string3']
     val = context.get_formatted('input_string')
@@ -581,6 +593,7 @@ def test_context_item_list_should_iterate():
 
 
 def test_input_string_interpolate_works():
+    """Interpolate strings."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'Piping {key1} the {key2} wild'
     output = context.get_formatted_string(input_string)
@@ -589,6 +602,7 @@ def test_input_string_interpolate_works():
 
 
 def test_input_string_tag_not_in_context_should_throw():
+    """Interpolate not in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
         context = Context({'key1': 'value1'})
         input_string = '{key1} this is {key2} string'
@@ -600,6 +614,7 @@ def test_input_string_tag_not_in_context_should_throw():
 
 
 def test_input_string_interpolate_sic():
+    """Interpolate sic."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString("Piping {key1} the {key2} wild")
     output = context.get_formatted_string(input_string)
@@ -608,6 +623,7 @@ def test_input_string_interpolate_sic():
 
 
 def test_input_string_interpolate_sic_singlequote():
+    """Interpolate sic with quotes."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString('Piping {key1} the {key2} wild')
     output = context.get_formatted_string(input_string)
@@ -616,6 +632,7 @@ def test_input_string_interpolate_sic_singlequote():
 
 
 def test_input_string_interpolate_py_singlequote():
+    """Interpolate py single quotes."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = PyString('len(key1) * len(key2)')
     output = context.get_formatted_string(input_string)
@@ -624,6 +641,7 @@ def test_input_string_interpolate_py_singlequote():
 
 
 def test_input_string_not_a_string_throw():
+    """Interpolate takes string."""
     with pytest.raises(TypeError) as err_info:
         context = Context({'key1': 'value1'})
         input_string = 77
@@ -1021,7 +1039,7 @@ def test_get_formatted_iterable_with_memo():
 
 
 def test_iter_formatted():
-    """iter_formatted yields a formatted string on each loop."""
+    """On iter_formatted yields a formatted string on each loop."""
     context = Context(
         {'ctx1': 'ctxvalue1',
          'ctx2': 'ctxvalue2',
@@ -1044,7 +1062,7 @@ def test_iter_formatted():
 
 
 def test_get_formatted_as_type_string_to_bool_no_subst():
-    """get_formatted_as_type returns bool no formatting."""
+    """On get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type('False', out_type=bool)
 
@@ -1053,7 +1071,7 @@ def test_get_formatted_as_type_string_to_bool_no_subst():
 
 
 def test_get_formatted_as_type_string_to_true_bool_no_subst():
-    """get_formatted_as_type returns bool no formatting."""
+    """On get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type('True', out_type=bool)
 
@@ -1062,7 +1080,7 @@ def test_get_formatted_as_type_string_to_true_bool_no_subst():
 
 
 def test_get_formatted_as_type_bool_false_no_subst():
-    """get_formatted_as_type returns bool no formatting."""
+    """On get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type(False, out_type=bool)
 
@@ -1071,7 +1089,7 @@ def test_get_formatted_as_type_bool_false_no_subst():
 
 
 def test_get_formatted_as_type_bool_true_no_subst():
-    """get_formatted_as_type returns bool no formatting."""
+    """On get_formatted_as_type returns bool no formatting."""
     context = Context()
     result = context.get_formatted_as_type(None, True, out_type=bool)
 
@@ -1080,7 +1098,7 @@ def test_get_formatted_as_type_bool_true_no_subst():
 
 
 def test_get_formatted_as_type_bool_false_with_subst():
-    """get_formatted_as_type returns bool with formatting."""
+    """On get_formatted_as_type returns bool with formatting."""
     context = Context({'k1': False})
     result = context.get_formatted_as_type(None, '{k1}', out_type=bool)
 
@@ -1089,7 +1107,7 @@ def test_get_formatted_as_type_bool_false_with_subst():
 
 
 def test_get_formatted_as_type_bool_true_with_subst():
-    """get_formatted_as_type returns bool with formatting."""
+    """On get_formatted_as_type returns bool with formatting."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(None, '{k1}', out_type=bool)
 
@@ -1098,7 +1116,7 @@ def test_get_formatted_as_type_bool_true_with_subst():
 
 
 def test_get_formatted_as_type_bool_true_with_list_input():
-    """get_formatted_as_type returns bool True with arbitrary input."""
+    """On get_formatted_as_type returns bool True with arbitrary input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type([0, 1, 2], out_type=bool)
 
@@ -1107,7 +1125,7 @@ def test_get_formatted_as_type_bool_true_with_list_input():
 
 
 def test_get_formatted_as_type_bool_false_with_empty_list_input():
-    """get_formatted_as_type returns bool false with empty input."""
+    """On get_formatted_as_type returns bool false with empty input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type([], out_type=bool)
 
@@ -1116,7 +1134,7 @@ def test_get_formatted_as_type_bool_false_with_empty_list_input():
 
 
 def test_get_formatted_as_type_bool_false_with_0_input():
-    """get_formatted_as_type returns bool False with 0 input."""
+    """On get_formatted_as_type returns bool False with 0 input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(0, out_type=bool)
 
@@ -1125,7 +1143,7 @@ def test_get_formatted_as_type_bool_false_with_0_input():
 
 
 def test_get_formatted_as_type_bool_false_with_string_capital_false():
-    """get_formatted_as_type returns bool False with string FALSE."""
+    """On get_formatted_as_type returns bool False with string FALSE."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('FALSE', out_type=bool)
 
@@ -1134,7 +1152,7 @@ def test_get_formatted_as_type_bool_false_with_string_capital_false():
 
 
 def test_get_formatted_as_type_bool_true_with_1_input():
-    """get_formatted_as_type returns bool True with int 1 input."""
+    """On get_formatted_as_type returns bool True with int 1 input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(1, out_type=bool)
 
@@ -1143,7 +1161,7 @@ def test_get_formatted_as_type_bool_true_with_1_input():
 
 
 def test_get_formatted_as_type_bool_true_with_decimal_input():
-    """get_formatted_as_type returns bool True with decimal input."""
+    """On get_formatted_as_type returns bool True with decimal input."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(1.1, out_type=bool)
 
@@ -1152,7 +1170,7 @@ def test_get_formatted_as_type_bool_true_with_decimal_input():
 
 
 def test_get_formatted_as_type_bool_true_with_str_true():
-    """get_formatted_as_type returns bool True with string true."""
+    """On get_formatted_as_type returns bool True with string true."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('true', out_type=bool)
 
@@ -1161,7 +1179,7 @@ def test_get_formatted_as_type_bool_true_with_str_true():
 
 
 def test_get_formatted_as_type_bool_true_with_str_capital_true():
-    """get_formatted_as_type returns bool True with string TRUE."""
+    """On get_formatted_as_type returns bool True with string TRUE."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('TRUE', out_type=bool)
 
@@ -1170,7 +1188,7 @@ def test_get_formatted_as_type_bool_true_with_str_capital_true():
 
 
 def test_get_formatted_as_type_bool_true_with_str_1_true():
-    """get_formatted_as_type returns bool True with string 1."""
+    """On get_formatted_as_type returns bool True with string 1."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type('1', out_type=bool)
 
@@ -1179,7 +1197,7 @@ def test_get_formatted_as_type_bool_true_with_str_1_true():
 
 
 def test_get_formatted_as_type_bool_true_with_pystring_true():
-    """get_formatted_as_type returns bool True with py string True."""
+    """On get_formatted_as_type returns bool True with py string True."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(PyString('k1 and True'),
                                            out_type=bool)
@@ -1189,7 +1207,7 @@ def test_get_formatted_as_type_bool_true_with_pystring_true():
 
 
 def test_get_formatted_as_type_bool_false_with_pystring_false():
-    """get_formatted_as_type returns bool True with py string True."""
+    """On get_formatted_as_type returns bool True with py string True."""
     context = Context({'k1': True})
     result = context.get_formatted_as_type(PyString('not k1'), out_type=bool)
 
@@ -1198,7 +1216,7 @@ def test_get_formatted_as_type_bool_false_with_pystring_false():
 
 
 def test_get_formatted_as_type_int_no_subst():
-    """get_formatted_as_type returns int no formatting."""
+    """On get_formatted_as_type returns int no formatting."""
     context = Context()
     result = context.get_formatted_as_type('10', out_type=int)
 
@@ -1207,7 +1225,7 @@ def test_get_formatted_as_type_int_no_subst():
 
 
 def test_get_formatted_as_type_int_with_subst():
-    """get_formatted_as_type returns int no formatting."""
+    """On get_formatted_as_type returns int no formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type('{k1}', out_type=int)
 
@@ -1216,7 +1234,7 @@ def test_get_formatted_as_type_int_with_subst():
 
 
 def test_get_formatted_as_type_float_no_subst():
-    """get_formatted_as_type returns float no formatting."""
+    """On get_formatted_as_type returns float no formatting."""
     context = Context()
     result = context.get_formatted_as_type('10.1', out_type=float)
 
@@ -1225,7 +1243,7 @@ def test_get_formatted_as_type_float_no_subst():
 
 
 def test_get_formatted_as_type_default_no_subst():
-    """get_formatted_as_type returns default no formatting."""
+    """On get_formatted_as_type returns default no formatting."""
     context = Context()
     result = context.get_formatted_as_type(None, default=10, out_type=int)
 
@@ -1234,7 +1252,7 @@ def test_get_formatted_as_type_default_no_subst():
 
 
 def test_get_formatted_as_type_default_with_subst():
-    """get_formatted_as_type returns default with formatting."""
+    """On get_formatted_as_type returns default with formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type(
         None, default='{k1}', out_type=int)
@@ -1244,7 +1262,7 @@ def test_get_formatted_as_type_default_with_subst():
 
 
 def test_get_formatted_as_type_default_with_subst_str():
-    """get_formatted_as_type returns default with formatting."""
+    """On get_formatted_as_type returns default with formatting."""
     context = Context({'k1': 10})
     result = context.get_formatted_as_type(
         None, default='xx{k1}xx')
@@ -1292,7 +1310,7 @@ def test_get_formatted_value_list():
 
 
 def test_get_processed_string_no_interpolation():
-    """get_processed_string on plain string returns plain."""
+    """On get_processed_string on plain string returns plain."""
     context = Context(
         {'ctx1': 'ctxvalue1',
          'ctx2': 'ctxvalue2',
@@ -1307,6 +1325,7 @@ def test_get_processed_string_no_interpolation():
 
 
 def test_get_processed_string_with_interpolation():
+    """Process string with interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'Piping {key1} the {key2} wild'
     output = context.get_processed_string(input_string)
@@ -1315,6 +1334,7 @@ def test_get_processed_string_with_interpolation():
 
 
 def test_get_processed_string_shorter_than_6_with_interpolation():
+    """Process string with interpolation."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = '{k}'
     output = context.get_processed_string(input_string)
@@ -1323,6 +1343,7 @@ def test_get_processed_string_shorter_than_6_with_interpolation():
 
 
 def test_get_processed_string_shorter_than_6_no_interpolation():
+    """Process string with no interpolation."""
     context = Context()
     input_string = 'k'
     output = context.get_processed_string(input_string)
@@ -1331,6 +1352,7 @@ def test_get_processed_string_shorter_than_6_no_interpolation():
 
 
 def test_get_processed_string_sic_skips_interpolation():
+    """Process string with sic interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString("Piping {key1} the {key2} wild")
     output = context.get_processed_string(input_string)
@@ -1339,6 +1361,7 @@ def test_get_processed_string_sic_skips_interpolation():
 
 
 def test_get_processed_string_pystring_double_quote():
+    """Process string with double quotes interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = PyString("key1 == 'down'")
     output = context.get_processed_string(input_string)
@@ -1347,6 +1370,7 @@ def test_get_processed_string_pystring_double_quote():
 
 
 def test_get_processed_string_pystring_single_quote():
+    """Process string with py string interpolation."""
     context = Context({'key1': 2, 'key2': -3, 'key3': 'value3'})
     input_string = PyString('abs(key1+key2)')
     output = context.get_processed_string(input_string)
@@ -1355,6 +1379,7 @@ def test_get_processed_string_pystring_single_quote():
 
 
 def test_get_processed_string_single_expression_keeps_type():
+    """Process string with interpolation honors type."""
     context = Context(
         {'ctx1': 'ctxvalue1',
          'ctx2': 'ctxvalue2',
@@ -1370,6 +1395,7 @@ def test_get_processed_string_single_expression_keeps_type():
 
 
 def test_get_processed_string_single_expression_keeps_type_and_iterates():
+    """Process string with interpolation on iterable."""
     context = Context(
         {'ctx1': 'ctxvalue1',
          'ctx2': 'ctxvalue2',
@@ -1390,6 +1416,7 @@ def test_get_processed_string_single_expression_keeps_type_and_iterates():
 
 
 def test_get_processed_string_leading_literal():
+    """Process string with interpolation leading literal."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'leading literal{k}'
     output = context.get_processed_string(input_string)
@@ -1398,6 +1425,7 @@ def test_get_processed_string_leading_literal():
 
 
 def test_get_processed_string_following_literal():
+    """Process string with interpolation literal end."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = '{k}following literal'
     output = context.get_processed_string(input_string)
@@ -1409,6 +1437,7 @@ def test_get_processed_string_following_literal():
 
 
 def test_key_in_context():
+    """Assert key in context."""
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
     k1, = context.keys_exist('k1')
@@ -1421,6 +1450,7 @@ def test_key_in_context():
 
 
 def test_keys_of_type_exist_single():
+    """Assert key in context."""
     """return a single tuple."""
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
@@ -1434,6 +1464,7 @@ def test_keys_of_type_exist_single():
 
 
 def test_keys_of_type_exist_triple():
+    """Assert key in context."""
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
     k3, k2, k1 = context.keys_of_type_exist(
@@ -1465,6 +1496,7 @@ def test_keys_of_type_exist_triple():
 
 
 def test_keys_none_exist():
+    """Assert key not in context."""
     context = Context({'k1': 'v1', 'k2': False, 'k3': ['one', 'two']})
 
     k4, = context.keys_of_type_exist(
@@ -1750,18 +1782,21 @@ def test_merge_pass_nested_with_types():
 
 
 def test_merge_interpolate_py():
+    """Merge with interpolate."""
     context = Context()
     context.merge({"key": PyString("True")})
     assert context["key"] is True
 
 
 def test_merge_replaced_by_interpolated_py_mapping():
+    """Merge with interpolate py string."""
     context = Context({'key': {'b': 2}})
     context.merge({"key": PyString("{'a': 1}")})
     assert context["key"] == {'a': 1}
 
 
 def test_merge_interpolate_py_with_substitutions():
+    """Merge with interpolate substitutions."""
     context = Context({"key": False})
     context.merge({"key": PyString("5")})
     assert context["key"] == 5

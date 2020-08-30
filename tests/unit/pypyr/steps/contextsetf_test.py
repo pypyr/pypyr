@@ -6,13 +6,13 @@ import pytest
 
 
 def test_contextsetf_throws_on_empty_context():
-    """context must exist."""
+    """Context must exist."""
     with pytest.raises(KeyNotInContextError):
         pypyr.steps.contextsetf.run_step(Context())
 
 
 def test_contextsetf_throws_on_contextset_missing():
-    """contextSetf must exist in context."""
+    """Input contextSetf must exist in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.contextsetf.run_step(Context({'arbkey': 'arbvalue'}))
 
@@ -22,7 +22,7 @@ def test_contextsetf_throws_on_contextset_missing():
 
 
 def test_contextsetf_pass_no_substitutions():
-    """contextsetf success case with no substitutions."""
+    """Input contextsetf success case with no substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -42,7 +42,7 @@ def test_contextsetf_pass_no_substitutions():
 
 
 def test_contextsetf_pass_substitutions():
-    """contextsetf success case with substitutions."""
+    """Input contextsetf success case with substitutions."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -62,7 +62,7 @@ def test_contextsetf_pass_substitutions():
 
 
 def test_contextsetf_pass_different_types():
-    """contextsetf success case with substitutions of non strings."""
+    """Input contextsetf success case with substitutions of non strings."""
     context = Context({
         'k1': 33,
         'k2': 123.45,
@@ -86,7 +86,7 @@ def test_contextsetf_pass_different_types():
 
 
 def test_contextsetf_list():
-    """Simple list"""
+    """Simple list."""
     context = Context({'ctx1': 'ctxvalue1',
                        'ctx2': 'ctxvalue2',
                        'ctx3': 'ctxvalue3',
@@ -106,7 +106,7 @@ def test_contextsetf_list():
 
 
 def test_contextsetf_tuple():
-    """Simple tuple"""
+    """Simple tuple."""
     context = Context({'ctx1': 'ctxvalue1',
                        'ctx2': 'ctxvalue2',
                        'ctx3': 'ctxvalue3',
@@ -126,7 +126,7 @@ def test_contextsetf_tuple():
 
 
 def test_contextsetf_set():
-    """Simple set"""
+    """Simple set."""
     input_obj = {'k1', 'k2', '{ctx3}', True, False, 44}
     context = Context({'ctx1': 'ctxvalue1',
                        'ctx2': 'ctxvalue2',

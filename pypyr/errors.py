@@ -36,7 +36,7 @@ class ContextError(Error):
 
 
 class HandledError(Error):
-    """Error that has already been saved to errors context collection"""
+    """Error that has already been saved to errors context collection."""
 
 
 class KeyInContextHasNoValueError(ContextError):
@@ -47,7 +47,7 @@ class KeyNotInContextError(ContextError, KeyError):
     """Key not found in the pypyr context."""
 
     def __str__(self):
-        """KeyError has custom error formatting, avoid this behaviour."""
+        """Avoid KeyError custom error formatting."""
         return super(Exception, self).__str__()
 
 

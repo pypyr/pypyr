@@ -128,7 +128,7 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
 
 
 def test_main_pass_with_defaults_context_positional():
-    """Default values assigned - log 25 and cwd"""
+    """Default values assigned - log 25 and cwd."""
     arg_list = ['blah',
                 'ctx string']
 
@@ -194,7 +194,7 @@ def test_main_pass_with_no_context_other_flags_set():
 
 
 def test_pipeline_name_required():
-    """Error expected if no pipeline name"""
+    """Error expected if no pipeline name."""
     arg_list = ['--dir',
                 'blah']
 
@@ -274,7 +274,7 @@ def test_trace_log_level_none():
 
 
 def test_main_pass_with_logpath():
-    """logpath set to tempfile"""
+    """The logpath set to tempfile."""
     arg_list = ['blah',
                 '--logpath',
                 'tmp.log']

@@ -44,7 +44,7 @@ def test_py_sequence_with_linefeeds():
 
 
 def test_pycode_error_throws():
-    """pycode error should raise up to caller."""
+    """Input pycode error should raise up to caller."""
     with pytest.raises(AssertionError):
         context = Context({'pycode': 'assert False'})
         pypyr.steps.py.run_step(context)

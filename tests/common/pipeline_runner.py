@@ -17,7 +17,6 @@ def assert_pipeline_notify_output_is(pipeline_name, expected_notify_output):
         expected_notify_output: list of str. Entirety of strings expected in
                                 the NOTIFY level output during pipeline run.
     """
-
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         pypyr.pipelinerunner.main(pipeline_name=pipeline_name,
                                   pipeline_context_input=None,

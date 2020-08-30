@@ -16,7 +16,7 @@ def test_yaml_file_open_fails_on_empty_string():
 
 
 def test_yaml_pass():
-    """Relative path to yaml should succeed"""
+    """Relative path to yaml should succeed."""
     context = pypyr.parser.yamlfile.get_parsed_context(
         ['./tests/testfiles/dict.yaml'])
 

@@ -6,13 +6,13 @@ import pytest
 
 
 def test_context_set_throws_on_empty_context():
-    """context must exist."""
+    """Input context must exist."""
     with pytest.raises(KeyNotInContextError):
         pypyr.steps.contextset.run_step(Context())
 
 
 def test_context_set_throws_on_contextset_missing():
-    """contextSet must exist in context."""
+    """Input contextSet must exist in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.contextset.run_step(Context({'arbkey': 'arbvalue'}))
 
@@ -22,7 +22,7 @@ def test_context_set_throws_on_contextset_missing():
 
 
 def test_context_set_pass():
-    """contextset success case"""
+    """Input contextset success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',

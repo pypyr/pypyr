@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Simple echo. Outputs context['echoMe'].
+    """Echo input to output. Input context['echoMe'].
 
     Args:
         context: dictionary-like. context is mandatory.

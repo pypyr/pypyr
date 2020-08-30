@@ -6,13 +6,13 @@ import pytest
 
 
 def test_context_copy_throws_on_empty_context():
-    """context must exist."""
+    """Input context must exist."""
     with pytest.raises(KeyNotInContextError):
         pypyr.steps.contextcopy.run_step(Context())
 
 
 def test_context_copy_throws_on_contextcopy_missing():
-    """contextcopy must exist in context."""
+    """Input contextcopy must exist in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
         pypyr.steps.contextcopy.run_step(Context({'arbkey': 'arbvalue'}))
 
@@ -22,7 +22,7 @@ def test_context_copy_throws_on_contextcopy_missing():
 
 
 def test_context_copy_pass():
-    """contextcopy success case"""
+    """Input contextcopy success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',

@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def wait_until_true(interval, max_attempts):
-    """Decorator that executes a function until it returns True.
+    """Execute a decorated function until it returns True.
 
     Executes wrapped function at every number of seconds specified by interval,
     until wrapped function either returns True or max_attempts are exhausted,
@@ -48,7 +48,7 @@ def wait_until_true(interval, max_attempts):
 
 
 def while_until_true(interval, max_attempts):
-    """Decorator that executes a function until it returns True.
+    """Execute a decorated function until it returns True.
 
     Executes wrapped function at every number of seconds specified by interval,
     until wrapped function either returns True or max_attempts are exhausted,

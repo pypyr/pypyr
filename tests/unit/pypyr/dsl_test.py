@@ -333,8 +333,9 @@ def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module', return_value=3)
 def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
-    """Step can't get run_step method on the dynamically imported module
-    with round trip yaml loaded context.
+    """Step can't get run_step method on the dynamically imported module.
+
+    With round trip yaml loaded context.
     """
     stepcache.step_cache.clear()
     with pytest.raises(AttributeError) as err_info:
@@ -396,8 +397,10 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
-    """Complex step initializes with decorators set with round trip
-    yaml loaded context."""
+    """Complex step initializes with decorators.
+
+    Set with round trip yaml loaded context.
+    """
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
 
@@ -2479,6 +2482,7 @@ def test_unset_step_input_context():
 # ------------------- Step: save_error ---------------------------#
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
+    """Save error."""
     step = Step({'name': 'blah'}, None)
     context = get_test_context()
     original_len = len(context)
@@ -2504,6 +2508,7 @@ def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_round_trip(mocked_moduleloader):
+    """Save error with CommentedMap."""
     context = get_test_context()
     step_info = CommentedMap({'name': 'arb step'})
     step_info._yaml_set_line_col(6, 7)
@@ -2529,6 +2534,7 @@ def test_save_error_round_trip(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_formatted(mocked_moduleloader):
+    """Save error with formatting expression."""
     step = Step({'name': 'blah', 'onError': {'key': '{key1}'}}, None)
     context = get_test_context()
     original_len = len(context)
@@ -2552,6 +2558,7 @@ def test_save_error_formatted(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_multiple_call(mocked_moduleloader):
+    """Save multiple errors."""
     step = Step({'name': 'blah'}, None)
     context = get_test_context()
     original_len = len(context)

@@ -16,7 +16,7 @@ def test_json_file_open_fails_on_empty_string():
 
 
 def test_json_pass():
-    """Relative path to json should succeed"""
+    """Relative path to json should succeed."""
     context = pypyr.parser.jsonfile.get_parsed_context(
         ['./tests/testfiles/test.json'])
 

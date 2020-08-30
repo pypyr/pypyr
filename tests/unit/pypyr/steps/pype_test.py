@@ -324,7 +324,7 @@ def test_pype_get_args_no_parent_context():
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context(mock_run_pipeline):
-    """pype use_parent_context True."""
+    """Input pype use_parent_context True."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -356,7 +356,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context_with_args(mock_run_pipeline):
-    """pype use_parent_context True with args."""
+    """Input pype use_parent_context True with args."""
     context = Context({
         'k1': 'v1',
         'pype': {
@@ -403,7 +403,7 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_parent_context(mock_run_pipeline):
-    """pype use_parent_context False."""
+    """Input pype use_parent_context False."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -436,7 +436,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_args(mock_run_pipeline):
-    """pype args used as context."""
+    """Input pype args used as context."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -465,7 +465,7 @@ def test_pype_args(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_args_with_out(mock_run_pipeline):
-    """pype args used as context with out."""
+    """Input pype args used as context with out."""
     context = Context({
         'parentkey': 'parentvalue',
         'pype': {
@@ -505,7 +505,7 @@ def test_pype_args_with_out(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_args_with_mapping_out(mock_run_pipeline):
-    """pype args used as context with mapping out."""
+    """Input pype args used as context with mapping out."""
     context = Context({
         'parentkey': 'parentvalue',
         'pype': {
@@ -548,7 +548,7 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_skip_parse(mock_run_pipeline):
-    """pype use_parent_context False."""
+    """Input pype use_parent_context False."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -582,7 +582,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_no_pipe_arg(mock_run_pipeline):
-    """pype use_parent_context False."""
+    """Input pype use_parent_context False."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -617,7 +617,7 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
 @patch('pypyr.pipelinerunner.load_and_run_pipeline',
        side_effect=RuntimeError('whoops'))
 def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
-    """pype without swallowing error in child pipeline."""
+    """Input pype without swallowing error in child pipeline."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -652,7 +652,7 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
 @patch('pypyr.pipelinerunner.load_and_run_pipeline',
        side_effect=RuntimeError('whoops'))
 def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
-    """pype swallowing error in child pipeline."""
+    """Input pype swallowing error in child pipeline."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -684,7 +684,7 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
 @patch('pypyr.pipelinerunner.load_and_run_pipeline',
        side_effect=Stop())
 def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
-    """pype doesn't swallow stop error in child pipeline."""
+    """Input pype doesn't swallow stop error in child pipeline."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -716,7 +716,7 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_set_groups(mock_run_pipeline):
-    """pype use_parent_context True."""
+    """Input pype use_parent_context True."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -754,7 +754,6 @@ def test_pype_set_groups(mock_run_pipeline):
 
 def test_write_child_context_to_parent_wrong_type():
     """When out not a str, list or dict raise."""
-
     with pytest.raises(ContextError) as err_info:
         pype.write_child_context_to_parent(3, None, None)
 

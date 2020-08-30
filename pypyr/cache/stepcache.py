@@ -39,7 +39,7 @@ step_cache = StepCache()
 
 
 def load_the_step(step_name):
-    """Loads the module specified by step_name, returns its function.
+    """Load the module specified by step_name, returns its function.
 
     Args:
         step_name: (string) name of Step module to load

@@ -40,7 +40,7 @@ def test_shell_sequence_with_string_interpolation():
 
 
 def test_shell_error_throws():
-    """Shell process returning 1 should throw CalledProcessError"""
+    """Shell process returning 1 should throw CalledProcessError."""
     cmd = '/bin/false' if platform.system() != 'Darwin' else '/usr/bin/false'
     with pytest.raises(subprocess.CalledProcessError):
         context = Context({'cmd': cmd})

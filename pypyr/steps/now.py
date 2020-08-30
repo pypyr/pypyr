@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """pypyr step saves current local datetime to context.
+    """Save current local datetime to context.
 
     Args:
         context: pypyr.context.Context. Mandatory.

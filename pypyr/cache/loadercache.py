@@ -47,7 +47,7 @@ pypeloader_cache = PypeLoaderCache()
 
 
 def load_the_loader(loader):
-    """Loads the module specified by loader and returns its function.
+    """Load the module specified by loader and returns its function.
 
     Args:
         loader: string: name of module to load

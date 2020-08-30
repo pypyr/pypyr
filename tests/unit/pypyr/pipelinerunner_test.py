@@ -22,12 +22,12 @@ from tests.common.utils import patch_logger
 
 
 def mock_parser(args):
-    """Arbitrary mock function to execute instead of get_parsed_context"""
+    """Arbitrary mock function to execute instead of get_parsed_context."""
     return Context({'key1': 'created in mock parser', 'key2': args})
 
 
 def mock_parser_none(args):
-    """Return None, mocking get_parsed_context"""
+    """Return None, mocking get_parsed_context."""
     return None
 # ------------------------- parser mocks -------------------------------------#
 
@@ -35,7 +35,7 @@ def mock_parser_none(args):
 
 
 def test_get_parsed_context_no_parser():
-    """get_parsed_context returns empty Context when no parser specified."""
+    """On get_parsed_context return empty Context when no parser specified."""
     context = pypyr.pipelinerunner.get_parsed_context({}, None)
 
     assert isinstance(context, Context)
@@ -43,7 +43,7 @@ def test_get_parsed_context_no_parser():
 
 
 def test_get_parsed_context_parser_not_found():
-    """get_parsed_context raises if parser module specified but not found."""
+    """On get_parsed_context raise if parser module specified but not found."""
     with pytest.raises(PyModuleNotFoundError):
         pypyr.pipelinerunner.get_parsed_context(
             {'context_parser': 'unlikelyblahmodulenameherexxssz'}, None)
@@ -51,7 +51,7 @@ def test_get_parsed_context_parser_not_found():
 
 @patch('pypyr.moduleloader.get_module')
 def test_get_parsed_context_parser_returns_none(mocked_moduleloader):
-    """get_parsed_context returns empty Context when parser returns None."""
+    """On get_parsed_context return empty Context when parser returns None."""
     mocked_moduleloader.return_value.get_parsed_context = mock_parser_none
 
     context = pypyr.pipelinerunner.get_parsed_context(
@@ -65,7 +65,7 @@ def test_get_parsed_context_parser_returns_none(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_get_parsed_context_parser_pass(mocked_moduleloader):
-    """get_parsed_context passes arg param and returns context."""
+    """On get_parsed_context pass arg param and returns context."""
     contextparser_cache.clear()
     mocked_moduleloader.return_value.get_parsed_context = mock_parser
 
@@ -104,7 +104,7 @@ def test_main_pass(mocked_get_mocked_work_dir,
                    mocked_set_work_dir,
                    mocked_run_pipeline,
                    mocked_set_up_notify):
-    """main initializes and runs pipelines."""
+    """Main initializes and runs pipelines."""
     pipeline_cache.clear()
     pypyr.pipelinerunner.main(pipeline_name='arb pipe',
                               pipeline_context_input='arb context input',
@@ -127,7 +127,7 @@ def test_main_pass(mocked_get_mocked_work_dir,
        side_effect=ContextError('arb'))
 @patch('pypyr.moduleloader.set_working_directory')
 def test_main_fail(mocked_work_dir, mocked_run_pipeline):
-    """main raises unhandled error on pipeline failure."""
+    """Main raise unhandled error on pipeline failure."""
     pipeline_cache.clear()
     with pytest.raises(ContextError) as err_info:
         pypyr.pipelinerunner.main(pipeline_name='arb pipe',
@@ -168,7 +168,7 @@ def test_prepare_context_empty_parse(mocked_get_parsed_context):
 @patch('pypyr.pipelinerunner.get_parsed_context',
        return_value=Context({'a': 'av1', 'c1': 'new value from parsed'}))
 def test_prepare_context_with_parse_merge(mocked_get_parsed_context):
-    """parsed_context overrides context."""
+    """On parsed_context override context."""
     context = Context({'c1': 'cv1', 'c2': 'cv2'})
     pypyr.pipelinerunner.prepare_context(pipeline='pipe def',
                                          context_in_args='arb context input',
@@ -196,7 +196,7 @@ def test_load_and_run_pipeline_pass(mocked_get_work_dir,
                                     mocked_get_pipe_def,
                                     mocked_get_parsed_context,
                                     mocked_steps_runner):
-    """run_pipeline passes correct params to all methods."""
+    """On run_pipeline pass correct params to all methods."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     with patch('pypyr.context.Context') as mock_context:
@@ -352,7 +352,7 @@ def test_load_and_run_pipeline_with_existing_context_pass(
         mocked_get_pipe_def,
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline passes correct params to all methods"""
+    """Run run_pipeline pass correct params to all methods."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     existing_context = Context({'2': 'original', '3': 'new'})
@@ -395,7 +395,7 @@ def test_load_and_run_pipeline_with_group_specified(
         mocked_get_pipe_def,
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline passes runs with specified group."""
+    """Pass run_pipeline with specified group."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     existing_context = Context({'2': 'original', '3': 'new'})
@@ -439,7 +439,7 @@ def test_load_and_run_pipeline_with_success_group_specified(
         mocked_get_pipe_def,
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline passes runs with specified success group."""
+    """Pass run_pipeline with specified success group."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     existing_context = Context({'2': 'original', '3': 'new'})
@@ -483,7 +483,7 @@ def test_load_and_run_pipeline_with_failure_group_specified(
         mocked_get_pipe_def,
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline passes runs with specified failure group."""
+    """Pass run_pipeline with specified failure group."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     existing_context = Context({'2': 'original', '3': 'new'})
@@ -527,7 +527,7 @@ def test_load_and_run_pipeline_with_group_and_failure_group_specified(
         mocked_get_pipe_def,
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline passes runs with specified group and failure group."""
+    """Pass run_pipeline with specified group and failure group."""
     pipeline_cache.clear()
     pypeloader_cache.clear()
     existing_context = Context({'2': 'original', '3': 'new'})
@@ -564,7 +564,7 @@ def test_load_and_run_pipeline_with_group_and_failure_group_specified(
 def test_run_pipeline_parse_context_error_failure(
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline on_failure raises."""
+    """Raise on_failure from run_pipeline."""
     mocked_get_parsed_context.side_effect = ValueError('arb')
     sr = mocked_steps_runner.return_value
     ctx = pypyr.context.Context()
@@ -595,7 +595,7 @@ def test_run_pipeline_parse_context_error_failure(
 def test_run_pipeline_parse_context_error_failure_stop(
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline on_failure raises Stop."""
+    """Raise on_failure from run_pipeline with Stop."""
     mocked_get_parsed_context.side_effect = ValueError('arb')
     sr = mocked_steps_runner.return_value
     sr.run_failure_step_group.side_effect = Stop()
@@ -622,7 +622,7 @@ def test_run_pipeline_parse_context_error_failure_stop(
 def test_run_pipeline_parse_context_error_failure_stopstepgroup(
         mocked_get_parsed_context,
         mocked_steps_runner):
-    """run_pipeline on_failure swallows StopStepGroup."""
+    """With run_pipeline on_failure swallow StopStepGroup."""
     mocked_get_parsed_context.side_effect = ValueError('arb')
     sr = mocked_steps_runner.return_value
     sr.run_failure_step_group.side_effect = StopStepGroup()
@@ -650,6 +650,7 @@ def test_run_pipeline_parse_context_error_failure_stopstepgroup(
 
 
 def test_arbitrary_loader_module_not_found():
+    """Raise when loader not found."""
     with pytest.raises(PyModuleNotFoundError):
         pipeline_cache.clear()
         pypyr.moduleloader.set_working_directory('arb/dir')
@@ -662,7 +663,6 @@ def test_arbitrary_loader_module_not_found():
 
 def test_loader_no_get_pipeline_definition():
     """Arbitrary loader module without `get_pipeline_definition` function."""
-
     import sys
     current_module = sys.modules[__name__]
 
@@ -717,7 +717,7 @@ def test_empty_loader_set_up_to_default(mock_get_pipeline_definition,
 
 @patch('pypyr.pipelinerunner.run_pipeline')
 def test_arb_loader(mock_run_pipeline):
-    """Test loader set up"""
+    """Test loader set up."""
     pypyr.moduleloader.set_working_directory('tests')
     pipeline_cache.clear()
     pypyr.pipelinerunner.load_and_run_pipeline(
@@ -774,20 +774,23 @@ def get_step_pipeline():
 
 
 def nothing_step(context):
+    """Mock step."""
     pass
 
 
 def stop_pipe_step(context):
+    """Mock stop pipeline step."""
     raise StopPipeline()
 
 
 def stop_all_step(context):
+    """Mock stop all step."""
     raise Stop()
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_stop_pipeline(mock_step_cache):
-    """StopPipeline stops pipeline execution."""
+    """When StopPipeline stop pipeline execution."""
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 (StopPipeline)
     mock_step_cache.side_effect = [
@@ -815,7 +818,7 @@ def test_stop_pipeline(mock_step_cache):
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_stop_pipeline_for(mock_step_cache):
-    """StopPipeline stops pipeline execution in for loop."""
+    """When StopPipeline stop pipeline execution in for loop."""
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 x2 (StopPipeline)
 
@@ -890,7 +893,7 @@ def get_retry_step_pipeline():
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_stop_pipeline_retry(mock_step_cache):
-    """StopPipeline stops pipeline execution in retry loop."""
+    """When StopPipeline stop pipeline execution in retry loop."""
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 x2 (StopPipeline)
 

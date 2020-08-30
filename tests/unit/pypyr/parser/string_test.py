@@ -31,7 +31,6 @@ def test_arg_string_parses_list_to_single_entry():
 
 def test_empty_string_warns():
     """Empty input string should warn assert error."""
-
     with patch_logger(
             'pypyr.parser.string', logging.DEBUG) as mock_logger_debug:
         out = pypyr.parser.string.get_parsed_context(None)

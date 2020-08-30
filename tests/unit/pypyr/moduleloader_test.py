@@ -10,7 +10,7 @@ import pypyr.moduleloader
 
 
 def test_get_module_raises():
-    """get_module ModuleNotFoundError on module not found."""
+    """On get_module ModuleNotFoundError on module not found."""
     with pytest.raises(PyModuleNotFoundError) as err:
         pypyr.moduleloader.get_module('unlikelyblahmodulenameherexxssz')
 
@@ -69,7 +69,7 @@ def test_get_module_raises_on_inner_import():
 
 
 def test_get_module_pass():
-    """get_module finds a module in cwd"""
+    """Pass when get_module finds a module in cwd."""
     p = Path.cwd().joinpath('tests', 'testfiles')
     pypyr.moduleloader.set_working_directory(p)
 
@@ -83,7 +83,7 @@ def test_get_module_pass():
 
 
 def test_get_module_in_package_pass():
-    """get_module finds a module in a package in cwd using dot notation."""
+    """See get_module find a module in a package in cwd using dot notation."""
     p = Path.cwd().joinpath('tests')
     pypyr.moduleloader.set_working_directory(p)
     arb_module = pypyr.moduleloader.get_module('arbpack.arbmod')
@@ -100,7 +100,7 @@ def test_get_module_in_package_pass():
 
 
 def test_set_working_dir():
-    """working dir added to sys paths"""
+    """Working dir added to sys paths."""
     p = '/arb/path'
     assert p not in sys.path
     pypyr.moduleloader.set_working_directory(p)

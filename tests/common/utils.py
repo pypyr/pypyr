@@ -1,3 +1,4 @@
+"""Utility methods for test."""
 import logging
 from contextlib import contextmanager
 from copy import deepcopy
@@ -27,8 +28,9 @@ class DeepCopyMagicMock(MagicMock):
 
 @contextmanager
 def patch_logger(name, level=logging.DEBUG):
-    """Adds a new mocked handler to the logger, which will store
-    formatted log records with the only one specified level.
+    """Add a new mocked handler to the logger.
+
+    Will store formatted log records with the only one specified level.
 
     If logging level is DEBUG, will take care only about DEBUG
     records and will not report other levels even higher(INFO, ERROR and etc).
