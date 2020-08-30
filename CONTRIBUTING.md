@@ -1,9 +1,7 @@
-#####################
-contributing to pypyr
-#####################
+# contributing to pypyr
 pypyr is open source. Your contributions are most welcome.
 
-You don't have to code! 
+You don't have to code!
 
 - Star the repo on github
 - Spread the word on social media
@@ -16,7 +14,7 @@ You don't have to code!
 
 . . . All are great! ⭐
 
-Please see here for full contribution guide, coding guidelines and helpful tips 
-to get you started:
+Please see here for full contribution guide, coding guidelines and
+helpful tips to get you started:
 
-https://pypyr.io/docs/contributing/
+<https://pypyr.io/docs/contributing/>

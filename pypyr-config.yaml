@@ -1,0 +1,2 @@
+package_name: pypyr
+version_module_name: 'pypyr.version'

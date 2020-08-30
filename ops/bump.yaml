@@ -1,0 +1,35 @@
+context_parser: pypyr.parser.string
+steps:
+  - name: pypyr.steps.assert
+    description: --> ops/bump expects major, minor or patch.
+    in:
+      assert:
+        this: !py argString in ['major', 'minor', 'patch']
+  - name: pypyr.steps.pype
+    description: --> validate code & packaging before version bump
+    in:
+      pype:
+         name: ops/build
+         args:
+          argList:
+            - package
+  - name: pypyr.steps.pype
+    description: --> getting current version
+    in:
+      pype:
+          name: ops/build
+          groups: get_version
+  - name: pypyr.steps.cmd
+    description: --> bumping version
+    in:
+      cmd: bumpversion --no-tag  --commit {argString}
+  - name: pypyr.steps.cmd
+    description: --> push bump
+    in:
+      cmd: git push
+  - name: pypyr.steps.pype
+    description: --> getting new version
+    in:
+      pype:
+          name: ops/build
+          groups: get_version
