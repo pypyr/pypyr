@@ -8,6 +8,7 @@ from tests.common.utils import patch_logger
 
 
 def test_pypyr_version():
+    """Return version as expected."""
     with patch_logger(
             'pypyr.steps.pypyrversion', logging.NOTIFY
     ) as mock_logger_notify:
@@ -20,6 +21,7 @@ def test_pypyr_version():
 
 
 def test_pypyr_version_context_out_same_as_in():
+    """Context does not mutate."""
     context = Context({'test': 'value1'})
     pypyr.steps.pypyrversion.run_step(context)
     assert context['test'] == 'value1', "context not returned from step."

@@ -41,7 +41,7 @@ contextparser_cache = ContextParserCache()
 
 
 def load_the_parser(parser_module_name):
-    """Loads the module specified by parser_module_name, returns its function.
+    """Load the module specified by parser_module_name, returns its function.
 
     Args:
         parser_module_name: string: name of module to load

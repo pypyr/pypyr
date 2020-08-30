@@ -14,7 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class WorkingDir():
+    """The Working Directory.
+
+    Attributes:
+        cwd. Path-like. The working directory.
+    """
+
     def __init__(self, cwd=None):
+        """Initialize cwd to input or default to current."""
         self.cwd = cwd if cwd else Path.cwd()
 
 

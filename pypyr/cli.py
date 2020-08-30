@@ -18,7 +18,8 @@ def wrap(text, **kwargs):
 
     Default width is 70.
 
-    With gratitude to paul.j3 https://bugs.python.org/issue12806"""
+    With gratitude to paul.j3 https://bugs.python.org/issue12806
+    """
     # apply textwrap to each line individually
     text = text.splitlines()
     text = [textwrap.fill(line, **kwargs) for line in text]

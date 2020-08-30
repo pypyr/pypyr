@@ -2,4 +2,5 @@
 
 
 def run_step(context):
+    """Do nothing."""
     pass

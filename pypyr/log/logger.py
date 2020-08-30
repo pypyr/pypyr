@@ -30,8 +30,7 @@ def set_logging_config(log_level, handlers):
 
 
 def notify(self, msg, *args, **kwargs):
-    """Log a message with severity 'NOTIFY' on the root logger.
-    """
+    """Log a message with severity 'NOTIFY' on the root logger."""
     if self.isEnabledFor(NOTIFY):
         self._log(NOTIFY, msg, args, **kwargs)
 
@@ -43,7 +42,6 @@ def set_up_notify_log_level():
     By default it outputs only echo step and step name
     with description.
     """
-
     # could (should?) be checking hasattr like so:
     # hasattr(logging, levelName):
     # hasattr(logging, methodName):

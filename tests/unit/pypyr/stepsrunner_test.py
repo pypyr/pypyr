@@ -41,7 +41,7 @@ def get_test_context():
 
 
 def get_test_pipeline():
-    """Return an arbitrary pipeline definition"""
+    """Return an arbitrary pipeline definition."""
     return {
         'sg1': [
             'step1',
@@ -56,7 +56,7 @@ def get_test_pipeline():
 
 
 def get_valid_test_pipeline():
-    """Return an arbitrary pipeline definition"""
+    """Return an arbitrary pipeline definition."""
     return {
         'sg1': [
             'step1',
@@ -92,7 +92,7 @@ def get_valid_steps_pipeline():
 
 
 def test_stepsrunner_init():
-    """StepsRunner initializes."""
+    """The StepsRunner initializes."""
     s = StepsRunner(pipeline_definition=3, context=4)
     assert s.pipeline == 3
     assert s.context == 4
@@ -103,7 +103,7 @@ def test_stepsrunner_init():
 
 
 def test_get_pipeline_steps_pass():
-    """Return named step group from pipeline"""
+    """Return named step group from pipeline."""
     with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         steps = StepsRunner(get_test_pipeline(), {}).get_pipeline_steps('sg1')
 
@@ -118,7 +118,7 @@ def test_get_pipeline_steps_pass():
 
 
 def test_get_pipeline_steps_not_found():
-    """Can't find step group in pipeline"""
+    """Can't find step group in pipeline."""
     with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         steps = StepsRunner(get_test_pipeline(), {}).get_pipeline_steps('arb')
         assert steps is None
@@ -129,7 +129,7 @@ def test_get_pipeline_steps_not_found():
 
 
 def test_get_pipeline_steps_none():
-    """Find step group in pipeline but it has no steps"""
+    """Find step group in pipeline but it has no steps."""
     with patch_logger(
             'pypyr.stepsrunner', logging.WARNING) as mock_logger_warn:
         steps = StepsRunner(get_test_pipeline(), {}).get_pipeline_steps('sg4')
@@ -195,7 +195,7 @@ def test_run_failure_step_group_stop():
 
 
 def test_run_pipeline_steps_none():
-    """If steps None does nothing"""
+    """If steps None does nothing."""
     with patch_logger('pypyr.stepsrunner', logging.DEBUG) as mock_logger_debug:
         StepsRunner(None, Context({'k1': 'v1'})).run_pipeline_steps(None)
 
@@ -501,7 +501,6 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     """Complex steps, some run some don't, some swallow, some don't."""
-
     step4_run_error_swallow = {
         'col': None,
         'customError': {},
@@ -663,7 +662,7 @@ def test_run_step_group_pass(mock_run_steps):
 
 @patch.object(StepsRunner, 'run_pipeline_steps')
 def test_run_step_group_no_raise(mock_run_steps):
-    """run_step_group with raise_stop False"""
+    """run_step_group with raise_stop False."""
     mock_run_steps.side_effect = StopStepGroup()
     StepsRunner(get_valid_test_pipeline(),
                 Context()).run_step_group(step_group_name='sg1',
@@ -681,7 +680,7 @@ def test_run_step_group_no_raise(mock_run_steps):
 
 @patch.object(StepsRunner, 'run_pipeline_steps')
 def test_run_step_group_raise(mock_run_steps):
-    """run_step_group with raise_stop True"""
+    """run_step_group with raise_stop True."""
     mock_run_steps.side_effect = StopStepGroup()
     with pytest.raises(StopStepGroup):
         StepsRunner(get_valid_test_pipeline(),
@@ -880,7 +879,6 @@ def test_run_step_groups_sequence_with_mutate():
 
 def test_run_step_groups_none_groups():
     """Raise error if groups None."""
-
     with pytest.raises(ValueError) as err:
         StepsRunner(get_valid_test_pipeline(), Context()).run_step_groups(
             groups=None,
@@ -924,10 +922,12 @@ def get_jump_pipeline():
 
 
 def nothing_step(context):
+    """Do nothing."""
     pass
 
 
 def jump_step(groups, success=None, failure=None):
+    """Jump step mock."""
     def run_step(context):
         raise Jump(groups, success, failure, 'jumparb')
     return run_step
@@ -937,6 +937,7 @@ def call_step(groups,
               success=None,
               failure=None,
               original_config=('call', 'arb')):
+    """Call step mock."""
     def run_step(context):
         raise Call(groups, success, failure, original_config)
     return run_step

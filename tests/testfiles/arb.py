@@ -3,4 +3,5 @@ print("I dont do much")
 
 
 def arb_attribute():
+    """Do nothing."""
     pass

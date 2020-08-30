@@ -24,7 +24,6 @@ def test_list__arg_parses_to_single_entry():
 
 def test_empty_args_empty_list():
     """Empty input args should return empty list."""
-
     with patch_logger(
             'pypyr.parser.list', logging.DEBUG) as mock_logger_debug:
         out = pypyr.parser.list.get_parsed_context(None)

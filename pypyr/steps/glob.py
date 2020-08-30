@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """pypyr step gets paths from a glob input.
+    """Get paths from a glob input.
 
     Do note that this will returns files AND directories that match the glob.
 

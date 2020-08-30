@@ -41,7 +41,7 @@ def test_base_error_raises():
 
 
 def test_context_error_raises():
-    """ContextError raises with correct message"""
+    """A ContextError raises with correct message."""
     assert isinstance(ContextError(), PypyrError)
 
     with pytest.raises(ContextError) as err_info:
@@ -51,7 +51,7 @@ def test_context_error_raises():
 
 
 def test_handled_error_raises():
-    """HandledError raises with correct message and with from."""
+    """A HandledError raises with correct message and with from."""
     assert isinstance(HandledError(), PypyrError)
 
     try:
@@ -91,7 +91,7 @@ def test_key_in_context_has_no_value_error_raises():
 
 
 def test_loop_max_exhausted_error_raises():
-    """LoopMaxExhaustedError error raises with correct message."""
+    """A LoopMaxExhaustedError error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(LoopMaxExhaustedError(), PypyrError)
 
@@ -102,7 +102,7 @@ def test_loop_max_exhausted_error_raises():
 
 
 def test_pipeline_definition_error_raises():
-    """PipelineDefinitionError error raises with correct message."""
+    """A PipelineDefinitionError error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(PipelineDefinitionError(), PypyrError)
 
@@ -113,7 +113,7 @@ def test_pipeline_definition_error_raises():
 
 
 def test_pipeline_not_found_error_raises():
-    """PipelineNotFoundError error raises with correct message."""
+    """A PipelineNotFoundError error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(PipelineNotFoundError(), PypyrError)
 
@@ -135,7 +135,7 @@ def test_plugin_error_raises():
 
 
 def test_pymodule_not_found_error_raises():
-    """PyModuleNotFoundError error raises with correct message."""
+    """A PyModuleNotFoundError error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(PyModuleNotFoundError(), PypyrError)
 
@@ -148,7 +148,7 @@ def test_pymodule_not_found_error_raises():
 
 
 def test_stop_step_group_error_raises():
-    """StopErrorGroup error raises with correct message."""
+    """A StopErrorGroup error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(StopStepGroup(), Stop)
 
@@ -159,7 +159,7 @@ def test_stop_step_group_error_raises():
 
 
 def test_stop_pipeline_error_raises():
-    """StopPipeline error raises with correct message."""
+    """A StopPipeline error raises with correct message."""
     # confirm subclassed from pypyr root error
     assert isinstance(StopPipeline(), Stop)
 
@@ -170,7 +170,7 @@ def test_stop_pipeline_error_raises():
 
 
 def test_jump_control_of_flow_instruction_raises():
-    """Jump instruction raises."""
+    """A Jump instruction raises."""
     try:
         raise Jump(['one', 'two'], 'sg', 'fg', 'og')
     except Jump as err_info:
@@ -182,7 +182,7 @@ def test_jump_control_of_flow_instruction_raises():
 
 
 def test_call_control_of_flow_instruction_raises():
-    """Call instruction raises."""
+    """A Call instruction raises."""
     try:
         raise Call(['one', 'two'], 'sg', 'fg', 'og')
     except Call as err_info:

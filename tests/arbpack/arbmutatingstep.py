@@ -2,4 +2,5 @@
 
 
 def run_step(context):
+    """Mutate context inside step."""
     context['inside_step'] = 'arb'

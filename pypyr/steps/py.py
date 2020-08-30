@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Executes dynamic python code.
+    """Execute dynamic python code.
 
     Context is a dictionary or dictionary-like.
     Context must contain key 'pycode'

@@ -2,4 +2,5 @@
 
 
 def get_parsed_context(context_arg):
+    """Return context arg stub."""
     return {'parsed_context': context_arg}

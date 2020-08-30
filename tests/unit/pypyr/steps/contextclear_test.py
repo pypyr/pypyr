@@ -6,19 +6,19 @@ import pytest
 
 
 def test_context_clear_throws_on_empty_context():
-    """context must exist."""
+    """Context must exist."""
     with pytest.raises(KeyNotInContextError):
         pypyr.steps.contextclear.run_step(Context())
 
 
 def test_context_clear_throws_on_contextset_missing():
-    """contextClear must exist in context."""
+    """Context Clear must exist in context."""
     with pytest.raises(KeyNotInContextError):
         pypyr.steps.contextclear.run_step(Context({'arbkey': 'arbvalue'}))
 
 
 def test_context_clear_pass():
-    """context clear success case"""
+    """Context clear success case."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
@@ -43,7 +43,7 @@ def test_context_clear_pass():
 
 
 def test_context_clear_no_raise_if_keys_dont_exist():
-    """context clear passes even if keys not in context"""
+    """Context clear passes even if keys not in context."""
     context = Context({
         'key1': 'value1',
         'key2': 'value2',

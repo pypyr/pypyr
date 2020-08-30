@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """pypyr step that checks if a file or directory path exists.
+    """Check if a file or directory path exists.
 
     Args:
         context: pypyr.context.Context. Mandatory.

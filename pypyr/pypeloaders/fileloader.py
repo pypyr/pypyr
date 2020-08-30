@@ -1,3 +1,4 @@
+"""Load pipelines from local disk."""
 import logging
 from pathlib import Path
 from pypyr.errors import PipelineNotFoundError

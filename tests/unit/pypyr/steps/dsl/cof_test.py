@@ -15,19 +15,19 @@ from tests.common.utils import patch_logger
 
 
 def test_cof_name_required():
-    """CoF requires name."""
+    """A CoF requires name."""
     with pytest.raises(AssertionError):
         cof_func(None, None, None, None)
 
 
 def test_cof_context_required():
-    """CoF requires context."""
+    """A CoF requires context."""
     with pytest.raises(AssertionError):
         cof_func('blah', None, None, None)
 
 
 def test_cof_context_key_required():
-    """CoF requires context_key in context."""
+    """A CoF requires context_key in context."""
     with pytest.raises(KeyNotInContextError) as err:
         cof_func('blah', None, Context({'a': 'b'}), 'key')
 
@@ -36,7 +36,7 @@ def test_cof_context_key_required():
 
 
 def test_cof_context_key_groups_required():
-    """CoF requires context_key groups in context."""
+    """A CoF requires context_key groups in context."""
     with pytest.raises(KeyNotInContextError) as err:
         cof_func('blah', None, Context({'key': {'a': 'b'}}), 'key')
 
@@ -46,7 +46,7 @@ def test_cof_context_key_groups_required():
 
 
 def test_cof_context_key_groups_wrong_type():
-    """CoF requires context_key groups in context of str or dict."""
+    """A CoF requires context_key groups in context of str or dict."""
     with pytest.raises(ContextError) as err:
         cof_func('blah', None, Context({'key': False}), 'key')
 
@@ -57,7 +57,7 @@ def test_cof_context_key_groups_wrong_type():
 
 
 def test_cof_context_key_exists_but_none():
-    """CoF requires context_key in context."""
+    """A CoF requires context_key in context."""
     with pytest.raises(KeyInContextHasNoValueError) as err:
         cof_func('blah', None, Context({'key': {'groups': None}}), 'key')
 

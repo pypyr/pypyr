@@ -50,7 +50,7 @@ def test_shell_sequence_with_ampersands():
 
 
 def test_shell_error_throws():
-    """Shell process returning 1 should throw CalledProcessError"""
+    """Shell process returning 1 should throw CalledProcessError."""
     with pytest.raises(subprocess.CalledProcessError):
         context = Context({'cmd': 'exit 1'})
         pypyr.steps.shell.run_step(context)

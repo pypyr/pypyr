@@ -10,7 +10,7 @@ from tests.common.utils import patch_logger
 
 @patch('time.sleep')
 def test_wait_until_true_with_static_decorator(mock_time_sleep):
-    """wait_until_true with static decorator"""
+    """wait_until_true with static decorator."""
     mock = MagicMock()
     mock.side_effect = [
         'test string 1',
@@ -22,7 +22,7 @@ def test_wait_until_true_with_static_decorator(mock_time_sleep):
 
     @poll.wait_until_true(interval=0.01, max_attempts=10)
     def decorate_me(arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         if mock(arg1) == 'expected value':
@@ -50,7 +50,7 @@ def test_wait_until_true_invoke_inline(mock_time_sleep):
     ]
 
     def decorate_me(arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         if mock(arg1) == 'expected value':
@@ -85,7 +85,7 @@ def test_wait_until_true_with_timeout(mock_time_sleep):
     ]
 
     def decorate_me(arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         if mock(arg1) == 'expected value':
@@ -111,7 +111,7 @@ def test_wait_until_true_once_not_found(mock_time_sleep):
     ]
 
     def decorate_me(arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         if mock(arg1) == 'expected value':
@@ -135,7 +135,7 @@ def test_wait_until_true_once_found(mock_time_sleep):
     ]
 
     def decorate_me(arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         if mock(arg1) == 'expected value':
@@ -155,7 +155,7 @@ def test_wait_until_true_once_found(mock_time_sleep):
 
 @patch('time.sleep')
 def test_while_until_true_with_static_decorator(mock_time_sleep):
-    """while_until_true with static decorator"""
+    """while_until_true with static decorator."""
     mock = MagicMock()
     mock.side_effect = [
         'test string 1',
@@ -169,7 +169,7 @@ def test_while_until_true_with_static_decorator(mock_time_sleep):
 
     @poll.while_until_true(interval=0.01, max_attempts=10)
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -202,7 +202,7 @@ def test_while_until_true_invoke_inline(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -242,7 +242,7 @@ def test_while_until_true_with_exhaust(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -275,7 +275,7 @@ def test_while_until_true_once_not_found(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -304,7 +304,7 @@ def test_while_until_true_once_found(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -342,7 +342,7 @@ def test_while_until_true_no_max(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter
@@ -394,7 +394,7 @@ def test_while_until_true_max_exhaust(mock_time_sleep):
     actual_counter = 0
 
     def decorate_me(counter, arg1, arg2):
-        """Test static decorator syntax"""
+        """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
         nonlocal actual_counter

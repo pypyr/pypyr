@@ -12,7 +12,7 @@ cwd = Path.cwd()
 
 
 def test_get_pipeline_path_in_working_dir():
-    """Find a pipeline in the working dir"""
+    """Find a pipeline in the working dir."""
     working_dir = cwd.joinpath('tests')
     path_found = pypyr.pypeloaders.fileloader.get_pipeline_path(
         'testpipelinewd',
@@ -25,7 +25,7 @@ def test_get_pipeline_path_in_working_dir():
 
 
 def test_get_pipeline_path_in_working_dir_pipelines():
-    """Find a pipeline in the working dir pipelines"""
+    """Find a pipeline in the working dir pipelines."""
     working_dir = cwd.joinpath('tests')
     path_found = pypyr.pypeloaders.fileloader.get_pipeline_path('testpipeline',
                                                                 working_dir)
@@ -38,7 +38,7 @@ def test_get_pipeline_path_in_working_dir_pipelines():
 
 
 def test_get_pipeline_path_in_pypyr_dir():
-    """Find a pipeline in the pypyr install dir"""
+    """Find a pipeline in the pypyr install dir."""
     working_dir = cwd.joinpath('tests')
     path_found = pypyr.pypeloaders.fileloader.get_pipeline_path('donothing',
                                                                 working_dir)
@@ -51,7 +51,7 @@ def test_get_pipeline_path_in_pypyr_dir():
 
 
 def test_get_pipeline_path_raises():
-    """Failure to find pipeline should raise PipelineNotFoundError"""
+    """Failure to find pipeline should raise PipelineNotFoundError."""
     with pytest.raises(PipelineNotFoundError) as err:
         pypyr.pypeloaders.fileloader.get_pipeline_path('unlikelypipeherexyz',
                                                        cwd)

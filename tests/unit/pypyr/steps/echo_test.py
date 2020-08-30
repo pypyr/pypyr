@@ -9,7 +9,7 @@ from tests.common.utils import patch_logger
 
 
 def test_echo_pass():
-    """Echos echoMe in context."""
+    """Echo echoMe in context."""
     context = Context({
         'echoMe': 'test value here'})
 
@@ -68,7 +68,7 @@ def test_echo_empty_context_fails():
 
 
 def test_echo_missing_echo_me_raises():
-    """context must contain echoMe."""
+    """Context must contain echoMe."""
     context = Context({
         'blah': 'blah blah'})
     with pytest.raises(KeyNotInContextError) as err_info:
