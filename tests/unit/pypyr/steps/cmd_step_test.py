@@ -63,7 +63,7 @@ def test_cmd_dict_input_sequence_with_string_interpolation_save_out():
     pypyr.steps.cmd.run_step(context)
 
     assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'blah\n'
+    assert context['cmdOut']['stdout'] == 'blah'
     assert not context['cmdOut']['stderr']
 
 
@@ -76,7 +76,7 @@ def test_cmd_dict_input_sequence_with_cwd():
     pypyr.steps.cmd.run_step(context)
 
     assert context['cmdOut']['returncode'] == 0
-    assert Path(context['cmdOut']['stdout'].rstrip('\n')).samefile('./tests')
+    assert Path(context['cmdOut']['stdout']).samefile('./tests')
     assert not context['cmdOut']['stderr']
 
 
@@ -89,7 +89,7 @@ def test_cmd_dict_input_sequence_with_cwd_interpolate():
     pypyr.steps.cmd.run_step(context)
 
     assert context['cmdOut']['returncode'] == 0
-    assert Path(context['cmdOut']['stdout'].rstrip('\n')).samefile('./tests')
+    assert Path(context['cmdOut']['stdout']).samefile('./tests')
     assert not context['cmdOut']['stderr']
 
 
@@ -110,7 +110,7 @@ def test_cmd_error_throws_with_save_true():
 
     assert context['cmdOut']['returncode'] == 1
     assert not context['cmdOut']['stdout']
-    assert 'xblahx: No such file or directory\n' in context['cmdOut']['stderr']
+    assert 'xblahx: No such file or directory' in context['cmdOut']['stderr']
 
 
 def test_cmd_context_cmd_throw():
