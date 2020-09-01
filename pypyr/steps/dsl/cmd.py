@@ -122,8 +122,10 @@ class CmdStep():
                                                universal_newlines=True)
             self.context['cmdOut'] = {
                 'returncode': completed_process.returncode,
-                'stdout': completed_process.stdout,
-                'stderr': completed_process.stderr
+                'stdout': (completed_process.stdout.rstrip()
+                           if completed_process.stdout else None),
+                'stderr': (completed_process.stderr.rstrip()
+                           if completed_process.stderr else None)
             }
 
             # when capture is true, output doesn't write to stdout
