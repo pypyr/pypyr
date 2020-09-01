@@ -25,7 +25,7 @@ steps:
         save: True
   - name: pypyr.steps.stopstepgroup
     description: --> tag already exists
-    run: !py cmdOut['stdout'].rstrip('\r\n') == f'v{version}'
+    run: !py cmdOut['stdout'] == f'v{version}'
   - name: pypyr.steps.cmd
     comment: tag current HEAD
     description: --> create new tag for release
