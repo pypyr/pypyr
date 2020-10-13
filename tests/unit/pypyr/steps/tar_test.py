@@ -11,23 +11,21 @@ from unittest.mock import patch, DEFAULT
 def test_get_file_mode_for_reading():
     """File Mode for reading passes, with defaults."""
     # if there's no tarFormat, r:*
-    assert 'r:*' == pypyr.steps.tar.get_file_mode_for_reading(
-        Context({'tar': {}}))
+    assert 'r:*' == pypyr.steps.tar.get_file_mode_for_reading({})
 
     # if there's a tarFormat, r:blah
     assert 'r:blah' == pypyr.steps.tar.get_file_mode_for_reading(
-        Context({'tar': {'format': 'blah'}}))
+        {'format': 'blah'})
 
 
 def test_get_file_mode_for_writing():
     """File Mode for writing passes, with defaults."""
     # if there's no tarFormat, r:*
-    assert 'w:xz' == pypyr.steps.tar.get_file_mode_for_writing(
-        Context({'tar': {}}))
+    assert 'w:xz' == pypyr.steps.tar.get_file_mode_for_writing({})
 
     # if there's a tarFormat, r:blah
     assert 'w:blah' == pypyr.steps.tar.get_file_mode_for_writing(
-        Context({'tar': {'format': 'blah'}}))
+        {'format': 'blah'})
 
 # ------------------------- get file mode ------------------------------------#
 
@@ -170,7 +168,7 @@ def test_tar_extract_one_pass():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_extract(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'r:*')
     (mock_tarfile.return_value.
@@ -190,7 +188,7 @@ def test_tar_extract_one_pass_uncompressed():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_extract(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'r:')
     (mock_tarfile.return_value.
@@ -210,7 +208,7 @@ def test_tar_extract_one_with_interpolation():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_extract(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./value3.tar.xz', 'r:*')
     (mock_tarfile.return_value.
@@ -232,7 +230,7 @@ def test_tar_extract_pass():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_extract(context)
+        pypyr.steps.tar.run_step(context)
 
     assert mock_tarfile.call_count == 2
     mock_tarfile.assert_any_call('./blah.tar.xz', 'r:*')
@@ -262,7 +260,7 @@ def test_tar_archive_one_pass():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_archive(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:xz')
     (mock_tarfile.return_value.
@@ -282,7 +280,7 @@ def test_tar_archive_one_pass_with_interpolation():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_archive(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.value1', 'w:xz')
     (mock_tarfile.return_value.
@@ -302,7 +300,7 @@ def test_tar_archive_one_pass_without_compression():
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_archive(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.xz', 'w:')
     (mock_tarfile.return_value.
@@ -319,11 +317,11 @@ def test_tar_archive_one_pass_with_gz():
             {'in': 'path/to/dir',
              'out': './blah.tar.gz'}
         ],
-            'format': 'gz'}
+            'format': '{tarFormat}'}
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_archive(context)
+        pypyr.steps.tar.run_step(context)
 
     mock_tarfile.assert_called_once_with('./blah.tar.gz', 'w:gz')
     (mock_tarfile.return_value.
@@ -335,17 +333,17 @@ def test_tar_archive_pass():
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
-        'key3': 'value3',
+        'key3': 'blah',
         'tar': {'archive': [
             {'in': 'path/to/dir',
-             'out': './blah.tar.xz'},
+             'out': './{key3}.tar.xz'},
             {'in': '.',
              'out': '/tra/la/la.tar.xz'}
         ]}
     })
 
     with patch('tarfile.open') as mock_tarfile:
-        pypyr.steps.tar.tar_archive(context)
+        pypyr.steps.tar.run_step(context)
 
     assert mock_tarfile.call_count == 2
     mock_tarfile.assert_any_call('./blah.tar.xz', 'w:xz')

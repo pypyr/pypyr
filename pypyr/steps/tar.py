@@ -47,14 +47,15 @@ def run_step(context):
 
     context.assert_key_has_value('tar', __name__)
 
-    tar = context['tar']
-    if tar.get('extract', None):
-        found_at_least_one = True
-        tar_extract(context)
+    tar_context = context.get_formatted('tar')
 
-    if tar.get('archive', None):
+    if tar_context.get('extract', None):
         found_at_least_one = True
-        tar_archive(context)
+        tar_extract(tar_context)
+
+    if tar_context.get('archive', None):
+        found_at_least_one = True
+        tar_archive(tar_context)
 
     if not found_at_least_one:
         # This will raise exception on first item with a problem.
@@ -65,7 +66,7 @@ def run_step(context):
     logger.debug("done")
 
 
-def get_file_mode_for_reading(context):
+def get_file_mode_for_reading(context_tar):
     """Get file mode for reading from tar['format'].
 
     This should return r:*, r:gz, r:bz2 or r:xz. If user specified something
@@ -73,39 +74,39 @@ def get_file_mode_for_reading(context):
 
     In theory r:* will auto-deduce the correct format.
     """
-    format = context['tar'].get('format', None)
+    format = context_tar.get('format', None)
 
     if format or format == '':
-        mode = f"r:{context.get_formatted_string(format)}"
+        mode = f"r:{format}"
     else:
         mode = 'r:*'
 
     return mode
 
 
-def get_file_mode_for_writing(context):
+def get_file_mode_for_writing(context_tar):
     """Get file mode for writing from tar['format'].
 
     This should return w:, w:gz, w:bz2 or w:xz. If user specified something
     wacky in tar.Format, that's their business.
     """
-    format = context['tar'].get('format', None)
+    format = context_tar.get('format', None)
     # slightly weird double-check because falsy format could mean either format
     # doesn't exist in input, OR that it exists and is empty. Exists-but-empty
     # has special meaning - default to no compression.
     if format or format == '':
-        mode = f"w:{context.get_formatted_string(format)}"
+        mode = f"w:{format}"
     else:
         mode = 'w:xz'
 
     return mode
 
 
-def tar_archive(context):
+def tar_archive(context_tar):
     """Archive specified path to a tar archive.
 
     Args:
-        context: dictionary-like. context is mandatory.
+        context_tar: dictionary-like. context is mandatory.
             context['tar']['archive'] must exist. It's a dictionary.
             keys are the paths to archive.
             values are the destination output paths.
@@ -123,13 +124,13 @@ def tar_archive(context):
     """
     logger.debug("start")
 
-    mode = get_file_mode_for_writing(context)
+    mode = get_file_mode_for_writing(context_tar)
 
-    for item in context['tar']['archive']:
+    for item in context_tar['archive']:
         # value is the destination tar. Allow string interpolation.
-        destination = context.get_formatted_string(item['out'])
+        destination = item['out']
         # key is the source to archive
-        source = context.get_formatted_string(item['in'])
+        source = item['in']
         with tarfile.open(destination, mode) as archive_me:
             logger.debug("Archiving '%s' to '%s'", source, destination)
 
@@ -139,11 +140,11 @@ def tar_archive(context):
     logger.debug("end")
 
 
-def tar_extract(context):
+def tar_extract(context_tar):
     """Extract all members of tar archive to specified path.
 
     Args:
-        context: dictionary-like. context is mandatory.
+        context_tar: dictionary-like. context is mandatory.
             context['tar']['extract'] must exist. It's a dictionary.
             keys are the path to the tar to extract.
             values are the destination paths.
@@ -161,13 +162,13 @@ def tar_extract(context):
     """
     logger.debug("start")
 
-    mode = get_file_mode_for_reading(context)
+    mode = get_file_mode_for_reading(context_tar)
 
-    for item in context['tar']['extract']:
+    for item in context_tar['extract']:
         # in is the path to the tar to extract. Allows string interpolation.
-        source = context.get_formatted_string(item['in'])
+        source = item['in']
         # out is the outdir, dhur. Allows string interpolation.
-        destination = context.get_formatted_string(item['out'])
+        destination = item['out']
         with tarfile.open(source, mode) as extract_me:
             logger.debug("Extracting '%s' to '%s'", source, destination)
 
