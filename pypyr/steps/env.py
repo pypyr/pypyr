@@ -67,7 +67,7 @@ def env_get(context):
         pypyrUser: <<value of $USER here>>
         pypyrCurrentDir: <<value of $PWD here, not value3>>
     """
-    get = context['env'].get('get', None)
+    get = context.get_formatted_value(context['env'].get('get', None))
 
     exists = False
     if get:
@@ -113,15 +113,15 @@ def env_set(context):
     pipeline execution. If you set an $ENV here, don't expect to see it in your
     system environment variables after the pipeline finishes running.
     """
-    env_set = context['env'].get('set', None)
+    env_set = context.get_formatted_value(context['env'].get('set', None))
 
     exists = False
     if env_set:
         logger.debug("started")
 
         for k, v in env_set.items():
-            logger.debug("setting $%s to context[%s]", k, v)
-            os.environ[k] = context.get_formatted_string(v)
+            logger.debug("setting $%s", k)
+            os.environ[k] = v
 
         logger.info("set %s $ENVs from context.", len(env_set))
         exists = True
@@ -152,7 +152,7 @@ def env_unset(context):
     $MYVAR1
     $MYVAR2
     """
-    unset = context['env'].get('unset', None)
+    unset = context.get_formatted_value(context['env'].get('unset', None))
 
     exists = False
     if unset:
