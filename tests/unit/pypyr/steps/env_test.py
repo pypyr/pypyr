@@ -158,15 +158,17 @@ def test_env_all_operations():
 def test_envget_pass():
     """Env get success case."""
     os.environ['ARB_DELETE_ME1'] = 'arb value from $ENV ARB_DELETE_ME1'
-    os.environ['ARB_DELETE_ME2'] = 'arb value from $ENV ARB_DELETE_ME2'
+    os.environ['ARB_DELETE_ME2'] = 'arb value {from} $ENV ARB_DELETE_ME2'
 
     context = Context({
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
+        'keyname': 'key',
+        'delete_substitute': 'DELETE',
         'env': {'get': {
             'key2': 'ARB_DELETE_ME1',
-            'key4': 'ARB_DELETE_ME2'
+            '{keyname}4': 'ARB_{delete_substitute}_ME2'
         }}
     })
 
@@ -175,7 +177,7 @@ def test_envget_pass():
     assert context['key1'] == 'value1'
     assert context['key2'] == 'arb value from $ENV ARB_DELETE_ME1'
     assert context['key3'] == 'value3'
-    assert context['key4'] == 'arb value from $ENV ARB_DELETE_ME2'
+    assert context['key4'] == 'arb value {from} $ENV ARB_DELETE_ME2'
 
     del os.environ['ARB_DELETE_ME1']
     del os.environ['ARB_DELETE_ME2']
@@ -258,10 +260,11 @@ def test_envset_with_string_interpolation():
         'key1': 'value1',
         'key2': 'value2',
         'key3': 'value3',
+        'del_substitute': 'DELETE',
         'env': {'set': {
             'ARB_DELETE_ME1': 'blah blah {key2} and {key1} goes here.',
             'ARB_DELETE_ME2': 'plain old string',
-            'ARB_DELETE_ME3': '{key3}'
+            'ARB_{del_substitute}_ME3': '{key3}'
         }}
     })
 
@@ -313,6 +316,32 @@ def test_envunset_pass():
         'env': {'unset': [
             'ARB_DELETE_ME1',
             'ARB_DELETE_ME2'
+        ]}
+    })
+
+    assert pypyr.steps.env.env_unset(context)
+
+    assert 'ARB_DELETE_ME1' not in os.environ
+    assert 'ARB_DELETE_ME2' not in os.environ
+
+
+def test_envunset_pass_wuth_interpolation():
+    """Env unset success case with interpolation."""
+    # Deliberately have 1 pre-existing $ENV to update, and 1 unset so can
+    # create it anew as part of test
+    os.environ['ARB_DELETE_ME1'] = 'arb from pypyr context ARB_DELETE_ME1'
+    os.environ['ARB_DELETE_ME2'] = 'arb from pypyr context ARB_DELETE_ME2'
+
+    context = Context({
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        "one": 1,
+        'del': 'DELETE',
+        'del_full': 'ARB_DELETE_ME2',
+        'env': {'unset': [
+            'ARB_{del}_ME{one}',
+            '{del_full}'
         ]}
     })
 
