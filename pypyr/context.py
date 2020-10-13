@@ -1,11 +1,11 @@
 """pypyr context class. Dictionary ahoy."""
 from collections import namedtuple
-from collections.abc import Mapping, Set, Sequence
-from string import Formatter
+from collections.abc import Mapping, Set
 from pypyr.dsl import SpecialTagDirective
 from pypyr.errors import (ContextError,
                           KeyInContextHasNoValueError,
                           KeyNotInContextError)
+from pypyr.formatting import RecursiveFormatter
 from pypyr.utils import expressions, types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
@@ -14,12 +14,6 @@ ContextItemInfo = namedtuple('ContextItemInfo',
                               'expected_type',
                               'is_expected_type',
                               'has_value'])
-
-# I *think* instantiating formatter at module level is fine - far as I can see
-# the class methods are functional, not dependant on class state (also, no
-# __init__).
-# https://github.com/python/cpython/blob/master/Lib/string.py
-formatter = Formatter()
 
 
 class Context(dict):
@@ -37,6 +31,12 @@ class Context(dict):
                                  initialized from the cli --dir arg.
 
     """
+
+    # I *think* instantiating formatter at class level is fine - far as I can
+    # see the class methods are functional, not dependant on class state (also,
+    # no __init__).
+    # https://github.com/python/cpython/blob/master/Lib/string.py
+    formatter = RecursiveFormatter(special_types=SpecialTagDirective)
 
     def __missing__(self, key):
         """Throw KeyNotInContextError rather than KeyError.
@@ -250,33 +250,37 @@ class Context(dict):
     def get_formatted(self, key):
         """Return formatted value for context[key].
 
-        If context[key] is a type string, will just format and return the
-        string.
-        If context[key] is a special literal type, like a py string or sic
+        This is a convenience method that calls the same thing as
+        get_formatted_value() under the hood, passing to it the value it
+        retrieves from context at the input key.
+
+        If context[key]'s value is a type string, will just format and return
+        the string. Strings can contain recursive formatting expressions.
+
+        If context[key]'s value is a special type, like a py string or sic
         string, will run the formatting implemented by the custom tag
         representer.
+
         If context[key] is not a string, specifically an iterable type like a
-        dict, list, tuple, set, it will use get_formatted_iterable under the
+        dict, list, tuple, set, it will use get_formatted_value under the
         covers to loop through and handle the entire structure contained in
         context[key].
-
-        Returns a string interpolated from the context dictionary.
 
         If context[key]='Piping {key1} the {key2} wild'
         And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
 
         Then this will return string: "Piping down the valleys wild"
 
-        get_formatted gets a context[key] value with formatting applied.
-        get_formatted_value is for any object.
-        get_formatted_string is for formatting any arbitrary string.
-        get_formatted_iterable. formats an input iterable.
+        Choosing between get_formatted() and get_formatted_value():
+        - get_formatted() gets a context[key] value with formatting applied.
+        - get_formatted_value() is for any arbitrary object.
 
         Args:
             key: dictionary key to retrieve.
 
         Returns:
-            Formatted string.
+            Whatever object results from the formatting expression(s) at the
+            input key's value.
 
         Raises:
             KeyNotInContextError: context[key] value contains {somekey} where
@@ -285,123 +289,25 @@ class Context(dict):
         """
         val = self[key]
 
-        if isinstance(val, str):
-            try:
-                return self.get_processed_string(val)
-            except KeyNotInContextError as err:
-                # Wrapping the KeyError into a less cryptic error for end-user
-                # friendliness
-                raise KeyNotInContextError(
-                    f'Unable to format \'{val}\' at context[\'{key}\'], '
-                    f'because {err}'
-                ) from err
-        elif isinstance(val, SpecialTagDirective):
-            return val.get_value(self)
-        else:
-            # any sort of complex type will work with get_formatted_iterable.
-            return self.get_formatted_iterable(val)
+        try:
+            # any sort of complex type will work with recursive formatter.
+            return self.formatter.vformat(val, None, self)
+        except KeyNotInContextError as err:
+            # less cryptic error for end-user friendliness
+            raise KeyNotInContextError(
+                f'Unable to format \'{val}\' at context[\'{key}\'], '
+                f'because {err}'
+            ) from err
 
     def get_formatted_iterable(self, obj, memo=None):
-        """Recursively loop through obj, formatting as it goes.
-
-        Interpolates strings from the context dictionary.
-
-        This is not a full on deepcopy, and it's on purpose not a full on
-        deepcopy. It will handle dict, list, set, tuple for iteration, without
-        any especial cuteness for other types or types not derived from these.
-
-        For lists: if value is a string, format it.
-        For dicts: format key. If value str, format it.
-        For sets/tuples: if type str, format it.
-
-        This is what formatting or interpolating a string means:
-        So where a string like this 'Piping {key1} the {key2} wild'
-        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
-
-        Then this will return string: "Piping down the valleys wild"
-
-        Args:
-            obj: iterable. Recurse through and format strings found in
-                           dicts, lists, tuples. Does not mutate the input
-                           iterable.
-            memo: dict. Don't use. Used internally on recursion to optimize
-                        recursive loops.
-
-        Returns:
-            Iterable identical in structure to the input iterable, except
-            where formatting changed a value from a string to the
-            formatting expression's evaluated value.
-
-        """
-        if memo is None:
-            memo = {}
-
-        obj_id = id(obj)
-        already_done = memo.get(obj_id, None)
-        if already_done is not None:
-            return already_done
-
-        if isinstance(obj, str):
-            new = self.get_formatted_string(obj)
-        elif isinstance(obj, SpecialTagDirective):
-            new = obj.get_value(self)
-        elif isinstance(obj, (bytes, bytearray)):
-            new = obj
-        elif isinstance(obj, Mapping):
-            # dicts
-            new = obj.__class__(
-                (
-                    self.get_formatted_value(k),
-                    self.get_formatted_iterable(v, memo)
-                )
-                for k, v in obj.items()
-            )
-        elif isinstance(obj, (Sequence, Set)):
-            # list, set, tuple. Bytes and str won't fall into this branch coz
-            # they're expicitly checked further up in the if.
-            new = obj.__class__(self.get_formatted_iterable(v, memo)
-                                for v in obj)
-        else:
-            # int, float, bool, function, et.
-            return obj
-
-        # If is its own copy, don't memoize.
-        if new is not obj:
-            memo[obj_id] = new
-
-        return new
+        """Use get_formatted_value(input_value) instead. Deprecated."""
+        return self.formatter.vformat(obj, None, self)
 
     def get_formatted_string(self, input_string):
-        """Return formatted value for input_string.
-
-        get_formatted gets a context[key] value with formatting applied.
-        get_formatted_value is for any object.
-        get_formatted_string is for formatting any arbitrary string.
-        get_formatted_iterable. formats an input iterable.
-
-        Only valid if input_string is a type string.
-        Return a string interpolated from the context dictionary.
-
-        If input_string='Piping {key1} the {key2} wild'
-        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
-
-        Then this will return string: "Piping down the valleys wild"
-
-        Args:
-            input_string: string to parse for substitutions.
-
-        Returns:
-            Formatted string.
-
-        Raises:
-            KeyNotInContextError: context[key] has {somekey} where somekey does
-                                  not exist in context dictionary.
-            TypeError: Attempt operation on a non-string type.
-
-        """
+        """Use get_formatted_value(input_value) instead. Deprecated."""
         if isinstance(input_string, str):
             try:
-                return self.get_processed_string(input_string)
+                return self.formatter.vformat(input_string, None, self)
             except KeyNotInContextError as err:
                 # Wrapping the KeyError into a less cryptic error for end-user
                 # friendliness
@@ -418,8 +324,8 @@ class Context(dict):
         """Return formatted value for input value, returns as out_type.
 
         Caveat emptor: if out_type is bool and value a string,
-        return will be True if str is 'True'. It will be False for all other
-        cases.
+        return will be True if str is 'True', 'TRUE', '1' or '1.0'. It will be
+        False for all other cases.
 
         Args:
             value: the value to format
@@ -437,7 +343,7 @@ class Context(dict):
             result = value.get_value(self)
             return types.cast_to_type(result, out_type)
         if isinstance(value, str):
-            result = self.get_formatted_string(value)
+            result = self.formatter.vformat(value, None, self)
             result_type = type(result)
             if out_type is result_type:
                 # get_formatted_string result is already a string
@@ -453,30 +359,45 @@ class Context(dict):
             return out_type(value)
 
     def get_formatted_value(self, input_value):
-        """Run token subsitution on the input against context.
+        """Run token substitution on the input against context.
 
         If input_value is a formattable string or SpecialTagDirective,
         will return the formatted result.
 
-        If input_value is an iterable, will call get_formatted_iterable
-        under the hood.
+        If input_value is an iterable, will iterate input recursively and
+        format all formattable objects it finds. Mappings will format both key
+        and value.
 
-        If input_value is not a string with a formatting expression
-        'mystring{expr}morestring', will just return the input object
-        in the case of scalar values. An int input will return the same
-        int.
+        If input_value is not a string with a formatting expression such as
+        'mystring{expr}morestring' and not iterable, will just return the input
+        object. E.g An int input will return the same int.
 
-        get_formatted gets a context[key] value with formatting applied.
-        get_formatted_value is for any object.
-        get_formatted_string is for formatting any arbitrary string.
-        get_formatted_iterable. formats an input iterable.
+        Choosing between get_formatted() and get_formatted_value():
+        - get_formatted gets a context[key] value with formatting applied.
+        - get_formatted_value is for any input object.
 
-        If you know input_value is a string, use get_formatted_string instead.
-        For any other type, use this function.
+        An input string with a single formatting expression and nothing else
+        will return the object at that context path:
+        input_value = '{key1}'.
 
-        get_formatted_value is really just a friendlier function name for
-        get_formatted_iterable, which actually does the same thing under the
-        covers.
+        This means that the return obj will be the same type as the source
+        object. This return object in itself has token substitions run on it
+        iteratively.
+
+        By comparison, multiple formatting expressions and/or the inclusion
+        of literal text will result in a string return type:
+        input_value = '{key1} literal text {key2}'
+
+        Then this will return string: "Piping down the valleys wild"
+
+        This is not a full on deepcopy, and it's on purpose not a full on
+        deepcopy. It will handle dict, list, set, tuple for iteration, without
+        any especial cuteness for other types or types not derived from these.
+
+        Returns:
+            Iterable identical in structure to the input iterable, except
+            where formatting changed a value from a string to the
+            formatting expression's evaluated value.
 
         Args:
             input_value: Any object to format.
@@ -487,95 +408,17 @@ class Context(dict):
             untouched.
 
         """
-        return self.get_formatted_iterable(input_value)
+        return self.formatter.vformat(input_value, None, self)
 
     def get_processed_string(self, input_string):
-        """Run token substitution on an input_string against context.
-
-        You probably don't want to call this directly yourself - rather use
-        get_formatted, get_formatted_iterable, or get_formatted_string because
-        these contain more friendly error handling plumbing and context logic.
-
-        If you do want to call it yourself, go for it, it doesn't touch state.
-
-        If input_string='Piping {key1} the {key2} wild'
-        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
-
-        An input string with a single formatting expression and nothing else
-        will return the object at that context path: input_string='{key1}'.
-        This means that the return obj will be the same type as the source
-        object. This return object in itself has token substitions run on it
-        iteratively.
-
-        By comparison, multiple formatting expressions and/or the inclusion of
-        literal text will result in a string return type:
-        input_string='{key1} literal text {key2}'
-
-        Then this will return string: "Piping down the valleys wild"
-
-        Args:
-            input_string: string to Parse
-
-        Returns:
-            any given type: Formatted string with {substitutions} made from
-            context. If it's a !sic string, x from !sic x, with no
-            substitutions made on x. If input_string was a single expression
-            (e.g '{field}'), then returns the object with {substitutions} made
-            for its attributes.
-
-        Raises:
-            KeyNotInContextError: input_string is not a sic string and has
-                                  {somekey} where somekey does not exist in
-                                  context dictionary.
-
-        """
-        # arguably, this doesn't really belong here, or at least it makes a
-        # nonsense of the function name. given how py and strings
-        # look and feel pretty much like strings from user's perspective, and
-        # given legacy code back when sic strings were in fact just strings,
-        # keep in here for backwards compatibility.
-        if isinstance(input_string, SpecialTagDirective):
-            return input_string.get_value(self)
-        else:
-            # is this a special one field formatstring? i.e "{field}", with
-            # nothing else?
-            out = None
-            is_out_set = False
-            expr_count = 0
-            # parse finds field format expressions and/or literals in input
-            for expression in formatter.parse(input_string):
-                # parse tuple:
-                # (literal_text, field_name, format_spec, conversion)
-                # it's a single '{field}' if no literal_text but field_name
-                # no literal, field name exists, and no previous expr found
-                if (not expression[0] and expression[1] and not expr_count):
-                    # get_field tuple: (obj, used_key)
-                    out = formatter.get_field(expression[1], None, self)[0]
-                    # second flag necessary because a literal with no format
-                    # expression will still result in expr_count == 1
-                    is_out_set = True
-
-                expr_count += 1
-
-                # this is a little bit clumsy, but you have to consume the
-                # iterator to get the count. Interested in 1 and only 1 field
-                # expressions with no literal text: have to loop to see if
-                # there is >1.
-                if expr_count > 1:
-                    break
-
-            if is_out_set and expr_count == 1:
-                # found 1 and only 1. but this could be an iterable obj
-                # that needs formatting rules run on it in itself
-                return self.get_formatted_iterable(out)
-            else:
-                return input_string.format_map(self)
+        """Use get_formatted_value(input_value) instead. Deprecated."""
+        return self.formatter.vformat(input_string, None, self)
 
     def iter_formatted_strings(self, iterable_strings):
         """Yield a formatted string from iterable_strings.
 
-        If iterable_strings[0]='Piping {key1} the {key2} wild'
-        And context={'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+        If iterable_strings[0] = 'Piping {key1} the {key2} wild'
+        And context = {'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
 
         Then the 1st yield is: "Piping down the valleys wild"
 
@@ -587,7 +430,7 @@ class Context(dict):
 
         """
         for string in iterable_strings:
-            yield self.get_formatted_string(string)
+            yield self.formatter.vformat(string, None, self)
 
     def keys_exist(self, *keys):
         """Check if keys exist in context.
@@ -596,7 +439,7 @@ class Context(dict):
             *keys: *args of str for keys to check in context.
 
         Returns:
-            tuple (bool) where bool indicates the key does exist in context,
+            tuple(bool) where bool indicates the key does exist in context,
             same order as *keys.
 
         Sample:
@@ -611,7 +454,7 @@ class Context(dict):
 
         Args:
             *keys: *args for keys to check in context.
-                   Each arg is a tuple (str, type)
+                   Each arg is a tuple(str, type)
 
         Returns:
             Tuple of namedtuple ContextItemInfo, same order as *keys.
@@ -674,7 +517,7 @@ class Context(dict):
         def merge_recurse(current, add_me):
             """Walk the current context tree in recursive inner function.
 
-            On 1st iteration, current = self (i.e root of context)
+            On 1st iteration, current = self(i.e root of context)
             On subsequent recursive iterations, current is wherever you're at
             in the nested context hierarchy.
 
@@ -689,7 +532,7 @@ class Context(dict):
                 # str not mergable, so it doesn't matter if it exists in dest
                 if isinstance(v, (str, SpecialTagDirective)):
                     # just overwrite dest - str adds/edits indiscriminately
-                    current[k] = self.get_formatted_string(v)
+                    current[k] = self.get_formatted_value(v)
                 elif isinstance(v, (bytes, bytearray)):
                     # bytes aren't mergable or formattable
                     # only here to prevent the elif on enumerables catching it
@@ -704,21 +547,21 @@ class Context(dict):
                         # it's list-y. Extend mutates existing list since it
                         # exists in dest
                         current[k].extend(
-                            self.get_formatted_iterable(v))
+                            self.get_formatted_value(v))
                     elif types.are_all_this_type(tuple, current[k], v):
                         # concatenate tuples
                         current[k] = (
-                            current[k] + self.get_formatted_iterable(v))
+                            current[k] + self.get_formatted_value(v))
                     elif types.are_all_this_type(Set, current[k], v):
                         # join sets
                         current[k] = (
-                            current[k] | self.get_formatted_iterable(v))
+                            current[k] | self.get_formatted_value(v))
                     else:
                         # at this point it's not mergable
-                        current[k] = self.get_formatted_iterable(v)
+                        current[k] = self.get_formatted_value(v)
                 else:
                     # at this point it's not mergable, nor in context
-                    current[k] = self.get_formatted_iterable(v)
+                    current[k] = self.get_formatted_value(v)
 
         # first iteration starts at context dict root
         merge_recurse(self, add_me)
@@ -726,7 +569,7 @@ class Context(dict):
     def set_defaults(self, defaults):
         """Set defaults in context if keys do not exist already.
 
-        Adds the input dict (defaults) into the context, only where keys in
+        Adds the input dict(defaults) into the context, only where keys in
         defaults do not already exist in context. Supports nested hierarchies.
 
         Example:
@@ -759,7 +602,7 @@ class Context(dict):
         def defaults_recurse(current, defaults):
             """Walk the current context tree in recursive inner function.
 
-            On 1st iteration, current = self (i.e root of context)
+            On 1st iteration, current = self(i.e root of context)
             On subsequent recursive iterations, current is wherever you're at
             in the nested context hierarchy.
 
@@ -771,7 +614,7 @@ class Context(dict):
             """
             for k, v in defaults.items():
                 # key supports interpolation
-                k = self.get_formatted_string(k)
+                k = self.get_formatted_value(k)
 
                 if k in current:
                     if types.are_all_this_type(Mapping, current[k], v):
@@ -780,7 +623,7 @@ class Context(dict):
                         defaults_recurse(current[k], v)
                 else:
                     # since it's not in context already, add the default
-                    current[k] = self.get_formatted_iterable(v)
+                    current[k] = self.get_formatted_value(v)
 
         # first iteration starts at context dict root
         defaults_recurse(self, defaults)
