@@ -73,14 +73,14 @@ class CmdStep():
                                                child='run',
                                                caller=name)
             run_string = cmd_config['run']
-            self.cmd_text = context.get_formatted_string(run_string)
+            self.cmd_text = context.get_formatted_value(run_string)
             is_save = cmd_config.get('save', False)
             self.is_save = context.get_formatted_as_type(is_save,
                                                          out_type=bool)
 
             cwd_string = cmd_config.get('cwd', None)
             if cwd_string:
-                self.cwd = context.get_formatted_string(cwd_string)
+                self.cwd = context.get_formatted_value(cwd_string)
                 self.logger.debug("Processing command string in dir "
                                   "%s: %s", self.cwd, run_string)
             else:
