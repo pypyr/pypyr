@@ -31,11 +31,10 @@ def run_step(context):
     """
     logger.debug("started")
 
-    format_expression = context.get('nowIn', None)
+    format_expression = context.get_formatted_value(context.get('nowIn', None))
 
     if format_expression:
-        formatted_expression = context.get_formatted_string(format_expression)
-        context['now'] = datetime.now(tzlocal()).strftime(formatted_expression)
+        context['now'] = datetime.now(tzlocal()).strftime(format_expression)
     else:
         context['now'] = datetime.now(tzlocal()).isoformat()
 
