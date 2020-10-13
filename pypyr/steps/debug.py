@@ -55,7 +55,7 @@ def run_step(context):
             payload = context
 
         if format:
-            payload = context.get_formatted_iterable(payload)
+            payload = context.get_formatted_value(payload)
     else:
         payload = context
 
