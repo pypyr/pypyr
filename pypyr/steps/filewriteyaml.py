@@ -32,11 +32,12 @@ def run_step(context):
     logger.debug("started")
     context.assert_child_key_has_value('fileWriteYaml', 'path', __name__)
 
-    out_path = context.get_formatted_string(context['fileWriteYaml']['path'])
+    input_context = context.get_formatted('fileWriteYaml')
+    out_path = input_context['path']
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
-    is_payload_specified = 'payload' in context['fileWriteYaml']
+    is_payload_specified = 'payload' in input_context
 
     yaml_writer = pypyr.yaml.get_yaml_parser_roundtrip_for_context()
 
@@ -44,12 +45,11 @@ def run_step(context):
     os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
     with open(out_path, 'w') as outfile:
         if is_payload_specified:
-            payload = context['fileWriteYaml']['payload']
-            formatted_iterable = context.get_formatted_iterable(payload)
+            payload = input_context['payload']
         else:
-            formatted_iterable = context.get_formatted_iterable(context)
+            payload = context.get_formatted_value(context)
 
-        yaml_writer.dump(formatted_iterable, outfile)
+        yaml_writer.dump(payload, outfile)
 
     logger.info("formatted context content and wrote to %s", out_path)
     logger.debug("done")
