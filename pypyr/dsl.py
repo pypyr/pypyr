@@ -317,7 +317,7 @@ class Step:
         failure = {
             'name': get_error_name(exception),
             'description': str(exception),
-            'customError': context.get_formatted_iterable(
+            'customError': context.get_formatted_value(
                 self.on_error
             ) if self.on_error else {},
             'line': self.line_no,
@@ -345,7 +345,7 @@ class Step:
 
         # Loop decorators only evaluated once, not for every step repeat
         # execution.
-        foreach = context.get_formatted_iterable(self.foreach_items)
+        foreach = context.get_formatted_value(self.foreach_items)
 
         foreach_length = len(foreach)
 
@@ -739,7 +739,7 @@ class RetryDecorator:
             if self.stop_on or self.retry_on:
                 error_name = get_error_name(ex_info)
                 if self.stop_on:
-                    formatted_stop_list = context.get_formatted_iterable(
+                    formatted_stop_list = context.get_formatted_value(
                         self.stop_on)
                     if error_name in formatted_stop_list:
                         logger.error("%s in stopOn. Raising error "
@@ -749,7 +749,7 @@ class RetryDecorator:
                         logger.debug("%s not in stopOn. Continue.", error_name)
 
                 if self.retry_on:
-                    formatted_retry_list = context.get_formatted_iterable(
+                    formatted_retry_list = context.get_formatted_value(
                         self.retry_on)
                     if error_name not in formatted_retry_list:
                         logger.error("%s not in retryOn. Raising "
