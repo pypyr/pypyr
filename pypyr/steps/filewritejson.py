@@ -32,22 +32,23 @@ def run_step(context):
     logger.debug("started")
     context.assert_child_key_has_value('fileWriteJson', 'path', __name__)
 
-    out_path = context.get_formatted_string(context['fileWriteJson']['path'])
+    input_context = context.get_formatted('fileWriteJson')
+    out_path = input_context['path']
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
-    is_payload_specified = 'payload' in context['fileWriteJson']
+    is_payload_specified = 'payload' in input_context
 
     logger.debug("opening destination file for writing: %s", out_path)
     os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
     with open(out_path, 'w') as outfile:
         if is_payload_specified:
-            payload = context['fileWriteJson']['payload']
-            formatted_iterable = context.get_formatted_iterable(payload)
+            payload = input_context['payload']
         else:
-            formatted_iterable = context.get_formatted_iterable(context)
+            payload = context.get_formatted_value(context)
 
-        json.dump(formatted_iterable, outfile, indent=2, ensure_ascii=False)
+        json.dump(payload, outfile,
+                  indent=2, ensure_ascii=False)
 
     logger.info("formatted context content and wrote to %s", out_path)
     logger.debug("done")
