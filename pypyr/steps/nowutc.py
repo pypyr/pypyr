@@ -31,12 +31,12 @@ def run_step(context):
     """
     logger.debug("started")
 
-    format_expression = context.get('nowUtcIn', None)
+    format_expression = context.get_formatted_value(context.get('nowUtcIn',
+                                                                None))
 
     if format_expression:
-        formatted_expression = context.get_formatted_string(format_expression)
         context['nowUtc'] = datetime.now(
-            timezone.utc).strftime(formatted_expression)
+            timezone.utc).strftime(format_expression)
     else:
         context['nowUtc'] = datetime.now(timezone.utc).isoformat()
 
