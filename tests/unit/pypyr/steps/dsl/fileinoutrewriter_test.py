@@ -139,7 +139,7 @@ def test_objectrewriterstep_run_step(mock_rewriter):
 
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
-    assert mock_rewriter.mock_calls[0] == call(context.get_formatted_iterable,
+    assert mock_rewriter.mock_calls[0] == call(context.get_formatted_value,
                                                mock_representer)
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
@@ -163,7 +163,7 @@ def test_objectrewriterstep_run_step_no_out(mock_rewriter):
 
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
-    assert mock_rewriter.mock_calls[0] == call(context.get_formatted_iterable,
+    assert mock_rewriter.mock_calls[0] == call(context.get_formatted_value,
                                                mock_representer)
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(

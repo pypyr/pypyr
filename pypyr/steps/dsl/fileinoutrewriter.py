@@ -76,7 +76,7 @@ class ObjectRewriterStep(FileInRewriterStep):
         """
         assert representer, ("ObjectRepresenter instance required to run "
                              "ObjectRewriterStep.")
-        rewriter = ObjectRewriter(self.context.get_formatted_iterable,
+        rewriter = ObjectRewriter(self.context.get_formatted_value,
                                   representer)
         super().run_step(rewriter)
 
@@ -128,7 +128,7 @@ class StreamReplacePairsRewriterStep(FileInRewriterStep):
 
     def run_step(self):
         """Write in to out, replacing strings per the replace_pairs."""
-        formatted_replacements = self.context.get_formatted_iterable(
+        formatted_replacements = self.context.get_formatted_value(
             self.replace_pairs)
 
         iter = StreamReplacePairsRewriterStep.iter_replace_strings(
