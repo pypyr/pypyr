@@ -220,7 +220,7 @@ def test_filewritejson_pass_no_payload_substitutions(mock_makedirs):
 
 
 @patch('os.makedirs')
-def test_filewritejson_pass_with_payload_subsitutions(mock_makedirs):
+def test_filewritejson_pass_with_payload_substitutions(mock_makedirs):
     """Success case writes only specified context with substitutions."""
     context = Context({
         'k1': 'v1',
