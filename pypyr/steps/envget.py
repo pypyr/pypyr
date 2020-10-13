@@ -44,11 +44,10 @@ def run_step(context):
 
     context.assert_key_has_value('envGet', __name__)
 
+    get_items = context.get_formatted('envGet')
     # allow a list OR a single getenv dict
-    if isinstance(context['envGet'], list):
-        get_items = context['envGet']
-    else:
-        get_items = [context['envGet']]
+    if isinstance(context['envGet'], dict):
+        get_items = [get_items]
 
     get_count = 0
 
@@ -56,23 +55,19 @@ def run_step(context):
         (env, key, has_default, default) = get_args(get_me)
 
         logger.debug("setting context %s to $ENV %s", key, env)
-        formatted_key = context.get_formatted_string(key)
-        formatted_env = context.get_formatted_string(env)
 
-        if formatted_env in os.environ:
-            context[formatted_key] = os.environ[formatted_env]
+        if env in os.environ:
+            context[key] = os.environ[env]
             get_count += 1
         else:
             logger.debug("$ENV %s not found.", env)
             if has_default:
                 logger.debug("Using default value for %s instead.", env)
-                formatted_default = context.get_formatted_iterable(default)
-                context[formatted_key] = os.environ.get(formatted_env,
-                                                        formatted_default)
+                context[key] = os.environ.get(env, default)
                 get_count += 1
             else:
                 logger.debug(
-                    "No default value for %s found. Doin nuthin'.", env)
+                    "No default value for %s found. Doin' nuthin'.", env)
 
     logger.info("saved %s $ENVs to context.", get_count)
 

@@ -159,9 +159,10 @@ def test_envget_pass_with_substitutions_default_not_string():
         'env_val2': 'ARB_DELETE_ME2',
         'default_val': [0, 1, 2],
         'key_val': 'key3',
+        'key_key': 'key',
         'envGet': [
             {'env': '{env_val1}',
-             'key': '{key_val}',
+             '{key_key}': '{key_val}',
              'default': 'blah'},
             {'env': '{env_val2}',
              'key': 'key4',
