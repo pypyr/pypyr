@@ -47,12 +47,8 @@ class FileInRewriterStep():
                                            child='in',
                                            caller=name)
 
-        self.path_in = context.get_formatted_iterable(root_dict['in'])
-        out = root_dict.get('out', None)
-        if out:
-            self.path_out = context.get_formatted_string(out)
-        else:
-            self.path_out = None
+        self.path_in = context.get_formatted_value(root_dict['in'])
+        self.path_out = context.get_formatted_value(root_dict.get('out', None))
 
     def run_step(self, rewriter):
         """Do the file in to out rewrite.
