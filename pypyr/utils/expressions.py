@@ -13,13 +13,13 @@ def eval_string(input_string, locals):
     For reasons best known to eval(), it EAFPs the locals() look-up 1st and if
     it raises a KeyNotFound error, moves on to globals.
 
-    This means if you pass in something like the pypyr context, the custom
-    KeyNotInContextError the pypyr context raises isn't caught, and thus eval
-    doesn't work.
+    This means if you pass in a custom dict type for locals that does not
+    raise a KeyNotFound or derived exception,  and thus eval doesn't work.
 
-    Therefore, in order to be used as the locals arg, the pypyr context needs
-    to be initialized to a new dict like this:
-        out = eval_string('1==1', dict(context))
+    Therefore, in order to be used as the locals arg, if you use a dict with
+    a customized exception when look-up fails that is not an instance of
+    KeyNotFound, you should initialize to a new dict like this:
+        out = eval_string('1==1', dict(mydict))
 
     Args:
         input_string: str. expression to evaluate.

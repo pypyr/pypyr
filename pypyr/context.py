@@ -245,7 +245,7 @@ class Context(dict):
             Whatever object results from the string expression valuation.
 
         """
-        return expressions.eval_string(input_string, dict(self))
+        return expressions.eval_string(input_string, self)
 
     def get_formatted(self, key):
         """Return formatted value for context[key].
