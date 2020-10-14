@@ -348,11 +348,11 @@ class Context(dict):
             if out_type is result_type:
                 # get_formatted_string result is already a string
                 return result
-            elif out_type is bool and result_type is str:
+            elif out_type is bool:
                 # casting a str to bool is always True, hence special case. If
                 # the str value is 'False'/'false', presumably user can
                 # reasonably expect a bool False response.
-                return result.lower() in ['true', '1', '1.0']
+                return types.cast_to_bool(result)
             else:
                 return out_type(result)
         else:

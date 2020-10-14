@@ -1,5 +1,6 @@
 """Step that asserts something is true or equal to something else."""
 import logging
+from pypyr.utils.types import cast_to_bool
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -9,61 +10,84 @@ def run_step(context):
     """Assert that something is True or equal to something else.
 
     Args:
-        context: dictionary-like pypyr.context.Context. context is mandatory.
+        context (pypyr.context.Context): context is mandatory.
         Uses the following context keys in context:
             - assert
-                - this. mandatory. Any type. If assert['equals'] not specified,
-                  evals as boolean.
-                - equals. optional. Any type.
+                - this (any): mandatory. If assert['equals'] not specified,
+                  eval as boolean.
+                - equals (any): optional. Any type.
 
-    If assert['this'] evaluates to False raises error.
-    If assert['equals'] is specified, raises error if
-    assert.this != assert.equals.
+    Takes one of three input forms:
+        assert: evaluate me
 
-    assert['this'] & assert['equals'] both support string substitutions.
+        or
+
+        assert:
+            this: evaluate me
+
+        or
+
+        assert:
+            this: compare me
+            equals: to this
+
+    If context['assert'] is not a dict, evaluate contents as bool.
+    If context['assert'] is a dict:
+        - If context['assert']['this'] evaluates to False raises error.
+        - If context['assert']['equals'] exists, raises error if assert.this
+          != assert.equals.
+
+    All input forms support string substitutions.
 
     Returns:
         None
 
     Raises:
-        ContextError: if assert evaluates to False.
+        AssertionError: if assert evaluates to False.
 
     """
     logger.debug("started")
     assert context, f"context must have value for {__name__}"
 
-    context.assert_key_has_value('assert', __name__)
+    context.assert_key_exists('assert', __name__)
 
-    assert_this = context['assert']['this']
-    is_equals_there = 'equals' in context['assert']
-    if is_equals_there:
-        assert_equals = context['assert']['equals']
-        # compare assertThis to assertEquals
-        logger.debug("comparing assert['this'] to assert['equals'].")
-        assert_result = (context.get_formatted_iterable(assert_this) ==
-                         context.get_formatted_iterable(assert_equals))
+    assert_context = context.get_formatted('assert')
+
+    is_equals_there = False
+    if isinstance(assert_context, dict):
+        assert_this = assert_context['this']
+        is_equals_there = 'equals' in assert_context
+        if is_equals_there:
+            assert_equals = assert_context['equals']
+            # compare assertThis to assertEquals
+            logger.debug("comparing assert['this'] to assert['equals'].")
+            assert_result = (assert_this == assert_equals)
+        else:
+            # nothing to compare means treat assert.this as a bool.
+            logger.debug("evaluating assert['this'] as a boolean.")
+            assert_result = cast_to_bool(assert_this)
     else:
-        # nothing to compare means treat assertThis as a bool.
-        logger.debug("evaluating assert['this'] as a boolean.")
-        assert_result = context.get_formatted_as_type(assert_this,
-                                                      out_type=bool)
+        # assert key has a non-dict value so eval directly as a bool.
+        logger.debug("evaluating assert value as a boolean.")
+        assert_result = cast_to_bool(assert_context)
 
     logger.info("assert evaluated to %s", assert_result)
 
     if not assert_result:
         if is_equals_there:
             # emit type to help user, but not the actual field contents.
-            type_this = (
-                type(context.get_formatted_iterable(assert_this)).__name__)
-            type_equals = (
-                type(context.get_formatted_iterable(assert_equals)).__name__)
+            type_this = type(assert_this).__name__
+            type_equals = type(assert_equals).__name__
             error_text = (
                 f"assert assert['this'] is of type {type_this} "
                 f"and does not equal assert['equals'] of type {type_equals}.")
         else:
-            # if it's a bool it's presumably not a sensitive value.
+            og_assert = context['assert']['this'] if isinstance(
+                context['assert'], dict) else context['assert']
+            # original literal hard-coded in pipe, so presumably not a
+            # sensitive value.
             error_text = (
-                f"assert {assert_this} evaluated to False.")
+                f"assert {og_assert} evaluated to False.")
         raise AssertionError(error_text)
 
     logger.debug("done")
