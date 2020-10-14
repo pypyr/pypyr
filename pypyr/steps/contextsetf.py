@@ -37,9 +37,9 @@ def run_step(context):
 
     for k, v in context['contextSetf'].items():
         logger.debug("setting context %s to value from context %s", k, v)
-        context[context.get_formatted_iterable(
-            k)] = context.get_formatted_iterable(v)
+        context[context.get_formatted_value(
+            k)] = context.get_formatted_value(v)
 
-    logger.info("Set %d context items.", len(context['contextSetf']))
+    logger.info("set %d context items.", len(context['contextSetf']))
 
     logger.debug("done")
