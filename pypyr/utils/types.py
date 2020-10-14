@@ -17,6 +17,26 @@ def are_all_this_type(type, *objects):
     return all(isinstance(object, type) for object in objects)
 
 
+def cast_to_bool(obj):
+    """Convert to bool with special string parsing.
+
+    If obj is string: case-insensitive 'True', '1' or '1.0' is True.
+    It will be False for all other strings.
+
+    Any other object evaluates with standard truthy.
+
+    Args:
+        obj (any): Get truthy from this input object
+
+    Returns:
+        bool. Truthy value of input obj.
+    """
+    if isinstance(obj, str):
+        return obj.lower() in ['true', '1', '1.0']
+    else:
+        return bool(obj)
+
+
 def cast_to_type(obj, out_type):
     """Cast obj to out_type if it's not out_type already.
 

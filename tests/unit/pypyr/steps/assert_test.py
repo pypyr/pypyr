@@ -2,7 +2,7 @@
 import importlib
 import pytest
 from pypyr.context import Context
-from pypyr.errors import KeyNotInContextError, KeyInContextHasNoValueError
+from pypyr.errors import KeyNotInContextError
 
 
 # loading assert dynamically because it clashes with built-in assert
@@ -25,8 +25,10 @@ def test_assert_raises_on_missing_assert():
 def test_assert_raises_on_empty_assert():
     """Assert can't be empty."""
     context = Context({'assert': None})
-    with pytest.raises(KeyInContextHasNoValueError):
+    with pytest.raises(AssertionError) as err_info:
         assert_step.run_step(context)
+
+    assert str(err_info.value) == "assert None evaluated to False."
 
 
 def test_assert_raises_on_empty_assertthis():
@@ -36,6 +38,21 @@ def test_assert_raises_on_empty_assertthis():
         assert_step.run_step(context)
 
     assert str(err_info.value) == "assert None evaluated to False."
+
+
+def test_assert_passes_on_bare_assert_true():
+    """Assert bare boolean True passes."""
+    context = Context({'assert': True})
+    assert_step.run_step(context)
+
+
+def test_assert_raises_on_bare_assert_false():
+    """Assert bare boolean False raises."""
+    context = Context({'assert': False})
+    with pytest.raises(AssertionError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "assert False evaluated to False."
 
 
 def test_assert_raises_on_assertthis_false():
@@ -261,7 +278,22 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
         "assert assert['this'] is of type dict and does "
         "not equal assert['equals'] of type dict.")
 
-# ---------------------- substitutions ----------------------------------------
+# region substitutions
+
+
+def test_assert_passes_on_bare_assert_substitutions():
+    """Assert bare boolean substitutes to int passes."""
+    context = Context({'k1': 33, 'assert': '{k1}'})
+    assert_step.run_step(context)
+
+
+def test_assert_raises_on_bare_assert_substitutions():
+    """Assert bare with substitution raises."""
+    context = Context({'k1': 0, 'assert': '{k1}'})
+    with pytest.raises(AssertionError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "assert {k1} evaluated to False."
 
 
 def test_assert_passes_on_assertthis_equals_ints_substitutions():
@@ -416,3 +448,5 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict_substitutions():
     assert str(err_info.value) == (
         "assert assert['this'] is of type dict and does "
         "not equal assert['equals'] of type dict.")
+
+# endregion substitutions
