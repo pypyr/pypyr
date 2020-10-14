@@ -2,7 +2,7 @@
 import json
 import logging
 import os
-
+from pypyr.utils.asserts import assert_key_has_value
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,14 @@ def run_step(context):
 
     """
     logger.debug("started")
-    context.assert_child_key_has_value('fileWriteJson', 'path', __name__)
+    context.assert_key_has_value('fileWriteJson', __name__)
 
     input_context = context.get_formatted('fileWriteJson')
+    assert_key_has_value(obj=input_context,
+                         key='path',
+                         caller=__name__,
+                         parent='fileWriteJson')
+
     out_path = input_context['path']
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is

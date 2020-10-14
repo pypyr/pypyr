@@ -1,6 +1,7 @@
 """pypyr step that writes payload out to a yaml file."""
 import os
 import logging
+from pypyr.utils.asserts import assert_key_has_value
 import pypyr.yaml
 
 # logger means the log level will be set correctly
@@ -30,9 +31,13 @@ def run_step(context):
 
     """
     logger.debug("started")
-    context.assert_child_key_has_value('fileWriteYaml', 'path', __name__)
+    context.assert_key_has_value('fileWriteYaml', __name__)
 
     input_context = context.get_formatted('fileWriteYaml')
+    assert_key_has_value(obj=input_context,
+                         key='path',
+                         caller=__name__,
+                         parent='fileWriteYaml')
     out_path = input_context['path']
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is

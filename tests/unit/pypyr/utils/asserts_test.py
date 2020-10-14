@@ -77,8 +77,9 @@ def test_assert_key_has_value_object_none():
                                      caller='arb caller',
                                      parent='parent name')
 
-    assert str(err.value) == ("context['parent name'] must exist and contain "
-                              "'k1' for arb caller.")
+    assert str(err.value) == (
+        "context['parent name'] must exist, be iterable and contain 'k1' for "
+        "arb caller. argument of type 'NoneType' is not iterable")
 
 
 def test_assert_key_has_value_object_none_no_parent():
@@ -88,5 +89,7 @@ def test_assert_key_has_value_object_none_no_parent():
                                      key='k1',
                                      caller='arb caller')
 
-    assert str(err.value) == ("context['k1'] must exist for arb caller.")
+    assert str(err.value) == (
+        "context['k1'] must exist and be iterable for arb caller. argument of "
+        "type 'NoneType' is not iterable")
 # endregion assert_key_has_value

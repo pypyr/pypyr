@@ -18,19 +18,23 @@ def assert_key_has_value(obj, key, caller, parent=None):
                          indicate the name of obj in context.
 
     Raises:
-        ContextError: if obj is None.
+        ContextError: if obj is None or not iterable.
         KeyInContextHasNoValueError: context[key] is None
         KeyNotInContextError: Key doesn't exist
     """
-    if not obj:
+    try:
+        exists = key in obj
+    except TypeError as err:
+        # catches None on obj or obj not iterable
         if parent:
-            msg = (f"context['{parent}'] must exist and contain "
-                   f"'{key}' for {caller}.")
+            msg = (f"context['{parent}'] must exist, be iterable and contain "
+                   f"'{key}' for {caller}. {err}")
         else:
-            msg = (f"context['{key}'] must exist for {caller}.")
-        raise ContextError(msg)
+            msg = (f"context['{key}'] must exist and be iterable for "
+                   f"{caller}. {err}")
+        raise ContextError(msg) from err
 
-    if key not in obj:
+    if not exists:
         if parent:
             msg = (f"context['{parent}']['{key}'] doesn't "
                    f"exist. It must exist for {caller}.")

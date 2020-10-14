@@ -47,7 +47,7 @@ def test_filewriteyaml_filewriteyaml_not_iterable_raises():
         filewrite.run_step(context)
 
     assert str(err_info.value) == (
-        "context['fileWriteYaml'] must be iterable "
+        "context['fileWriteYaml'] must exist, be iterable "
         "and contain 'path' for pypyr.steps.filewriteyaml. argument of type "
         "'int' is not iterable")
 

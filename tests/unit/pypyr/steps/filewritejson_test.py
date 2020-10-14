@@ -47,7 +47,7 @@ def test_filewritejson_filewritejson_not_iterable_raises():
         filewrite.run_step(context)
 
     assert str(err_info.value) == (
-        "context['fileWriteJson'] must be iterable "
+        "context['fileWriteJson'] must exist, be iterable "
         "and contain 'path' for pypyr.steps.filewritejson. argument of type "
         "'int' is not iterable")
 
