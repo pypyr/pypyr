@@ -2,7 +2,7 @@
 from collections.abc import MutableMapping
 import json
 import logging
-
+from pypyr.utils.asserts import assert_key_has_value
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
@@ -48,21 +48,20 @@ def run_step(context):
 
     if isinstance(fetch_json_input, str):
         file_path = fetch_json_input
-        destination_key_expression = None
+        destination_key = None
     else:
-        context.assert_child_key_has_value(parent='fetchJson',
-                                           child='path',
-                                           caller=__name__)
+        assert_key_has_value(obj=fetch_json_input,
+                             key='path',
+                             caller=__name__,
+                             parent='fetchJson')
         file_path = fetch_json_input['path']
-        destination_key_expression = fetch_json_input.get('key', None)
+        destination_key = fetch_json_input.get('key', None)
 
     logger.debug("attempting to open file: %s", file_path)
     with open(file_path) as json_file:
         payload = json.load(json_file)
 
-    if destination_key_expression:
-        destination_key = context.get_formatted_iterable(
-            destination_key_expression)
+    if destination_key:
         logger.debug("json file loaded. Writing to context %s",
                      destination_key)
         context[destination_key] = payload
