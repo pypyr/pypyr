@@ -346,7 +346,7 @@ class Context(dict):
             result = self.formatter.vformat(value, None, self)
             result_type = type(result)
             if out_type is result_type:
-                # get_formatted_string result is already a string
+                # no need to cast, result is already desired type.
                 return result
             elif out_type is bool:
                 # casting a str to bool is always True, hence special case. If
