@@ -2,7 +2,7 @@
 from collections.abc import MutableMapping
 import logging
 import ruamel.yaml as yaml
-
+from pypyr.utils.asserts import assert_key_has_value
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
@@ -46,22 +46,21 @@ def run_step(context):
 
     if isinstance(fetch_yaml_input, str):
         file_path = fetch_yaml_input
-        destination_key_expression = None
+        destination_key = None
     else:
-        context.assert_child_key_has_value(parent='fetchYaml',
-                                           child='path',
-                                           caller=__name__)
+        assert_key_has_value(obj=fetch_yaml_input,
+                             key='path',
+                             caller=__name__,
+                             parent='fetchYaml')
         file_path = fetch_yaml_input['path']
-        destination_key_expression = fetch_yaml_input.get('key', None)
+        destination_key = fetch_yaml_input.get('key', None)
 
     logger.debug("attempting to open file: %s", file_path)
     with open(file_path) as yaml_file:
         yaml_loader = yaml.YAML(typ='safe', pure=True)
         payload = yaml_loader.load(yaml_file)
 
-    if destination_key_expression:
-        destination_key = context.get_formatted_iterable(
-            destination_key_expression)
+    if destination_key:
         logger.debug("yaml file loaded. Writing to context %s",
                      destination_key)
         context[destination_key] = payload
