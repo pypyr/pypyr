@@ -301,10 +301,20 @@ class Context(dict):
 
     def get_formatted_iterable(self, obj, memo=None):
         """Use get_formatted_value(input_value) instead. Deprecated."""
+        from warnings import warn
+        warn(
+            ("Use get_formatted_value(input_value) instead of "
+             "get_formatted_iterable"),
+            DeprecationWarning)
         return self.formatter.vformat(obj, None, self)
 
     def get_formatted_string(self, input_string):
         """Use get_formatted_value(input_value) instead. Deprecated."""
+        from warnings import warn
+        warn(
+            ("Use get_formatted_value(input_value) instead of "
+             "get_formatted_string"),
+            DeprecationWarning)
         if isinstance(input_string, str):
             try:
                 return self.formatter.vformat(input_string, None, self)
@@ -412,6 +422,11 @@ class Context(dict):
 
     def get_processed_string(self, input_string):
         """Use get_formatted_value(input_value) instead. Deprecated."""
+        from warnings import warn
+        warn(
+            ("Use get_formatted_value(input_value) instead of "
+             "get_processed_string"),
+            DeprecationWarning)
         return self.formatter.vformat(input_string, None, self)
 
     def iter_formatted_strings(self, iterable_strings):

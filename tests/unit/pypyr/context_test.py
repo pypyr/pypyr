@@ -592,6 +592,7 @@ def test_context_item_list_should_iterate():
     assert val == ['string1', 'value1', 'string3']
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_interpolate_works():
     """Interpolate strings."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
@@ -601,6 +602,7 @@ def test_input_string_interpolate_works():
         "string interpolation incorrect")
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_tag_not_in_context_should_throw():
     """Interpolate not in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
@@ -613,6 +615,7 @@ def test_input_string_tag_not_in_context_should_throw():
         "string' because key2 not found in the pypyr context.")
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_interpolate_sic():
     """Interpolate sic."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
@@ -626,7 +629,7 @@ def test_input_string_interpolate_sic_singlequote():
     """Interpolate sic with quotes."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString('Piping {key1} the {key2} wild')
-    output = context.get_formatted_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == "Piping {key1} the {key2} wild", (
         "string interpolation incorrect")
 
@@ -635,11 +638,12 @@ def test_input_string_interpolate_py_singlequote():
     """Interpolate py single quotes."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = PyString('len(key1) * len(key2)')
-    output = context.get_formatted_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 28, (
         "string interpolation incorrect")
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_not_a_string_throw():
     """Interpolate takes string."""
     with pytest.raises(TypeError) as err_info:
@@ -651,7 +655,8 @@ def test_input_string_not_a_string_throw():
         "can only format on strings. 77 is a <class 'int'> instead.")
 
 
-def test_get_formatted_iterable_list():
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+def test_get_formatted_iterable_list_deprecated():
     """Simple list."""
     input_obj = ['k1', 'k2', '{ctx3}', True, False, 44]
 
@@ -669,6 +674,24 @@ def test_get_formatted_iterable_list():
     assert output[5] == 44
 
 
+def test_get_formatted_iterable_list():
+    """Simple list."""
+    input_obj = ['k1', 'k2', '{ctx3}', True, False, 44]
+
+    context = Context(
+        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
+
+    output = context.get_formatted_value(input_obj)
+
+    assert output is not input_obj
+    assert output[0] == 'k1'
+    assert output[1] == 'k2'
+    assert output[2] == 'ctxvalue3'
+    assert output[3]
+    assert not output[4]
+    assert output[5] == 44
+
+
 def test_get_formatted_iterable_tuple():
     """Simple tuple."""
     input_obj = ('k1', 'k2', '{ctx3}', True, False, 44)
@@ -676,7 +699,7 @@ def test_get_formatted_iterable_tuple():
     context = Context(
         {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output is not input_obj
     assert output[0] == 'k1'
@@ -694,7 +717,7 @@ def test_get_formatted_iterable_set():
     context = Context(
         {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output is not input_obj
     assert len(output) == len(input_obj)
@@ -724,7 +747,7 @@ def test_get_formatted_immutable_mapping():
     context = Context(
         {'ctx': ReadOnlyMapping({'arb': 1})})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output is not input_obj
     assert isinstance(output['key'], ReadOnlyMapping)
@@ -755,7 +778,7 @@ def test_get_formatted_iterable_nested():
     context = Context(
         {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output == input_obj
     assert output is not context
@@ -801,7 +824,7 @@ def test_get_formatted_iterable_nested_with_formatting():
          'ctx3': 'ctxvalue3',
          'ctx4': 'ctxvalue4'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output != input_obj
 
@@ -864,7 +887,7 @@ def test_get_formatted_iterable_nested_with_sic():
          'ctx3': 'ctxvalue3',
          'ctx4': 'ctxvalue4'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output != input_obj
 
@@ -929,7 +952,7 @@ def test_get_formatted_iterable_non_string_key():
          'ctx4': 'ctxvalue4',
          5: [1, 2, 3]})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     assert output != input_obj
     assert output == {'k1': 'v1',
@@ -990,7 +1013,7 @@ def test_get_formatted_iterable_with_memo():
          'ctx3': 'ctxvalue3',
          'ctx4': 'ctxvalue4'})
 
-    output = context.get_formatted_iterable(input_obj)
+    output = context.get_formatted_value(input_obj)
 
     # same obj re-used at different levels of the hierarchy
     assert id(input_obj['k3']) == id(input_obj['k6'][2])
@@ -1309,6 +1332,7 @@ def test_get_formatted_value_list():
     assert context.get_formatted_value(['{k1}', 12, 13]) == [10, 12, 13]
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_no_interpolation():
     """On get_processed_string on plain string returns plain."""
     context = Context(
@@ -1324,6 +1348,7 @@ def test_get_processed_string_no_interpolation():
     assert input_string == output
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_with_interpolation():
     """Process string with interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
@@ -1333,6 +1358,7 @@ def test_get_processed_string_with_interpolation():
         "string interpolation incorrect")
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_shorter_than_6_with_interpolation():
     """Process string with interpolation."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
@@ -1346,7 +1372,7 @@ def test_get_processed_string_shorter_than_6_no_interpolation():
     """Process string with no interpolation."""
     context = Context()
     input_string = 'k'
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'k', (
         "string interpolation incorrect")
 
@@ -1355,7 +1381,7 @@ def test_get_processed_string_sic_skips_interpolation():
     """Process string with sic interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString("Piping {key1} the {key2} wild")
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'Piping {key1} the {key2} wild', (
         "string interpolation incorrect")
 
@@ -1364,7 +1390,7 @@ def test_get_processed_string_pystring_double_quote():
     """Process string with double quotes interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = PyString("key1 == 'down'")
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert isinstance(output, bool)
     assert output
 
@@ -1373,7 +1399,7 @@ def test_get_processed_string_pystring_single_quote():
     """Process string with py string interpolation."""
     context = Context({'key1': 2, 'key2': -3, 'key3': 'value3'})
     input_string = PyString('abs(key1+key2)')
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert isinstance(output, int)
     assert output == 1
 
@@ -1388,7 +1414,7 @@ def test_get_processed_string_single_expression_keeps_type():
 
     input_string = '{ctx3}'
 
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
 
     assert output == [0, 1, 3]
     assert isinstance(output, list)
@@ -1407,7 +1433,7 @@ def test_get_processed_string_single_expression_keeps_type_and_iterates():
 
     input_string = '{ctx3}'
 
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
 
     assert output == [0,
                       {'s1': 'v1',
@@ -1419,7 +1445,7 @@ def test_get_processed_string_leading_literal():
     """Process string with interpolation leading literal."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'leading literal{k}'
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'leading literaldown', (
         "string interpolation incorrect")
 
@@ -1428,7 +1454,7 @@ def test_get_processed_string_following_literal():
     """Process string with interpolation literal end."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = '{k}following literal'
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'downfollowing literal', (
         "string interpolation incorrect")
 # ------------------- formats ------------------------------------------------#
