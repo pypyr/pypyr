@@ -1,7 +1,7 @@
 """yaml handling functions."""
 import ruamel.yaml as yamler
 from pypyr.context import Context
-from pypyr.dsl import PyString, SicString
+from pypyr.dsl import Jsonify, PyString, SicString
 
 
 def get_pipeline_yaml(file):
@@ -20,7 +20,7 @@ def get_pipeline_yaml(file):
         dict-like representation of loaded yaml.
 
     """
-    tag_representers = [PyString, SicString]
+    tag_representers = [Jsonify, PyString, SicString]
 
     yaml_loader = get_yaml_parser_roundtrip()
 

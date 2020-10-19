@@ -1,6 +1,7 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
-
+import json
 import logging
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, TaggedScalar
 from pypyr.errors import (Call,
                           ControlOfFlowInstruction,
                           get_error_name,
@@ -45,7 +46,7 @@ class SpecialTagDirective:
 
     def __str__(self):
         """Friendly string representation of instance."""
-        return self.value
+        return str(self.value)
 
     def __repr__(self):
         """Repr representation of instance."""
@@ -77,6 +78,68 @@ class SpecialTagDirective:
         raise NotImplementedError(
             'Implement this to provide the processed value of your custom tag '
             'during formatting operations.')
+
+
+class Jsonify(SpecialTagDirective):
+    """Serialize context structure into a json string.
+
+    Runs formatting substitution expressions on all formattable fields in the
+    input structure.
+    """
+
+    yaml_tag = '!jsonify'
+
+    @property
+    def value(self):
+        """Return original object, or .value if TaggedScalar."""
+        if self._is_raw:
+            # expect raw to be the most frequent case
+            return self._value
+
+        return self._value.value
+
+    def __init__(self, value):
+        """Initialize class with special handling for TaggedScalar."""
+        self._is_raw = True
+        if isinstance(value, TaggedScalar):
+            # set in ctor to prevent expensive isinstance on each .value get
+            self._is_raw = False
+
+        self._value = value
+
+    def __repr__(self):
+        """Handle TaggedScalar specially.
+
+        This is because original node necessary to reconstruct a TaggedScalar
+        and .value gives the wrapped .value.value instead.
+        """
+        return f'{self.__class__.__name__}({self._value!r})'
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        """Create the class from yaml representation."""
+        for data in constructor.construct_undefined(node):
+            # returns generator as a means to update the
+            # returned iterator for recursive yaml refs where the node is still
+            # under construction.
+            pass
+
+        return cls(data)
+
+    @classmethod
+    def to_yaml(cls, representer, node):
+        """Serialize this class back to yaml."""
+        if isinstance(node.value, CommentedMap):
+            return representer.represent_mapping(cls.yaml_tag, node._value)
+        elif isinstance(node.value, CommentedSeq):
+            return representer.represent_sequence(cls.yaml_tag, node._value)
+        else:
+            return representer.represent_tagged_scalar(node._value)
+
+    def get_value(self, context):
+        """Serialize self contents to json."""
+        # dumps writes null if self.value is None
+        return json.dumps(context.get_formatted_value(self.value))
 
 
 class PyString(SpecialTagDirective):

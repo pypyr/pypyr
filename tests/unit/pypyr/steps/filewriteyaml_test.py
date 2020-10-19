@@ -3,6 +3,7 @@ import pytest
 import io
 from unittest.mock import mock_open, patch
 from pypyr.context import Context
+from pypyr.dsl import Jsonify
 from pypyr.errors import (
     ContextError,
     KeyInContextHasNoValueError,
@@ -169,13 +170,14 @@ def test_filewriteyaml_pass_with_payload(mock_makedirs):
 
 
 @patch('os.makedirs')
-def test_filewriteyaml_pass_no_payload_subsitutions(mock_makedirs):
+def test_filewriteyaml_pass_no_payload_substitutions(mock_makedirs):
     """Success case writes all context out with substitutions."""
     context = Context({
         'k1': 'v1',
         'pathkey': '/arb/path',
         'parent': [0, 1, {'child': '{k1}'}],
         'nested': '{parent[2][child]}',
+        'jsonify': Jsonify({'arb': 123}),
         'fileWriteYaml': {
             'path': '{pathkey}'
         }})
@@ -187,7 +189,7 @@ def test_filewriteyaml_pass_no_payload_subsitutions(mock_makedirs):
             filewrite.run_step(context)
 
         assert context, "context shouldn't be None"
-        assert len(context) == 5, "context should have 5 items"
+        assert len(context) == 6, "context should have 6 items"
         assert context['k1'] == 'v1'
         assert context['fileWriteYaml'] == {'path': '{pathkey}'}
 
@@ -201,12 +203,13 @@ def test_filewriteyaml_pass_no_payload_subsitutions(mock_makedirs):
                                        '  - 1\n'
                                        '  - child: v1\n'
                                        'nested: v1\n'
+                                       'jsonify: \'{"arb": 123}\'\n'
                                        'fileWriteYaml:\n'
                                        '  path: /arb/path\n')
 
 
 @patch('os.makedirs')
-def test_filewriteyaml_pass_with_payload_subsitutions(mock_makedirs):
+def test_filewriteyaml_pass_with_payload_substitutions(mock_makedirs):
     """Success case writes only specified context with substitutions."""
     context = Context({
         'k1': 'v1',
