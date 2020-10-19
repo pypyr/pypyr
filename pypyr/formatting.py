@@ -118,7 +118,7 @@ class RecursiveFormatter(Formatter):
         self.passthrough_types = passthrough_types
         self.special_types = special_types
 
-    def format(self, format_string, /, *args, **kwargs):
+    def format(self, format_string, *args, **kwargs):
         """Format the input with arbitrary positional & keyword args.
 
         Use exactly as you would in string.Formatter. Only you get 'ff' & 'rf'
