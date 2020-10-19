@@ -5,7 +5,7 @@ from collections import OrderedDict
 from unittest.mock import call, patch
 from pypyr.context import Context
 import pypyr.steps.debug as debug
-from pypyr.dsl import PyString, SicString
+from pypyr.dsl import Jsonify, PyString, SicString
 from tests.common.utils import patch_logger
 
 
@@ -158,8 +158,10 @@ def test_complex_object():
     def arb_func():
         pass
 
+    # autopep8: off
     # ignore flake warning to check lambda address
     arb_lambda = lambda x: x  # noqa: E731
+    # autopep8: on
 
     context = Context({
         'bound_method': py_str.get_value,
@@ -167,6 +169,7 @@ def test_complex_object():
         'datetime': datetime.datetime(2019, 10, 10),
         'exception': ValueError("Test", 'exc_arg'),
         'func': arb_func,
+        'jsonify': Jsonify('jsonify arb'),
         'lambda': arb_lambda,
         'list': ['arb1', 'arb2', ['arb3']],
         'ordered_dict': OrderedDict({'a': 1, 'b': 2}),
@@ -188,6 +191,7 @@ def test_complex_object():
         " 'exception': ValueError('Test', 'exc_arg'),\n"
         " 'func': <function test_complex_object.<locals>.arb_func"
         f" at {hex(id(arb_func))}>,\n"
+        " 'jsonify': Jsonify('jsonify arb'),\n"
         " 'lambda': <function test_complex_object.<locals>.<lambda>"
         f" at {hex(id(arb_lambda))}>,\n"
         " 'list': ['arb1', 'arb2', ['arb3']],\n"

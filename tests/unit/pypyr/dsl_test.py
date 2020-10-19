@@ -1,15 +1,18 @@
 """dsl.py unit tests."""
 from copy import deepcopy
+from io import StringIO
 import logging
 import pytest
 from unittest.mock import call, patch, MagicMock
 from tests.common.utils import DeepCopyMagicMock, patch_logger
 
-from ruamel.yaml.comments import CommentedMap
+import ruamel.yaml as yamler
+from ruamel.yaml.comments import CommentedMap, CommentedSeq, TaggedScalar
 
 import pypyr.cache.stepcache as stepcache
 from pypyr.context import Context
-from pypyr.dsl import (PyString,
+from pypyr.dsl import (Jsonify,
+                       PyString,
                        SicString,
                        SpecialTagDirective,
                        Step,
@@ -24,7 +27,7 @@ from pypyr.errors import (Call,
 def arb_step_mock(context):
     """No real reason, other than to mock the existence of a run_step."""
     return 'from arb step mock'
-# ------------------- custom yaml tags----------------------------------------#
+# region custom yaml tags
 
 
 def test_special_tag_directive_base_no_get_value():
@@ -56,7 +59,297 @@ def test_special_tag_directive_truthy():
     assert SpecialTagDirective('blah')
     assert not SpecialTagDirective(None)
     assert not SpecialTagDirective('')
-# ------------------- py string custom tag -----------------------------------#
+
+# region jsonify custom tag
+
+
+def test_jsonify_behaves():
+    """Jsonify does what it should."""
+    assert Jsonify.yaml_tag == '!jsonify'
+    jsonify = Jsonify({'a': 'string here', 'b': 123, 'c': False})
+    assert jsonify == Jsonify({'a': 'string here', 'b': 123, 'c': False})
+    assert jsonify
+    assert str(jsonify) == "{'a': 'string here', 'b': 123, 'c': False}"
+    assert repr(jsonify) == (
+        "Jsonify({'a': 'string here', 'b': 123, 'c': False})")
+    assert jsonify.get_value(Context({'a': 'BBB'})) == (
+        '{"a": "string here", "b": 123, "c": false}')
+
+
+def get_yaml_jsonify_parser():
+    """Create ruamel yaml parser with jsonify tag handler."""
+    yaml_parser = yamler.YAML(typ='rt', pure=True)
+    yaml_parser.register_class(Jsonify)
+    return yaml_parser
+
+
+def get_yaml_with_jsonify(input_string):
+    """Get yaml from yaml parser with jsonify tag."""
+    return get_yaml_jsonify_parser().load(input_string)
+
+
+def get_string_from_yaml_with_jsonify(yaml):
+    """Serialize yaml object to string."""
+    stream = StringIO()
+    get_yaml_jsonify_parser().dump(yaml, stream)
+    output = stream.getvalue()
+    stream.close()
+    return output
+
+
+def test_jsonify_roundtrip_mapping():
+    """Jsonify serializes and deserializes from yaml mapping."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify
+                c1: v1
+                c2: 22
+                c3: 123.45
+              d: False
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    assert type(yaml['c']) is Jsonify
+    assert type(yaml['c'].value) is CommentedMap
+    assert repr(yaml['c']) == f"Jsonify({yaml['c'].value!r})"
+
+    assert yaml['c'].value == {'c1': 'v1', 'c2': 22, 'c3': 123.45}
+    assert yaml['c'].get_value(Context()) == (
+        '{"c1": "v1", "c2": 22, "c3": 123.45}')
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify\n"
+        "  c1: v1\n"
+        "  c2: 22\n"
+        "  c3: 123.45\n"
+        "d: false\n")
+
+    assert roundtripped_string == expected
+
+
+def test_jsonify_roundtrip_sequence():
+    """Jsonify serializes and de-serializes from yaml sequence."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify
+                - v1
+                - 22
+                - 123.45
+                - a: a value
+                  b: 123
+              d: False
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    assert type(yaml['c']) is Jsonify
+    assert type(yaml['c'].value) is CommentedSeq
+    assert repr(yaml['c']) == f"Jsonify({yaml['c'].value!r})"
+
+    assert yaml['c'].value == ['v1',
+                               22,
+                               123.45,
+                               {'a': 'a value',
+                                'b': 123}]
+
+    assert yaml['c'].get_value(Context()) == (
+        '["v1", 22, 123.45, {"a": "a value", "b": 123}]')
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify\n"
+        "- v1\n"
+        "- 22\n"
+        "- 123.45\n"
+        "- a: a value\n"
+        "  b: 123\n"
+        "d: false\n")
+
+    assert roundtripped_string == expected
+
+
+def test_jsonify_roundtrip_scalar():
+    """Jsonify serializes and de-serializes from yaml scalar."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify my scalar
+              d: !jsonify False
+              e: !jsonify 123
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    assert type(yaml['c']) is Jsonify
+    assert yaml['c'].value == 'my scalar'
+    assert type(yaml['c']._value) is TaggedScalar
+    assert repr(yaml['c']) == f"Jsonify({yaml['c']._value!r})"
+    # ruamel parses TaggedScalar as string, regardless of implicit type.
+    assert yaml['d'].value == 'False'
+    assert yaml['e'].value == '123'
+
+    assert yaml['c'].get_value(Context()) == '"my scalar"'
+    assert yaml['d'].get_value(Context()) == '"False"'
+    assert yaml['e'].get_value(Context()) == '"123"'
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify my scalar\n"
+        "d: !jsonify False\n"
+        "e: !jsonify 123\n")
+
+    assert roundtripped_string == expected
+
+
+def test_jsonify_roundtrip_mapping_substitutions():
+    """Jsonify serializes & deserializes yaml mapping with substitutions."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify
+                c1: 'v{k3}'
+                c2: 22
+                c3: '{k2}'
+                c4: "{k1} b"
+                c5: '{k4}'
+              d: False
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    context = Context({'k1': 'string {here}',
+                       'k2': 123.45,
+                       'k3': 1,
+                       'k4': '{k2}'})
+    assert type(yaml['c']) is Jsonify
+    assert type(yaml['c'].value) is CommentedMap
+    assert repr(yaml['c']) == f"Jsonify({yaml['c'].value!r})"
+
+    assert yaml['c'].value == {'c1': 'v{k3}',
+                               'c2': 22,
+                               'c3': '{k2}',
+                               'c4': '{k1} b',
+                               'c5': '{k4}'}
+
+    expected_json = (
+        '{"c1": "v1", "c2": 22, "c3": 123.45, "c4": "string {here} b", '
+        '"c5": 123.45}')
+    assert yaml['c'].get_value(context) == expected_json
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify\n"
+        "  c1: v{k3}\n"
+        "  c2: 22\n"
+        "  c3: '{k2}'\n"
+        "  c4: '{k1} b'\n"
+        "  c5: '{k4}'\n"
+        "d: false\n")
+
+    assert roundtripped_string == expected
+
+
+def test_jsonify_roundtrip_sequence_substitutions():
+    """Jsonify serializes & de-serializes yaml sequence with substitutions."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify
+                - v{k3}
+                - 22
+                - "{k2}"
+                - a: a value
+                  b: '{k4}'
+              d: False
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    context = Context({'k1': 'string {here}',
+                       'k2': 123.45,
+                       'k3': 1,
+                       'k4': '{k2}'})
+
+    assert type(yaml['c']) is Jsonify
+    assert type(yaml['c'].value) is CommentedSeq
+    assert repr(yaml['c']) == f"Jsonify({yaml['c'].value!r})"
+
+    assert yaml['c'].value == ['v{k3}',
+                               22,
+                               '{k2}',
+                               {'a': 'a value',
+                                'b': '{k4}'}]
+
+    assert yaml['c'].get_value(context) == (
+        '["v1", 22, 123.45, {"a": "a value", "b": 123.45}]')
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify\n"
+        "- v{k3}\n"
+        "- 22\n"
+        "- '{k2}'\n"
+        "- a: a value\n"
+        "  b: '{k4}'\n"
+        "d: false\n")
+
+    assert roundtripped_string == expected
+
+
+def test_jsonify_roundtrip_scalar_substitutions():
+    """Jsonify serializes & de-serializes yaml scalar with substitutions."""
+    yaml_string = """\
+              a: 1
+              b: '1'
+              c: !jsonify '{k1}'
+              d: !jsonify '{k2}'
+              e: !jsonify '{k3}'
+              f: !jsonify b {k4}
+              """
+    yaml = get_yaml_with_jsonify(yaml_string)
+
+    context = Context({'k1': 'my scalar',
+                       'k2': False,
+                       'k3': 123,
+                       'k4': 'a {k1}'})
+
+    assert type(yaml['c']) is Jsonify
+    assert yaml['c'].value == '{k1}'
+    assert type(yaml['c']._value) is TaggedScalar
+    assert repr(yaml['c']) == f"Jsonify({yaml['c']._value!r})"
+    # ruamel parses TaggedScalar as string, regardless of implicit type.
+    assert yaml['d'].value == '{k2}'
+    assert yaml['e'].value == '{k3}'
+    assert yaml['f'].value == 'b {k4}'
+
+    assert yaml['c'].get_value(context) == '"my scalar"'
+    assert yaml['d'].get_value(context) == 'false'
+    assert yaml['e'].get_value(context) == '123'
+    assert yaml['f'].get_value(context) == '"b a {k1}"'
+
+    roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
+    expected = (
+        "a: 1\n"
+        "b: '1'\n"
+        "c: !jsonify '{k1}'\n"
+        "d: !jsonify '{k2}'\n"
+        "e: !jsonify '{k3}'\n"
+        "f: !jsonify b {k4}\n")
+
+    assert roundtripped_string == expected
+
+# endregion jsonify custom tag
+
+# region py string custom tag
 
 
 def test_py_string_behaves():
@@ -125,9 +418,9 @@ def test_py_string_truthy():
     assert not PyString(None)
     assert not PyString('')
 
-# ------------------- END py string custom tag -------------------------------#
+# endregion py string custom tag
 
-# ------------------- sic string custom tag ----------------------------------#
+# region sic string custom tag
 
 
 def test_sic_string_behaves():
@@ -185,9 +478,9 @@ def test_sic_string_truthy():
     assert not SicString(None)
     assert not SicString('')
 
-# ------------------- END sic string custom tag ------------------------------#
+# endregion sic string custom tag
 
-# ------------------- END custom yaml tags------------------------------------#
+# endregion custom yaml tags
 
 # ------------------- test context -------------------------------------------#
 
@@ -234,7 +527,7 @@ def mock_run_step_none_context(context):
 # ------------------- Step: init ---------------------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_simple_step_init_defaults(mocked_moduleloader):
     """Simple step initializes with defaults as expected."""
     mocked_moduleloader.return_value.run_step = arb_step_mock
@@ -261,7 +554,7 @@ def test_simple_step_init_defaults(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_defaults(mocked_moduleloader):
     """Complex step initializes with defaults as expected."""
     stepcache.step_cache.clear()
@@ -309,7 +602,7 @@ def test_complex_step_init_with_missing_name_round_trip():
     assert str(err_info.value) == "step must have a name."
 
 
-@patch('pypyr.moduleloader.get_module', return_value=3)
+@ patch('pypyr.moduleloader.get_module', return_value=3)
 def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module."""
     stepcache.step_cache.clear()
@@ -331,7 +624,7 @@ def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
 
-@patch('pypyr.moduleloader.get_module', return_value=3)
+@ patch('pypyr.moduleloader.get_module', return_value=3)
 def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     """Step can't get run_step method on the dynamically imported module.
 
@@ -356,7 +649,7 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
     stepcache.step_cache.clear()
@@ -395,7 +688,7 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     """Complex step initializes with decorators.
 
@@ -448,8 +741,8 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 
 # ------------------- Step: init ---------------------------------------------#
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
                                                      mock_get_module):
     """Complex step with run decorator outputs notify description."""
@@ -470,8 +763,8 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
                                                              mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
@@ -495,8 +788,8 @@ def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description_skip(mock_invoke_step,
                                                           mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
@@ -1203,7 +1496,7 @@ def test_reset_context_counters(mock_step_cache):
                        'retryCounter': 8}
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_dont_need_updating(mock_step_cache):
     """Reset all counters in context when they don't need to update."""
     context = {'a': 'b',
@@ -1238,7 +1531,7 @@ def test_reset_context_counters_dont_need_updating(mock_step_cache):
                        'retryCounter': 999}
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_none(mock_step_cache):
     """Reset but no counters available & key not found in context."""
     context = {'a': 'b',
@@ -1258,7 +1551,7 @@ def test_reset_context_counters_none(mock_step_cache):
                        'x': 'z'}
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_none_none(mock_step_cache):
     """Reset key to none should not be possible."""
     context = {'a': 'b',
@@ -1274,7 +1567,7 @@ def test_reset_context_counters_none_none(mock_step_cache):
         step.reset_context_counters(context, call)
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_mutable(mock_step_cache):
     """Reset to a mutable object."""
     arb_mutable = ['b']
@@ -1293,7 +1586,7 @@ def test_reset_context_counters_mutable(mock_step_cache):
                        'c': 'd'}
 
 
-@patch('pypyr.cache.stepcache.step_cache.get_step')
+@ patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_mutate(mock_step_cache):
     """Reset to a mutating mutable."""
     arb_mutable = ['b']
@@ -1317,8 +1610,8 @@ def test_reset_context_counters_mutate(mock_step_cache):
 # ------------------- Step: run_step: run ------------------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
                                                   mock_get_module):
     """Complex step with run decorator set true will run step."""
@@ -1349,8 +1642,8 @@ def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
                                                    mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
@@ -1371,8 +1664,8 @@ def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_str_formatting_false(
         mock_invoke_step,
         mock_get_module):
@@ -1396,8 +1689,8 @@ def test_run_pipeline_steps_complex_with_run_str_formatting_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
                                                        mock_get_module):
     """Complex step with run set to string False doesn't run step."""
@@ -1421,8 +1714,8 @@ def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
                                                              mock_get_module):
     """Complex step with run set to string false doesn't run step."""
@@ -1446,8 +1739,8 @@ def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
         mock_invoke_step,
         mock_get_module):
@@ -1472,8 +1765,8 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
         mock_invoke_step,
         mock_get_module):
@@ -1509,8 +1802,8 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
                                                          mock_get_module):
     """Complex step with run formatting expression True runs step."""
@@ -1545,8 +1838,8 @@ def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
                                                     mock_get_module):
     """Complex step with run 1 runs step."""
@@ -1581,8 +1874,8 @@ def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
                                                      mock_get_module):
     """Complex step with run 99 runs step."""
@@ -1618,8 +1911,8 @@ def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
                                                        mock_get_module):
     """Complex step with run -1 runs step."""
@@ -1655,8 +1948,8 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
                                               mock_get_module):
     """Complex step with retry runs step."""
@@ -1694,8 +1987,8 @@ def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
     assert context['retryCounter'] == 1
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_with_retries(mock_invoke_step,
                                          mock_get_module):
     """Complex step with retry runs step."""
@@ -1735,8 +2028,8 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
     assert len(context) == original_len + 1
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_on_error(mock_invoke_step,
                       mock_get_module):
     """Complex step with swallow false raises error."""
@@ -1779,8 +2072,8 @@ def test_run_on_error(mock_invoke_step,
 
 
 # ------------------- Step: run_step: skip -----------------------------------#
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
                                                     mock_get_module):
     """Complex step with skip decorator set false will run step."""
@@ -1815,8 +2108,8 @@ def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
                                                    mock_get_module):
     """Complex step with skip decorator set true runa step."""
@@ -1840,8 +2133,8 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
         mock_invoke_step,
         mock_get_module):
@@ -1867,8 +2160,8 @@ def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
                                                        mock_get_module):
     """Complex step with skip set to string False doesn't run step."""
@@ -1893,8 +2186,8 @@ def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
                                                              mock_get_module):
     """Complex step with run set to string true doesn't run step."""
@@ -1919,8 +2212,8 @@ def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
         mock_invoke_step,
         mock_get_module):
@@ -1947,8 +2240,8 @@ def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
         mock_invoke_step,
         mock_get_module):
@@ -1985,8 +2278,8 @@ def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_string_false(
         mock_invoke_step,
         mock_get_module):
@@ -2023,8 +2316,8 @@ def test_run_pipeline_steps_complex_with_skip_string_false(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_0_true(
         mock_invoke_step,
         mock_get_module):
@@ -2061,8 +2354,8 @@ def test_run_pipeline_steps_complex_with_skip_0_true(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_99_true(
         mock_invoke_step,
         mock_get_module):
@@ -2088,8 +2381,8 @@ def test_run_pipeline_steps_complex_with_skip_99_true(
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
                                                         mock_get_module):
     """Complex step with run -1 runs step."""
@@ -2116,8 +2409,8 @@ def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
 # ------------------- Step: run_step: skip -----------------------------------#
 
 # ------------------- Step: run_step: swallow --------------------------------#
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
                                                  mock_get_module):
     """Complex step with swallow true runs normally even without error."""
@@ -2152,8 +2445,8 @@ def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
                                                   mock_get_module):
     """Complex step with swallow false runs normally even without error."""
@@ -2188,8 +2481,8 @@ def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
     assert len(context) == original_len
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     """Complex step with swallow true swallows error."""
     step = Step({
@@ -2242,8 +2535,8 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
                                                         mock_get_module):
     """Complex step with swallow false raises error."""
@@ -2276,8 +2569,8 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
                                                mock_get_module):
     """Complex step with swallow false raises error."""
@@ -2317,8 +2610,8 @@ def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_pipeline_steps_complex_swallow_defaults_false_error(
         mock_invoke_step,
         mock_get_module):
@@ -2351,9 +2644,9 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
                                               mock_get_module):
     """Simple step run with error should not swallow."""
@@ -2373,9 +2666,9 @@ def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
 
 # ------------------- Step: run_step: input context --------------------------#
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'invoke_step')
-@patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
+@ patch('pypyr.moduleloader.get_module')
+@ patch.object(Step, 'invoke_step')
+@ patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_step_in_with_clean(mock_invoke_step, mock_get_module):
     """Step sets 'in' arguments in context, unset from context when done."""
     step = Step({
@@ -2425,7 +2718,7 @@ def test_run_step_in_with_clean(mock_invoke_step, mock_get_module):
 # ------------------- Step: set_step_input_context ---------------------------#
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_no_in_simple(mocked_moduleloader):
     """Set step context does nothing if no in key found in simple step."""
     step = Step('blah', None)
@@ -2435,7 +2728,7 @@ def test_set_step_input_context_no_in_simple(mocked_moduleloader):
     assert context == get_test_context()
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_no_in_complex(mocked_moduleloader):
     """Set step context does nothing if no in key found in complex step."""
     step = Step({'name': 'blah'}, None)
@@ -2445,7 +2738,7 @@ def test_set_step_input_context_no_in_complex(mocked_moduleloader):
     assert context == get_test_context()
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_in_empty(mocked_moduleloader):
     """Set step context does nothing if in key found but it's empty."""
     step = Step({'name': 'blah', 'in': {}}, None)
@@ -2455,7 +2748,7 @@ def test_set_step_input_context_in_empty(mocked_moduleloader):
     assert context == get_test_context()
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_with_in(mocked_moduleloader):
     """Set step context adds in to context."""
     context = get_test_context()
@@ -2527,7 +2820,7 @@ def test_unset_step_input_context():
 
 
 # ------------------- Step: save_error ---------------------------#
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
     """Save error."""
     step = Step({'name': 'blah'}, None)
@@ -2553,7 +2846,7 @@ def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_save_error_round_trip(mocked_moduleloader):
     """Save error with CommentedMap."""
     context = get_test_context()
@@ -2579,7 +2872,7 @@ def test_save_error_round_trip(mocked_moduleloader):
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_save_error_formatted(mocked_moduleloader):
     """Save error with formatting expression."""
     step = Step({'name': 'blah', 'onError': {'key': '{key1}'}}, None)
@@ -2603,7 +2896,7 @@ def test_save_error_formatted(mocked_moduleloader):
     }]
 
 
-@patch('pypyr.moduleloader.get_module')
+@ patch('pypyr.moduleloader.get_module')
 def test_save_error_multiple_call(mocked_moduleloader):
     """Save multiple errors."""
     step = Step({'name': 'blah'}, None)
@@ -3103,7 +3396,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 
 
 # ------------------- RetryDecorator: retry_loop -----------------------------#
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_retry_loop_max_end_on_error(mock_time_sleep):
     """Retry loops until max and ends with error at end."""
     rd = RetryDecorator({'max': 3})
@@ -3132,7 +3425,7 @@ def test_retry_loop_max_end_on_error(mock_time_sleep):
         call('retry: running step with counter 3')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_retry_loop_max_continue_on_success(mock_time_sleep):
     """Retry loops breaks out of loop on success."""
     rd = RetryDecorator({'max': 3, 'sleep': 10.1})
@@ -3161,7 +3454,7 @@ def test_retry_loop_max_continue_on_success(mock_time_sleep):
         call('retry: running step with counter 2')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
     """Retry loops breaks out of indefinite loop on success."""
     rd = RetryDecorator({'sleep': 10.1})
@@ -3187,7 +3480,7 @@ def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
         call('retry: running step with counter 3')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_retry_all_substitutions(mock_time_sleep):
     """Retry loop runs every param substituted."""
     rd = RetryDecorator({'max': '{k3[1][k031]}',
@@ -3452,7 +3745,7 @@ def test_while_loop_no_stop_no_max():
         "stop, or both. But not neither.")
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_max_no_stop(mock_time_sleep):
     """While loop runs with max but no stop."""
     wd = WhileDecorator({'max': 3})
@@ -3477,7 +3770,7 @@ def test_while_loop_max_no_stop(mock_time_sleep):
         call('while: running step with counter 3')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_stop_no_max(mock_time_sleep):
     """While loop runs with stop but no max."""
     wd = WhileDecorator({'stop': '{k1}', 'sleep': '{k2}'})
@@ -3515,7 +3808,7 @@ def test_while_loop_stop_no_max(mock_time_sleep):
         call('while loop done, stop condition {k1} evaluated True.')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
     """While loop runs with stop and max, exit before max."""
     wd = WhileDecorator({'max': 5, 'stop': '{k1}', 'sleep': '{k2}'})
@@ -3553,7 +3846,7 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
         call('while loop done, stop condition {k1} evaluated True.')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
     """While loop runs with stop and max, exhaust max."""
     wd = WhileDecorator({'max': 3, 'stop': '{k1}', 'sleep': '{k2}'})
@@ -3590,7 +3883,7 @@ def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
              'True.')]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
     """While loop runs with stop and max, exhaust max."""
     wd = WhileDecorator({'max': 3,
@@ -3646,7 +3939,7 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
     ]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_max_exhaust_error(mock_time_sleep):
     """While loop runs with only max, exhaust max."""
     wd = WhileDecorator({'max': 3,
@@ -3699,7 +3992,7 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
     ]
 
 
-@patch('time.sleep')
+@ patch('time.sleep')
 def test_while_loop_all_substitutions(mock_time_sleep):
     """While loop runs every param substituted."""
     wd = WhileDecorator({'max': '{k3[1][k031]}',
