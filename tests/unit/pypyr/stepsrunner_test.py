@@ -1529,6 +1529,34 @@ def test_call_with_failure_handler_while(mock_step_cache):
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
+def test_call_with_no_failure_handler(mock_step_cache):
+    """Call between different step groups raising an error and no handler."""
+    # Sequence: sg2 - sg2.1 (CALL)
+    #           sg3 - sg3.1 (ERROR)
+    #           sg4 - sg4.1, sg4.2 (failure handler)
+    def err_step(context):
+        raise ValueError('3.1')
+
+    mock_step_cache.side_effect = [
+        call_step(['sg3']),  # 2.1
+        err_step,  # 3.1
+        nothing_step,  # 4.1
+        nothing_step,  # 4.2
+    ]
+
+    context = Context({'call': {'groups': 'sg3'}})
+    with pytest.raises(ValueError) as err_info:
+        StepsRunner(get_jump_pipeline(), context).run_step_groups(
+            groups=['sg2', 'sg1'],
+            success_group=None,
+            failure_group=None)
+
+    assert str(err_info.value) == '3.1'
+    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+                                          call('sg3.step1')]
+
+
+@patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_call_with_success_handler_for(mock_step_cache):
     """Call between different step groups with success handler in for."""
     # Sequence: sg2 - sg2.1 x2 (CALL)
