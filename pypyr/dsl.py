@@ -462,7 +462,9 @@ class Step:
             finally:
                 self.reset_context_counters(context, call)
 
-            logger.debug("call: done calling %s", call.groups)
+            # py 3.9 issue with coveragepy doesn't show this as covered. it is.
+            logger.debug("call: done calling %s",
+                         call.groups)  # pragma: no cover
 
         logger.debug("step %s done", self.name)
 
