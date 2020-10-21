@@ -2,11 +2,9 @@
 from collections import namedtuple
 from collections.abc import Mapping, Set
 from pypyr.dsl import SpecialTagDirective
-from pypyr.errors import (ContextError,
-                          KeyInContextHasNoValueError,
-                          KeyNotInContextError)
+from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 from pypyr.formatting import RecursiveFormatter
-from pypyr.utils import expressions, types
+from pypyr.utils import asserts, expressions, types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
                              ['key',
@@ -61,27 +59,13 @@ class Context(dict):
             AssertionError: if key is None
 
         """
-        assert parent, ("parent parameter must be specified.")
-        assert child, ("child parameter must be specified.")
-        self.assert_key_has_value(parent, caller)
-
-        try:
-            child_exists = child in self[parent]
-        except TypeError as err:
-            # This happens if parent isn't iterable
-            raise ContextError(
-                f"context['{parent}'] must be iterable and contain '{child}' "
-                f"for {caller}. {err}") from err
-
-        if child_exists:
-            if self[parent][child] is None:
-                raise KeyInContextHasNoValueError(
-                    f"context['{parent}']['{child}'] must have a value for "
-                    f"{caller}.")
-        else:
-            raise KeyNotInContextError(
-                f"context['{parent}']['{child}'] doesn't "
-                f"exist. It must exist for {caller}.")
+        asserts.assert_key_has_value(self,
+                                     parent,
+                                     caller)
+        asserts.assert_key_has_value(self[parent],
+                                     child,
+                                     caller,
+                                     parent)
 
     def assert_key_exists(self, key, caller):
         """Assert that context contains key.
@@ -95,10 +79,7 @@ class Context(dict):
             KeyNotInContextError: When key doesn't exist in context.
 
         """
-        assert key, ("key parameter must be specified.")
-        if key not in self:
-            raise KeyNotInContextError(
-                f"context['{key}'] doesn't exist. It must exist for {caller}.")
+        asserts.assert_key_exists(self, key, caller)
 
     def assert_key_has_value(self, key, caller):
         """Assert that context contains key which also has a value.
@@ -115,12 +96,7 @@ class Context(dict):
             AssertionError: if key is None
 
         """
-        assert key, ("key parameter must be specified.")
-        self.assert_key_exists(key, caller)
-
-        if self[key] is None:
-            raise KeyInContextHasNoValueError(
-                f"context['{key}'] must have a value for {caller}.")
+        asserts.assert_key_has_value(self, key, caller)
 
     def assert_key_type_value(self,
                               context_item,
