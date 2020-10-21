@@ -168,9 +168,9 @@ def test_assert_child_key_has_value_raises_parent_not_iterable():
     with pytest.raises(ContextError) as err:
         context.assert_child_key_has_value('parent', 'child', 'arb')
 
-    assert str(err.value) == ("context['parent'] must be iterable and contain "
-                              "'child' for arb. argument of type 'int' is not "
-                              "iterable")
+    assert str(err.value) == ("context['parent'] must exist, be iterable and "
+                              "contain 'child' for arb. argument of type 'int'"
+                              " is not iterable")
 
 
 def test_assert_key_exists_raises():
@@ -219,11 +219,10 @@ def test_assert_key_has_value_fails_on_context_empty():
         context.assert_key_has_value('key', 'desc')
 
 
-def test_assert_key_has_value_fails_on_key_none():
-    """Expect AssertionError if assert key is None."""
-    context = Context({'key1': 'value1'})
-    with pytest.raises(AssertionError):
-        context.assert_key_has_value(None, None)
+def test_assert_key_has_value_on_key_none():
+    """Pass if assert key is None."""
+    context = Context({None: 'value1'})
+    context.assert_key_has_value(None, None)
 
 
 def test_assert_key_has_value_fails_key_not_found():

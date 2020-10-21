@@ -5,6 +5,68 @@ from pypyr.errors import (ContextError,
                           KeyInContextHasNoValueError)
 from pypyr.utils import asserts
 
+# region assert_key_exists
+
+
+def test_assert_key_exists_none():
+    """Key value is None."""
+    asserts.assert_key_exists({None: 'b'}, None, 'caller')
+
+    with pytest.raises(KeyNotInContextError) as err:
+        asserts.assert_key_exists({'a': 'b'}, None, 'caller')
+
+    assert str(err.value) == (
+        "context[None] doesn't exist. It must exist for caller.")
+
+
+def test_assert_key_exists_int():
+    """Key value is an int."""
+    asserts.assert_key_exists({1: 'b'}, 1, 'caller')
+
+    with pytest.raises(KeyNotInContextError) as err:
+        asserts.assert_key_exists({'a': 'b'}, 1, 'caller')
+
+    assert str(err.value) == (
+        "context[1] doesn't exist. It must exist for caller.")
+
+
+def test_assert_key_exists_with_parent():
+    """Parent gives correct error message."""
+    asserts.assert_key_exists({'a': 'b'}, 'a', 'caller', 'parent')
+
+    with pytest.raises(KeyNotInContextError) as err:
+        asserts.assert_key_exists({'a': 'b'}, 'key', 'caller', 'parent')
+
+    assert str(err.value) == (
+        "context['parent']['key'] doesn't exist. It must exist for caller.")
+
+
+def test_assert_key_has_value_object_not_iterable():
+    """Object is None should raise."""
+    with pytest.raises(ContextError) as err:
+        asserts.assert_key_has_value(obj=1,
+                                     key=2,
+                                     caller='arb caller',
+                                     parent=3)
+
+    assert str(err.value) == (
+        "context[3] must exist, be iterable and contain 2 for "
+        "arb caller. argument of type 'int' is not iterable")
+
+
+def test_assert_key_has_value_object_not_iterable_no_parent():
+    """Object is None should raise with no parent."""
+    with pytest.raises(ContextError) as err:
+        asserts.assert_key_has_value(obj=1,
+                                     key=2,
+                                     caller='arb caller')
+
+    assert str(err.value) == (
+        "context[2] must exist and be iterable for arb caller. argument of "
+        "type 'int' is not iterable")
+
+# endregion assert_key_exists
+
 # region assert_key_has_value
 
 
