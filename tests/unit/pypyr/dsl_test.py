@@ -187,15 +187,16 @@ def test_jsonify_roundtrip_scalar():
 
     assert type(yaml['c']) is Jsonify
     assert yaml['c'].value == 'my scalar'
-    assert type(yaml['c']._value) is TaggedScalar
-    assert repr(yaml['c']) == f"Jsonify({yaml['c']._value!r})"
-    # ruamel parses TaggedScalar as string, regardless of implicit type.
-    assert yaml['d'].value == 'False'
-    assert yaml['e'].value == '123'
+    assert type(yaml['c'].scalar) is TaggedScalar
+    assert repr(yaml['c']) == f"Jsonify('my scalar', {yaml['c'].scalar!r})"
+    assert yaml['d'].value is False
+    assert repr(yaml['d']) == f"Jsonify(False, {yaml['d'].scalar!r})"
+    assert yaml['e'].value == 123
+    assert repr(yaml['e']) == f"Jsonify(123, {yaml['e'].scalar!r})"
 
     assert yaml['c'].get_value(Context()) == '"my scalar"'
-    assert yaml['d'].get_value(Context()) == '"False"'
-    assert yaml['e'].get_value(Context()) == '"123"'
+    assert yaml['d'].get_value(Context()) == 'false'
+    assert yaml['e'].get_value(Context()) == '123'
 
     roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
     expected = (
@@ -324,9 +325,8 @@ def test_jsonify_roundtrip_scalar_substitutions():
 
     assert type(yaml['c']) is Jsonify
     assert yaml['c'].value == '{k1}'
-    assert type(yaml['c']._value) is TaggedScalar
-    assert repr(yaml['c']) == f"Jsonify({yaml['c']._value!r})"
-    # ruamel parses TaggedScalar as string, regardless of implicit type.
+    assert type(yaml['c'].scalar) is TaggedScalar
+    assert repr(yaml['c']) == f"Jsonify('{{k1}}', {yaml['c'].scalar!r})"
     assert yaml['d'].value == '{k2}'
     assert yaml['e'].value == '{k3}'
     assert yaml['f'].value == 'b {k4}'
