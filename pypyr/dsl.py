@@ -1,7 +1,8 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 import json
 import logging
-from ruamel.yaml.comments import CommentedMap, CommentedSeq, TaggedScalar
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+from ruamel.yaml.nodes import ScalarNode
 from pypyr.errors import (Call,
                           ControlOfFlowInstruction,
                           get_error_name,
@@ -89,31 +90,31 @@ class Jsonify(SpecialTagDirective):
 
     yaml_tag = '!jsonify'
 
-    @property
-    def value(self):
-        """Return original object, or .value if TaggedScalar."""
-        if self._is_raw:
-            # expect raw to be the most frequent case
-            return self._value
+    def __init__(self, value, scalar=None):
+        """Initialize class with special handling for TaggedScalar.
 
-        return self._value.value
-
-    def __init__(self, value):
-        """Initialize class with special handling for TaggedScalar."""
-        self._is_raw = True
-        if isinstance(value, TaggedScalar):
-            # set in ctor to prevent expensive isinstance on each .value get
-            self._is_raw = False
-
-        self._value = value
+        Args:
+            value (any): Value of yaml object. Likely CommentedMap or
+                         CommentedSeq or if scalar the mapped Python type for
+                         the scalar.
+            scalar (TaggedScalar): If type scalar, the original constructed
+                                   object. This is necessary for to_yaml
+                                   serialization.
+        """
+        self.scalar = scalar
+        self.value = value
 
     def __repr__(self):
         """Handle TaggedScalar specially.
 
         This is because original node necessary to reconstruct a TaggedScalar
-        and .value gives the wrapped .value.value instead.
+        and .value gives the underlying simple type value instead.
         """
-        return f'{self.__class__.__name__}({self._value!r})'
+        if self.scalar:
+            return (
+                f'{self.__class__.__name__}({self.value!r}, {self.scalar!r})')
+        else:
+            return f'{self.__class__.__name__}({self.value!r})'
 
     @classmethod
     def from_yaml(cls, constructor, node):
@@ -124,17 +125,36 @@ class Jsonify(SpecialTagDirective):
             # under construction.
             pass
 
+        if isinstance(node, ScalarNode):
+            # constructed_undefined creates all scalar as TaggedScalar, which
+            # is always str. Use resolver to construct object to get it to
+            # parse to the appropriate Python literal simple type.
+            tag = constructor.resolver.resolve(ScalarNode,
+                                               node.value,
+                                               (True, False))
+            scalar_node = ScalarNode(tag,
+                                     node.value,
+                                     start_mark=node.start_mark,
+                                     end_mark=node.end_mark,
+                                     style=node.style,
+                                     comment=node.comment,
+                                     anchor=node.anchor,
+                                     )
+
+            constructed_scalar_node = constructor.construct_object(scalar_node)
+            return cls(constructed_scalar_node, data)
+
         return cls(data)
 
     @classmethod
     def to_yaml(cls, representer, node):
         """Serialize this class back to yaml."""
         if isinstance(node.value, CommentedMap):
-            return representer.represent_mapping(cls.yaml_tag, node._value)
+            return representer.represent_mapping(cls.yaml_tag, node.value)
         elif isinstance(node.value, CommentedSeq):
-            return representer.represent_sequence(cls.yaml_tag, node._value)
+            return representer.represent_sequence(cls.yaml_tag, node.value)
         else:
-            return representer.represent_tagged_scalar(node._value)
+            return representer.represent_tagged_scalar(node.scalar)
 
     def get_value(self, context):
         """Serialize self contents to json."""
