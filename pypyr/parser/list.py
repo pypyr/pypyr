@@ -14,14 +14,14 @@ logger = logging.getLogger(__name__)
 
 def get_parsed_context(args):
     """Parse input context args and returns context as dictionary."""
+    logger.debug("starting")
     if not args:
         logger.debug("pipeline invoked without context arg set. For "
-                     "this list parser you're looking for something like: "
-                     "pypyr pipelinename spam eggs "
+                     "this list parser you're looking for something like:\n"
+                     "pypyr pipelinename spam eggs\n"
                      "OR: pypyr pipelinename spam."
                      )
         return {'argList': None}
 
-    logger.debug("starting")
     # the list that's parsed from the input args is named argList
     return dict({'argList': args})

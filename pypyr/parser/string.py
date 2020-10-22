@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_parsed_context(args):
     """Parse input context string and returns context as dictionary."""
+    logger.debug("starting")
     if not args:
         logger.debug("pipeline invoked without context arg set. For "
                      "this string parser you're looking for something "
@@ -21,6 +22,5 @@ def get_parsed_context(args):
                      )
         return {'argString': None}
 
-    logger.debug("starting")
     # the list that's parsed from the input args is named argList
     return dict({'argString': ' '.join(args)})

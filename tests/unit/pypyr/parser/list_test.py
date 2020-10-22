@@ -29,11 +29,11 @@ def test_empty_args_empty_list():
         out = pypyr.parser.list.get_parsed_context(None)
 
     assert out['argList'] is None
-    mock_logger_debug.assert_called_once_with(
+    mock_logger_debug.assert_called_with(
         "pipeline invoked without context arg set. For "
-        "this list parser you're looking for something like: "
-        "pypyr pipelinename 'spam,eggs' "
-        "OR: pypyr pipelinename 'spam'.")
+        "this list parser you're looking for something like:\n"
+        "pypyr pipelinename spam eggs\n"
+        "OR: pypyr pipelinename spam.")
 
 
 def test_builtin_list_still_works():
