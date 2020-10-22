@@ -3,7 +3,7 @@
 Takes input args (i.e separated by spaces on cli) and returns a list named
 argList.
 
-So a string like this "ham,eggs,bacon", will yield context:
+So a string like this "ham eggs bacon", will yield context:
 { 'argList': ['ham', 'eggs', 'bacon']}
 """
 import logging
@@ -17,8 +17,8 @@ def get_parsed_context(args):
     if not args:
         logger.debug("pipeline invoked without context arg set. For "
                      "this list parser you're looking for something like: "
-                     "pypyr pipelinename 'spam,eggs' "
-                     "OR: pypyr pipelinename 'spam'."
+                     "pypyr pipelinename spam eggs "
+                     "OR: pypyr pipelinename spam."
                      )
         return {'argList': None}
 
