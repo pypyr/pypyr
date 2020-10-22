@@ -20,3 +20,15 @@ def test_json_parse_ok():
     """Valid json input parses."""
     out = pypyr.parser.json.get_parsed_context(['{', '"a": "b"', '}'])
     assert out == {'a': 'b'}
+
+
+def test_json_parse_not_mapping_at_root():
+    """Not mapping at root level raises."""
+    with pytest.raises(TypeError) as err_info:
+        pypyr.parser.json.get_parsed_context(['[1,', '2,', '3]'])
+
+    assert str(err_info.value) == (
+        "json input should describe an object at the top "
+        "level. You should have something like \n"
+        "{\n\"key1\":\"value1\",\n\"key2\":\"value2\"\n}\n"
+        "at the json top-level, not an [array] or literal.")

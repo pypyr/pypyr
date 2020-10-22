@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 def get_parsed_context(args):
     """Parse input context string and returns context as dictionary."""
+    logger.debug("starting")
     if not args:
         logger.debug("pipeline invoked without context arg set. For "
                      "this keys parser you're looking for something "
@@ -22,6 +23,5 @@ def get_parsed_context(args):
                      )
         return None
 
-    logger.debug("starting")
     # for each arg, project (element-name, true)
     return dict((element, True) for element in args)
