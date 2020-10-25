@@ -3,6 +3,7 @@ import shlex
 import subprocess
 import logging
 from pypyr.errors import ContextError
+from pypyr.utils import types
 
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
@@ -62,30 +63,29 @@ class CmdStep():
         self.context = context
         self.is_save = False
 
-        cmd_config = context['cmd']
+        cmd_config = context.get_formatted('cmd')
 
         if isinstance(cmd_config, str):
-            self.cmd_text = context.get_formatted('cmd')
+            self.cmd_text = cmd_config
             self.cwd = None
             self.logger.debug("Processing command string: %s", cmd_config)
         elif isinstance(cmd_config, dict):
             context.assert_child_key_has_value(parent='cmd',
                                                child='run',
                                                caller=name)
-            run_string = cmd_config['run']
-            self.cmd_text = context.get_formatted_value(run_string)
-            is_save = cmd_config.get('save', False)
-            self.is_save = context.get_formatted_as_type(is_save,
-                                                         out_type=bool)
+
+            self.cmd_text = cmd_config['run']
+            self.is_save = types.cast_to_bool(cmd_config.get('save', False))
 
             cwd_string = cmd_config.get('cwd', None)
             if cwd_string:
-                self.cwd = context.get_formatted_value(cwd_string)
+                self.cwd = cwd_string
                 self.logger.debug("Processing command string in dir "
-                                  "%s: %s", self.cwd, run_string)
+                                  "%s: %s", self.cwd, self.cmd_text)
             else:
                 self.cwd = None
-                self.logger.debug("Processing command string: %s", run_string)
+                self.logger.debug("Processing command string: %s",
+                                  self.cmd_text)
 
         else:
             raise ContextError(f"{name} cmd config should be either a simple "
