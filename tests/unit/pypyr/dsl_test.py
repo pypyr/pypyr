@@ -182,6 +182,7 @@ def test_jsonify_roundtrip_scalar():
               c: !jsonify my scalar
               d: !jsonify False
               e: !jsonify 123
+              f: !jsonify '123'
               """
     yaml = get_yaml_with_jsonify(yaml_string)
 
@@ -193,10 +194,13 @@ def test_jsonify_roundtrip_scalar():
     assert repr(yaml['d']) == f"Jsonify(False, {yaml['d'].scalar!r})"
     assert yaml['e'].value == 123
     assert repr(yaml['e']) == f"Jsonify(123, {yaml['e'].scalar!r})"
+    assert yaml['f'].value == '123'
+    assert repr(yaml['f']) == f"Jsonify('123', {yaml['f'].scalar!r})"
 
     assert yaml['c'].get_value(Context()) == '"my scalar"'
     assert yaml['d'].get_value(Context()) == 'false'
     assert yaml['e'].get_value(Context()) == '123'
+    assert yaml['f'].get_value(Context()) == '"123"'
 
     roundtripped_string = get_string_from_yaml_with_jsonify(yaml)
     expected = (
@@ -204,7 +208,8 @@ def test_jsonify_roundtrip_scalar():
         "b: '1'\n"
         "c: !jsonify my scalar\n"
         "d: !jsonify False\n"
-        "e: !jsonify 123\n")
+        "e: !jsonify 123\n"
+        "f: !jsonify '123'\n")
 
     assert roundtripped_string == expected
 

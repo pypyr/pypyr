@@ -126,20 +126,25 @@ class Jsonify(SpecialTagDirective):
             pass
 
         if isinstance(node, ScalarNode):
+            if node.style:
+                # style having a value means it is quoted, i.e always a str
+                # therefore don't need to go and hunt down the type
+                return cls(data.value, data)
+
             # constructed_undefined creates all scalar as TaggedScalar, which
             # is always str. Use resolver to construct object to get it to
             # parse to the appropriate Python literal simple type.
             tag = constructor.resolver.resolve(ScalarNode,
                                                node.value,
                                                (True, False))
+
             scalar_node = ScalarNode(tag,
                                      node.value,
                                      start_mark=node.start_mark,
                                      end_mark=node.end_mark,
                                      style=node.style,
                                      comment=node.comment,
-                                     anchor=node.anchor,
-                                     )
+                                     anchor=node.anchor)
 
             constructed_scalar_node = constructor.construct_object(scalar_node)
             return cls(constructed_scalar_node, data)
