@@ -1,5 +1,6 @@
 """Step that asserts something is true or equal to something else."""
 import logging
+from pypyr.errors import KeyNotInContextError
 from pypyr.utils.types import cast_to_bool
 
 # logger means the log level will be set correctly
@@ -54,17 +55,30 @@ def run_step(context):
     assert_context = context.get_formatted('assert')
 
     is_equals_there = False
+    is_this_there = False
     if isinstance(assert_context, dict):
-        assert_this = assert_context['this']
+        is_this_there = 'this' in assert_context
+        if is_this_there:
+            assert_this = assert_context['this']
+        else:
+            assert_this = assert_context
+
         is_equals_there = 'equals' in assert_context
         if is_equals_there:
+            if not is_this_there:
+                raise KeyNotInContextError(
+                    "you have to set assert.this to use assert.equals.")
             assert_equals = assert_context['equals']
             # compare assertThis to assertEquals
             logger.debug("comparing assert['this'] to assert['equals'].")
             assert_result = (assert_this == assert_equals)
         else:
-            # nothing to compare means treat assert.this as a bool.
-            logger.debug("evaluating assert['this'] as a boolean.")
+            # nothing to compare means treat assert or assert.this as a bool.
+            if is_this_there:
+                logger.debug("evaluating assert['this'] as a boolean.")
+            else:
+                logger.debug("assert is a dict but contains no `this`. "
+                             "evaluating assert value as a boolean.")
             assert_result = cast_to_bool(assert_this)
     else:
         # assert key has a non-dict value so eval directly as a bool.
@@ -82,8 +96,8 @@ def run_step(context):
                 f"assert assert['this'] is of type {type_this} "
                 f"and does not equal assert['equals'] of type {type_equals}.")
         else:
-            og_assert = context['assert']['this'] if isinstance(
-                context['assert'], dict) else context['assert']
+            og_assert = (context['assert']['this']
+                         if is_this_there else context['assert'])
             # original literal hard-coded in pipe, so presumably not a
             # sensitive value.
             error_text = (

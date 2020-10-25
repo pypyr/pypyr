@@ -118,6 +118,35 @@ def test_assert_passes_on_assertthis_true_string():
     assert_step.run_step(context)
 
 
+def test_assert_arb_dict():
+    """Arbitrary dict evaluates as truthy."""
+    context = Context({'assert': {
+        'arb': 'BOOM'}})
+
+    assert_step.run_step(context)
+
+
+def test_assert_arb_empty_dict():
+    """Arbitrary empty dict evaluates as truthy."""
+    context = Context({'assert': {}})
+
+    with pytest.raises(AssertionError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "assert {} evaluated to False."
+
+
+def test_assert_raises_on_assertequals_without_this():
+    """Assert raises if equals without this."""
+    context = Context({'assert': {
+        'equals': 'BOOM'}})
+    with pytest.raises(KeyNotInContextError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == (
+        "you have to set assert.this to use assert.equals.")
+
+
 def test_assert_raises_on_assertthis_not_equals():
     """Assert this does not equal assertEquals."""
     context = Context({'assert': {
