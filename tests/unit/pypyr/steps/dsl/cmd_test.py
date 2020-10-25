@@ -4,6 +4,7 @@ import pytest
 import subprocess
 from unittest.mock import patch
 from pypyr.context import Context
+from pypyr.dsl import SicString
 from pypyr.errors import (ContextError,
                           KeyInContextHasNoValueError,
                           KeyNotInContextError)
@@ -157,13 +158,37 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
                                    'cmd': '{k1} -{k1}1 --{k1}2'})
     assert obj.cmd_text == 'blah -blah1 --blah2'
     mock_logger_debug.assert_called_once_with(
-        'Processing command string: {k1} -{k1}1 --{k1}2')
+        'Processing command string: blah -blah1 --blah2')
 
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=False)
 
     # blah is in a list because shell == false
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+                                     cwd=None, shell=False, check=True)
+
+
+def test_cmdstep_runstep_cmd_is_string_formatting_shell_false_sic():
+    """Command process special tag directive."""
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
+        obj = CmdStep('blahname',
+                      Context({'k1': 'blah',
+                               'cmd': SicString('{k1} -{k1}1 --{k1}2')}))
+
+    assert not obj.is_save
+    assert obj.cwd is None
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'k1': 'blah',
+                                   'cmd': SicString('{k1} -{k1}1 --{k1}2')})
+    assert obj.cmd_text == '{k1} -{k1}1 --{k1}2'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string: {k1} -{k1}1 --{k1}2')
+
+    with patch('subprocess.run') as mock_run:
+        obj.run_step(is_shell=False)
+
+    # blah is in a list because shell == false
+    mock_run.assert_called_once_with(['{k1}', '-{k1}1', '--{k1}2'],
                                      cwd=None, shell=False, check=True)
 
 
@@ -199,7 +224,7 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_true():
                                    'cmd': '{k1} -{k1}1 --{k1}2'})
     assert obj.cmd_text == 'blah -blah1 --blah2'
     mock_logger_debug.assert_called_once_with(
-        'Processing command string: {k1} -{k1}1 --{k1}2')
+        'Processing command string: blah -blah1 --blah2')
 
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=True)
@@ -418,7 +443,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
                                            'save': '{k2}'}})
     assert obj.cmd_text == 'blah -blah1 --blah2'
     mock_logger_debug.assert_called_once_with(
-        'Processing command string: {k1} -{k1}1 --{k1}2')
+        'Processing command string: blah -blah1 --blah2')
 
     with patch('subprocess.run') as mock_run:
         mock_run.return_value = subprocess.CompletedProcess(None,
