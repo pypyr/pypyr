@@ -28,8 +28,8 @@ def get_parsed_context(pipeline, context_in_args):
     dict and execute the get_parsed_context function on that module.
 
     Args:
-        pipeline: dict. Pipeline object.
-        context_in_args: list of string. Input arguments from console.
+        pipeline (dict): Pipeline object.
+        context_in_args (list of str): Input arguments from console.
 
     Returns:
         pypyr.context.Context() instance.
@@ -92,16 +92,16 @@ def main(
     Be aware that if you invoke this method, pypyr adds a NOTIFY - 25 custom
     log-level and notify() function to logging.
 
-    pipeline_name.yaml should be in the working_dir/pipelines/ directory.
+    pipeline_name.yaml should resolve from the working_dir directory.
 
     Args:
-        pipeline_name: string. Name of pipeline, sans .yaml at end.
-        pipeline_context_input: string. Initialize the pypyr context with this
-                                string.
-        working_dir: path. looks for ./pipelines and modules in this directory.
-        groups: list of str. step-group names to run in pipeline.
-        success_group: str. step-group name to run on success completion.
-        failure_group: str. step-group name to run on pipeline failure.
+        pipeline_name (str): Name of pipeline, sans .yaml at end.
+        pipeline_context_input (list of str): All the input arguments after
+            the pipeline name from console.
+        working_dir (path): Pipeline & module paths resolve from here.
+        groups: (list of str): Step-group names to run in pipeline.
+        success_group (str): Step-group name to run on success completion.
+        failure_group: (str): Step-group name to run on pipeline failure.
 
     Returns:
         None
@@ -132,10 +132,10 @@ def prepare_context(pipeline, context_in_args, context):
     """Prepare context for pipeline run.
 
     Args:
-        pipeline: dict. Dictionary representing the pipeline.
-        context_in_args: list of str. Args used to initialize context.
-        context: pypyr.context.Context. Merge any new context generated from
-                 context_in_string into this context instance.
+        pipeline (dict): Dictionary representing the pipeline.
+        context_in_args (list of str): Args used to initialize context.
+        context (pypyr.context.Context): Merge any new context generated from
+            context_in_args into this context instance.
 
     Returns:
         None. The context instance to use for the pipeline run is contained
@@ -175,8 +175,8 @@ def load_and_run_pipeline(pipeline_name,
 
     Args:
         pipeline_name (str): Name of pipeline, sans .yaml at end.
-        pipeline_context_input (str): Initialize the pypyr context with this
-                                 string.
+        pipeline_context_input (list of str): Args used to initialize context.
+            These go to the context_parser.
         context (pypyr.context.Context): Use if you already have a
                  Context object, such as if you are running a pipeline from
                  within a pipeline and you want to re-use the same context
@@ -247,12 +247,12 @@ def run_pipeline(pipeline,
     Args:
         pipeline (dict): Dictionary representing the pipeline.
         context (pypyr.context.Context): Reusable context object.
-        pipeline_context_input (str): Initialize the pypyr context with this
-                                string.
+        pipeline_context_input (list of str): Args used to initialize context.
+            These go to the context_parser.
         parse_input (bool): run context_parser in pipeline.
-        groups: list of str. step-group names to run in pipeline.
-        success_group: str. step-group name to run on success completion.
-        failure_group: str. step-group name to run on pipeline failure.
+        groups (list of str): step-group names to run in pipeline.
+        success_group (str): step-group name to run on success completion.
+        failure_group (str): step-group name to run on pipeline failure.
 
     Returns:
         None

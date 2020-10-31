@@ -41,6 +41,45 @@ def test_main_pass_with_sysargv_context_positional():
     )
 
 
+def test_main_pass_with_sysargv_context_multiple_positional():
+    """Multiple positional arguments."""
+    arg_list = ['pypyr',
+                'blah',
+                'ctx string',
+                'arg 2',
+                'arg 3',
+                'arg4=hello',
+                '--loglevel',
+                '50',
+                '--dir',
+                'dir here',
+                '--groups',
+                'group1',
+                'group 2',
+                'group3',
+                '--success',
+                'sg',
+                '--failure',
+                'f g']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
+
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string', 'arg 2', 'arg 3', 'arg4=hello'],
+        working_dir='dir here',
+        groups=['group1', 'group 2', 'group3'],
+        success_group='sg',
+        failure_group='f g'
+    )
+
+
 def test_main_pass_with_sysargv_context_positional_log_alias():
     """Invoke from cli sets sys.argv with log alias."""
     arg_list = ['pypyr',
@@ -120,6 +159,36 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
     mock_pipeline_main.assert_called_once_with(
         pipeline_name='blah',
         pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=None,
+        success_group=None,
+        failure_group=None
+    )
+
+
+def test_main_pass_with_sysargv_context_multiple_positional_flags_last():
+    """Check assigns correctly to multiple args when positional last."""
+    arg_list = ['pypyr',
+                '--loglevel',
+                '50',
+                '--dir',
+                'dir here',
+                'blah',
+                'ctx string',
+                'arb 2',
+                'arb3=arbvalue']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
+
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string', 'arb 2', 'arb3=arbvalue'],
         working_dir='dir here',
         groups=None,
         success_group=None,
