@@ -1,0 +1,24 @@
+context_parser: pypyr.parser.keyvaluepairs
+steps:
+  - name: pypyr.steps.assert
+    in:
+      assert: !py "'parent' not in locals()"
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{b}'
+        equals: set in pipe arg
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{c}'
+        equals: arbvalue
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        parent: parent set in child
+        b: b set in child
+        c: c set in child
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C

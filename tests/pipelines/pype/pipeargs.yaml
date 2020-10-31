@@ -1,0 +1,90 @@
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        parent: A
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        name: pype/childpipeargs
+        pipeArg: b="set in pipe arg" c=arbvalue
+        useParentContext: True
+  # explicit useParentContext = True
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{parent}'
+        equals: A
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{b}'
+        equals: set in pipe arg
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{c}'
+        equals: arbvalue
+
+
+  - pypyr.steps.contextclearall
+  # implied useParentContext = False
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        parent: A
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        name: pype/childpipeargs_noparent
+        pipeArg: b="set in pipe arg" c=arbvalue
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{parent}'
+        equals: A
+  - name: pypyr.steps.assert
+    in:
+      assert: !py "('b' not in locals()) and ('c' not in locals())"
+
+  - pypyr.steps.contextclearall
+  # explicit useParentContext = False AND out set
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        parent: Aonset
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        name: pype/childpipeargs_noparent
+        pipeArg: b="set in pipe arg" c=arbvalue
+        skipParse: False
+        useParentContext: False
+        out:
+          'd': 'b'
+          'e': 'c' 
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{parent}'
+        equals: Aonset
+  - name: pypyr.steps.assert
+    in:
+      assert: !py "('b' not in locals()) and ('c' not in locals())"
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{d}'
+        equals: b set in child
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{e}'
+        equals: c set in child
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: D

@@ -1,5 +1,6 @@
 """pypyr step that runs another pipeline from within the current pipeline."""
 import logging
+import shlex
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           ControlOfFlowInstruction,
@@ -202,7 +203,15 @@ def get_arguments(context):
             "pypyr.steps.pype 'args' in the 'pype' context item "
             "must be a dict.")
 
-    if args and 'useParentContext' not in pype:
+    pipe_arg_string = pype.get('pipeArg', None)
+    pipe_arg = shlex.split(pipe_arg_string) if pipe_arg_string else None
+
+    if pipe_arg_string and 'skipParse' not in pype:
+        skip_parse = False
+    else:
+        skip_parse = pype.get('skipParse', True)
+
+    if (args or pipe_arg_string) and 'useParentContext' not in pype:
         use_parent_context = False
     else:
         use_parent_context = pype.get('useParentContext', True)
@@ -217,8 +226,6 @@ def get_arguments(context):
             "leave off the useParentContext key and it'll default to False "
             "under the hood, or set it to False yourself if you keep it in.")
 
-    pipe_arg = pype.get('pipeArg', None)
-    skip_parse = pype.get('skipParse', True)
     raise_error = pype.get('raiseError', True)
     loader = pype.get('loader', None)
     groups = pype.get('groups', None)
