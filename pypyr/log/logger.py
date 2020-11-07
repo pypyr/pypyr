@@ -15,7 +15,7 @@ def set_logging_config(log_level, handlers):
     module's output.
     """
     if log_level is None:
-        level = 25
+        level = NOTIFY
         format_string = '%(message)s'
     else:
         level = log_level
@@ -52,10 +52,26 @@ def set_up_notify_log_level():
     logging.getLoggerClass().notify = notify
 
 
-def set_root_logger(log_level, log_path=None):
+def set_root_logger(log_level=None, log_path=None):
     """Set the root logger 'pypyr'. Do this before you do anything else.
 
     Run once and only once at initialization.
+
+    log_level enumeration:
+    10=DEBUG
+    20=INFO
+    25=NOTIFY (default)
+    30=WARNING
+    40=ERROR
+    50=CRITICAL
+
+    < 10 gives full traceback on errors.
+
+    Args:
+        log_level (int): Log level. If not specified, defaults to 25 - NOTIFY.
+        log_path (path-like): File path+name. If specified, pypyr will append
+            logging output to this indefinitely growing file and to the
+            console.
     """
     handlers = []
 
