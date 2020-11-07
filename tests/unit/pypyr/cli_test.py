@@ -41,6 +41,40 @@ def test_main_pass_with_sysargv_context_positional():
     )
 
 
+def test_main_pass_with_sysargv_single_group():
+    """Invoke from cli sets sys.argv, check assigns correctly to group."""
+    arg_list = ['pypyr',
+                'blah',
+                'ctx string',
+                '--loglevel',
+                '50',
+                '--dir',
+                'dir here',
+                '--groups',
+                'group1',
+                '--success',
+                'sg',
+                '--failure',
+                'f g']
+
+    with patch('sys.argv', arg_list):
+        with patch('pypyr.pipelinerunner.main') as mock_pipeline_main:
+            with patch('pypyr.log.logger.set_root_logger') as mock_logger:
+                pypyr.cli.main()
+
+    mock_logger.assert_called_once_with(log_level=50,
+                                        log_path=None)
+
+    mock_pipeline_main.assert_called_once_with(
+        pipeline_name='blah',
+        pipeline_context_input=['ctx string'],
+        working_dir='dir here',
+        groups=['group1'],
+        success_group='sg',
+        failure_group='f g'
+    )
+
+
 def test_main_pass_with_sysargv_context_multiple_positional():
     """Multiple positional arguments."""
     arg_list = ['pypyr',

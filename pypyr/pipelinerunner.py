@@ -1,19 +1,33 @@
 """pypyr pipeline runner.
 
+This is the entrypoint for the pypyr API.
+
+You're very likely to use either:
+- main()
+- main_with_context()
+
+Use main() if you want to run pypyr exactly like the cli does, by using the
+pipeline's context_parser to initialize context with a list of string
+arguments.
+
+Use main_with_context() instead of main() if you have a a dict-like object you
+want to use to initialize the context rather than using the context parser with
+a string input that pypyr needs to parse first. main_with_context() also
+returns the context after the pipeline completes, giving you access to the
+values the pipeline stored to context during its run.
+
+If you do want to run the pipeline's context_parser, use main() instead.
+
 Runs the pipeline specified by the input pipeline_name parameter.
 Pipelines must have a "steps" list-like attribute.
-
-Attributes:
-    pipeline_cache: global instance of the pipeline yaml cache.
-                    Use this attribute to access the cache from elsewhere.
 """
 import logging
 import pypyr.context
 import pypyr.log.logger
 import pypyr.moduleloader
 from pypyr.cache.parsercache import contextparser_cache
-from pypyr.errors import Stop, StopPipeline, StopStepGroup
 from pypyr.cache.pipelinecache import pipeline_cache
+from pypyr.errors import Stop, StopPipeline, StopStepGroup
 from pypyr.stepsrunner import StepsRunner
 import pypyr.yaml
 
@@ -71,13 +85,21 @@ def get_parsed_context(pipeline, context_in_args):
 
 def main(
     pipeline_name,
-    pipeline_context_input,
-    working_dir,
+    pipeline_context_input=None,
+    working_dir=None,
     groups=None,
     success_group=None,
-    failure_group=None
+    failure_group=None,
+    loader=None
 ):
-    """Entry point for pypyr pipeline runner.
+    """Entry point for pypyr pipeline runner. Runs context_parser in pipeline.
+
+    Use me if you want to run pypyr exactly like the cli does, by using the
+    pipeline's context_parser to initialize context with a list of string
+    arguments.
+
+    If you already have a dict-like structure you want to use to initialize
+    context, use main_with_context() instead.
 
     Call this once per pypyr run. Call me if you want to run a pypyr pipeline
     from your own code. This function does some one-off 1st time initialization
@@ -89,8 +111,8 @@ def main(
     call pypyr.log.logger.set_root_logger() before invoking this function
     (pipelinerunner.main())
 
-    Be aware that if you invoke this method, pypyr adds a NOTIFY - 25 custom
-    log-level and notify() function to logging.
+    Be aware that pypyr adds a NOTIFY - 25 custom log-level and notify()
+    function to logging.
 
     pipeline_name.yaml should resolve from the working_dir directory.
 
@@ -102,6 +124,129 @@ def main(
         groups: (list of str): Step-group names to run in pipeline.
         success_group (str): Step-group name to run on success completion.
         failure_group: (str): Step-group name to run on pipeline failure.
+        loader (str): optional. Absolute name of pipeline loader module.
+                      If not specified will use pypyr.pypeloaders.fileloader.
+
+    Returns:
+        None
+
+    """
+    prepare_and_run(pipeline_name=pipeline_name,
+                    working_dir=working_dir,
+                    pipeline_context_input=pipeline_context_input,
+                    parse_input=True,
+                    loader=loader,
+                    groups=groups,
+                    success_group=success_group,
+                    failure_group=failure_group)
+
+
+def main_with_context(
+    pipeline_name,
+    dict_in=None,
+    working_dir=None,
+    groups=None,
+    success_group=None,
+    failure_group=None,
+    loader=None
+):
+    """Entry point for pypyr pipeline runner. Does NOT run context_parser.
+
+    Use me instead of main() if you have a a dict-like object you want to use
+    to initialize the context rather than using the context parser with a
+    string input. I almost called this method byoc - bring your own context.
+
+    If you do want to run the pipeline's context_parser, use main() instead.
+
+    Call me once per pypyr run. Call me if you want to run a pypyr pipeline
+    from your own code. This function does some one-off 1st time initialization
+    before running the actual pipeline.
+
+    If you're invoking pypyr from your own application via the API,
+    it's your responsibility to set up and configure logging. If you just want
+    to replicate the log handlers & formatters that the pypyr cli uses, you can
+    call pypyr.log.logger.set_root_logger() before invoking this function
+    (pipelinerunner.main_with_context())
+
+    Be aware that pypyr adds a NOTIFY - 25 custom log-level and notify()
+    function to logging.
+
+    pipeline_name.yaml should resolve from the working_dir directory.
+
+    Args:
+        pipeline_name (str): Name of pipeline, sans .yaml at end.
+        context_in (dict): Dict-like object to initialize the Context.
+        working_dir (path): Pipeline & module paths resolve from here.
+        groups: (list of str): Step-group names to run in pipeline.
+        success_group (str): Step-group name to run on success completion.
+        failure_group: (str): Step-group name to run on pipeline failure.
+        loader (str): optional. Absolute name of pipeline loader module.
+                      If not specified will use pypyr.pypeloaders.fileloader.
+
+    Returns:
+        pypyr.context.Context(): the pypyr context as it is after the pipeline
+            completes.
+
+    """
+    if dict_in:
+        context = pypyr.context.Context(dict_in)
+    else:
+        context = pypyr.context.Context()
+
+    prepare_and_run(pipeline_name=pipeline_name,
+                    working_dir=working_dir,
+                    context=context,
+                    parse_input=False,
+                    loader=loader,
+                    groups=groups,
+                    success_group=success_group,
+                    failure_group=failure_group)
+    return context
+
+
+def prepare_and_run(
+    pipeline_name,
+    working_dir=None,
+    pipeline_context_input=None,
+    context=None,
+    parse_input=True,
+    loader=None,
+    groups=None,
+    success_group=None,
+    failure_group=None
+):
+    """Prepare plumbing & run pipeline, handling Stop instructions.
+
+    This is the common runtime logic needed around a load_and_run_pipeline
+    call. It's called from the main() entrypoint.
+
+    You probably shouldn't call me directly yourself, use main() or
+    main_with_context() instead. This function should run once and only once
+    at the initialization of pypyr.
+
+    This function does this:
+    - add NOTIFY log level
+    - configure working directory
+    - load & run the pipeline
+    - handle Stop instructions
+
+    [pipeline_name].yaml should resolve from the working_dir directory.
+
+    Args:
+        pipeline_name (str): Name of pipeline, sans .yaml at end.
+        pipeline_context_input (list of str): All the input arguments after
+            the pipeline name from console.
+        context (pypyr.context.Context): Ready made context. Any mutations of
+            the context by the pipeline will be against this instance of it. If
+            None, will create fresh new context with pipeline_context_input
+            args using the pipeline's context parser.
+        parse_input (bool): run context_parser in pipeline.
+        working_dir (path): Pipeline & module paths resolve from here.
+        groups: (list of str): Step-group names to run in pipeline.
+        success_group (str): Step-group name to run on success completion.
+        failure_group: (str): Step-group name to run on pipeline failure.
+        loader (str): optional. Absolute name of pipeline loader module.
+                      If not specified will use pypyr.pypeloaders.fileloader.
 
     Returns:
         None
@@ -116,9 +261,16 @@ def main(
     # without needing to pip install a package 1st.
     pypyr.moduleloader.set_working_directory(working_dir)
 
+    if context is not None:
+        context.pipeline_name = pipeline_name
+        context.working_dir = pypyr.moduleloader.get_working_directory()
+
     try:
         load_and_run_pipeline(pipeline_name=pipeline_name,
                               pipeline_context_input=pipeline_context_input,
+                              context=context,
+                              parse_input=parse_input,
+                              loader=loader,
                               groups=groups,
                               success_group=success_group,
                               failure_group=failure_group)
@@ -164,8 +316,9 @@ def load_and_run_pipeline(pipeline_name,
     """Load and run the specified pypyr pipeline.
 
     This function runs the actual pipeline by name. If you are running another
-    pipeline from within a pipeline, call this, not main(). Do call main()
-    instead for your 1st pipeline if there are pipelines calling pipelines.
+    pipeline from within a pipeline, call this, not main(). Do call main() or
+    main_with_context() instead for your 1st pipeline if there are pipelines
+    calling pipelines.
 
     By default pypyr uses file loader. This means that pipeline_name.yaml
     should be in the working_dir/ directory if you're using fileloader.
@@ -183,11 +336,13 @@ def load_and_run_pipeline(pipeline_name,
                  object for the child pipeline. Any mutations of the context by
                  the pipeline will be against this instance of it.
         parse_input (bool): run context_parser in pipeline.
-        loader (str): str. optional. Absolute name of pipeline loader module.
+        loader (str): Optional. Absolute name of pipeline loader module.
                 If not specified will use pypyr.pypeloaders.fileloader.
-        groups: list of str. step-group names to run in pipeline.
-        success_group: str. step-group name to run on success completion.
-        failure_group: str. step-group name to run on pipeline failure.
+        groups (list of str): optional. Step-group names to run in pipeline.
+        success_group (str): Optional. Step-group name to run on success
+            completion.
+        failure_group (str): Optional. Step-group name to run on pipeline
+            failure.
 
     Returns:
         None
@@ -195,7 +350,8 @@ def load_and_run_pipeline(pipeline_name,
     """
     logger.debug("you asked to run pipeline: %s", pipeline_name)
 
-    logger.debug("you set the initial context to: %s", pipeline_context_input)
+    logger.debug("you set the initial context arg to: %s",
+                 pipeline_context_input)
 
     if context is None:
         context = pypyr.context.Context()
@@ -231,9 +387,9 @@ def run_pipeline(pipeline,
     """Run the specified pypyr pipeline.
 
     This function runs the actual pipeline. If you are running another
-    pipeline from within a pipeline don't call main(). Do call main()
-    instead for your 1st pipeline, if there are subsequent pipelines calling
-    pipelines use load_and_run_pipeline or run_pipeline.
+    pipeline from within a pipeline don't call main(). Do call main() or
+    main_with_context() instead for your 1st pipeline, if there are subsequent
+    pipelines calling pipelines use load_and_run_pipeline or run_pipeline.
 
     Pipeline and context should be already loaded. If pipeline not loaded yet,
     you probably want to call load_and_run_pipeline instead.

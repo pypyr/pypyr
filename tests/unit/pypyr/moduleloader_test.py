@@ -96,7 +96,23 @@ def test_get_module_in_package_pass():
 
 # ------------------------- get_module ---------------------------------------#
 
-# ------------------------- set_working_dir ----------------------------------#
+# region WorkingDir
+
+
+def test_working_dir_set_default():
+    """Set working dir to cwd if None."""
+    w = pypyr.moduleloader.WorkingDir()
+    w.set_working_directory(None)
+    assert w.get_working_directory() == Path.cwd()
+
+
+def test_working_dir_get_before_set():
+    """Get working dir before set raises."""
+    with pytest.raises(ValueError) as err:
+        w = pypyr.moduleloader.WorkingDir()
+        w.get_working_directory()
+
+    assert str(err.value) == 'working directory not set.'
 
 
 def test_set_working_dir():
@@ -107,4 +123,4 @@ def test_set_working_dir():
     assert p in sys.path
     sys.path.remove(p)
 
-# ------------------------- set_working_dir ----------------------------------#
+# endregion WorkingDir
