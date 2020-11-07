@@ -4,6 +4,8 @@ from unittest.mock import patch
 import pypyr.log.logger
 from tests.common.utils import patch_logger
 
+# region set_root_logger
+
 
 def test_logger_with_console_handler():
     """Root logger instantiates with just the console handler."""
@@ -17,6 +19,20 @@ def test_logger_with_console_handler():
         '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 10
+    assert len(kwargs['handlers']) == 1
+    assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+
+
+def test_logger_with_defaults():
+    """Root logger instantiates with no arguments passed."""
+    with patch.object(logging, 'basicConfig') as mock_logger:
+        pypyr.log.logger.set_root_logger()
+
+    mock_logger.assert_called_once()
+    args, kwargs = mock_logger.call_args
+    assert kwargs['format'] == '%(message)s'
+    assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
+    assert kwargs['level'] == 25
     assert len(kwargs['handlers']) == 1
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
 
@@ -41,7 +57,7 @@ def test_logger_with_file_and_console_handler():
     assert isinstance(kwargs['handlers'][1], logging.FileHandler)
 
 
-def test_notice_log_level_available():
+def test_notify_log_level_available():
     """Notify log level added."""
     # actually redundant, coz ./conftest.py actually already calls
     # set_up_notify_log_level. Might as well test re-entrancy then, thus:
@@ -58,14 +74,11 @@ def test_notice_log_level_available():
 
     mock_logger_notify.assert_called_once_with("Arb message: arb value")
 
-# ----------------------- set_logging_config ----------------------------------
-
 
 def test_set_logging_log_level_none():
     """Level None should default to simplified log output."""
-    log_path = None
     with patch.object(logging, 'basicConfig') as mock_logger:
-        pypyr.log.logger.set_root_logger(None, log_path)
+        pypyr.log.logger.set_root_logger(None, None)
 
     mock_logger.assert_called_once()
     args, kwargs = mock_logger.call_args
@@ -91,4 +104,4 @@ def test_set_logging_log_level_25():
     assert len(kwargs['handlers']) == 1
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
 
-# ----------------------- END set_logging_config ------------------------------
+# endregion set_root_logger
