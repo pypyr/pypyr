@@ -17,7 +17,7 @@ import pypyr.pipelinerunner
 from tests.common.utils import DeepCopyMagicMock
 
 
-# ------------------------- parser mocks -------------------------------------#
+# region parser mocks
 from tests.common.utils import patch_logger
 
 
@@ -29,9 +29,9 @@ def mock_parser(args):
 def mock_parser_none(args):
     """Return None, mocking get_parsed_context."""
     return None
-# ------------------------- parser mocks -------------------------------------#
+# endregion parser mocks
 
-# ------------------------- get_parsed_context--------------------------------#
+# region get_parsed_context
 
 
 def test_get_parsed_context_no_parser():
@@ -91,9 +91,9 @@ def test_get_parser_context_signature_wrong(mocked_moduleloader):
     assert str(err_info.value) == ("'int' object has no attribute "
                                    "'get_parsed_context'")
 
-# ------------------------- get_parsed_context--------------------------------#
+# endregion get_parsed_context
 
-# ------------------------- main ---------------------------------------------#
+# region main
 
 
 @patch('pypyr.log.logger.set_up_notify_log_level')
@@ -111,16 +111,45 @@ def test_main_pass(mocked_get_mocked_work_dir,
                               working_dir='arb/dir',
                               groups=['g'],
                               success_group='sg',
-                              failure_group='fg')
+                              failure_group='fg',
+                              loader='arb loader')
 
     mocked_set_up_notify.assert_called_once()
     mocked_set_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
         pipeline_context_input='arb context input',
+        context=None,
+        parse_input=True,
+        loader='arb loader',
         groups=['g'],
         success_group='sg',
         failure_group='fg')
+
+
+@patch('pypyr.log.logger.set_up_notify_log_level')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
+def test_main_with_minimal(mocked_get_mocked_work_dir,
+                           mocked_set_work_dir,
+                           mocked_run_pipeline,
+                           mocked_set_up_notify):
+    """Main initializes and runs pipelines with minimal input."""
+    pipeline_cache.clear()
+    pypyr.pipelinerunner.main(pipeline_name='arb pipe')
+
+    mocked_set_up_notify.assert_called_once()
+    mocked_set_work_dir.assert_called_once_with(None)
+    mocked_run_pipeline.assert_called_once_with(
+        pipeline_name='arb pipe',
+        pipeline_context_input=None,
+        context=None,
+        parse_input=True,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None)
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline',
@@ -140,13 +169,115 @@ def test_main_fail(mocked_work_dir, mocked_run_pipeline):
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
         pipeline_context_input='arb context input',
+        context=None,
+        parse_input=True,
+        loader=None,
         groups=None,
         success_group=None,
         failure_group=None)
 
-# ------------------------- main ---------------------------------------------#
+# endregion main
 
-# ------------------------- prepare_context - --------------------------------#
+# region main_with_context
+
+
+@patch('pypyr.log.logger.set_up_notify_log_level')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
+def test_main_with_context_pass(mocked_get_mocked_work_dir,
+                                mocked_set_work_dir,
+                                mocked_run_pipeline,
+                                mocked_set_up_notify):
+    """Main with context initializes and runs pipelines."""
+    pipeline_cache.clear()
+    out = pypyr.pipelinerunner.main_with_context(pipeline_name='arb pipe',
+                                                 dict_in={
+                                                     'arb': 'context input'},
+                                                 working_dir='arb/dir',
+                                                 groups=['g'],
+                                                 success_group='sg',
+                                                 failure_group='fg',
+                                                 loader='arb loader')
+
+    assert out == Context({'arb': 'context input'})
+    assert type(out) is Context
+    assert out.pipeline_name == 'arb pipe'
+    assert out.working_dir == 'arb/dir'
+
+    mocked_set_up_notify.assert_called_once()
+    mocked_set_work_dir.assert_called_once_with('arb/dir')
+    mocked_run_pipeline.assert_called_once_with(
+        pipeline_name='arb pipe',
+        pipeline_context_input=None,
+        context=out,
+        parse_input=False,
+        loader='arb loader',
+        groups=['g'],
+        success_group='sg',
+        failure_group='fg')
+
+
+@patch('pypyr.log.logger.set_up_notify_log_level')
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
+def test_main_with_context_minimal(mocked_get_mocked_work_dir,
+                                   mocked_set_work_dir,
+                                   mocked_run_pipeline,
+                                   mocked_set_up_notify):
+    """Main with context with minimal args."""
+    pipeline_cache.clear()
+    out = pypyr.pipelinerunner.main_with_context(pipeline_name='arb pipe')
+
+    assert out == Context()
+    assert type(out) is Context
+    assert out.pipeline_name == 'arb pipe'
+    assert out.working_dir == 'arb/dir'
+
+    mocked_set_up_notify.assert_called_once()
+    mocked_set_work_dir.assert_called_once_with(None)
+    mocked_run_pipeline.assert_called_once_with(
+        pipeline_name='arb pipe',
+        pipeline_context_input=None,
+        context=out,
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None)
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline',
+       side_effect=ContextError('arb'))
+@patch('pypyr.moduleloader.set_working_directory')
+@patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
+def test_main_with_context_fail(mocked_get_work_dir,
+                                mocked_work_dir,
+                                mocked_run_pipeline):
+    """Main with context raise unhandled error on pipeline failure."""
+    pipeline_cache.clear()
+    with pytest.raises(ContextError) as err_info:
+        pypyr.pipelinerunner.main_with_context(pipeline_name='arb pipe',
+                                               dict_in={
+                                                   'arb': 'context input'},
+                                               working_dir='arb/dir')
+
+    assert str(err_info.value) == "arb"
+
+    mocked_work_dir.assert_called_once_with('arb/dir')
+    mocked_run_pipeline.assert_called_once_with(
+        pipeline_name='arb pipe',
+        pipeline_context_input=None,
+        context=Context({'arb': 'context input'}),
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None)
+# endregion main_with_context
+
+# region prepare_context
 
 
 @patch('pypyr.pipelinerunner.get_parsed_context',
@@ -179,9 +310,9 @@ def test_prepare_context_with_parse_merge(mocked_get_parsed_context):
         context_in_args='arb context input')
 
     assert context == {'a': 'av1', 'c1': 'new value from parsed', 'c2': 'cv2'}
-# ------------------------- prepare_context - --------------------------------#
+# endregion prepare_context
 
-# ------------------------- run_pipeline -------------------------------------#
+# region run_pipeline
 
 
 @patch('pypyr.pipelinerunner.StepsRunner', autospec=True)
@@ -644,9 +775,9 @@ def test_run_pipeline_parse_context_error_failure_stopstepgroup(
     sr.run_step_groups.assert_not_called()
     sr.run_failure_step_group.assert_called_once_with('on_failure')
 
-# ------------------------- run_pipeline -------------------------------------#
+# endregion run_pipeline
 
-# ------------------------- loader -------------------------------------------#
+# region loader
 
 
 def test_arbitrary_loader_module_not_found():
@@ -741,9 +872,9 @@ def test_arb_loader(mock_run_pipeline):
     )
 
 
-# ------------------------- loader -------------------------------------------#
+# endregion loader
 
-# ------------------------- Stop & StopPipeline ------------------------------#
+# region Stop & StopPipeline
 def get_step_pipeline():
     """Test pipeline for jump."""
     return {
@@ -1112,4 +1243,4 @@ def test_stop_all_for(mock_get_pipe_def, mock_step_cache):
 
     assert mock312.mock_calls == [call({'i': 'one'}),
                                   call({'i': 'two'})]
-# ------------------------- END Stop & StopPipeline --------------------------#
+# endregion Stop & StopPipeline

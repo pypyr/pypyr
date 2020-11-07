@@ -1,6 +1,10 @@
 """pypyr dynamic modules and path discovery.
 
 Load modules dynamically, find things on file-system.
+
+Attributes:
+    working_dir (Path-like): Instance of WorkingDir. Holds the current working
+                             dir.
 """
 
 import importlib
@@ -16,16 +20,51 @@ logger = logging.getLogger(__name__)
 class WorkingDir():
     """The Working Directory.
 
-    Attributes:
-        cwd. Path-like. The working directory.
+    Call set_working_directory before you call get_working_directory.
     """
 
-    def __init__(self, cwd=None):
-        """Initialize cwd to input or default to current."""
-        self.cwd = cwd if cwd else Path.cwd()
+    def __init__(self):
+        """Initialize cwd to None."""
+        self._cwd = None
+
+    def get_working_directory(self):
+        """Get current working directory.
+
+        Return:
+            Path-like current working directory.
+
+        Raises:
+            ValueError: If set_working_directory wasn't called before this.
+        """
+        if not self._cwd:
+            raise ValueError('working directory not set.')
+        return self._cwd
+
+    def set_working_directory(self, working_directory):
+        """Add working_directory to sys.paths.
+
+        Defaults to cwd if working_directory is None.
+
+        This allows dynamic loading of arbitrary python modules in cwd.
+
+        Args:
+            working_directory: string. path to add to sys.paths
+
+        """
+        logger.debug("starting")
+
+        if working_directory is None:
+            working_directory = Path.cwd()
+
+        logger.debug("adding %s to sys.paths", working_directory)
+        # sys path doesn't accept Path
+        sys.path.append(str(working_directory))
+        self._cwd = working_directory
+
+        logger.debug("done")
 
 
-_working_dir = WorkingDir()
+working_dir = WorkingDir()
 
 
 def get_module(module_abs_import):
@@ -72,12 +111,19 @@ def get_module(module_abs_import):
 
 
 def get_working_directory():
-    """Return current working directory as Path."""
-    return _working_dir.cwd
+    """Return current working directory as Path.
+
+    Really just a convenience wrapper for
+    moduleloader.working_dir.cwd
+    """
+    return working_dir.get_working_directory()
 
 
 def set_working_directory(working_directory):
     """Add working_directory to sys.paths.
+
+    Really just a convenience wrapper for
+    moduleloader.working_dir.set_working_directory()
 
     This allows dynamic loading of arbitrary python modules in cwd.
 
@@ -85,11 +131,4 @@ def set_working_directory(working_directory):
         working_directory: string. path to add to sys.paths
 
     """
-    logger.debug("starting")
-
-    logger.debug("adding %s to sys.paths", working_directory)
-    # sys path doesn't accept Path
-    sys.path.append(str(working_directory))
-    _working_dir.cwd = working_directory
-
-    logger.debug("done")
+    working_dir.set_working_directory(working_directory)

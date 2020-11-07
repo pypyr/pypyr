@@ -1,0 +1,87 @@
+context_parser: pypyr.parser.list
+
+steps:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: steps
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        set_in_pipe: 456
+  - name: pypyr.steps.echo
+    run: !py "'argList' not in locals()"
+    in:
+      echoMe: argList not exist
+  - name: pypyr.steps.stopstepgroup
+    run: !py "'argList' not in locals()"
+  - name: pypyr.steps.echo
+    run: !py not argList 
+    in:
+      echoMe: argList==None
+
+sg1:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg1
+  - name: pypyr.steps.assert
+    in:
+      assert: '{argList}'
+      equals:
+        - A
+        - B
+        - C
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        set_in_pipe: 123
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg1.2
+
+sg2:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg2
+
+sg3:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: sg3
+  - name: pypyr.steps.py
+    in:
+      pycode: raise ValueError('err from sg3')
+
+sh:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: success_handler
+  - name: pypyr.steps.py
+    run: !py argList and 'raise on sh' in argList
+    in:
+      pycode: raise ValueError('err from sh')
+
+fh:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: fh
+
+on_success:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: on_success
+  - name: pypyr.steps.stopstepgroup
+    run: !py "'argList' not in locals()"
+  - name: pypyr.steps.py
+    run: !py argList and 'raise on success' in argList
+    in:
+      pycode: raise ValueError('err from on_success')
+
+on_failure:
+  - name: pypyr.steps.echo
+    in:
+      echoMe: on_failure
+  - pypyr.steps.stop
+  - name: pypyr.steps.assert
+    comment: ensure unreachable
+    in:
+      assert: False
