@@ -1,5 +1,6 @@
 """pipelinerunner.py unit tests."""
 import logging
+from pathlib import Path
 import pytest
 from unittest.mock import call, patch
 from pypyr.cache.loadercache import pypeloader_cache
@@ -833,7 +834,7 @@ def test_empty_loader_set_up_to_default(mock_get_pipeline_definition,
 
     mock_get_pipeline_definition.assert_called_once_with(
         pipeline_name='arb pipe',
-        working_dir='arb/dir'
+        working_dir=Path('arb/dir')
     )
     mock_run_pipeline.assert_called_once_with(
         context={},
@@ -864,7 +865,7 @@ def test_arb_loader(mock_run_pipeline):
         context={},
         parse_input=True,
         pipeline={'pipeline_name': 'arb pipe',
-                  'working_dir': 'tests'},
+                  'working_dir': Path('tests')},
         pipeline_context_input='arb context input',
         groups=None,
         success_group=None,

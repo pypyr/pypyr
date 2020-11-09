@@ -188,6 +188,41 @@ def test_pipeline_runner_main_with_context_with_failure():
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
 
+def test_pipeline_runner_main_with_context_relative_working_dir(
+        pipeline_cache_reset):
+    """Run main with context with relative working directory."""
+    expected_notify_output = ['steps', 'on_success', 'on_failure']
+    with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
+        out = pipelinerunner.main_with_context(
+            pipeline_name='api/main-all',
+            dict_in={'argList': ['A', 'B', 'C', 'raise on success']},
+            working_dir='tests/pipelines/')
+
+    assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
+    assert out.pipeline_name == 'api/main-all'
+    assert out.working_dir == Path('tests/pipelines/')
+
+    assert len(out) == 4
+    assert out['argList'] == ['A', 'B', 'C', 'raise on success']
+    assert out['set_in_pipe'] == 456
+    assert out['pycode'] == "raise ValueError('err from on_success')"
+
+    assert len(out['runErrors']) == 1
+    out_run_error = out['runErrors'][0]
+    assert out_run_error
+    assert out_run_error['col'] == 5
+    assert out_run_error['customError'] == {}
+    assert out_run_error['description'] == 'err from on_success'
+    assert repr(out_run_error['exception']) == repr(ValueError(
+        'err from on_success'))
+    assert out_run_error['line'] == 74
+    assert out_run_error['name'] == 'ValueError'
+    assert out_run_error['step'] == 'pypyr.steps.py'
+    assert out_run_error['swallowed'] is False
+    # somewhat arbitrary check if behaves like Context()
+    out.assert_key_has_value('set_in_pipe', 'caller')
+
+
 def test_pipeline_runner_main_with_context_minimal_with_failure_handled():
     """Run main with context minimal with failure argument as expected."""
     expected_notify_output = ['steps', 'on_success', 'on_failure']
