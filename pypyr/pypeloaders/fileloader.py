@@ -17,8 +17,8 @@ def get_pipeline_path(pipeline_name, working_directory):
     Then checks {pypyr install dir}/pipelines dir.
 
     Args:
-        pipeline_name: string. Name of pipeline to find
-        working_directory: string. Path in which to look for pipeline_name.yaml
+        pipeline_name (str): Name of pipeline to find
+        working_directory (Path): Path in which to look for pipeline_name.yaml
 
     Returns:
         Absolute path to the pipeline_name.yaml file
@@ -30,10 +30,9 @@ def get_pipeline_path(pipeline_name, working_directory):
     """
     logger.debug("starting")
 
-    # look for name.yaml in the pipelines/ sub-directory
     logger.debug("current directory is %s", working_directory)
 
-    cwd = Path(working_directory)
+    cwd = working_directory
 
     # look for cwd/{pipeline_name}.yaml
     pipeline_path = cwd.joinpath(f'{pipeline_name}.yaml')
@@ -82,10 +81,9 @@ def get_pipeline_definition(pipeline_name, working_dir):
     fileloader directory look-up sequence.
 
     Args:
-        pipeline_name: string. Name of pipeline. This will be the file-name of
-                       the pipeline - i.e {pipeline_name}.yaml
-        working_dir: path. Start looking in
-                           ./working_dir/pipeline_name.yaml
+        pipeline_name (str): Name of pipeline. This will be the file-name of
+                             the pipeline - i.e {pipeline_name}.yaml
+        working_dir (path): Start looking in ./working_dir/pipeline_name.yaml
 
     Returns:
         dict describing the pipeline, parsed from the pipeline yaml.
@@ -97,9 +95,8 @@ def get_pipeline_definition(pipeline_name, working_dir):
     """
     logger.debug("starting")
 
-    pipeline_path = get_pipeline_path(
-        pipeline_name=pipeline_name,
-        working_directory=working_dir)
+    pipeline_path = get_pipeline_path(pipeline_name=pipeline_name,
+                                      working_directory=working_dir)
 
     logger.debug("Trying to open pipeline at path %s", pipeline_path)
     try:

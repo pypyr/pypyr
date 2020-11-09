@@ -31,7 +31,7 @@ class WorkingDir():
         """Get current working directory.
 
         Return:
-            Path-like current working directory.
+            Path object for current working directory.
 
         Raises:
             ValueError: If set_working_directory wasn't called before this.
@@ -59,7 +59,7 @@ class WorkingDir():
         logger.debug("adding %s to sys.paths", working_directory)
         # sys path doesn't accept Path
         sys.path.append(str(working_directory))
-        self._cwd = working_directory
+        self._cwd = Path(working_directory)
 
         logger.debug("done")
 
