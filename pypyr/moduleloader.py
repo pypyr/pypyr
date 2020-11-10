@@ -3,8 +3,7 @@
 Load modules dynamically, find things on file-system.
 
 Attributes:
-    working_dir (Path-like): Instance of WorkingDir. Holds the current working
-                             dir.
+    working_dir (WorkingDir): Global shared current working dir.
 """
 
 import importlib
