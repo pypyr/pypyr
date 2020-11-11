@@ -24,11 +24,7 @@ def run_step(context):
 
     context.assert_key_exists('echoMe', __name__)
 
-    if isinstance(context['echoMe'], str):
-        val = context.get_formatted('echoMe')
-    else:
-        val = context['echoMe']
-
+    val = context.get_formatted('echoMe')
     logger.notify(val)
 
     logger.debug("done")
