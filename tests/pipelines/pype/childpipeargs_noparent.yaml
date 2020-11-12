@@ -13,6 +13,9 @@ steps:
       assert:
         this: '{c}'
         equals: arbvalue
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/childpipeargs_noparent'
   - name: pypyr.steps.contextsetf
     in:
       contextSetf:

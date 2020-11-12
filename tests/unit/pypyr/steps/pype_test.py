@@ -396,9 +396,17 @@ def test_pype_get_args_and_pipearg():
 # region run_step
 
 
+def mocked_run_pipeline(*args, **kwargs):
+    """Check pipeline name set on context in child pipeline."""
+    assert (kwargs['pipeline_name'] ==
+            kwargs['context'].pipeline_name == 'pipe name')
+
+
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context(mock_run_pipeline):
     """Input pype use_parent_context True."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline
+
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -409,6 +417,8 @@ def test_pype_use_parent_context(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
@@ -423,6 +433,8 @@ def test_pype_use_parent_context(mock_run_pipeline):
         failure_group=None
     )
 
+    assert context.pipeline_name == 'og pipe name'
+
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
         call('pyped pipe name.')]
@@ -431,6 +443,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context_with_args(mock_run_pipeline):
     """Input pype use_parent_context True with args."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline
     context = Context({
         'k1': 'v1',
         'pype': {
@@ -443,6 +456,9 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
+
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
@@ -469,6 +485,8 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
         success_group=None,
         failure_group=None
     )
+
+    assert context.pipeline_name == 'og pipe name'
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
@@ -688,10 +706,17 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline',
-       side_effect=RuntimeError('whoops'))
+def mocked_run_pipeline_with_runtime_error(*args, **kwargs):
+    """Check pipeline name set on context in child pipeline with arb err."""
+    assert (kwargs['pipeline_name'] ==
+            kwargs['context'].pipeline_name == 'pipe name')
+    raise RuntimeError('whoops')
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
     """Input pype without swallowing error in child pipeline."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline_with_runtime_error
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -702,11 +727,15 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         }
     })
 
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(RuntimeError) as err_info:
             pype.run_step(context)
 
         assert str(err_info.value) == "whoops"
+
+    assert context.pipeline_name == 'og pipe name'
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
@@ -723,10 +752,10 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline',
-       side_effect=RuntimeError('whoops'))
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
     """Input pype swallowing error in child pipeline."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline_with_runtime_error
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -737,8 +766,13 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
+
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         pype.run_step(context)
+
+    assert context.pipeline_name == 'og pipe name'
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
@@ -755,10 +789,17 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline',
-       side_effect=Stop())
+def mocked_run_pipeline_with_stop(*args, **kwargs):
+    """Check pipeline name set on context in child pipeline with Stop."""
+    assert (kwargs['pipeline_name'] ==
+            kwargs['context'].pipeline_name == 'pipe name')
+    raise Stop()
+
+
+@patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
     """Input pype doesn't swallow stop error in child pipeline."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline_with_stop
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -768,11 +809,16 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
             'raiseError': False
         }
     })
+
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(Stop) as err_info:
             pype.run_step(context)
 
         assert isinstance(err_info.value, Stop)
+
+    assert context.pipeline_name == 'og pipe name'
 
     mock_run_pipeline.assert_called_once_with(
         pipeline_name='pipe name',
@@ -791,6 +837,7 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 def test_pype_set_groups(mock_run_pipeline):
     """Input pype use_parent_context True."""
+    mock_run_pipeline.side_effect = mocked_run_pipeline
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -804,6 +851,9 @@ def test_pype_set_groups(mock_run_pipeline):
             'failure': 'failuregroup'
         }
     })
+
+    context.pipeline_name = 'og pipe name'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
         pype.run_step(context)
 
@@ -817,6 +867,8 @@ def test_pype_set_groups(mock_run_pipeline):
         success_group='successgroup',
         failure_group='failuregroup'
     )
+
+    assert context.pipeline_name == 'og pipe name'
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
