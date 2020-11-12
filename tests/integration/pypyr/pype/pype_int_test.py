@@ -11,3 +11,11 @@ def test_pype_pipearg_int():
                                                                  'C',
                                                                  'C',
                                                                  'D'])
+
+
+def test_pype_err_int():
+    """Pype calls handles error with pipeline_name correctly."""
+    pipename = 'pype/pipeerr'
+    test_pipe_runner.assert_pipeline_notify_output_is(pipename, ['A',
+                                                                 'B',
+                                                                 'C'])

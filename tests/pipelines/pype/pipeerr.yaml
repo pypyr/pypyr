@@ -1,0 +1,23 @@
+steps:
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeerr'
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: A
+
+  - name: pypyr.steps.pype
+    swallow: True
+    in:
+      echoMe: B
+      pype:
+        name: pype/pipeerr_child
+
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeerr'
+  
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C

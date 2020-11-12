@@ -1,0 +1,14 @@
+steps:
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeerr_child'
+
+  - pypyr.steps.echo
+
+  - name: pypyr.steps.assert
+    in:
+      assert: False
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: UNREACHABLE

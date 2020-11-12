@@ -6,6 +6,9 @@ steps:
     in:
       contextSetf:
         parent: A
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
@@ -13,6 +16,9 @@ steps:
         pipeArg: b="set in pipe arg" c=arbvalue
         useParentContext: True
   # explicit useParentContext = True
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:
@@ -36,11 +42,17 @@ steps:
     in:
       contextSetf:
         parent: A
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
         name: pype/childpipeargs_noparent
         pipeArg: b="set in pipe arg" c=arbvalue
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:
@@ -56,6 +68,9 @@ steps:
     in:
       contextSetf:
         parent: Aonset
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
@@ -66,6 +81,9 @@ steps:
         out:
           'd': 'b'
           'e': 'c' 
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.pipeline_name == 'pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:

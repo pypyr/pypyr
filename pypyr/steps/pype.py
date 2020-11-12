@@ -99,16 +99,23 @@ def run_step(context):
                 logger.debug("writing args into parent context...")
                 context.update(args)
 
-            pipelinerunner.load_and_run_pipeline(
-                pipeline_name=pipeline_name,
-                pipeline_context_input=pipe_arg,
-                context=context,
-                parse_input=not skip_parse,
-                loader=loader,
-                groups=step_groups,
-                success_group=success_group,
-                failure_group=failure_group
-            )
+            try:
+                og_pipeline_name = context.pipeline_name
+                context.pipeline_name = pipeline_name
+
+                pipelinerunner.load_and_run_pipeline(
+                    pipeline_name=pipeline_name,
+                    pipeline_context_input=pipe_arg,
+                    context=context,
+                    parse_input=not skip_parse,
+                    loader=loader,
+                    groups=step_groups,
+                    success_group=success_group,
+                    failure_group=failure_group
+                )
+            finally:
+                context.pipeline_name = og_pipeline_name
+
         else:
             logger.info("pyping %s, without parent context.", pipeline_name)
 
