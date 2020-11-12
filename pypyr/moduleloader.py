@@ -39,7 +39,7 @@ class WorkingDir():
             raise ValueError('working directory not set.')
         return self._cwd
 
-    def set_working_directory(self, working_directory):
+    def set_working_directory(self, working_directory=None):
         """Add working_directory to sys.paths.
 
         Defaults to cwd if working_directory is None.
@@ -118,7 +118,7 @@ def get_working_directory():
     return working_dir.get_working_directory()
 
 
-def set_working_directory(working_directory):
+def set_working_directory(working_directory=None):
     """Add working_directory to sys.paths.
 
     Really just a convenience wrapper for

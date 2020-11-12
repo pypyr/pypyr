@@ -100,10 +100,28 @@ def test_get_module_in_package_pass():
 
 
 def test_working_dir_set_default():
+    """Set working dir to cwd if not specified."""
+    w = pypyr.moduleloader.WorkingDir()
+    w.set_working_directory()
+
+    cwd = Path.cwd()
+    assert w.get_working_directory() == cwd
+
+    cwd = str(cwd)
+    assert cwd in sys.path
+    sys.path.remove(cwd)
+
+
+def test_working_dir_set_explicit_none():
     """Set working dir to cwd if None."""
     w = pypyr.moduleloader.WorkingDir()
     w.set_working_directory(None)
-    assert w.get_working_directory() == Path.cwd()
+
+    cwd = Path.cwd()
+    assert w.get_working_directory() == cwd
+    cwd = str(cwd)
+    assert cwd in sys.path
+    sys.path.remove(cwd)
 
 
 def test_working_dir_get_before_set():
