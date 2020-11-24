@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_step(context):
-    """Wipe the entire context.
+    """Wipe the entire context, including the pyimport namespace.
 
     Args:
         Context is a dictionary or dictionary-like.
@@ -15,6 +15,8 @@ def run_step(context):
     logger.debug("started")
 
     context.clear()
-    logger.info("Context wiped. New context size: %s", len(context))
+    context.pystring_globals.clear()
+    logger.info("context & py imports wiped. New context size: %s",
+                len(context))
 
     logger.debug("done")

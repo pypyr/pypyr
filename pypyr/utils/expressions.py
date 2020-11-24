@@ -1,7 +1,7 @@
 """Utility functions for evaluating expressions."""
 
 
-def eval_string(input_string, locals):
+def eval_string(input_string, globals, locals):
     """Dynamically evaluates the input_string expression.
 
     This provides dynamic python eval of an input expression. The return is
@@ -30,4 +30,4 @@ def eval_string(input_string, locals):
 
     """
     # empty globals arg will append __builtins__ by default
-    return eval(input_string, {}, locals)
+    return eval(input_string, globals, locals)

@@ -363,7 +363,7 @@ def test_py_string_behaves():
     py = PyString('1+1')
     assert str(py) == '1+1'
     assert repr(py) == "PyString('1+1')"
-    assert py.get_value({}) == 2
+    assert py.get_value(Context()) == 2
 
 
 def test_py_string_class_methods():
@@ -375,7 +375,7 @@ def test_py_string_class_methods():
     assert isinstance(new_instance, PyString)
     assert str(new_instance) == 'False and False'
     assert repr(new_instance) == "PyString('False and False')"
-    assert not new_instance.get_value({})
+    assert not new_instance.get_value(Context())
 
     mock_representer = MagicMock()
     PyString.to_yaml(mock_representer, mock_node)
@@ -387,6 +387,14 @@ def test_py_string_class_methods():
 def test_py_string_with_context():
     """Py string works with Context."""
     assert PyString('len(a)').get_value(Context({'a': '123'})) == 3
+
+
+def test_py_string_with_imports():
+    """Py string can use imported global namespace."""
+    context = Context({'a': -3, 'b': 4})
+    from math import sqrt
+    context.pystring_globals.update({'squareroot': sqrt})
+    assert PyString('abs(a) + squareroot(b)').get_value(context) == 5
 
 
 def test_py_string_eq_and_neq():
@@ -402,7 +410,7 @@ def test_py_string_repr_roundtrip():
     assert repr_string == 'PyString(\'len("three")\')'
     reconstituted = eval(repr_string)
     assert isinstance(reconstituted, PyString)
-    assert reconstituted.get_value({}) == 5
+    assert reconstituted.get_value(Context()) == 5
 
 
 def test_py_string_empty():
@@ -414,7 +422,7 @@ def test_py_string_empty():
                               'valid python expression instead.')
 
     with pytest.raises(ValueError) as err:
-        PyString('').get_value({})
+        PyString('').get_value(Context())
 
 
 def test_py_string_truthy():

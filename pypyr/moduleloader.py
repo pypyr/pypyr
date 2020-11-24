@@ -1,11 +1,11 @@
-"""pypyr dynamic modules and path discovery.
+"""pypyr dynamic modules, namespaces and path discovery.
 
 Load modules dynamically, find things on file-system.
 
 Attributes:
     working_dir (WorkingDir): Global shared current working dir.
 """
-
+import ast
 import importlib
 import logging
 from pathlib import Path
@@ -14,6 +14,105 @@ from pypyr.errors import PyModuleNotFoundError
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
+
+
+class ImportVisitor(ast.NodeVisitor):
+    """Parse python import and import from syntax.
+
+    Use this to parse python syntax of import/import from, import the modules
+    and save the result to the imported_namespace namespace dictionary.
+
+    Only supports absolute imports, not relative. Does not support wildcard
+    style 'from x import *'. But you weren't planning on doing *that* anyway,
+    I hope.
+
+    Supports source like:
+        import x
+        import x as y
+        import x.y
+        import x.y as z
+        from x import y
+        from x import y as z
+        from x import y, z
+        from a.b import c as d, e as f
+
+    Usage example:
+        ImportVisitor().visit(ast.parse('from mod.sub import attr as alias'))
+
+    Will result in:
+        imported_namespace == {'alias': <<attr in mod.sub module>>}
+
+    Attributes:
+        imported_namespace (dict): Namespace dictionary of imported references.
+    """
+
+    def __init__(self):
+        """Initialize me."""
+        self.imported_namespace = {}
+
+    def get_namespace(self, source):
+        """Parse source, import modules & return namespace.
+
+        You might as well call this instead of visit().
+
+        Args:
+            source (str): String of Python source code.
+
+        Return:
+            Namespace dictionary of imported references.
+        """
+        self.visit(ast.parse(source))
+        return self.imported_namespace
+
+    def _set_namespace(self, alias, obj):
+        """Add imported object to namespace dictionary.
+
+        Args:
+            alias (ast.alias): Use asname for alias if it exists, else fall
+                back to name.
+            obj (any): Imported module or attribute like class or function.
+
+        Returns: None
+        """
+        as_name = alias.asname if alias.asname else alias.name
+        self.imported_namespace[as_name] = obj
+
+    def visit_Import(self, node):
+        """Process syntax nodes of form: import module."""
+        for alias in node.names:
+            if alias.asname:
+                imported_module = importlib.import_module(alias.name)
+            else:
+                # if no alias, 'import mod.sub' has to bind 'mod' to the
+                # imported parent obj.
+                parent, dot, _ = alias.name.partition('.')
+                if dot:
+                    # mod.sub1.sub2 should save to namespace as parent 'mod'
+                    alias.asname = parent
+                    # __import__(), although discouraged, is how to get the
+                    # top-level module - this is the obj that is bound by the
+                    # name in the namespace
+                    imported_module = __import__(alias.name)
+                else:
+                    imported_module = importlib.import_module(alias.name)
+
+            self._set_namespace(alias, imported_module)
+
+    def visit_ImportFrom(self, node):
+        """Process syntax nodes of form: from parent import child."""
+        if node.level > 0:
+            raise TypeError("you can't use relative imports here. "
+                            "use absolute imports instead.")
+        imported_module = importlib.import_module(node.module)
+        for alias in node.names:
+            try:
+                imported_obj = getattr(imported_module, alias.name)
+            except AttributeError:
+                # if no attribute, might be form: from mod import submod
+                imported_obj = importlib.import_module(
+                    f'{node.module}.{alias.name}')
+
+            self._set_namespace(alias, imported_obj)
 
 
 class WorkingDir():

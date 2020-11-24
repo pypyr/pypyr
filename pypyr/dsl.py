@@ -16,7 +16,7 @@ from pypyr.utils import expressions, poll
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
-# ------------------------ custom yaml tags -----------------------------------
+# region custom yaml tags
 
 
 class SpecialTagDirective:
@@ -199,7 +199,9 @@ class PyString(SpecialTagDirective):
     def get_value(self, context):
         """Run python eval on the input string."""
         if self.value:
-            return expressions.eval_string(self.value, context)
+            return expressions.eval_string(self.value,
+                                           context.pystring_globals,
+                                           context)
         else:
             # Empty input raises cryptic EOF syntax err, this more human
             # friendly
@@ -230,7 +232,7 @@ class SicString(SpecialTagDirective):
         """Simply return the string as is, the whole point of a sic string."""
         return self.value
 
-# ------------------------ END custom yaml tags -------------------------------
+# endregion custom yaml tags
 
 
 class Step:
