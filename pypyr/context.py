@@ -27,6 +27,8 @@ class Context(dict):
         pipeline_name (str): name of pipeline that is currently running
         working_dir (path-like): working directory path. Either CWD or
                                  initialized from the cli --dir arg.
+        pystring_globals (dict): globals namespace for PyString expression
+                                 evals.
 
     """
 
@@ -35,6 +37,11 @@ class Context(dict):
     # no __init__).
     # https://github.com/python/cpython/blob/master/Lib/string.py
     formatter = RecursiveFormatter(special_types=SpecialTagDirective)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize context."""
+        super().__init__(*args, **kwargs)
+        self.pystring_globals = {}
 
     def __missing__(self, key):
         """Throw KeyNotInContextError rather than KeyError.
@@ -200,7 +207,7 @@ class Context(dict):
             self.assert_key_type_value(context_item, caller, extra_error_text)
 
     def get_eval_string(self, input_string):
-        """Dynamically evaluates the input_string expression.
+        """Dynamically evaluates the input_string python expression.
 
         This provides dynamic python eval of an input expression. The return is
         whatever the result of the expression is.
@@ -221,7 +228,15 @@ class Context(dict):
             Whatever object results from the string expression valuation.
 
         """
-        return expressions.eval_string(input_string, self)
+        if input_string:
+            return expressions.eval_string(input_string,
+                                           self.pystring_globals,
+                                           self)
+        else:
+            # Empty input raises cryptic EOF syntax err, this more human
+            # friendly
+            raise ValueError('input expression is empty. It must be a valid '
+                             'python expression instead.')
 
     def get_formatted(self, key):
         """Return formatted value for context[key].

@@ -19,3 +19,12 @@ def test_pype_err_int():
     test_pipe_runner.assert_pipeline_notify_output_is(pipename, ['A',
                                                                  'B',
                                                                  'C'])
+
+
+def test_pype_pyimport():
+    """Pype while passing pyimports to child."""
+    pipename = 'pype/pyimport/parent'
+    test_pipe_runner.assert_pipeline_notify_output_is(pipename, ['A',
+                                                                 'B',
+                                                                 'C',
+                                                                 'D'])

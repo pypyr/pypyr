@@ -1,0 +1,27 @@
+steps:
+  # can't use parent import in child, new context
+  - name: pypyr.steps.assert
+    swallow: True
+    in:
+      assert:
+        this: !py abs(a) + math.sqrt(b)
+        equals: 5
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: '{runErrors[0][description]}'
+        equals: name 'math' is not defined
+  
+  # child only import
+  - name: pypyr.steps.pyimport
+    in:
+      pyImport: from tests.arbpack.arbmod2 import arb_func_in_arbmod2
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: !py arb_func_in_arbmod2('hello there')
+        equals: hello there
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: B

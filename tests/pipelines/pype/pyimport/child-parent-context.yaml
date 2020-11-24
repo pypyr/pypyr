@@ -1,0 +1,24 @@
+steps:
+  - name: pypyr.steps.assert
+    in:
+      assert:
+        this: !py abs(a) + math.sqrt(b)
+        equals: 5
+
+  # child import will work in parent too because shared context
+  - name: pypyr.steps.pyimport
+    in:
+      pyImport: |
+        from tests.arbpack.arbmod2 import arb_func_in_arbmod2
+        import tests.arbpack.arbmod3
+
+  - name: pypyr.steps.assert
+    swallow: True
+    in:
+      assert:
+        this: !py arb_func_in_arbmod2('will work') + tests.arbpack.arbmod3.arb_func_in_arbmod3(' too')
+        equals: will work too
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: C

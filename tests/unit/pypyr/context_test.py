@@ -1,15 +1,19 @@
 """context.py unit tests."""
 from collections.abc import MutableMapping
+from pathlib import Path
+import pickle
+import typing
+
+import pytest
+
 from pypyr.context import Context, ContextItemInfo
 from pypyr.dsl import PyString, SicString
 from pypyr.errors import (
     ContextError,
     KeyInContextHasNoValueError,
     KeyNotInContextError)
-import pytest
-import typing
 
-# ------------------- behaves like a dictionary-------------------------------#
+# region behaves like a dictionary
 
 
 def test_context_is_dictionary_like():
@@ -74,6 +78,24 @@ def test_context_is_dictionary_like():
     assert len(d) == 0
 
 
+def test_context_init_and_eq_like_dict():
+    """Context construct in all the ways a dict can."""
+    a = Context(one=1, two=2, three=3)
+    b = Context({'one': 1, 'two': 2, 'three': 3})
+    c = Context(zip(['one', 'two', 'three'], [1, 2, 3]))
+    d = Context([('two', 2), ('one', 1), ('three', 3)])
+    e = Context({'three': 3, 'one': 1, 'two': 2})
+    f = Context({'one': 1, 'three': 3}, two=2)
+    assert a == b == c == d == e == f
+    assert a == {'one': 1, 'two': 2, 'three': 3}
+
+
+def test_context_init_instance():
+    """Context constructor adds instance attributes."""
+    assert Context().pystring_globals == {}
+    assert Context(a=1, b=2).pystring_globals == {}
+
+
 def test_context_missing_override():
     """Subclass of dict should override __missing__ on KeyNotFound."""
     context = Context({'arbkey': 'arbvalue'})
@@ -89,9 +111,28 @@ def test_context_missing_raise_key_error():
     with pytest.raises(KeyError):
         context['notindict']
 
-# ------------------- behaves like a dictionary-------------------------------#
 
-# ------------------- asserts ------------------------------------------------#
+def test_context_pickles():
+    """Context survives a pickle."""
+    og = Context(a='b', c='e f')
+    og.pipeline_name = 'arb'
+    og.working_dir = Path('/arb')
+    og.pystring_globals.update(g='h')
+
+    dumped = pickle.dumps(og)
+    reloaded = pickle.loads(dumped)
+
+    assert type(reloaded) is Context
+    assert reloaded.pipeline_name == 'arb'
+    assert reloaded.working_dir == Path('/arb')
+    assert reloaded == {'a': 'b', 'c': 'e f'}
+    assert reloaded.pystring_globals == {'g': 'h'}
+    assert reloaded.get_formatted_value('f{a}') == 'fb'
+
+
+# endregion behaves like a dictionary
+
+# region asserts
 
 
 def test_assert_child_key_has_value_passes():
@@ -475,9 +516,9 @@ def test_assert_keys_type_value_raises_with_extra_error_text():
     assert str(err_info.value) == ("mydesc found key2 in context but it "
                                    "doesn\'t have a value. extra text here")
 
-# ------------------- asserts ------------------------------------------------#
+# endregion asserts
 
-# ------------------- get_eval -----------------------------------------------#
+# region get_eval
 
 
 def test_get_eval_string_bool():
@@ -495,9 +536,36 @@ def test_get_eval_string_builtins():
     input_string = 'len(key1)'
     assert context.get_eval_string(input_string) == 4
 
-# ------------------- end get_eval--------------------------------------------#
 
-# ------------------- formats ------------------------------------------------#
+def test_get_eval_string_empty():
+    """Empty string raises."""
+    with pytest.raises(ValueError) as err:
+        assert Context().get_eval_string('')
+
+    assert str(err.value) == ('input expression is empty. It must be a valid '
+                              'python expression instead.')
+
+
+def test_get_eval_string_none():
+    """None string raises."""
+    with pytest.raises(ValueError) as err:
+        assert Context().get_eval_string(None)
+
+    assert str(err.value) == ('input expression is empty. It must be a valid '
+                              'python expression instead.')
+
+
+def test_get_eval_string_with_globals():
+    """Eval with globals set."""
+    import math
+    context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
+    context.pystring_globals.update({'mymath': math})
+    input_string = 'mymath.sqrt(len(key1))'
+    assert context.get_eval_string(input_string) == 2
+
+# endregion get_eval
+
+# region formats
 
 
 def test_string_interpolate_works():
@@ -1456,9 +1524,9 @@ def test_get_processed_string_following_literal():
     output = context.get_formatted_value(input_string)
     assert output == 'downfollowing literal', (
         "string interpolation incorrect")
-# ------------------- formats ------------------------------------------------#
+# endregion formats
 
-# ------------------- key info -----------------------------------------------#
+# region key info
 
 
 def test_key_in_context():
@@ -1554,9 +1622,9 @@ def test_keys_none_exist():
     assert k6.is_expected_type is None
     assert not k6.has_value
 
-# ------------------- key info -----------------------------------------------#
+# endregion key info
 
-# ------------------- merge --------------------------------------------------#
+# region merge
 
 
 def test_merge_pass_no_substitutions():
@@ -1846,9 +1914,9 @@ def test_merge_key_substitutions():
                        'value3': '3new'}
 
 
-# ------------------- merge --------------------------------------------------#
+# endregion merge
 
-# ------------------- set_defaults -------------------------------------------#
+# region set_defaults
 
 
 def test_set_defaults_pass_no_substitutions():
@@ -2025,4 +2093,4 @@ def test_set_defaults_pass_nested_with_types():
         'k12': 'end'
     }
 
-# ------------------- set_defaults -------------------------------------------#
+# endregion set_defaults
