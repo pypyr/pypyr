@@ -1,7 +1,7 @@
 steps:
   - name: pypyr.steps.py
     in:
-      pycode: raise TypeError('O.G err')
+      py: raise TypeError('O.G err')
   - name: pypyr.steps.echo
     in:
       echoMe: unreachable
@@ -12,7 +12,7 @@ on_failure:
       echoMe: A
   - name: pypyr.steps.py
     in:
-      pycode: raise ValueError('arb')
+      py: raise ValueError('arb')
   - name: pypyr.steps.echo
     in:
       echoMe: unreachable

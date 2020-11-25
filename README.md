@@ -73,7 +73,7 @@ steps:
       cmd: echo ninja shell power | grep '^ninja.*r$' 
   - name: pypyr.steps.py
     in:
-      pycode: print('any python you like')
+      py: print('any python you like')
   - name: pypyr.steps.cmd
     while:
       max: 3

@@ -11,7 +11,7 @@ steps:
       echoMe: B.parent
   - name: pypyr.steps.py
     in:
-      pycode: raise ValueError('arb')
+      py: raise ValueError('arb')
   - name: pypyr.steps.echo
     in:
       echoMe: unreachable
