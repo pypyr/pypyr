@@ -115,6 +115,7 @@ get_version:
     in:
       defaults:
         isConfigSet: false
+        is_version_module_loaded: False
   - name: pypyr.steps.call
     comment: set default config & environment values only if not already set.
     skip: '{isConfigSet}'
@@ -123,13 +124,14 @@ get_version:
   - name: pypyr.steps.py
     description: --> get version
     in:
-      pycode: |
+      py: |
         import importlib
-        version_module = importlib.import_module(context['version_module_name'])
-        if context.get('is_version_module_loaded'): 
+        version_module = importlib.import_module(version_module_name)
+        if is_version_module_loaded:
           importlib.reload(version_module)
-        context['version'] = f'{version_module.__version__}'
-        context['is_version_module_loaded'] = True
+
+        version = f'{version_module.__version__}'
+        is_version_module_loaded = True
   - name: pypyr.steps.echo
     in:
       echoMe: version is {version}

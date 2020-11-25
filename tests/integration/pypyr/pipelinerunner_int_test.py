@@ -205,7 +205,7 @@ def test_pipeline_runner_main_with_context_relative_working_dir(
     assert len(out) == 4
     assert out['argList'] == ['A', 'B', 'C', 'raise on success']
     assert out['set_in_pipe'] == 456
-    assert out['pycode'] == "raise ValueError('err from on_success')"
+    assert out['py'] == "raise ValueError('err from on_success')"
 
     assert len(out['runErrors']) == 1
     out_run_error = out['runErrors'][0]
@@ -238,7 +238,7 @@ def test_pipeline_runner_main_with_context_minimal_with_failure_handled():
     assert len(out) == 4
     assert out['argList'] == ['A', 'B', 'C', 'raise on success']
     assert out['set_in_pipe'] == 456
-    assert out['pycode'] == "raise ValueError('err from on_success')"
+    assert out['py'] == "raise ValueError('err from on_success')"
 
     assert len(out['runErrors']) == 1
     out_run_error = out['runErrors'][0]
@@ -270,7 +270,7 @@ def test_pipeline_runner_main_with_context_with_failure_handled():
     assert out.working_dir == Path.cwd()
 
     assert len(out) == 2
-    assert out['pycode'] == "raise ValueError('err from sg3')"
+    assert out['py'] == "raise ValueError('err from sg3')"
 
     assert len(out['runErrors']) == 1
     out_run_error = out['runErrors'][0]
