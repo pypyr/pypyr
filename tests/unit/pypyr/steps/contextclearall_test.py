@@ -1,4 +1,6 @@
 """contextclearall.py unit tests."""
+import builtins
+
 from pypyr.context import Context
 import pypyr.steps.contextclearall
 
@@ -17,7 +19,8 @@ def test_context_clear_all_pass():
         ]
     })
 
-    context.pystring_globals.update({'a': 'b'})
+    # len is only the one added item 'a'
+    assert context.pystring_globals_update({'a': 'b'}) == 1
 
     pypyr.steps.contextclearall.run_step(context)
 
@@ -25,13 +28,18 @@ def test_context_clear_all_pass():
     assert context is not None
     assert isinstance(context, Context)
 
-    assert len(context.pystring_globals) == 0
-    assert context.pystring_globals is not None
-    assert type(context.pystring_globals) is dict
+    assert type(context._pystring_globals) is dict
+    assert context._pystring_globals == {}
+    assert list(dict.items(context._pystring_namespace)) == [
+        ('__builtins__', builtins.__dict__)]
+
+    assert context._pystring_namespace.maps == [{}, {}]
 
     context['k1'] = 'value1'
 
     assert context['k1'] == 'value1'
+    # global namespace still works.
+    assert context.get_eval_string('len(k1)') == 6
 
 
 def test_context_clear_all_context_empty_already():
@@ -41,4 +49,5 @@ def test_context_clear_all_context_empty_already():
     pypyr.steps.contextclearall.run_step(context)
 
     assert len(context) == 0
-    assert len(context.pystring_globals) == 0
+    assert len(context._pystring_globals) == 0
+    assert context._pystring_globals == {}

@@ -15,7 +15,8 @@ def run_step(context):
     logger.debug("started")
 
     context.clear()
-    context.pystring_globals.clear()
+    context._pystring_globals.clear()
+
     logger.info("context & py imports wiped. New context size: %s",
                 len(context))
 

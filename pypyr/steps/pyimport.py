@@ -29,8 +29,8 @@ def run_step(context):
     Args:
         context (pypyr.context.Context):
             Context is a dictionary or dictionary-like.
-            Context must contain key 'pyimport'
-            The value of pyimport is a string containing python import
+            Context must contain key 'pyImport'
+            The value of pyImport is a string containing python import
             statements.
     """
     logger.debug("started")
@@ -45,10 +45,8 @@ def run_step(context):
     logger.debug("imported %s objects to merge into PyString namespace",
                  len(namespace))
 
-    context.pystring_globals.update(namespace)
+    new_length = context.pystring_globals_update(namespace)
 
-    # pystring_globals initialized to {} on Context init, so len() is safe.
-    logger.debug("PyString namespace now contains %s objects.",
-                 len(context.pystring_globals))
+    logger.debug("PyString namespace now contains %s objects.", new_length)
 
     logger.debug("done")

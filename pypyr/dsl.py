@@ -11,7 +11,7 @@ from pypyr.errors import (Call,
                           PipelineDefinitionError,
                           Stop)
 from pypyr.cache.stepcache import step_cache
-from pypyr.utils import expressions, poll
+from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -199,9 +199,7 @@ class PyString(SpecialTagDirective):
     def get_value(self, context):
         """Run python eval on the input string."""
         if self.value:
-            return expressions.eval_string(self.value,
-                                           context.pystring_globals,
-                                           context)
+            return context.get_eval_string(self.value)
         else:
             # Empty input raises cryptic EOF syntax err, this more human
             # friendly
