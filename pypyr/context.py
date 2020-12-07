@@ -1,10 +1,12 @@
 """pypyr context class. Dictionary ahoy."""
 from collections import namedtuple
 from collections.abc import Mapping, Set
+
 from pypyr.dsl import SpecialTagDirective
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 from pypyr.formatting import RecursiveFormatter
-from pypyr.utils import asserts, expressions, types
+from pypyr.moduleloader import _ChainMapPretendDict
+from pypyr.utils import asserts, types
 
 ContextItemInfo = namedtuple('ContextItemInfo',
                              ['key',
@@ -27,9 +29,6 @@ class Context(dict):
         pipeline_name (str): name of pipeline that is currently running
         working_dir (path-like): working directory path. Either CWD or
                                  initialized from the cli --dir arg.
-        pystring_globals (dict): globals namespace for PyString expression
-                                 evals.
-
     """
 
     # I *think* instantiating formatter at class level is fine - far as I can
@@ -41,7 +40,31 @@ class Context(dict):
     def __init__(self, *args, **kwargs):
         """Initialize context."""
         super().__init__(*args, **kwargs)
-        self.pystring_globals = {}
+        # __builtins__ are in _ChainMapPretendDict, not in _pystring_globals
+        self._pystring_globals = {}
+        # working on assumption context more frequent lookup than builtins.
+        # here context can go 1st, because eval expressions can't update the
+        # namespace like exec does.
+        self._pystring_namespace = _ChainMapPretendDict(self,
+                                                        self._pystring_globals)
+
+    def __getstate__(self):
+        """Remove namespace from pickle serialization."""
+        state = self.__dict__.copy()
+        # no need to persist builtins - will rehydrate these on setstate.
+        # do want to keep any custom py imports, though.
+        del state['_pystring_namespace']
+        return state
+
+    def __setstate__(self, state):
+        """Rehydrate from pickle will fail on ChainMap coz invocation order.
+
+        Thus custom override to set pystring globals 1st, then namespace with
+        self ref.
+        """
+        self.__dict__.update(state)
+        self._pystring_namespace = _ChainMapPretendDict(self,
+                                                        self._pystring_globals)
 
     def __missing__(self, key):
         """Throw KeyNotInContextError rather than KeyError.
@@ -215,23 +238,20 @@ class Context(dict):
         Use with caution: since input_string executes any arbitrary code object
         the potential for damage is great.
 
-        The eval uses the current context object as the namespace. This means
-        if you have context['mykey'], in the input_string expression you can
-        use the key directly as a variable like this: "mykey == 'mykeyvalue'".
+        The eval unpacks the current context object into the namespace. This
+        means if you have context['mykey'], in the input_string expression you
+        can use the key directly as a variable like this:
+        "mykey == 'mykeyvalue'".
 
         Both __builtins__ and context are available to the eval expression.
 
-        Args:
-            input_string: expression to evaluate.
+        Args: input_string: expression to evaluate.
 
-        Returns:
-            Whatever object results from the string expression valuation.
+        Returns: Whatever object results from the string expression valuation.
 
         """
         if input_string:
-            return expressions.eval_string(input_string,
-                                           self.pystring_globals,
-                                           self)
+            return eval(input_string, self._pystring_namespace)
         else:
             # Empty input raises cryptic EOF syntax err, this more human
             # friendly
@@ -571,6 +591,21 @@ class Context(dict):
 
         # first iteration starts at context dict root
         merge_recurse(self, add_me)
+
+    def pystring_globals_update(self, *args, **kwargs):
+        """Update the pystring globals namespace with values from other.
+
+        Args:
+            *args/**kwargs:
+                - iterable of key/value pairs
+                - dict
+
+        Returns:
+            Length of updated pystring globals.
+        """
+        # pystring_globals initialized to {} on Context init, no None worries.
+        self._pystring_globals.update(*args, **kwargs)
+        return len(self._pystring_globals)
 
     def set_defaults(self, defaults):
         """Set defaults in context if keys do not exist already.

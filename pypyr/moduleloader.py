@@ -6,14 +6,57 @@ Attributes:
     working_dir (WorkingDir): Global shared current working dir.
 """
 import ast
+import builtins
+from collections import ChainMap
 import importlib
 import logging
 from pathlib import Path
 import sys
+
 from pypyr.errors import PyModuleNotFoundError
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
+
+
+class _ChainMapPretendDict(ChainMap, dict):
+    """It's a ChainMap. But it will pass an isinstance check for dict.
+
+    Don't Use Me. Seriously.
+
+    The only reason for this is to use as globals with eval/exec. Because
+    eval/exec only accepts dict type as globals argument.
+
+    However, for the purposes of pypyr, rather than make a whole copy of the
+    context dict each and every time a py expression evaluations, it's much
+    more performance efficient to use a chainmap to chain together the dynamic
+    code's global namespace and context.
+
+    That does not mean what you see here is a good idea. It's not. It's the
+    least bad of other bad options.
+
+    Don't pickle me. Re-instantiate instead.
+
+    There are 2 storage mechanisms here:
+    - the dict instance itself
+    - the ChainMap maps attribute (a list of dicts, basically.)
+
+    The ChainMap overrides most of the accessors you'd associate with dict
+    (get, set, items, etc.) because it is 1st in the mro.
+
+    See docs/adr/0001-namespace-on-eval-and-exec.md
+    """
+
+    __slots__ = ()
+
+    def __init__(self, *maps):
+        """Initialize the dict to builtins, and the chainmap to *maps.
+
+        Args:
+            maps: mapping dict-like objects to add to the chainmap.
+        """
+        dict.__setitem__(self, '__builtins__', builtins.__dict__)
+        super().__init__(*maps)
 
 
 class ImportVisitor(ast.NodeVisitor):

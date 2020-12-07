@@ -393,8 +393,25 @@ def test_py_string_with_imports():
     """Py string can use imported global namespace."""
     context = Context({'a': -3, 'b': 4})
     from math import sqrt
-    context.pystring_globals.update({'squareroot': sqrt})
+    context.pystring_globals_update({'squareroot': sqrt})
     assert PyString('abs(a) + squareroot(b)').get_value(context) == 5
+    # imports don't end up in context
+    assert context == {'a': -3, 'b': 4}
+    # imports don't contain builtins
+    assert context._pystring_globals == {'squareroot': sqrt}
+
+
+def test_py_string_with_closure_scope():
+    """Free variables resolve."""
+    # NameError b is not defined if not a single global scope.
+    # Just 'a' will work, it's the nested scope that's the prob
+    source = "[f'{x}{y}' for x in a for y in b]"
+    context = Context({'a': '12', 'b': 'ab'})
+    assert PyString(source).get_value(context) == ['1a', '1b', '2a', '2b']
+    # should contain nothing because nothing added to global as part of eval.
+    assert context._pystring_globals == {}
+    # context not polluted.
+    assert context == {'a': '12', 'b': 'ab'}
 
 
 def test_py_string_eq_and_neq():

@@ -1,5 +1,7 @@
 """pyimport.py unit tests."""
+import builtins
 from pathlib import Path
+
 from pypyr.context import Context
 from pypyr.dsl import PyString
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
@@ -32,7 +34,8 @@ def test_pyimport_empty():
     """Empty source string imports nothing."""
     context = Context({'pyImport': ''})
     pyimport.run_step(context)
-    len(context.pystring_globals) == 0
+    # only builtins
+    context._pystring_globals == {'__builtins__': builtins.__dict__}
 
 
 def test_pyimport():
@@ -47,7 +50,7 @@ from tests.arbpack.arbmultiattr import arb_attr, arb_func as y
 """
     context = Context({'pyImport': source})
     pyimport.run_step(context)
-    ns = context.pystring_globals
+    ns = context._pystring_globals
     len(ns) == 4
 
     assert ns['math'].sqrt(4) == 2
@@ -82,7 +85,7 @@ import tests.arbpack.arbmod3
 
     # 2nd run should merge into ns dict, not overwrite.
     pyimport.run_step(context)
-    ns = context.pystring_globals
+    ns = context._pystring_globals
     len(ns) == 3
 
     assert ns['math'].sqrt(4) == 2

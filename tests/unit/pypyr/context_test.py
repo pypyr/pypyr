@@ -1,4 +1,5 @@
 """context.py unit tests."""
+import builtins
 from collections.abc import MutableMapping
 from pathlib import Path
 import pickle
@@ -92,8 +93,23 @@ def test_context_init_and_eq_like_dict():
 
 def test_context_init_instance():
     """Context constructor adds instance attributes."""
-    assert Context().pystring_globals == {}
-    assert Context(a=1, b=2).pystring_globals == {}
+    # builtins_only = {'__builtins__': builtins.__dict__}
+    assert Context()._pystring_globals == {}
+    context = Context(a=1,
+                      b=2,
+                      len='123')
+
+    # the underlying dict has builtins.
+    assert list(dict.items(context._pystring_namespace)) == [
+        ('__builtins__', builtins.__dict__)]
+    # the chainmap has the user-space globals
+    assert context._pystring_namespace.maps == [{'a': 1,
+                                                 'b': 2,
+                                                 'len': '123'},
+                                                {}]
+
+    # context supersedes globals
+    assert context.get_eval_string('len') == '123'
 
 
 def test_context_missing_override():
@@ -117,17 +133,32 @@ def test_context_pickles():
     og = Context(a='b', c='e f')
     og.pipeline_name = 'arb'
     og.working_dir = Path('/arb')
-    og.pystring_globals.update(g='h')
+    og.pystring_globals_update(g='h')
 
     dumped = pickle.dumps(og)
+
+    assert len(og._pystring_namespace) == 3
+    assert og._pystring_namespace['c'] == 'e f'
+    assert og._pystring_globals == {'g': 'h'}
+
     reloaded = pickle.loads(dumped)
+
+    assert og._pystring_globals == {'g': 'h'}
+    assert len(og._pystring_namespace) == 3
+    assert og._pystring_namespace['c'] == 'e f'
 
     assert type(reloaded) is Context
     assert reloaded.pipeline_name == 'arb'
     assert reloaded.working_dir == Path('/arb')
     assert reloaded == {'a': 'b', 'c': 'e f'}
-    assert reloaded.pystring_globals == {'g': 'h'}
+    assert reloaded._pystring_globals == {'g': 'h'}
+    assert list(dict.items(reloaded._pystring_namespace)) == [
+        ('__builtins__', builtins.__dict__)]
+    assert reloaded._pystring_namespace.maps == [{'a': 'b',
+                                                  'c': 'e f'},
+                                                 {'g': 'h'}]
     assert reloaded.get_formatted_value('f{a}') == 'fb'
+    assert reloaded.get_eval_string('len(c)') == 3
 
 
 # endregion behaves like a dictionary
@@ -559,9 +590,189 @@ def test_get_eval_string_with_globals():
     """Eval with globals set."""
     import math
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
-    context.pystring_globals.update({'mymath': math})
+    context.pystring_globals_update({'mymath': math})
     input_string = 'mymath.sqrt(len(key1))'
     assert context.get_eval_string(input_string) == 2
+
+    # context unaffected - eval didn't add a builtins anywhere
+    assert context == {'key1': 'down', 'key2': 'valleys', 'key3': 'value3'}
+    assert context._pystring_globals == {'mymath': math}
+    assert list(dict.items(context._pystring_namespace)) == [
+        ('__builtins__', builtins.__dict__)]
+    assert context._pystring_namespace.maps == [context,
+                                                {'mymath': math}]
+
+
+def test_get_eval_simple_expr_context_empty():
+    """Simple expression passes, with empty context."""
+    assert Context().get_eval_string('1+1') == 2
+
+
+def test_get_eval_simple_expr_with_builtins():
+    """Simple expression passes, with empty context."""
+    out = Context().get_eval_string('len("123456") < 5')
+    assert isinstance(out, bool)
+    assert not out
+
+    assert Context({'k1': 'v1'}).get_eval_string('len([0,1,2])') == 3
+
+
+def test_get_eval_simple_expr_with_import():
+    """Simple expression passes, with stdlib import."""
+    context = Context()
+    from math import sqrt as mysqrt
+    context.pystring_globals_update(sqrt=mysqrt)
+    assert context.get_eval_string('sqrt(4)') == 2
+
+
+def test_get_eval_expr_context_vars():
+    """Expression uses vars from context."""
+    assert Context({'k1': 2, 'k2': 3}).get_eval_string('(k1 + k2)*2==10')
+
+
+def test_get_eval_expr_context_nested_vars():
+    """Expression uses nested vars from input dict."""
+    assert Context({'k1': 1,
+                    'k2': [0,
+                           1,
+                           {'k2.2': 1.23}
+                           ]
+                    }).get_eval_string('k2[2]["k2.2"] == 1.23')
+
+
+def test_get_eval_expr_evals_bool():
+    """Expression can work as a boolean type."""
+    out = Context({'a': True}).get_eval_string('a')
+    assert isinstance(out, bool)
+    assert out
+
+
+def test_get_eval_expr_evals_locals_empty():
+    """Check existence in locals when empty context."""
+    out = Context().get_eval_string("'a' in locals()")
+    assert out is False
+
+
+def test_get_eval_expr_evals_locals_contains():
+    """Check existence in locals."""
+    out = Context({'a': 'b'}).get_eval_string("'a' in locals()")
+    assert out is True
+
+
+def test_get_eval_expr_evals_globals_contains():
+    """Check existence in globals."""
+    out = Context({'a': 'b'}).get_eval_string("'a' in globals()")
+    assert out is True
+
+
+def test_get_eval_expr_evals_dir_contains():
+    """Check existence in dir."""
+    out = Context({'a': 'b'}).get_eval_string("'a' in dir()")
+    assert out is True
+
+
+def test_get_eval_expr_evals_vars_contains():
+    """Check existence in vars."""
+    out = Context({'a': 'b'}).get_eval_string("'a' in vars()")
+    assert out is True
+
+
+def test_get_eval_expr_evals_vars_contains_false():
+    """Check existence in vars."""
+    out = Context({'a': 'b'}).get_eval_string("'b' in vars()")
+    assert out is False
+
+
+def test_get_eval_expr_evals_vars_empty():
+    """Check existence in vars."""
+    out = Context().get_eval_string("'b' in vars()")
+    assert out is False
+
+
+def test_get_eval_expr_evals_complex():
+    """Expression evaluates complex types."""
+    assert Context({'c': {'a': 'b'}}).get_eval_string('{"a": "b"} == c')
+
+
+def test_get_eval_expr_runtime_error():
+    """Expression raises expected type during runtime error."""
+    with pytest.raises(ZeroDivisionError):
+        Context().get_eval_string('1/0')
+
+
+def test_get_eval_expr_invalid_syntax():
+    """Expression raises when invalid syntax on input."""
+    with pytest.raises(SyntaxError):
+        Context().get_eval_string('invalid code here')
+
+
+def test_get_eval_expr_var_doesnt_exist():
+    """Expression raises when variable not found in namespace."""
+    with pytest.raises(NameError):
+        Context({'b': True}).get_eval_string('a')
+
+
+def test_get_eval_expr_builtins_imports_and_context():
+    """Expression evaluates with builtin, imported namespace and context."""
+    context = Context({'a': 1, 'b': 2})
+    from math import ceil as myceil
+    context.pystring_globals_update({'ceil': myceil})
+    assert context.get_eval_string('a+b + ceil(b) + abs(-1)') == 6
+
+
+def test_get_eval_expr_only_globals():
+    """Expression evaluates with only globals."""
+    context = Context()
+    context.pystring_globals_update({'a': 11, 'b': 22})
+    assert context.get_eval_string('abs(a+b)') == 33
+
+
+def test_get_eval_nested_scopes():
+    """Free variables and comprehension nested scopes."""
+    context = Context({'list1': [0, 1],
+                       'list2': ['a', 'b']})
+    eval_me = '[(x, y) for x in list1 for y in list2]'
+    assert context.get_eval_string(eval_me) == [(0, 'a'), (0, 'b'),
+                                                (1, 'a'), (1, 'b')]
+
+
+class ArbClassForEvalTest():
+    """Arb test class."""
+
+    a = 123
+
+    def __init__(self):
+        """Arb init."""
+        self.b = 456
+
+    def dothing(self, val):
+        """Arb test method."""
+        return ArbClassForEvalTest.a + val
+
+    @ classmethod
+    def dothing_class_method(cls, val):
+        """Arb class method."""
+        return cls.a - val
+
+    @ staticmethod
+    def dothing_static_method(val):
+        """Arb static method."""
+        return val + 2
+
+
+def test_get_eval_class():
+    """Arbitrary class with instance, static and class attributes."""
+    context = Context({'c': 789})
+    context.pystring_globals_update({'A': ArbClassForEvalTest})
+
+    assert context.get_eval_string('A.a') == 123
+    assert context.get_eval_string('A().b') == 456
+    assert context.get_eval_string('A().dothing(1)') == 124
+    assert context.get_eval_string('A.dothing_class_method(1)') == 122
+    assert context.get_eval_string('A.dothing_static_method(1) + c') == 792
+
+    # none of this mutated context
+    assert context == {'c': 789}
 
 # endregion get_eval
 
@@ -1399,7 +1610,7 @@ def test_get_formatted_value_list():
     assert context.get_formatted_value(['{k1}', 12, 13]) == [10, 12, 13]
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_no_interpolation():
     """On get_processed_string on plain string returns plain."""
     context = Context(
@@ -1415,7 +1626,7 @@ def test_get_processed_string_no_interpolation():
     assert input_string == output
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_with_interpolation():
     """Process string with interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
@@ -1425,7 +1636,7 @@ def test_get_processed_string_with_interpolation():
         "string interpolation incorrect")
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
+@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_shorter_than_6_with_interpolation():
     """Process string with interpolation."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
