@@ -3008,7 +3008,7 @@ def test_retry_exec_iteration_returns_true_on_success():
     context = Context({})
     mock = MagicMock()
 
-    assert rd.exec_iteration(2, context, mock)
+    assert rd.exec_iteration(2, context, mock, 3)
 
     # context endures
     assert context['retryCounter'] == 2
@@ -3024,7 +3024,7 @@ def test_retry_exec_iteration_returns_true_on_max_success():
 
     context = Context({})
     mock = MagicMock()
-    assert rd.exec_iteration(3, context, mock)
+    assert rd.exec_iteration(3, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 3
     assert rd.retry_counter == 3
@@ -3042,7 +3042,7 @@ def test_retry_exec_iteration_returns_false_on_error():
     mock.side_effect = ValueError('arb')
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-        assert not rd.exec_iteration(2, context, mock)
+        assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3064,7 +3064,7 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon():
     mock.side_effect = ValueError('arb')
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-        assert not rd.exec_iteration(2, context, mock)
+        assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3087,7 +3087,7 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-            assert not rd.exec_iteration(2, context, mock)
+            assert not rd.exec_iteration(2, context, mock, 3)
 
     # context endures
     assert context['retryCounter'] == 2
@@ -3112,7 +3112,7 @@ def test_retry_exec_iteration_raises_on_error_not_in_retryon():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3137,7 +3137,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3162,7 +3162,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_format():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3187,7 +3187,7 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
     mock.side_effect = ValueError('arb')
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-        assert not rd.exec_iteration(2, context, mock)
+        assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3210,7 +3210,7 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-            assert not rd.exec_iteration(2, context, mock)
+            assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3236,7 +3236,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3260,7 +3260,7 @@ def test_retry_exec_iteration_raises_on_max_exhaust():
 
     with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(3, context, mock)
+            rd.exec_iteration(3, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3285,7 +3285,7 @@ def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
 
     with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         with pytest.raises(ValueError) as err_info:
-            rd.exec_iteration(3, context, mock)
+            rd.exec_iteration(3, context, mock, 3)
 
         assert str(err_info.value) == 'arb'
 
@@ -3311,7 +3311,7 @@ def test_retry_exec_iteration_handlederror():
     mock.side_effect = err
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-        assert not rd.exec_iteration(2, context, mock)
+        assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3336,7 +3336,7 @@ def test_retry_exec_iteration_handlederror_with_stopon():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-            assert not rd.exec_iteration(2, context, mock)
+            assert not rd.exec_iteration(2, context, mock, 3)
     # context endures
     assert context['retryCounter'] == 2
     assert rd.retry_counter == 2
@@ -3363,7 +3363,7 @@ def test_retry_exec_iteration_handlederror_stopon_raises():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(HandledError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert isinstance(err_info.value.__cause__, ValueError)
         assert str(err_info.value.__cause__) == 'arb'
@@ -3391,7 +3391,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 
     with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
         with pytest.raises(HandledError) as err_info:
-            rd.exec_iteration(2, context, mock)
+            rd.exec_iteration(2, context, mock, 3)
 
         assert isinstance(err_info.value.__cause__, ValueError)
         assert str(err_info.value.__cause__) == 'arb'
@@ -3413,6 +3413,35 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 def test_retry_loop_max_end_on_error(mock_time_sleep):
     """Retry loops until max and ends with error at end."""
     rd = RetryDecorator({'max': 3})
+    context = Context({'k1': 'v1'})
+    mock = MagicMock()
+    mock.side_effect = ValueError('arb')
+
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with pytest.raises(ValueError) as err_info:
+            rd.retry_loop(context, mock)
+
+        assert str(err_info.value) == 'arb'
+
+    assert context['retryCounter'] == 3
+    assert rd.retry_counter == 3
+    assert mock.call_count == 3
+    mock.assert_called_with({'k1': 'v1', 'retryCounter': 3})
+
+    assert mock_time_sleep.call_count == 2
+    mock_time_sleep.assert_called_with(0)
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try 3 times at 0.0s intervals.'),
+        call('retry: running step with counter 1'),
+        call('retry: running step with counter 2'),
+        call('retry: running step with counter 3')]
+
+
+@patch('time.sleep')
+def test_retry_loop_max_end_on_error_substitution(mock_time_sleep):
+    """Retry loops with substitution until max and ends with error at end."""
+    rd = RetryDecorator({'max': PyString('3')})
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')

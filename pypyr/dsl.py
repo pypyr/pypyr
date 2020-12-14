@@ -782,7 +782,7 @@ class RetryDecorator:
 
         logger.debug("done")
 
-    def exec_iteration(self, counter, context, step_method):
+    def exec_iteration(self, counter, context, step_method, max):
         """Run a single retry iteration.
 
         This method abides by the signature invoked by poll.while_until_true,
@@ -798,6 +798,7 @@ class RetryDecorator:
             step_method: (method/function) This is the method/function that
                          will execute on every loop iteration. Signature is:
                          function(context)
+            max: int. Execute step_method function up to this limit
 
          Returns:
             bool. True if step execution completed without error.
@@ -817,8 +818,8 @@ class RetryDecorator:
             # else, not errors per se.
             raise
         except Exception as ex_info:
-            if self.max:
-                if counter == self.max:
+            if max:
+                if counter == max:
                     logger.debug("retry: max %s retries exhausted. "
                                  "raising error.", counter)
                     # arguably shouldn't be using errs for control of flow.
@@ -894,7 +895,8 @@ class RetryDecorator:
         if poll.while_until_true(interval=sleep,
                                  max_attempts=max)(
                 self.exec_iteration)(context=context,
-                                     step_method=step_method
+                                     step_method=step_method,
+                                     max=max
                                      ):  # pragma: no cover
             logger.debug("retry loop complete, reporting success.")
 
