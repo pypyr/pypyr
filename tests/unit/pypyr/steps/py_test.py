@@ -1,9 +1,10 @@
 """py.py unit tests."""
+import pytest
 from pypyr.context import Context
 from pypyr.dsl import PyString
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.moduleloader import _ChainMapPretendDict
 import pypyr.steps.py
-import pytest
 
 # region py
 
@@ -542,22 +543,46 @@ context['closure'] = my_closure(3)
     # endregion pycode
 
 
-def test_py_scope_class_implicit_global_fails():
-    """Class global reference inside class doesn't resolve (side-effect)."""
+def test_py_scope_class_implicit_global():
+    """Class-level global reference resolves."""
     # region py
-    # won't resolve because globals is a ChainMap
+    # will resolve because globals is a dict
     pycode = """\
 class MyClass():
     b = context_in_a + 1
+
+    def dothing(self, val):
+        return val + context_in_a
+
+    @classmethod
+    def dothing_class_method(cls, val):
+        return val + context_in_a
+
+    @staticmethod
+    def dothing_static_method(val):
+        return val + context_in_a
+
+assert MyClass.b == 11
+assert MyClass().dothing(10) == 20
+assert MyClass.dothing_class_method(20) == 30
+assert MyClass.dothing_static_method(30) == 40
+save('MyClass')
 """
     context = Context({'context_in_a': 10,
                        'py': pycode})
 
-    with pytest.raises(NameError) as err:
-        pypyr.steps.py.run_step(context)
+    pypyr.steps.py.run_step(context)
 
-    assert str(err.value) == "name 'context_in_a' is not defined"
+    assert len(context) == 3
+    assert context['context_in_a'] == 10
+    assert context['py'] == pycode
+    assert 'MyClass' in context
 
+    context['context_in_a'] = 100
+    assert context['MyClass']().dothing(40) == 50
+    assert context['MyClass'].dothing_class_method(50) == 60
+    assert context['MyClass'].dothing_static_method(60) == 70
+    assert context['context_in_a'] == 100
     # endregion py
 
     # region pycode
@@ -624,14 +649,14 @@ class MyClass():
             return context_in_a + 6
 
 assert a == 12
-# notice context_in_c still thinks it's 30 - global doesn't update
-assert MyClass().my_function(1) == 30 + context_in_d + 1
+# notice context_in_c is updated at class level
+assert MyClass().my_function(1) == 333 + context_in_d + 1
 assert MyClass.b == 3
 assert MyClass.c == 33
 assert MyClass.MyNested.d == 55
 assert MyClass.MyNested().dothing() == 16
-assert context_in_c == 30
-assert context_in_e == 50 # even with global, no update coz ChainMap
+assert context_in_c == 333
+assert context_in_e == 555
 context_in_e = 5555
 save('context_in_e')
 """
@@ -647,18 +672,18 @@ save('context_in_e')
                        'context_in_b': 20,  # no save, no update
                        'context_in_c': 30,  # in class scope
                        'context_in_d': 40,
-                       'context_in_e': 50,  # even with global, no update
+                       'context_in_e': 5555,
                        'py': pycode}
     # endregion py
 
-    # region py style with normal dict to illustrate difference
+    # region py style with _ChainMapPretendDict to illustrate difference
     pycode = """\
 a = context_in_a + 2
 context_in_b = 22
 
 class MyClass():
     b = 3
-    # global context_in_c - not necessary when it's a standard dict
+    global context_in_c
     c = context_in_c + abs(-3)
     context_in_c = 333
 
@@ -674,33 +699,40 @@ class MyClass():
             return context_in_a + 6
 
 assert a == 12
-# notice context_in_c still thinks it's 30 - no global, doesn't update
+# notice context_in_c still thinks it's 30 - global doesn't update
 assert MyClass().my_function(1) == 30 + context_in_d + 1
 assert MyClass.b == 3
 assert MyClass.c == 33
 assert MyClass.MyNested.d == 55
 assert MyClass.MyNested().dothing() == 16
-assert context_in_c == 30 # no global, so didn't update 333
-assert context_in_e == 555 # with global, so did update
+assert context_in_c == 30
+assert context_in_e == 50 # even with global, no update coz ChainMap
+context_in_e = 5555
+# save('context_in_e')
 """
     context = Context({'context_in_a': 10,
                        'context_in_b': 20,
                        'context_in_c': 30,
                        'context_in_d': 40,
-                       'context_in_e': 50})
-
-    normal_globals = {'__builtins__': __builtins__}
-    normal_globals.update(context)
-    exec(pycode, normal_globals)
+                       'context_in_e': 50,
+                       'py': pycode})
+    first_dict = {}
+    # first_dict gets any adds/imports, not the 2nd dict which is context.
+    # other than this, first_dict behaves like locals, basically.
+    globals = _ChainMapPretendDict(first_dict,
+                                   context)
+    # the save function ref allows pipeline to use save to persist vars
+    # back to context,
+    # first_dict['save'] = get_save(context, globals)
+    exec(context['py'], globals)
 
     assert context == {'context_in_a': 10,
                        'context_in_b': 20,  # no save, no update
                        'context_in_c': 30,  # in class scope
                        'context_in_d': 40,
-                       'context_in_e': 50  # even with global, no update
-                       }
-
-    # endregion  py style with normal dict to illustrate difference
+                       'context_in_e': 50,  # even with global, no update
+                       'py': pycode}
+    # endregion  py style with _ChainMapPretendDict to illustrate difference
 
     # region pycode
     pycode = """\
