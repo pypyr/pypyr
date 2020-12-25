@@ -5,8 +5,6 @@ Uses python's exec() to evaluate and execute arbitrary python code.
 import builtins
 import logging
 
-from pypyr.moduleloader import _ChainMapPretendDict
-
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
@@ -31,26 +29,17 @@ def run_step(context):
         exec_pycode(context)
     else:
         context.assert_key_has_value(key='py', caller=__name__)
-        # ChainMap necessary evil. If you separate global + local scope here,
-        # nested scopes & free variables stop working (e.g nested list
-        # comprehensions). Don't want to put context itself as globals -
-        # because any imports or new vars in exec source will end up in globals
-        # and thus pollute context with unwanted keys.
-        # e.g 'import math; x=math.sqrt(4)'
-        # will result in 'math' and 'x' in context.
-        # want to avoid having to deepcopy context here too
-        first_dict = {}
-        # first_dict gets any adds/imports, not the 2nd dict which is context.
-        # other than this, first_dict behaves like locals, basically.
-        globals = _ChainMapPretendDict(first_dict,
-                                       context)
+
+        # .copy() is significantly faster than globals = dict(context)
+        # https://bugs.python.org/issue31179
+        globals = context.copy()
+        globals['__builtins__'] = builtins.__dict__
+
         # the save function ref allows pipeline to use save to persist vars
         # back to context,
-        first_dict['save'] = get_save(context, globals)
+        globals['save'] = get_save(context, globals)
 
         exec(context['py'], globals)
-
-    # logger.debug("exec output context merged with pipeline context")
 
     logger.debug("done")
 
