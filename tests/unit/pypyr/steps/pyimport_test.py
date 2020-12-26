@@ -34,8 +34,10 @@ def test_pyimport_empty():
     """Empty source string imports nothing."""
     context = Context({'pyImport': ''})
     pyimport.run_step(context)
+    assert context._pystring_globals == {}
     # only builtins
-    context._pystring_globals == {'__builtins__': builtins.__dict__}
+    assert list(dict.items(context._pystring_namespace)) == [
+        ('__builtins__', builtins.__dict__)]
 
 
 def test_pyimport():

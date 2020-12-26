@@ -592,6 +592,10 @@ class Context(dict):
         # first iteration starts at context dict root
         merge_recurse(self, add_me)
 
+    def pystring_globals_clear(self):
+        """Clear the pystring globals namespace."""
+        self._pystring_globals.clear()
+
     def pystring_globals_update(self, *args, **kwargs):
         """Update the pystring globals namespace with values from other.
 
