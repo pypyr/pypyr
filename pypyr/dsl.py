@@ -435,12 +435,11 @@ class Step:
         # execution.
         foreach = context.get_formatted_value(self.foreach_items)
 
-        foreach_length = len(foreach)
-
-        logger.info("foreach decorator will loop %s times.", foreach_length)
+        iteration_count = 0
 
         for i in foreach:
             logger.info("foreach: running step %s", i)
+            iteration_count = iteration_count + 1
             # the iterator must be available to the step when it executes
             context['i'] = i
             self.for_counter = i
@@ -450,7 +449,7 @@ class Step:
             self.run_conditional_decorators(context)
             logger.debug("foreach: done step %s", i)
 
-        logger.debug("foreach decorator looped %s times.", foreach_length)
+        logger.info("foreach decorator looped %s times.", iteration_count)
         logger.debug("done")
 
     def invoke_step(self, context):
