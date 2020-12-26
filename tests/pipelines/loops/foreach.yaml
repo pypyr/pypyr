@@ -1,0 +1,47 @@
+steps:
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        dict_in: {'a': 'b', 'c': 'd'}
+        list_in: [0, 1, 2]
+        list_a: ['A', 'B']
+        list_b: [0, 1]
+        just_list: []
+        just_dict: []
+        just_dict_items: []
+        generator_out: []
+        product_out: []
+  - name: pypyr.steps.py
+    foreach: '{list_in}'
+    in:
+      py: just_list.append(i)
+  - name: pypyr.steps.py
+    foreach: '{dict_in}'
+    in:
+      py: just_dict.append(i)
+  - name: pypyr.steps.py
+    foreach: !py dict_in.items()
+    in:
+      py: just_dict_items.append(i)
+  - name: pypyr.steps.py
+    foreach: '{dict_in}'
+    in:
+      py: |
+        def generator(val):
+          def inner():
+            yield from val
+          
+          return inner
+
+        save(generator_func=generator([4,5,6]))
+  - name: pypyr.steps.py
+    foreach: !py generator_func()
+    in:
+      py: generator_out.append(i)
+  - name: pypyr.steps.pyimport
+    in:
+      pyImport: from itertools import product
+  - name: pypyr.steps.py
+    foreach: !py product(list_a, list_b)
+    in:
+      py: product_out.append(i)
