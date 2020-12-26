@@ -132,6 +132,8 @@ get_version:
 
         version = f'{version_module.__version__}'
         is_version_module_loaded = True
+
+        save('version', 'is_version_module_loaded')
   - name: pypyr.steps.echo
     in:
       echoMe: version is {version}
