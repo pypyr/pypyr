@@ -126,8 +126,8 @@ k bye!
 ## Help!
 Don't Panic! Check the [pypyr technical docs](https://pypyr.io/docs/)
 to begin. For help, community & talk, check [pypyr
-twitter](https://twitter.com/pypyrpipes/), or join the chat on
-[discord](https://discordapp.com/invite/8353JkB)!
+twitter](https://twitter.com/pypyrpipes/), or join the chat at the 
+[pypyr community discussion forum](https://github.com/pypyr/pypyr/discussions)!
 
 ## Contribute
 ### Developers
