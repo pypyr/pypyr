@@ -40,3 +40,4 @@ def test_empty_string_empty_dict_argdict():
 
     assert out
     assert not out['argDict']
+    assert out['argDict'] == {}

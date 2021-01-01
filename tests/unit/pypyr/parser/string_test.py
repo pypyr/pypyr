@@ -35,7 +35,8 @@ def test_empty_string_warns():
             'pypyr.parser.string', logging.DEBUG) as mock_logger_debug:
         out = pypyr.parser.string.get_parsed_context(None)
 
-    assert out['argString'] is None
+    assert not out['argString']
+    assert out['argString'] == ''
     mock_logger_debug.assert_called_with(
         "pipeline invoked without context arg set. For "
         "this string parser you're looking for something "

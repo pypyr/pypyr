@@ -20,7 +20,7 @@ def get_parsed_context(args):
                      "this string parser you're looking for something "
                      "like: pypyr pipelinename spam and eggs"
                      )
-        return {'argString': None}
+        return {'argString': ''}
 
     # the list that's parsed from the input args is named argList
     return dict({'argString': ' '.join(args)})

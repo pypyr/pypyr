@@ -21,7 +21,7 @@ def get_parsed_context(args):
                      "pypyr pipelinename spam eggs\n"
                      "OR: pypyr pipelinename spam."
                      )
-        return {'argList': None}
+        return {'argList': []}
 
     # the list that's parsed from the input args is named argList
     return dict({'argList': args})
