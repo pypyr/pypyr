@@ -28,7 +28,8 @@ def test_empty_args_empty_list():
             'pypyr.parser.list', logging.DEBUG) as mock_logger_debug:
         out = pypyr.parser.list.get_parsed_context(None)
 
-    assert out['argList'] is None
+    assert not out['argList']
+    assert out['argList'] == []
     mock_logger_debug.assert_called_with(
         "pipeline invoked without context arg set. For "
         "this list parser you're looking for something like:\n"

@@ -25,7 +25,7 @@ def get_parsed_context(args):
                      "dict parser you can use something "
                      "like:\n"
                      "pypyr pipelinename key1=value1 key2=value2")
-        return {'argDict': None}
+        return {'argDict': {}}
 
     # for each input argument, project key=value
     return {'argDict':
