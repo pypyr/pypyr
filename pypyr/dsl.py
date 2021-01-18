@@ -11,6 +11,7 @@ from pypyr.errors import (Call,
                           PipelineDefinitionError,
                           Stop)
 from pypyr.cache.stepcache import step_cache
+from pypyr.cache.backoffcache import backoff_cache
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -734,13 +735,25 @@ class RetryDecorator:
     retry_loop serves as the blackbox entrypoint for this class' other methods.
 
     Attributes:
-        max: (int) default None. Maximum loop iterations. None is infinite.
-        sleep: (float) defaults 0. Sleep in seconds between iterations.
-        stop_on: (list) default None. Always stop retry on these error
-                 types. None means retry on all errors.
-        retry_on: (list) default None. Only retry on these error types. All
-                other error types will stop retry loop. None means retry all
-                errors.
+        backoff (str): default 'fixed'. Absolute name of back-off strategy.
+            Builtin strategies allow aliases like fixed, linear, jitter. Custom
+            backoff should give absolute name to callable derived from
+            pypyr.retries.BackoffBase.
+        backoff_args (any): User provided arguments for back-off strategy.
+            Likely want to use a dict here.
+        jrc (float): default 0. Jitter Range Coefficient. Jitter finds a random
+            value between (jrc*sleep) and (sleep).
+        max (int):  default None. Maximum loop iterations. None is infinite.
+        sleep (float or list[float]):  defaults 0. Sleep in seconds between
+            iterations.
+        sleep_max (float): default None. Maximum value for sleep if using a
+            backoff strategy that calculates sleep interval. None means sleep
+            can increase indefinitely.
+        stop_on (list[str]): default None. Always stop retry on these error
+            types. None means retry on all errors.
+        retry_on (list[str]): default None. Only retry on these error types.
+            All other error types will stop retry loop. None means retry all
+            errors.
 
     """
 
@@ -758,11 +771,23 @@ class RetryDecorator:
         logger.debug("starting")
 
         if isinstance(retry_definition, dict):
+            # backoff: optional. defaults 'fixed' - set in retry_loop().
+            self.backoff = retry_definition.get('backoff', None)
+
+            # backoffArgs: optional.
+            self.backoff_args = retry_definition.get('backoffArgs', None)
+
+            # jrc: optional. defaults 0.
+            self.jrc = retry_definition.get('jrc', 0)
+
             # max: optional. defaults None.
             self.max = retry_definition.get('max', None)
 
             # sleep: optional. defaults 0.
             self.sleep = retry_definition.get('sleep', 0)
+
+            # sleep_max: optional. defaults None.
+            self.sleep_max = retry_definition.get('sleepMax', None)
 
             # stopOn: optional. defaults None.
             self.stop_on = retry_definition.get('stopOn', None)
@@ -874,22 +899,41 @@ class RetryDecorator:
         context['retryCounter'] = 0
         self.retry_counter = 0
 
-        sleep = context.get_formatted_as_type(self.sleep, out_type=float)
+        sleep = context.get_formatted_value(self.sleep)
+        backoff_name = context.get_formatted_value(
+            self.backoff) if self.backoff else 'fixed'
+
+        max_sleep = None
+        if self.sleep_max:
+            max_sleep = context.get_formatted_as_type(self.sleep_max,
+                                                      out_type=float)
+
+        jrc = context.get_formatted_value(self.jrc)
+        backoff_args = context.get_formatted_value(self.backoff_args)
+
+        backoff_callable = backoff_cache.get_backoff(backoff_name)(
+            sleep=sleep,
+            max_sleep=max_sleep,
+            jrc=jrc,
+            kwargs=backoff_args)
+
         if self.max:
             max = context.get_formatted_as_type(self.max, out_type=int)
 
-            logger.info("retry decorator will try %d times at %ss "
-                        "intervals.", max, sleep)
+            logger.info(
+                "retry decorator will try %d times with %s backoff starting "
+                "at %ss intervals.", max, backoff_name, sleep)
         else:
             max = None
-            logger.info("retry decorator will try indefinitely at %ss "
-                        "intervals.", sleep)
+            logger.info(
+                "retry decorator will try indefinitely with %s backoff "
+                "starting at %ss intervals.", backoff_name, sleep)
 
         # this will never be false. because on counter == max,
         # exec_iteration raises an exception, breaking out of the loop.
         # pragma because cov doesn't know the implied else is impossible.
         # unit test cov is 100%, though.
-        if poll.while_until_true(interval=sleep,
+        if poll.while_until_true(interval=backoff_callable,
                                  max_attempts=max)(
                 self.exec_iteration)(context=context,
                                      step_method=step_method,

@@ -4,7 +4,7 @@ from unittest.mock import call, MagicMock, patch
 import pypyr.utils.poll as poll
 
 
-# ----------------- wait_until_true -------------------------------------------
+# region wait_until_true
 from tests.common.utils import patch_logger
 
 
@@ -25,10 +25,7 @@ def test_wait_until_true_with_static_decorator(mock_time_sleep):
         """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert decorate_me('v1', 'v2')
     assert mock.call_count == 4
@@ -53,10 +50,7 @@ def test_wait_until_true_invoke_inline(mock_time_sleep):
         """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert poll.wait_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
@@ -88,10 +82,7 @@ def test_wait_until_true_with_timeout(mock_time_sleep):
         """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert not poll.wait_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
@@ -114,10 +105,7 @@ def test_wait_until_true_once_not_found(mock_time_sleep):
         """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert not poll.wait_until_true(interval=0.01, max_attempts=1)(
         decorate_me)('v1', 'v2')
@@ -138,19 +126,16 @@ def test_wait_until_true_once_found(mock_time_sleep):
         """Test static decorator syntax."""
         assert arg1 == 'v1'
         assert arg2 == 'v2'
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert poll.wait_until_true(interval=0.01, max_attempts=1)(
         decorate_me)('v1', 'v2')
     mock.assert_called_once_with('v1')
     mock_time_sleep.assert_not_called()
 
-# ----------------- wait_until_true -------------------------------------------
+# endregion wait_until_true
 
-# ----------------- while_until_true -------------------------------------
+# region while_until_true
 
 
 @patch('time.sleep')
@@ -175,16 +160,13 @@ def test_while_until_true_with_static_decorator(mock_time_sleep):
         nonlocal actual_counter
         actual_counter += 1
         assert actual_counter == counter
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
+    # the decorator injects the 1st arg (counter)
     assert decorate_me('v1', 'v2')
     assert mock.call_count == 4
     mock.assert_called_with('v1')
-    assert mock_time_sleep.call_count == 3
-    mock_time_sleep.assert_called_with(0.01)
+    assert mock_time_sleep.mock_calls == [call(0.01), call(0.01), call(0.01)]
 
 
 @patch('time.sleep')
@@ -208,17 +190,13 @@ def test_while_until_true_invoke_inline(mock_time_sleep):
         nonlocal actual_counter
         actual_counter += 1
         assert actual_counter == counter
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert poll.while_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
     assert mock.call_count == 4
     mock.assert_called_with('v1')
-    assert mock_time_sleep.call_count == 3
-    mock_time_sleep.assert_called_with(0.01)
+    assert mock_time_sleep.mock_calls == [call(0.01), call(0.01), call(0.01)]
 
 
 @patch('time.sleep')
@@ -250,10 +228,7 @@ def test_while_until_true_with_exhaust(mock_time_sleep):
         assert actual_counter == counter
         out = mock(arg1)
         assert out == f'test string {counter}'
-        if out == 'expected value':
-            return True
-        else:
-            return False
+        return out == 'expected value'
 
     assert not poll.while_until_true(interval=0.01, max_attempts=10)(
         decorate_me)('v1', 'v2')
@@ -281,10 +256,7 @@ def test_while_until_true_once_not_found(mock_time_sleep):
         nonlocal actual_counter
         actual_counter += 1
         assert actual_counter == counter
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert not poll.while_until_true(interval=0.01, max_attempts=1)(
         decorate_me)('v1', 'v2')
@@ -310,10 +282,7 @@ def test_while_until_true_once_found(mock_time_sleep):
         nonlocal actual_counter
         actual_counter += 1
         assert actual_counter == counter
-        if mock(arg1) == 'expected value':
-            return True
-        else:
-            return False
+        return mock(arg1) == 'expected value'
 
     assert poll.while_until_true(interval=0.01, max_attempts=1)(
         decorate_me)('v1', 'v2')
@@ -350,10 +319,7 @@ def test_while_until_true_no_max(mock_time_sleep):
         assert actual_counter == counter
         out = mock(arg1)
         assert out == f'test string {counter}'
-        if out == 'test string 11':
-            return True
-        else:
-            return False
+        return out == 'test string 11'
 
     with patch_logger('pypyr.utils.poll', logging.DEBUG) as mock_logger_debug:
         assert (poll.while_until_true(interval=0.01,
@@ -362,16 +328,16 @@ def test_while_until_true_no_max(mock_time_sleep):
     assert mock_logger_debug.mock_calls == [
         call('started'),
         call('Looping every 0.01 seconds.'),
-        call('iteration 1. Still waiting. . .'),
-        call('iteration 2. Still waiting. . .'),
-        call('iteration 3. Still waiting. . .'),
-        call('iteration 4. Still waiting. . .'),
-        call('iteration 5. Still waiting. . .'),
-        call('iteration 6. Still waiting. . .'),
-        call('iteration 7. Still waiting. . .'),
-        call('iteration 8. Still waiting. . .'),
-        call('iteration 9. Still waiting. . .'),
-        call('iteration 10. Still waiting. . .'),
+        call('iteration 1. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 2. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 3. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 4. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 5. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 6. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 7. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 8. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 9. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 10. Sleeping for 0.01s. Still waiting...'),
         call('iteration 11. Desired state reached.'),
         call('done')]
 
@@ -411,13 +377,52 @@ def test_while_until_true_max_exhaust(mock_time_sleep):
     assert mock_logger_debug.mock_calls == [
         call('started'),
         call('Looping every 0.01 seconds for 3 attempts'),
-        call('iteration 1. Still waiting. . .'),
-        call('iteration 2. Still waiting. . .'),
+        call('iteration 1. Sleeping for 0.01s. Still waiting...'),
+        call('iteration 2. Sleeping for 0.01s. Still waiting...'),
         call('iteration 3. Max attempts exhausted.'),
         call('done')]
 
     assert mock.call_count == 3
     mock.assert_called_with('v1')
     assert mock_time_sleep.call_count == 2
-    mock_time_sleep.assert_called_with(0.01)
-# ----------------- while_until_true -------------------------------------
+    assert mock_time_sleep.mock_calls == [call(0.01), call(0.01)]
+
+
+def arb_callable(n):
+    """Arb callable for testing."""
+    return n * 2
+
+
+@patch('time.sleep')
+def test_while_until_true_callable_with_max_attempts(mock_sleep):
+    """Interval calculated from callable per iteration with max set."""
+    decorate_me = MagicMock()
+    decorate_me.side_effect = [False, False, True, False]
+
+    assert poll.while_until_true(interval=arb_callable,
+                                 max_attempts=3)(decorate_me)('arg1', 'arg2')
+
+    assert decorate_me.mock_calls == [call(1, 'arg1', 'arg2'),
+                                      call(2, 'arg1', 'arg2'),
+                                      call(3, 'arg1', 'arg2')]
+
+    assert mock_sleep.mock_calls == [call(2), call(4)]
+
+
+@patch('time.sleep')
+def test_while_until_true_callable_without_max_attempts(mock_sleep):
+    """Interval calculated from callable per iteration infinite."""
+    decorate_me = MagicMock()
+    decorate_me.side_effect = [False, False, False, True, False]
+
+    assert poll.while_until_true(interval=arb_callable,
+                                 max_attempts=None)(decorate_me)('arg1',
+                                                                 'arg2')
+
+    assert decorate_me.mock_calls == [call(1, 'arg1', 'arg2'),
+                                      call(2, 'arg1', 'arg2'),
+                                      call(3, 'arg1', 'arg2'),
+                                      call(4, 'arg1', 'arg2')]
+
+    assert mock_sleep.mock_calls == [call(2), call(4), call(6)]
+# endregion while_until_true

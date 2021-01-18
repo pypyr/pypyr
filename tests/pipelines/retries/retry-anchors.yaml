@@ -1,0 +1,50 @@
+common:
+  retry1: &commonRetryFixedList
+    sleep: [2, 4, 8]
+    max: 3
+    sleepMax: 6
+
+  retry2: &commonRetryWithSubstitutions
+    sleep: '{base3_exponential_retry[sleep]}'
+    max: '{base3_exponential_retry[max]}'
+    sleepMax: '{base3_exponential_retry[sleepMax]}'
+    jrc: '{base3_exponential_retry[jrc]}'
+    backoff: '{base3_exponential_retry[backoff]}'
+    backoffArgs:
+      base: '{base3_exponential_retry[base]}'
+
+steps:
+  - name: pypyr.steps.py
+    retry: *commonRetryFixedList
+    in:
+      py: |
+        outList.append(f's1.{retryCounter}')
+        if retryCounter < 3:
+          raise ValueError('arb')
+
+  - name: pypyr.steps.py
+    retry: *commonRetryFixedList
+    in:
+      py: |
+        outList.append(f's2.{retryCounter}')
+        if retryCounter < 2:
+          raise ValueError('arb')
+
+  - name: pypyr.steps.contextsetf
+    in:
+      contextSetf:
+        base3_exponential_retry:
+          sleep: 1
+          max: 3
+          sleepMax: 8.5
+          jrc: 0.5
+          backoff: exponentialjitter
+          base: 3
+
+  - name: pypyr.steps.py
+    retry: *commonRetryWithSubstitutions
+    in:
+      py: |
+        outList.append(f's3.{retryCounter}')
+        if retryCounter < 3:
+          raise ValueError('arb')

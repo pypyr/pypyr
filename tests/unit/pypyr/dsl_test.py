@@ -3021,11 +3021,15 @@ def test_save_error_multiple_call(mocked_moduleloader):
 # region RetryDecorator: init
 
 
-def test_retry_init_defaults_stop():
+def test_retry_init_defaults_all():
     """The RetryDecorator ctor sets defaults with nothing set."""
     rd = RetryDecorator({})
-    assert rd.sleep == 0
+    assert rd.backoff is None
+    assert rd.backoff_args is None
+    assert rd.jrc == 0
     assert rd.max is None
+    assert rd.sleep_max is None
+    assert rd.sleep == 0
     assert rd.stop_on is None
     assert rd.retry_on is None
     assert rd.retry_counter is None
@@ -3034,8 +3038,12 @@ def test_retry_init_defaults_stop():
 def test_retry_init_defaults_max():
     """The RetryDecorator ctor sets defaults with only max set."""
     rd = RetryDecorator({'max': 3})
-    assert rd.sleep == 0
+    assert rd.backoff is None
+    assert rd.backoff_args is None
+    assert rd.jrc == 0
     assert rd.max == 3
+    assert rd.sleep_max is None
+    assert rd.sleep == 0
     assert rd.stop_on is None
     assert rd.retry_on is None
     assert rd.retry_counter is None
@@ -3046,9 +3054,18 @@ def test_retry_init_all_attributes():
     rd = RetryDecorator({'max': 3,
                          'sleep': 4.4,
                          'retryOn': [1, 2, 3],
-                         'stopOn': [4, 5, 6]})
-    assert rd.sleep == 4.4
+                         'stopOn': [4, 5, 6],
+                         'backoff': 'arb',
+                         'sleepMax': 5.5,
+                         'jrc': 6.6,
+                         'backoffArgs': {'a': 'b'}}
+                        )
+    assert rd.backoff == 'arb'
+    assert rd.backoff_args == {'a': 'b'}
+    assert rd.jrc == 6.6
     assert rd.max == 3
+    assert rd.sleep_max == 5.5
+    assert rd.sleep == 4.4
     assert rd.stop_on == [4, 5, 6]
     assert rd.retry_on == [1, 2, 3]
     assert rd.retry_counter is None
@@ -3474,7 +3491,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 
 
 # region RetryDecorator: retry_loop
-@ patch('time.sleep')
+@patch('time.sleep')
 def test_retry_loop_max_end_on_error(mock_time_sleep):
     """Retry loops until max and ends with error at end."""
     rd = RetryDecorator({'max': 3})
@@ -3497,13 +3514,14 @@ def test_retry_loop_max_end_on_error(mock_time_sleep):
     mock_time_sleep.assert_called_with(0)
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try 3 times at 0.0s intervals.'),
+        call('retry decorator will try 3 times with fixed backoff starting at '
+             '0s intervals.'),
         call('retry: running step with counter 1'),
         call('retry: running step with counter 2'),
         call('retry: running step with counter 3')]
 
 
-@ patch('time.sleep')
+@patch('time.sleep')
 def test_retry_loop_max_end_on_error_substitution(mock_time_sleep):
     """Retry loops with substitution until max and ends with error at end."""
     rd = RetryDecorator({'max': PyString('3')})
@@ -3526,13 +3544,14 @@ def test_retry_loop_max_end_on_error_substitution(mock_time_sleep):
     mock_time_sleep.assert_called_with(0)
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try 3 times at 0.0s intervals.'),
+        call('retry decorator will try 3 times with fixed backoff starting '
+             'at 0s intervals.'),
         call('retry: running step with counter 1'),
         call('retry: running step with counter 2'),
         call('retry: running step with counter 3')]
 
 
-@ patch('time.sleep')
+@patch('time.sleep')
 def test_retry_loop_max_continue_on_success(mock_time_sleep):
     """Retry loops breaks out of loop on success."""
     rd = RetryDecorator({'max': 3, 'sleep': 10.1})
@@ -3556,9 +3575,46 @@ def test_retry_loop_max_continue_on_success(mock_time_sleep):
         'retry loop complete, reporting success.')
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try 3 times at 10.1s intervals.'),
+        call('retry decorator will try 3 times with fixed backoff starting at '
+             '10.1s intervals.'),
         call('retry: running step with counter 1'),
         call('retry: running step with counter 2')]
+
+
+@patch('time.sleep')
+def test_retry_loop_max_continue_on_success_fixed_list(mock_time_sleep):
+    """Retry loops breaks out of loop on success with list input to fixed."""
+    rd = RetryDecorator({'max': 5, 'sleep': [10.1, 10.2]})
+    context = Context({'k1': 'v1'})
+    mock = MagicMock()
+    mock.side_effect = [ValueError('arb'),
+                        ValueError('arb'),
+                        ValueError('arb'),
+                        None]
+
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
+            rd.retry_loop(context, mock)
+
+    assert context['retryCounter'] == 4
+    assert rd.retry_counter == 4
+    assert mock.call_count == 4
+    mock.assert_called_with({'k1': 'v1', 'retryCounter': 4})
+
+    assert mock_time_sleep.call_count == 3
+    # list cycles over last element
+    mock_time_sleep.mock_calls == [call(10.1), call(10.2), call(10.2)]
+
+    mock_logger_debug.assert_any_call(
+        'retry loop complete, reporting success.')
+
+    assert mock_logger_info.mock_calls == [
+        call('retry decorator will try 5 times with fixed backoff starting at '
+             '[10.1, 10.2]s intervals.'),
+        call('retry: running step with counter 1'),
+        call('retry: running step with counter 2'),
+        call('retry: running step with counter 3'),
+        call('retry: running step with counter 4')]
 
 
 @ patch('time.sleep')
@@ -3581,7 +3637,8 @@ def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
     mock_time_sleep.assert_called_with(10.1)
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try indefinitely at 10.1s intervals.'),
+        call('retry decorator will try indefinitely with fixed backoff '
+             'starting at 10.1s intervals.'),
         call('retry: running step with counter 1'),
         call('retry: running step with counter 2'),
         call('retry: running step with counter 3')]
@@ -3615,8 +3672,86 @@ def test_retry_all_substitutions(mock_time_sleep):
     assert mock_time_sleep.call_count == 0
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try 1 times at 0.3s intervals.'),
+        call('retry decorator will try 1 times with fixed backoff starting at '
+             '0.3s intervals.'),
         call('retry: running step with counter 1')]
+
+
+@ patch('pypyr.retries.random.uniform', side_effect=[11, 12, 13])
+@ patch('time.sleep')
+def test_retry_all_substitutions_backoff(mock_sleep, mock_random):
+    """Retry loop runs every param substituted with non-default backoff."""
+    rd = RetryDecorator({'max': '{k3[1][k031]}',
+                         'sleep': '{k2}',
+                         'backoff': '{k6}',
+                         'jrc': '{k4}',
+                         'sleepMax': '{k5}',
+                         'backoffArgs': {'base': '{k7}', 'arb': '{k8}'}})
+    context = Context({'k1': False,
+                       'k2': 3,
+                       'k3': [
+                           0,
+                           {'k031': 4, 'k032': False}
+                       ],
+                       'k4': 0.5,
+                       'k5': 30,
+                       'k6': 'exponentialjitter',
+                       'k7': 3,
+                       'k8': 'a value',
+                       'step_count': 0})
+
+    def mock_step(context):
+        context['step_count'] += 1
+        if context['step_count'] != 4:
+            raise ValueError()
+
+    rd.retry_loop(context, mock_step)
+
+    assert context['retryCounter'] == 4
+    assert rd.retry_counter == 4
+    assert context['step_count'] == 4
+
+    assert mock_sleep.mock_calls == [call(11), call(12), call(13)]
+    assert mock_random.mock_calls == [call(4.5, 9),
+                                      call(13.5, 27),
+                                      call(15, 30)]
+
+
+@ patch('pypyr.retries.random.uniform', side_effect=[11, 12, 13])
+@ patch('time.sleep')
+def test_retry_all_substitutions_backoff_jitter_list(mock_sleep, mock_random):
+    """Retry loop runs fixed jitter with list."""
+    rd = RetryDecorator({'max': '{k3[1][k031]}',
+                         'sleep': '{k2}',
+                         'backoff': '{k6}',
+                         'jrc': '{k4}',
+                         'sleepMax': '{k5}'})
+    context = Context({'k1': False,
+                       'k2': [0.3, 0.2, 0.1],
+                       'k3': [
+                           0,
+                           {'k031': 4, 'k032': False}
+                       ],
+                       'k4': 2,
+                       'k5': 0.25,
+                       'k6': 'jitter',
+                       'step_count': 0})
+
+    def mock_step(context):
+        context['step_count'] += 1
+        if context['step_count'] != 4:
+            raise ValueError()
+
+    rd.retry_loop(context, mock_step)
+
+    assert context['retryCounter'] == 4
+    assert rd.retry_counter == 4
+    assert context['step_count'] == 4
+
+    assert mock_sleep.mock_calls == [call(11), call(12), call(13)]
+    assert mock_random.mock_calls == [call(0.5, 0.25),
+                                      call(0.4, 0.2),
+                                      call(0.2, 0.1)]
 
 # endregion RetryDecorator: retry_loop
 
