@@ -54,6 +54,13 @@ def while_until_true(interval, max_attempts):
     until wrapped function either returns True or max_attempts are exhausted,
     whichever comes 1st.
 
+    Interval is in seconds. It is either a simple float value, or a callable
+    that returns a float value. If it is a callable, the passed callable will
+    execute on every iteration. The callable signature is:
+    func(n: int) -> float
+
+    n is the iteration counter.
+
     The difference between while_until_true and wait_until_true is that the
     latter will always loop to a max_attempts, whereas while_until_true will
     keep going indefinitely.
@@ -66,9 +73,10 @@ def while_until_true(interval, max_attempts):
     invoked function.
 
     Args:
-        interval: In seconds. How long to wait between executing the wrapped
-                  function.
-        max_attempts: int. Execute wrapped function up to this limit. None
+        interval (float or callable): In seconds. How long to wait between
+            executing the wrapped function. The callable signature is func(n)
+            where n is the iteration counter, and should return a float.
+        max_attempts (int): Execute wrapped function up to this limit. None
                       means infinite (or until wrapped function returns True).
                       Passing anything <0 also means infinite.
 
@@ -80,14 +88,16 @@ def while_until_true(interval, max_attempts):
         logger.debug("started")
 
         def sleep_looper(*args, **kwargs):
-            if max_attempts:
-                logger.debug("Looping every %s seconds for %s attempts",
-                             interval, max_attempts)
-            else:
-                logger.debug("Looping every %s seconds.", interval)
-
             i = 0
             result = False
+            is_interval_callable = callable(interval)
+
+            if not is_interval_callable:
+                if max_attempts:
+                    logger.debug("Looping every %s seconds for %s attempts",
+                                 interval, max_attempts)
+                else:
+                    logger.debug("Looping every %s seconds.", interval)
 
             # pragma for coverage: cov can't figure out the branch construct
             # with the dynamic function invocation, it seems, so marks the
@@ -95,22 +105,30 @@ def while_until_true(interval, max_attempts):
             while not result:  # pragma: no branch
                 i += 1
                 result = f(i, *args, **kwargs)
+
                 if result:
                     logger.debug("iteration %s. Desired state reached.", i)
                     break
-                elif max_attempts:
+
+                sleep = interval(i) if is_interval_callable else interval
+
+                if max_attempts:
                     if i < max_attempts:
-                        logger.debug("iteration %s. Still waiting. . .", i)
-                        time.sleep(interval)
+                        logger.debug(
+                            "iteration %s. Sleeping for %ss. Still waiting...",
+                            i, sleep)
+                        time.sleep(sleep)
                     else:
-                        logger.debug("iteration %s. Max attempts exhausted.",
-                                     i)
+                        logger.debug(
+                            "iteration %s. Max attempts exhausted.", i)
                         break
                 else:
                     # result False AND max_attempts is None means keep looping
                     # because None = infinite
-                    logger.debug("iteration %s. Still waiting. . .", i)
-                    time.sleep(interval)
+                    logger.debug(
+                        "iteration %s. Sleeping for %ss. Still waiting...",
+                        i, sleep)
+                    time.sleep(sleep)
             logger.debug("done")
             return result
 
