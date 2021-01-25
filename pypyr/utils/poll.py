@@ -99,10 +99,8 @@ def while_until_true(interval, max_attempts):
                 else:
                     logger.debug("Looping every %s seconds.", interval)
 
-            # pragma for coverage: cov can't figure out the branch construct
-            # with the dynamic function invocation, it seems, so marks the
-            # branch partial. unit test cov is 100%, though.
-            while not result:  # pragma: no branch
+            # loop breaks explicitly for all possible exit conditions
+            while True:
                 i += 1
                 result = f(i, *args, **kwargs)
 

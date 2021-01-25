@@ -929,19 +929,16 @@ class RetryDecorator:
                 "retry decorator will try indefinitely with %s backoff "
                 "starting at %ss intervals.", backoff_name, sleep)
 
-        # this will never be false. because on counter == max,
-        # exec_iteration raises an exception, breaking out of the loop.
-        # pragma because cov doesn't know the implied else is impossible.
-        # unit test cov is 100%, though.
-        if poll.while_until_true(interval=backoff_callable,
-                                 max_attempts=max)(
-                self.exec_iteration)(context=context,
-                                     step_method=step_method,
-                                     max=max
-                                     ):  # pragma: no cover
-            logger.debug("retry loop complete, reporting success.")
-
-        logger.debug("retry loop done")
+        # this will never be false. because on (counter == max) exec_iteration
+        # raises an exception, breaking out of the loop.
+        is_retry_ok = poll.while_until_true(interval=backoff_callable,
+                                            max_attempts=max)(
+            self.exec_iteration)(context=context,
+                                 step_method=step_method,
+                                 max=max
+                                 )
+        assert is_retry_ok
+        logger.debug("retry loop complete, reporting success.")
 
         logger.debug("done")
 
