@@ -1,12 +1,12 @@
 """moduleloader.py unit tests."""
 from pathlib import Path
 import sys
+from unittest.mock import patch
 
 import pytest
 
 from pypyr.errors import PyModuleNotFoundError
 import pypyr.moduleloader as moduleloader
-# from pypyr.cache.namespacecache import
 
 # region ImportVisitor
 
@@ -122,6 +122,14 @@ def test_import_visitor_relative_raises():
 # region get_module
 
 
+@pytest.fixture()
+def known_dirs():
+    """Do setup and teardown _known_dirs."""
+    moduleloader._known_dirs.clear()
+    yield
+    moduleloader._known_dirs.clear()
+
+
 def test_get_module_raises():
     """On get_module ModuleNotFoundError on module not found."""
     with pytest.raises(PyModuleNotFoundError) as err:
@@ -145,7 +153,8 @@ def test_get_module_raises_compatible_error():
         moduleloader.get_module('unlikelyblahmodulenameherexxssz')
 
 
-def test_get_module_raises_friendly_on_package_import():
+@patch.object(sys, 'path', ['arb'])
+def test_get_module_raises_friendly_on_package_import(known_dirs):
     """get_module should not obscure missing module in existing package."""
     p = Path.cwd().joinpath('tests')
     moduleloader.set_working_directory(p)
@@ -164,10 +173,11 @@ def test_get_module_raises_friendly_on_package_import():
         "must exist in your current python path - so you "
         "should have run pip install or setup.py")
 
-    sys.path.remove(str(p))
+    assert sys.path == ['arb', str(p)]
 
 
-def test_get_module_raises_on_inner_import():
+@patch.object(sys, 'path', ['arb'])
+def test_get_module_raises_on_inner_import(known_dirs):
     """get_module should not hide failing import statements in imported mod."""
     p = Path.cwd().joinpath('tests')
     moduleloader.set_working_directory(p)
@@ -178,10 +188,11 @@ def test_get_module_raises_on_inner_import():
     assert str(err.value) == (
         'error importing module blahblah in arbpack.arbinvalidimportmod')
 
-    sys.path.remove(str(p))
+    assert sys.path == ['arb', str(p)]
 
 
-def test_get_module_pass():
+@patch.object(sys, 'path', ['arb'])
+def test_get_module_pass(known_dirs):
     """Pass when get_module finds a module in cwd."""
     p = Path.cwd().joinpath('tests', 'testfiles')
     moduleloader.set_working_directory(p)
@@ -192,10 +203,11 @@ def test_get_module_pass():
     assert arb_module.__name__ == 'arb'
     assert hasattr(arb_module, 'arb_attribute')
 
-    sys.path.remove(str(p))
+    assert sys.path == ['arb', str(p)]
 
 
-def test_get_module_in_package_pass():
+@patch.object(sys, 'path', ['arb'])
+def test_get_module_in_package_pass(known_dirs):
     """See get_module find a module in a package in cwd using dot notation."""
     p = Path.cwd().joinpath('tests')
     moduleloader.set_working_directory(p)
@@ -205,14 +217,15 @@ def test_get_module_in_package_pass():
     assert arb_module.__name__ == 'arbpack.arbmod'
     assert hasattr(arb_module, 'arbmod_attribute')
 
-    sys.path.remove(str(p))
+    assert sys.path == ['arb', str(p)]
 
 # endregion get_module
 
 # region WorkingDir
 
 
-def test_working_dir_set_default():
+@patch.object(sys, 'path', ['arb'])
+def test_working_dir_set_default(known_dirs):
     """Set working dir to cwd if not specified."""
     w = moduleloader.WorkingDir()
     w.set_working_directory()
@@ -220,21 +233,18 @@ def test_working_dir_set_default():
     cwd = Path.cwd()
     assert w.get_working_directory() == cwd
 
-    cwd = str(cwd)
-    assert cwd in sys.path
-    sys.path.remove(cwd)
+    assert sys.path == ['arb', str(cwd)]
 
 
-def test_working_dir_set_explicit_none():
+@patch.object(sys, 'path', ['arb'])
+def test_working_dir_set_explicit_none(known_dirs):
     """Set working dir to cwd if None."""
     w = moduleloader.WorkingDir()
     w.set_working_directory(None)
 
     cwd = Path.cwd()
     assert w.get_working_directory() == cwd
-    cwd = str(cwd)
-    assert cwd in sys.path
-    sys.path.remove(cwd)
+    assert sys.path == ['arb', str(cwd)]
 
 
 def test_working_dir_get_before_set():
@@ -246,12 +256,55 @@ def test_working_dir_get_before_set():
     assert str(err.value) == 'working directory not set.'
 
 
-def test_set_working_dir():
-    """Working dir added to sys paths."""
+@patch.object(sys, 'path', ['arb'])
+def test_set_nonexisting_working_dir(known_dirs):
+    """Working dir not added to sys paths if not exist."""
     p = '/arb/path'
-    assert p not in sys.path
+    assert sys.path == ['arb']
     moduleloader.set_working_directory(p)
-    assert p in sys.path
-    sys.path.remove(p)
+    assert sys.path == ['arb']
+    assert moduleloader._known_dirs == {p}
+
+
+@patch.object(sys, 'path', ['arb'])
+def test_set_working_dir(known_dirs):
+    """Working dir added to sys paths."""
+    p = 'tests/arbpack'
+    assert sys.path == ['arb']
+    moduleloader.set_working_directory(p)
+    assert sys.path == ['arb', p]
+    assert moduleloader._known_dirs == {p}
+
+
+@patch.object(sys, 'path', ['arb'])
+def test_add_sys_path_object(known_dirs):
+    """Add sys path takes pathlib Path."""
+    p = Path('tests/arbpack')
+    assert sys.path == ['arb']
+    moduleloader.add_sys_path(p)
+    assert sys.path == ['arb', str(p)]
+    assert moduleloader._known_dirs == {p}
+
+
+@patch.object(sys, 'path', ['arb'])
+def test_add_sys_path_none(known_dirs):
+    """None adds cwd to sys paths."""
+    assert None not in sys.path
+    moduleloader.add_sys_path(None)
+    assert None not in sys.path
+    assert sys.path == ['arb', str(Path.cwd())]
+    assert moduleloader._known_dirs == {None}
+
+
+@patch.object(sys, 'path', ['arb'])
+def test_add_sys_path_no_dupes(known_dirs):
+    """Can't add duplicates to sys path."""
+    existing_path = 'tests/arbpack'
+    moduleloader.add_sys_path(existing_path)
+    assert sys.path == ['arb', existing_path]
+    moduleloader.add_sys_path(existing_path)
+    moduleloader.add_sys_path(existing_path)
+    assert sys.path == ['arb', existing_path]
+    assert moduleloader._known_dirs == {'tests/arbpack'}
 
 # endregion WorkingDir
