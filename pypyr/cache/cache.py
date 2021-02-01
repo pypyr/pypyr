@@ -15,7 +15,7 @@ class Cache():
 
     def __init__(self):
         """Instantiate the cache."""
-        self._lock = threading.RLock()
+        self._lock = threading.Lock()
         self._cache = {}
 
     def clear(self):
@@ -31,7 +31,7 @@ class Cache():
         If key is not found, call creator and save the result to cache for that
         key.
 
-        Be warned that get happens under the context of a RLock. . . so if
+        Be warned that get happens under the context of a Lock. . . so if
         creator takes a long time you might well be blocking.
 
         Args:

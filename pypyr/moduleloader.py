@@ -12,6 +12,7 @@ import importlib
 import logging
 from pathlib import Path
 import sys
+from threading import Lock
 
 from pypyr.errors import PyModuleNotFoundError
 
@@ -198,14 +199,52 @@ class WorkingDir():
             working_directory = Path.cwd()
 
         logger.debug("adding %s to sys.paths", working_directory)
-        # sys path doesn't accept Path
-        sys.path.append(str(working_directory))
+        add_sys_path(working_directory)
         self._cwd = Path(working_directory)
 
         logger.debug("done")
 
 
 working_dir = WorkingDir()
+
+_sys_path_lock = Lock()
+_known_dirs = set()
+
+
+def add_sys_path(path):
+    """Add path to sys.path if it doesn't exist in sys.path already.
+
+    Only add paths that actually exist.
+
+    Do this under a shared lock to prevent duplicates in sys.path.
+
+    _known_dirs does not mean a path exists, it means the logic around
+    whether to add a path or not has run.
+
+    Args:
+        path (Path-like): path to add to sys.path
+    """
+    if path in _known_dirs:
+        return
+
+    if path is None:
+        path_obj = Path.cwd()
+    else:
+        path_obj = Path(path)
+        if not path_obj.exists():
+            _known_dirs.add(path)
+            return
+
+    # sys path doesn't accept Path
+    path_str = str(path_obj)  # .resolve(True)? instead for extended paths?
+    logger.debug("adding %s to sys.paths", path_str)
+    with _sys_path_lock:
+        if path_str not in sys.path:
+            # append not insert - don't overwrite api user's prior sys.path
+            # sys.path.insert(0, path_str)
+            sys.path.append(path_str)
+
+    _known_dirs.add(path)
 
 
 def get_module(module_abs_import):
