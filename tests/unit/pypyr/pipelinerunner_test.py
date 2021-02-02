@@ -115,7 +115,7 @@ def test_main_pass(mocked_get_mocked_work_dir,
                               failure_group='fg',
                               loader='arb loader')
 
-    mocked_set_up_notify.assert_called_once()
+    mocked_set_up_notify.assert_not_called()
     mocked_set_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
@@ -128,19 +128,16 @@ def test_main_pass(mocked_get_mocked_work_dir,
         failure_group='fg')
 
 
-@patch('pypyr.log.logger.set_up_notify_log_level')
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 @patch('pypyr.moduleloader.set_working_directory')
 @patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
 def test_main_with_minimal(mocked_get_mocked_work_dir,
                            mocked_set_work_dir,
-                           mocked_run_pipeline,
-                           mocked_set_up_notify):
+                           mocked_run_pipeline):
     """Main initializes and runs pipelines with minimal input."""
     pipeline_cache.clear()
     pypyr.pipelinerunner.main(pipeline_name='arb pipe')
 
-    mocked_set_up_notify.assert_called_once()
     mocked_set_work_dir.assert_called_once_with(None)
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
@@ -206,7 +203,7 @@ def test_main_with_context_pass(mocked_get_mocked_work_dir,
     assert out.pipeline_name == 'arb pipe'
     assert out.working_dir == 'arb/dir'
 
-    mocked_set_up_notify.assert_called_once()
+    mocked_set_up_notify.assert_not_called()
     mocked_set_work_dir.assert_called_once_with('arb/dir')
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',
@@ -219,14 +216,12 @@ def test_main_with_context_pass(mocked_get_mocked_work_dir,
         failure_group='fg')
 
 
-@patch('pypyr.log.logger.set_up_notify_log_level')
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
 @patch('pypyr.moduleloader.set_working_directory')
 @patch('pypyr.moduleloader.get_working_directory', return_value='arb/dir')
 def test_main_with_context_minimal(mocked_get_mocked_work_dir,
                                    mocked_set_work_dir,
-                                   mocked_run_pipeline,
-                                   mocked_set_up_notify):
+                                   mocked_run_pipeline):
     """Main with context with minimal args."""
     pipeline_cache.clear()
     out = pypyr.pipelinerunner.main_with_context(pipeline_name='arb pipe')
@@ -236,7 +231,6 @@ def test_main_with_context_minimal(mocked_get_mocked_work_dir,
     assert out.pipeline_name == 'arb pipe'
     assert out.working_dir == 'arb/dir'
 
-    mocked_set_up_notify.assert_called_once()
     mocked_set_work_dir.assert_called_once_with(None)
     mocked_run_pipeline.assert_called_once_with(
         pipeline_name='arb pipe',

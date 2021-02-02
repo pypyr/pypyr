@@ -1,4 +1,4 @@
-"""Continous Deployment logging functions.
+"""Logging functions for pypyr.
 
 Configuration for the python logging library.
 """
@@ -41,6 +41,10 @@ def set_up_notify_log_level():
     NOTIFY severity is logging level between INFO and WARNING.
     By default it outputs only echo step and step name
     with description.
+
+    This function should run once and only once
+    at the initialization of pypyr. You shouldn't need to do so yourself, it's
+    called from package init.
     """
     # could (should?) be checking hasattr like so:
     # hasattr(logging, levelName):
