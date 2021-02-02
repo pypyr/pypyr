@@ -59,11 +59,11 @@ def test_logger_with_file_and_console_handler():
 
 def test_notify_log_level_available():
     """Notify log level added."""
-    # actually redundant, coz ./conftest.py actually already calls
+    # actually redundant, coz __init__ on pypyr package import already calls
     # set_up_notify_log_level. Might as well test re-entrancy then, thus:
     pypyr.log.logger.set_up_notify_log_level()
 
-    assert logging.INFO < logging.NOTIFY < logging.WARNING
+    assert logging.DEBUG < logging.INFO < logging.NOTIFY < logging.WARNING
 
     logger = logging.getLogger('pypyr')
     with patch_logger('pypyr', logging.NOTIFY) as mock_logger_notify:

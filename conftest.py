@@ -9,7 +9,6 @@ http://doc.pytest.org/en/latest/example/simple.html#package-directory-level-fixt
 """
 import logging
 
-from pypyr.log.logger import set_root_logger, set_up_notify_log_level
+from pypyr.log.logger import set_root_logger
 
-set_up_notify_log_level()
 set_root_logger(logging.DEBUG)

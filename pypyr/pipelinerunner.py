@@ -221,11 +221,9 @@ def prepare_and_run(
     call. It's called from the main() entrypoint.
 
     You probably shouldn't call me directly yourself, use main() or
-    main_with_context() instead. This function should run once and only once
-    at the initialization of pypyr.
+    main_with_context() instead.
 
     This function does this:
-    - add NOTIFY log level
     - configure working directory
     - load & run the pipeline
     - handle Stop instructions
@@ -252,8 +250,6 @@ def prepare_and_run(
         None
 
     """
-    pypyr.log.logger.set_up_notify_log_level()
-
     logger.debug("starting pypyr")
 
     # pipelines specify steps in python modules that load dynamically.
