@@ -10,7 +10,8 @@ import subprocess
 
 @pytest.fixture(autouse=True)
 def lang_c(monkeypatch):
-    """Ensure commands print messages in English
+    """Ensure commands print messages in English.
+
     Without this, running tests in non-english locale print unexpected messages
     """
     monkeypatch.setenv("LANG", "C")

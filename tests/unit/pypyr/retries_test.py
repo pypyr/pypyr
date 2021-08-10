@@ -492,8 +492,8 @@ def test_backoff_export_list():
     """
     members = inspect.getmembers(
         pypyr.retries,
-        lambda m: inspect.isclass(m) and
-        issubclass(m, pypyr.retries.BackoffBase))
+        lambda m: inspect.isclass(m)
+        and issubclass(m, pypyr.retries.BackoffBase))
 
     assert pypyr.retries.builtin_backoffs == {
         n[0]: n[1] for n in members if n[0] != 'BackoffBase'}

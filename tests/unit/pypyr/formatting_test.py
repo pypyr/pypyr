@@ -133,9 +133,9 @@ def test_recursive_formatter_manual_to_auto():
     with pytest.raises(ValueError) as err:
         RecursiveFormatter().format('{0} {}', 'a', 'b')
 
-    assert (str(err.value) ==
-            ('cannot switch from manual field specification to automatic '
-             'field numbering'))
+    assert (str(err.value)
+            == ('cannot switch from manual field specification to automatic '
+                'field numbering'))
 
 
 def test_recursive_formatter_auto_to_manual():
@@ -143,9 +143,9 @@ def test_recursive_formatter_auto_to_manual():
     with pytest.raises(ValueError) as err:
         RecursiveFormatter().format('{} {1}', 'a', 'b')
 
-    assert (str(err.value) ==
-            ('cannot switch from manual field specification to automatic '
-             'field numbering'))
+    assert (str(err.value)
+            == ('cannot switch from manual field specification to automatic '
+                'field numbering'))
 
 # endregion RecursiveFormatter.format
 

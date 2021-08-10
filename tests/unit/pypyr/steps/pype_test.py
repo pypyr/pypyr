@@ -398,8 +398,8 @@ def test_pype_get_args_and_pipearg():
 
 def mocked_run_pipeline(*args, **kwargs):
     """Check pipeline name set on context in child pipeline."""
-    assert (kwargs['pipeline_name'] ==
-            kwargs['context'].pipeline_name == 'pipe name')
+    assert (kwargs['pipeline_name']
+            == kwargs['context'].pipeline_name == 'pipe name')
 
 
 @patch('pypyr.pipelinerunner.load_and_run_pipeline')
@@ -708,8 +708,8 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
 
 def mocked_run_pipeline_with_runtime_error(*args, **kwargs):
     """Check pipeline name set on context in child pipeline with arb err."""
-    assert (kwargs['pipeline_name'] ==
-            kwargs['context'].pipeline_name == 'pipe name')
+    assert (kwargs['pipeline_name']
+            == kwargs['context'].pipeline_name == 'pipe name')
     raise RuntimeError('whoops')
 
 
@@ -791,8 +791,8 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
 
 def mocked_run_pipeline_with_stop(*args, **kwargs):
     """Check pipeline name set on context in child pipeline with Stop."""
-    assert (kwargs['pipeline_name'] ==
-            kwargs['context'].pipeline_name == 'pipe name')
+    assert (kwargs['pipeline_name']
+            == kwargs['context'].pipeline_name == 'pipe name')
     raise Stop()
 
 
