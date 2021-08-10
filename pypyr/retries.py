@@ -60,7 +60,7 @@ class BackoffBase(abc.ABC):
         It allows you to jitter under or over the sleep interval depending on
         if jrc > 1.
         """
-        return random.uniform(sleep*self.jrc, sleep)
+        return random.uniform(sleep * self.jrc, sleep)
 
 # endregion backoff base
 
@@ -108,7 +108,7 @@ class linear(BackoffBase):
 
     def __call__(self, n):
         """Return the product of n * sleep."""
-        return self.min(n*self.sleep)
+        return self.min(n * self.sleep)
 
 
 class linearjitter(linear):
