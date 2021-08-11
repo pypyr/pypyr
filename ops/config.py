@@ -7,7 +7,7 @@ import os
 
 from invoke import task
 
-from . import MyTask
+from . import MyTask, get_version
 
 
 @task(klass=MyTask)
@@ -28,3 +28,10 @@ def all(c):
     cfg.output_test_results = f"{cfg.output_results_dir}/testresults/junitresults.xml"
     is_ci = bool(os.environ.get("CI", False))
     cfg.is_ci = is_ci
+
+
+@task(klass=MyTask)
+def show_version(c):
+    """Print current package version."""
+    version = get_version(c.version_module_name)
+    print(f"current package version: {version}")

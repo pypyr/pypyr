@@ -1,7 +1,6 @@
 """Invoke task modules, one per namespace."""
-import functools
 
-from invoke import Task, task
+from invoke import Task
 
 
 def step(msg=None):
@@ -42,4 +41,14 @@ class MyTask(Task):
         print(f"<==: FAILURE ({module}.{self.name}): {msg}")
 
 
-mytask = functools.partial(task, klass=MyTask)
+def get_version(version_module_name):
+    """Load currently declared package version."""
+    import importlib
+
+    version_module = importlib.import_module(version_module_name)
+    # always reload
+    importlib.reload(version_module)
+
+    version = f"{version_module.__version__}"
+    print(f"version is {version}")
+    return version

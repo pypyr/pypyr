@@ -16,20 +16,7 @@ import time
 
 from invoke import task
 
-from . import step
-
-
-def get_version(version_module_name):
-    """Load currently declared package version."""
-    import importlib
-
-    version_module = importlib.import_module(version_module_name)
-    # always reload
-    importlib.reload(version_module)
-
-    version = f"{version_module.__version__}"
-    print(f"version is {version}")
-    return version
+from . import get_version, step
 
 
 @task
