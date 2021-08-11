@@ -1,0 +1,8 @@
+package_name: pypyr
+test_dir: tests
+version_module_name: pypyr.version
+output_results_dir: .test-results
+# output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
+# output_coverage: xml:.test-results/codecoverage/coverage.xml
+# output_test_results: "{output_results_dir}/testresults/junitresults.xml"
+argList: null
