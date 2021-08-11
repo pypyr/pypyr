@@ -1,8 +1,10 @@
 """Lint code and package metadata."""
-from invoke import task
+from invoke import call, task
+
+from . import MyTask
 
 
-@task
+@task(klass=MyTask)
 def setup_meta(c):
     """Verify setup.py metadata.
 
@@ -13,13 +15,14 @@ def setup_meta(c):
     c.run("python setup.py check -m -s")
 
 
-@task
+@task(klass=MyTask)
 def flake8(c):
     """flake8 linting."""
     c.run("flake8")
 
 
-@task(pre=[setup_meta, flake8])
+@task(klass=MyTask)
 def all(c):
     """Run all lint tasks."""
-    pass
+    call(setup_meta).task(c)
+    call(flake8).task(c)

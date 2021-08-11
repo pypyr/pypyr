@@ -14,9 +14,22 @@ relevant PIP_INDEX_URL.
 """
 import time
 
-from invoke import call, task
+from invoke import task
 
-from . import config, step
+from . import step
+
+
+def get_version(version_module_name):
+    """Load currently declared package version."""
+    import importlib
+
+    version_module = importlib.import_module(version_module_name)
+    # always reload
+    importlib.reload(version_module)
+
+    version = f"{version_module.__version__}"
+    print(f"version is {version}")
+    return version
 
 
 @task
@@ -25,10 +38,10 @@ def all(c):
     cfg = c.config
 
     step("check intended package version")
-    call(config.version).task(c)
+    version = get_version(cfg.version_module_name)
 
     step("publishing package to pypi")
-    c.run(f"twine upload dist/{cfg.package_name}-{cfg.version}*")
+    c.run(f"twine upload dist/{cfg.package_name}-{version}*")
 
     step(
         "uninstall current version of package before attempting to reinstall from pypi"
@@ -36,7 +49,7 @@ def all(c):
     c.run(f"pip uninstall -y {cfg.package_name}")
 
     step("set expected version")
-    expected_version = cfg.version
+    expected_version = version
 
     step("giving pypi 10s before testing release")
     time.sleep(10)
@@ -54,11 +67,11 @@ def all(c):
             break
         time.sleep(sleep_time)
 
-    step("update cfg.versino from newly installed package")
-    call(config.version).task(c)
+    step("update version from newly installed package")
+    version = get_version(cfg.version_module_name)
 
     step("checking published package version as expected")
-    assert cfg.version == expected_version
+    assert version == expected_version
 
     step("reset the tox cache.")
 

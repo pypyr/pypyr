@@ -2,13 +2,12 @@
 
 Used as invoke namespace module.
 """
-from invoke import task
-from invoke.tasks import call
+from invoke.tasks import call, task
 
-from . import config
+from . import MyTask, config
 
 
-@task(pre=[config.all])
+@task(config.all, klass=MyTask)
 def test_to_terminal(c):
     """tests, output to terminal with line nos.
 
@@ -23,7 +22,7 @@ def test_to_terminal(c):
     c.run(cmd)
 
 
-@task(pre=[config.all])
+@task(config.all, klass=MyTask)
 def test_to_file(c):
     """tests, output to file.
 
@@ -41,7 +40,7 @@ def test_to_file(c):
     c.run(cmd)
 
 
-@task
+@task(klass=MyTask)
 def codecov(c):
     """Coverage (possibly with result upload).
 
@@ -52,7 +51,7 @@ def codecov(c):
     c.run("codecov")
 
 
-@task(pre=[config.all])
+@task(config.all, klass=MyTask)
 def all(c):
     """Run all CI/CD either in local or remote (CI/CD server) mode.
 
