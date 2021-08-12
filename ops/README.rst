@@ -49,6 +49,11 @@ To list all available invoke tasks::
     config                  Complete and validate needed cfg.
     package                 Run all package build tasks.
     pipeline-buildout       Lint and test.
+    pipeline-bumpversion    Bump the version and git push.
+    pipeline-tag            Tag the commit on GitHub actions server.
+    show-version            Print current package version.
+    bump.bumpversion        Bump the package version.
+    bump.git-push           Push the new version up (git).
     lint.all                Run all lint tasks.
     lint.flake8             flake8 linting.
     lint.setup-meta         Verify setup.py metadata.
@@ -58,6 +63,7 @@ To list all available invoke tasks::
     test.codecov            Coverage (possibly with result upload).
     test.test-to-file       tests, output to file.
     test.test-to-terminal   tests, output to terminal with line nos.
+
 
 To show help for particular task, e.g. for `lint.flake8`::
 
