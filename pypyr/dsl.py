@@ -562,11 +562,11 @@ class Step:
         # change whether they evaluate True or False, thus apply formatting at
         # last possible instant.
         run_me = context.get_formatted_as_type(self.run_me, out_type=bool)
-        skip_me = context.get_formatted_as_type(self.skip_me, out_type=bool)
-        swallow_me = context.get_formatted_as_type(self.swallow_me,
-                                                   out_type=bool)
 
         if run_me:
+            skip_me = context.get_formatted_as_type(self.skip_me,
+                                                    out_type=bool)
+
             if not skip_me:
                 try:
                     if self.retry_decorator:
@@ -579,6 +579,9 @@ class Step:
                     # else, not errors per se.
                     raise
                 except Exception as exc_info:
+                    swallow_me = context.get_formatted_as_type(
+                        self.swallow_me, out_type=bool)
+
                     if isinstance(exc_info, HandledError):
                         exc_info = exc_info.__cause__
                     else:
@@ -606,6 +609,7 @@ class Step:
                             logger.error(
                                 "Error while running step %s", self.name
                             )
+
                         raise exc_info
             else:
                 logger.info(
@@ -641,20 +645,24 @@ class Step:
         """
         logger.debug("starting")
 
+        # the in params should be added to context before step execution.
+        self.set_step_input_context(context)
+
         # give user helpful output if step will actually run or not.
         if self.description:
             description = context.get_formatted_value(self.description)
             run_me = context.get_formatted_as_type(self.run_me, out_type=bool)
-            skip_me = context.get_formatted_as_type(self.skip_me,
-                                                    out_type=bool)
+
+            skip_me = False
+
+            if run_me:
+                skip_me = context.get_formatted_as_type(self.skip_me,
+                                                        out_type=bool)
 
             if run_me and not skip_me:
                 logger.notify(description)
             else:
                 logger.notify("(skipping): %s", description)
-
-        # the in params should be added to context before step execution.
-        self.set_step_input_context(context)
 
         if self.while_decorator:
             self.while_decorator.while_loop(context,
