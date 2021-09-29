@@ -828,6 +828,29 @@ def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_complex_with_description_in_params(
+        mock_invoke_step, mock_get_module):
+    """Complex step with run decorator set false at the in parameters."""
+    step = Step({'name': 'step1',
+                 'description': 'test description',
+                 'run': '{key5}',
+                 'in': {'key5': True}},
+                None)
+
+    context = Context({"key5": False})
+
+    with patch_logger('pypyr.dsl', logging.NOTIFY) as mock_logger_notify:
+        step.run_step(context)
+
+    mock_logger_notify.assert_called_once_with('test description')
+    mock_invoke_step.assert_called_once()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == 0
+
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description_skip(mock_invoke_step,
                                                           mock_get_module):
     """Complex step with run decorator set false doesn't run step."""
@@ -2211,6 +2234,37 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
     assert len(context) == original_len
 
 
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+@pytest.mark.parametrize("description", [None, "arb description"])
+def test_run_pipeline_steps_run_false_with_skip_invalid(mock_invoke_step,
+                                                        mock_get_module,
+                                                        description):
+    """Skip is not called if run is False."""
+    step = Step(
+        {
+            'name': 'step1',
+            'run': False,
+            'description': description,
+            'skip': PyString("invalid")
+        },
+        None
+    )
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
+        step.run_step(context)
+
+    mock_logger_info.assert_any_call(
+        "step1 not running because run is False.")
+    mock_invoke_step.assert_not_called()
+
+    # validate all the in params ended up in context as intended
+    assert len(context) == original_len
+
+
 @ patch('pypyr.moduleloader.get_module')
 @ patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
@@ -2613,6 +2667,33 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     }]
 
 
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'invoke_step')
+def test_run_pipeline_steps_complex_swallow_invalid_error(mock_invoke_step,
+                                                          mock_get_module):
+    """Complex step with swallow raising formatter error."""
+    err = ValueError('arb error here')
+    mock_invoke_step.side_effect = err
+
+    step = Step({
+        'name': 'step1',
+        'swallow': PyString("invalid")
+    },
+        None)
+
+    context = get_test_context()
+    original_len = len(context)
+
+    with pytest.raises(NameError) as err_info:
+        step.run_step(context)
+
+    mock_invoke_step.assert_called_once()
+    assert str(err_info.value) == "name 'invalid' is not defined"
+
+    # validate all the in params ended up in context as intended,
+    assert len(context) == original_len
+
+
 @ patch('pypyr.moduleloader.get_module')
 @ patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
@@ -2630,7 +2711,7 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
     with pytest.raises(ValueError) as err_info:
         step.run_step(context)
 
-        assert str(err_info.value) == "arb error here"
+    assert str(err_info.value) == "arb error here"
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
