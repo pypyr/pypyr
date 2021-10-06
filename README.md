@@ -40,7 +40,7 @@ from yaml, json or just text.
 $ pip install --upgrade pypyr
 ```
 
-Tested against Python \>=3.6
+Tested against Python \>=3.7
 
 Stuck with an older version of python? Want to run pypyr in an
 environment that you don't control, like a CI server somewhere?
