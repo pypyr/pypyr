@@ -2,9 +2,6 @@
 # pypyr echo "text goes here"
 context_parser: pypyr.parser.string
 steps:
-  - name: pypyr.steps.contextcopy
-    comment: assign input arg to echoMe so echo step can echo it
+  - name: pypyr.steps.echo
     in:
-      contextCopy:
-        echoMe: argString
-  - pypyr.steps.echo
+      echoMe: '{argString}'
