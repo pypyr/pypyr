@@ -261,8 +261,6 @@ class Step:
                        to add to context before step execution.
         run_me: (bool) defaults True. step runs if this is true.
         skip_me: (bool) defaults False. step does not run if this is true.
-        steps_runner: pypyr.stepsrunner.StepsRunner Step Runner instance
-                      running this step.
         swallow_me: (bool) defaults False. swallow any errors during step run
                     and continue processing if true.
         while_decorator: (WhileDecorator) defaults None. execute step in while
@@ -270,7 +268,7 @@ class Step:
 
     """
 
-    def __init__(self, step, steps_runner):
+    def __init__(self, step):
         """Initialize the class. No duh, huh?.
 
         You can happily expect the initializer to initialize all
@@ -280,12 +278,8 @@ class Step:
             step: a string or a dict. This is the actual step as it exists in
                   the pipeline yaml - which is to say it can just be a string
                   for a simple step, or a dict for a complex step.
-            steps_runner: the StepsRunner instance running this Step.
-
         """
         logger.debug("starting")
-
-        self.steps_runner = steps_runner
 
         # defaults for decorators
         self.description = None
@@ -475,8 +469,9 @@ class Step:
             self.run_step_function(context)
         except Call as call:
             logger.debug("call: calling %s", call.groups)
+            steps_runner = context.current_pipeline.steps_runner
             try:
-                self.steps_runner.run_step_groups(
+                steps_runner.run_step_groups(
                     groups=call.groups,
                     success_group=call.success_group,
                     failure_group=call.failure_group)
