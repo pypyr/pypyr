@@ -1,0 +1,16 @@
+steps:
+  # relative to current pipeline
+  - name: relnestarbstep
+    in:
+      arb_in: B
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.current_pipeline.name == 'nested/arb/arbchild'
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        # relative to current pipeline
+        name: arbchild2
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.current_pipeline.name == 'nested/arb/arbchild'

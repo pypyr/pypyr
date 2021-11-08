@@ -93,8 +93,8 @@ def get_valid_steps_pipeline():
 
 def test_stepsrunner_init():
     """The StepsRunner initializes."""
-    s = StepsRunner(pipeline_definition=3, context=4)
-    assert s.pipeline == 3
+    s = StepsRunner(pipeline_body=3, context=4)
+    assert s.pipeline_body == 3
     assert s.context == 4
 
 # ------------------------- END init -----------------------------------------#
@@ -165,7 +165,7 @@ def test_run_failure_step_group_swallows():
         mock_logger_error.assert_any_call(
             "Failure handler also failed. Swallowing.")
 
-    assert runner.pipeline == {'pipe': 'val'}
+    assert runner.pipeline_body == {'pipe': 'val'}
     assert runner.context == Context()
     mock_run_group.assert_called_once_with('arb_failure', raise_stop=True)
 
@@ -185,7 +185,7 @@ def test_run_failure_step_group_stop():
         mock_logger_debug.assert_any_call(
             "Stop instruction: done with failure handler arb_failure.")
 
-    assert runner.pipeline == {'pipe': 'val'}
+    assert runner.pipeline_body == {'pipe': 'val'}
     assert runner.context == Context()
     mock_run_group.assert_called_once_with('arb_failure', raise_stop=True)
 

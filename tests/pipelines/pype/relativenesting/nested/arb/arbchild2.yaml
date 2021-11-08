@@ -1,0 +1,10 @@
+steps:
+  - name: pypyr.steps.py
+    in:
+      pycode: |
+        assert context.current_pipeline.name == 'arbchild2'
+        assert context.get_stack_depth() == 3
+
+  - name: relnestarbstep
+    in:
+      arb_in: C

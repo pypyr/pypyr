@@ -56,3 +56,15 @@ def cast_to_type(obj, out_type):
         return obj
     else:
         return out_type(obj)
+
+
+def empty_if_none(obj):
+    """Return empty string if obj is None.
+
+    Args:
+        obj (any): input object.
+
+    Returns:
+        obj if obj is truthy, else empty string.
+    """
+    return obj if obj else ''

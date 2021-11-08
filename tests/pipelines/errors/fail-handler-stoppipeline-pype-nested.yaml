@@ -5,7 +5,7 @@ steps:
   - name: pypyr.steps.pype
     in:
       pype:
-        name: errors/fail-handler-stoppipeline
+        name: fail-handler-stoppipeline
   - name: pypyr.steps.echo
     in:
       echoMe: B.parent

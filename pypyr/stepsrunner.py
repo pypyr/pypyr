@@ -1,6 +1,6 @@
 """pypyr steps runner.
 
-pipelinerunner uses this to parse and run steps.
+Pipeline uses this to parse and run step-groups and steps.
 """
 
 import logging
@@ -21,15 +21,15 @@ class StepsRunner():
     run_step_groups() is a sensible entrypoint.
     """
 
-    def __init__(self, pipeline_definition, context):
+    def __init__(self, pipeline_body, context):
         """Initialize the Step Runner with the pipeline to maintain state.
 
         Args:
-            pipeline_definition: pipeline yaml
+            pipeline_body: the pipeline yaml body.
             context: pypyr.context.Context. The pypyr context. Will mutate.
         """
         self.context = context
-        self.pipeline = pipeline_definition
+        self.pipeline_body = pipeline_body
 
     def get_pipeline_steps(self, step_group):
         """Get the specified step-group's step from the pipeline.
@@ -48,8 +48,9 @@ class StepsRunner():
         assert step_group
 
         logger.debug("retrieving %s steps from pipeline", step_group)
-        if step_group in self.pipeline:
-            steps = self.pipeline[step_group]
+        pipeline = self.pipeline_body
+        if step_group in pipeline:
+            steps = pipeline[step_group]
 
             if steps is None:
                 logger.warning(

@@ -20,4 +20,4 @@ steps:
       echoMe: B
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/childpipeargs'
+      pycode: assert context.current_pipeline.name == 'childpipeargs'

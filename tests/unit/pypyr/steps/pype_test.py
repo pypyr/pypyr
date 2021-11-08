@@ -1,16 +1,32 @@
 """pype.py unit tests."""
 import logging
-import pytest
 from unittest.mock import call, patch
+
+import pytest
+
 from pypyr.context import Context
 from pypyr.errors import (
     ContextError,
     Stop,
     KeyInContextHasNoValueError,
     KeyNotInContextError)
+
+from pypyr.pipeline import Pipeline
+from pypyr.pipedef import PipelineDefinition, PipelineInfo
 import pypyr.steps.pype as pype
 
 from tests.common.utils import patch_logger
+
+
+def get_arb_pipeline_scope(context):
+    """Context must be in pipeline scope to get current pipe info."""
+    pipeline = Pipeline('arb pipe')
+    pipeline.pipeline_definition = PipelineDefinition(
+        pipeline=None,
+        info=PipelineInfo(pipeline_name='arb',
+                          loader=None,
+                          parent=None))
+    return context.pipeline_scope(pipeline)
 
 # region get_arguments
 
@@ -29,32 +45,40 @@ def test_pype_get_arguments_all():
             'loader': 'test loader',
             'groups': ['gr'],
             'success': 'sg',
-            'failure': 'fg'
+            'failure': 'fg',
+            'pyDir': 'arb/dir',
+            'parent': 'the parent'
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args == {'a': 'b'}
     assert out == 'out value'
     assert not use_parent_context
     assert skip_parse == 'skip parse'
+    assert pipe_arg == ['argument', 'here']
     assert raise_error == 'raise err'
     assert loader == 'test loader'
     assert groups == ['gr']
     assert success_group == 'sg'
     assert failure_group == 'fg'
+    assert py_dir == 'arb/dir'
+    assert parent == 'the parent'
 
 
 def test_pype_get_arguments_all_with_interpolation():
@@ -71,6 +95,8 @@ def test_pype_get_arguments_all_with_interpolation():
         'groups': ['gr'],
         'success': 'sg',
         'failure': 'fg',
+        'dir': 'arb/dir',
+        'parent': 'the parent',
         'pype': {
             'name': '{pipeName}',
             'args': '{argsHere}',
@@ -83,20 +109,25 @@ def test_pype_get_arguments_all_with_interpolation():
             'groups': '{groups}',
             'success': '{success}',
             'failure': '{failure}',
+            'pyDir': '{dir}',
+            'parent': '{parent}'
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args == {'a': 'pipe name'}
@@ -109,6 +140,8 @@ def test_pype_get_arguments_all_with_interpolation():
     assert groups == ['gr']
     assert success_group == 'sg'
     assert failure_group == 'fg'
+    assert py_dir == 'arb/dir'
+    assert parent == 'the parent'
 
 
 def test_pype_get_arguments_defaults():
@@ -119,17 +152,20 @@ def test_pype_get_arguments_defaults():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args is None
@@ -145,6 +181,9 @@ def test_pype_get_arguments_defaults():
     assert groups is None
     assert success_group is None
     assert failure_group is None
+    assert py_dir is None
+    # defaults to current pipeline's parent if cascading loader.
+    assert parent is None
 
 
 def test_pype_get_arguments_missing_pype():
@@ -223,17 +262,20 @@ def test_pype_get_arguments_group_str():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args is None
@@ -249,6 +291,8 @@ def test_pype_get_arguments_group_str():
     assert groups == ['gr']
     assert success_group is None
     assert failure_group is None
+    assert py_dir is None
+    assert parent is None
 
 
 def test_pype_get_arguments_group_str_interpolate():
@@ -261,17 +305,20 @@ def test_pype_get_arguments_group_str_interpolate():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args is None
@@ -287,6 +334,8 @@ def test_pype_get_arguments_group_str_interpolate():
     assert groups == ['gr']
     assert success_group is None
     assert failure_group is None
+    assert py_dir is None
+    assert parent is None
 
 
 def test_pype_get_args_no_parent_context():
@@ -298,17 +347,20 @@ def test_pype_get_args_no_parent_context():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args == {'a': 'b'}
@@ -321,6 +373,8 @@ def test_pype_get_args_no_parent_context():
     assert not groups
     assert not success_group
     assert not failure_group
+    assert py_dir is None
+    assert parent is None
 
 
 def test_pype_get_pipeargs_no_skip_parse():
@@ -332,17 +386,20 @@ def test_pype_get_pipeargs_no_skip_parse():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args is None
@@ -355,6 +412,8 @@ def test_pype_get_pipeargs_no_skip_parse():
     assert not groups
     assert not success_group
     assert not failure_group
+    assert py_dir is None
+    assert parent is None
 
 
 def test_pype_get_args_and_pipearg():
@@ -367,17 +426,20 @@ def test_pype_get_args_and_pipearg():
         }
     })
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     groups,
-     success_group,
-     failure_group) = pype.get_arguments(context)
+    with get_arb_pipeline_scope(context):
+        (pipeline_name,
+         args,
+         out,
+         use_parent_context,
+         pipe_arg,
+         skip_parse,
+         raise_error,
+         loader,
+         groups,
+         success_group,
+         failure_group,
+         py_dir,
+         parent) = pype.get_arguments(context)
 
     assert pipeline_name == 'pipe name'
     assert args == {'a': 'b'}
@@ -390,6 +452,231 @@ def test_pype_get_args_and_pipearg():
     assert not groups
     assert not success_group
     assert not failure_group
+    assert py_dir is None
+    assert parent is None
+
+# region cascading
+
+
+def get_scope_from_info(context, info):
+    """Context must be in pipeline scope to get current pipe info."""
+    pipeline = Pipeline('arb pipe')
+    pipeline.pipeline_definition = PipelineDefinition(pipeline=None, info=info)
+    return context.pipeline_scope(pipeline)
+
+
+def test_pype_gets_args_loader_non_cascading():
+    """Loader not cascading."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name'
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='noncascading/dir',
+                        is_loader_cascading=False)
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader is None
+    assert pype_args.parent is None
+
+
+def test_pype_get_args_parent_cascading():
+    """Same loader as parent with cascade."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader'
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='cascading/parent')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader'
+    assert pype_args.parent == 'cascading/parent'
+
+
+def test_pype_get_args_parent_not_cascading_parent():
+    """A non-cascading loader does not cascade parent."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader'
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='noncascading/dir',
+                        is_parent_cascading=False)
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader'
+    assert pype_args.parent is None
+
+
+def test_pype_get_args_parent_cascading_different_loader_set():
+    """Do not cascade when different loader than parent."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader1'
+        }
+    })
+
+    info = PipelineInfo(
+        pipeline_name='arb',
+        loader='arbloader2',
+        parent='cascading/dir')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader1'
+    assert pype_args.parent is None
+
+
+def test_pype_get_args_parent_cascade_no_loader_set():
+    """No loader set on parent and no loader on pype with cascade.
+
+    This is very edge. pypyr core will normalize loader=None to the file
+    loader, and to use a custom loader the dev would have to pass a non-None
+    to run()/load_and_run() to begin with.
+
+    It shouldn't ever happen short of some heavy customization where a custom
+    client loader explicitly sets None the loader property on the Info object.
+    Which, why? But just in case, here's a test.
+    """
+    context = Context({
+        'pype': {
+            'name': 'pipe name'
+        }
+    })
+
+    info = PipelineInfo(
+        pipeline_name='arb',
+        loader=None,
+        parent='cascading/parent')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader is None
+    assert pype_args.parent == 'cascading/parent'
+
+
+def test_pype_get_args_parent_cascade_no_loader_no_parent_set():
+    """No loader+parent set on parent & no loader+parent on pype with cascade.
+
+    This is very edge. pypyr core will normalize loader=None to the file
+    loader, and to use a custom loader the dev would have to pass a non-None
+    to run()/load_and_run() to begin with.
+
+    It shouldn't ever happen short of some heavy customization where a custom
+    client loader explicitly sets None the loader property on the Info object.
+    Which, why? But just in case, here's a test.
+    """
+    context = Context({
+        'pype': {
+            'name': 'pipe name'
+        }
+    })
+
+    info = PipelineInfo(
+        pipeline_name='arb',
+        loader=None,
+        parent=None)
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader is None
+    assert pype_args.parent is None
+
+
+def test_pype_get_parent_set_on_cascading_loader():
+    """Always use parent when set even if cascading loader."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader',
+            'parent': 'arb/from/child'
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='ignore me')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader'
+    assert pype_args.parent == 'arb/from/child'
+
+
+def test_pype_resolve_from_parent_false_on_cascading_loader():
+    """Ignore loader is_parent_cascading when resolveFromParent False."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader',
+            'resolveFromParent': False
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='ignore me')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader'
+    assert pype_args.parent is None
+
+
+def test_pype_resolve_from_parent_true_on_cascading_loader():
+    """Ignore loader is_parent_cascading when resolveFromParent False."""
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'loader': 'arbloader',
+            'resolveFromParent': True
+        }
+    })
+
+    info = PipelineInfo(pipeline_name='arb',
+                        loader='arbloader',
+                        parent='from parent')
+
+    with get_scope_from_info(context, info):
+        pype_args = pype.get_arguments(context)
+
+    assert pype_args.pipeline_name == 'pipe name'
+    assert pype_args.loader == 'arbloader'
+    assert pype_args.parent == 'from parent'
+
+# endregion cascading
 
 # endregion get_arguments
 
@@ -398,15 +685,15 @@ def test_pype_get_args_and_pipearg():
 
 def mocked_run_pipeline(*args, **kwargs):
     """Check pipeline name set on context in child pipeline."""
-    assert (kwargs['pipeline_name']
-            == kwargs['context'].pipeline_name == 'pipe name')
+    # assert (kwargs['name']
+    #         == kwargs['context'].pipeline_name == 'pipe name')
+    # assert (kwargs['pipeline_name'] == 'pipe name')
+    pass
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@ patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_use_parent_context(mock_run_pipeline):
     """Input pype use_parent_context True."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline
-
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -417,33 +704,33 @@ def test_pype_use_parent_context(mock_run_pipeline):
             'loader': 'test loader'
         }
     })
-    context.pipeline_name = 'og pipe name'
 
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader='test loader',
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
 
-    assert context.pipeline_name == 'og pipe name'
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with(context, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_use_parent_context_with_args(mock_run_pipeline):
     """Input pype use_parent_context True with args."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline
     context = Context({
         'k1': 'v1',
         'pype': {
@@ -457,11 +744,11 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
         }
     })
 
-    context.pipeline_name = 'og pipe name'
-
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
+    # args merges into context
     merged_context = {
         'a': 'b',
         'k1': 'v1',
@@ -475,25 +762,27 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
             'loader': 'test loader'
         }
     }
+
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=merged_context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader='test loader',
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
 
-    assert context.pipeline_name == 'og pipe name'
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with(merged_context, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_no_parent_context(mock_run_pipeline):
     """Input pype use_parent_context False."""
     context = Context({
@@ -506,27 +795,32 @@ def test_pype_no_parent_context(mock_run_pipeline):
             'loader': 'test loader',
         }
     })
-    context.working_dir = 'arb/dir'
+    # context.parent = 'arb/dir'
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context={},
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader='test loader',
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    # using empty/fresh new context
+    mocked_runner.assert_called_once_with({}, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_args(mock_run_pipeline):
     """Input pype args used as context."""
     context = Context({
@@ -535,27 +829,32 @@ def test_pype_args(mock_run_pipeline):
             'args': {'a': 'b'}
         }
     })
-    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=None,
-        context={'a': 'b'},
+        name='pipe name',
+        context_args=None,
         parse_input=False,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
         call('pyped pipe name.')]
 
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    # using args as context
+    mocked_runner.assert_called_once_with({'a': 'b'}, None)
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_args_with_out(mock_run_pipeline):
     """Input pype args used as context with out."""
     context = Context({
@@ -566,20 +865,25 @@ def test_pype_args_with_out(mock_run_pipeline):
             'out': 'a'
         }
     })
-    context.working_dir = 'arb/dir'
+    context.parent = 'arb/dir'
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=None,
-        context={'a': 'b'},
+        name='pipe name',
+        context_args=None,
         parse_input=False,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    # using args as new context
+    mocked_runner.assert_called_once_with({'a': 'b'}, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -595,7 +899,7 @@ def test_pype_args_with_out(mock_run_pipeline):
                        }
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_args_with_mapping_out(mock_run_pipeline):
     """Input pype args used as context with mapping out."""
     context = Context({
@@ -607,20 +911,25 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
                     'new-c': 'c'}
         }
     })
-    context.working_dir = 'arb/dir'
+
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=None,
-        context={'a': 'av', 'b': 'bv', 'c': 'cv'},
+        name='pipe name',
+        context_args=None,
         parse_input=False,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with({'a': 'av', 'b': 'bv', 'c': 'cv'},
+                                          None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -638,7 +947,7 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
                        }
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_no_skip_parse(mock_run_pipeline):
     """Input pype use_parent_context False."""
     context = Context({
@@ -651,28 +960,30 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         }
     })
 
-    context.working_dir = 'arb/dir'
-
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context={},
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=True,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with({}, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
         call('pyped pipe name.')]
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_no_pipe_arg(mock_run_pipeline):
     """Input pype use_parent_context False."""
     context = Context({
@@ -685,21 +996,23 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         }
     })
 
-    context.working_dir = 'arb/dir'
-
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=None,
-        context={},
+        name='pipe name',
+        context_args=None,
         parse_input=True,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with({}, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, without parent context.'),
@@ -710,13 +1023,16 @@ def mocked_run_pipeline_with_runtime_error(*args, **kwargs):
     """Check pipeline name set on context in child pipeline with arb err."""
     assert (kwargs['pipeline_name']
             == kwargs['context'].pipeline_name == 'pipe name')
+    assert (kwargs['pipeline_name'] == 'pipe name')
     raise RuntimeError('whoops')
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
     """Input pype without swallowing error in child pipeline."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline_with_runtime_error
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.side_effect = RuntimeError('whoops')
+
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -727,35 +1043,44 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         }
     })
 
-    context.pipeline_name = 'og pipe name'
-
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(RuntimeError) as err_info:
-            pype.run_step(context)
+            with get_arb_pipeline_scope(context):
+                pype.run_step(context)
 
         assert str(err_info.value) == "whoops"
 
-    assert context.pipeline_name == 'og pipe name'
-
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner.assert_called_once_with({
+        'pype': {
+            'name': 'pipe name',
+            'pipeArg': 'argument here',
+            'useParentContext': True,
+            'skipParse': True,
+            'raiseError': True
+        }
+    }, None)
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
     """Input pype swallowing error in child pipeline."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline_with_runtime_error
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.side_effect = RuntimeError('whoops')
+
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -767,23 +1092,22 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
         }
     })
 
-    context.pipeline_name = 'og pipe name'
-
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
-        pype.run_step(context)
-
-    assert context.pipeline_name == 'og pipe name'
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader='test loader',
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner.assert_called_once_with(context, None)
 
     mock_logger_error.assert_called_once_with(
         'Something went wrong pyping pipe name. RuntimeError: whoops')
@@ -793,13 +1117,15 @@ def mocked_run_pipeline_with_stop(*args, **kwargs):
     """Check pipeline name set on context in child pipeline with Stop."""
     assert (kwargs['pipeline_name']
             == kwargs['context'].pipeline_name == 'pipe name')
+    assert (kwargs['pipeline_name'] == 'pipe name')
     raise Stop()
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
     """Input pype doesn't swallow stop error in child pipeline."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline_with_stop
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.side_effect = Stop()
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -810,34 +1136,32 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
         }
     })
 
-    context.pipeline_name = 'og pipe name'
-
     with patch_logger('pypyr.steps.pype', logging.ERROR) as mock_logger_error:
         with pytest.raises(Stop) as err_info:
-            pype.run_step(context)
+            with get_arb_pipeline_scope(context):
+                pype.run_step(context)
 
         assert isinstance(err_info.value, Stop)
 
-    assert context.pipeline_name == 'og pipe name'
-
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader=None,
         groups=None,
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        py_dir=None
     )
+
+    mocked_runner.assert_called_once_with(context, None)
 
     mock_logger_error.assert_not_called()
 
 
-@patch('pypyr.pipelinerunner.load_and_run_pipeline')
+@patch('pypyr.steps.pype.Pipeline', autospec=True)
 def test_pype_set_groups(mock_run_pipeline):
-    """Input pype use_parent_context True."""
-    mock_run_pipeline.side_effect = mocked_run_pipeline
+    """Input pype with groups set."""
     context = Context({
         'pype': {
             'name': 'pipe name',
@@ -848,27 +1172,28 @@ def test_pype_set_groups(mock_run_pipeline):
             'loader': 'test loader',
             'groups': 'testgroup',
             'success': 'successgroup',
-            'failure': 'failuregroup'
+            'failure': 'failuregroup',
+            'pyDir': 'test dir'
         }
     })
 
-    context.pipeline_name = 'og pipe name'
-
     with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
-        pype.run_step(context)
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
 
     mock_run_pipeline.assert_called_once_with(
-        pipeline_name='pipe name',
-        pipeline_context_input=['argument', 'here'],
-        context=context,
+        name='pipe name',
+        context_args=['argument', 'here'],
         parse_input=False,
         loader='test loader',
         groups=['testgroup'],
         success_group='successgroup',
-        failure_group='failuregroup'
+        failure_group='failuregroup',
+        py_dir='test dir'
     )
 
-    assert context.pipeline_name == 'og pipe name'
+    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once_with(context, None)
 
     assert mock_logger_info.mock_calls == [
         call('pyping pipe name, using parent context.'),
@@ -905,7 +1230,7 @@ def test_write_child_context_to_parent_list():
     parent = Context({'a': 'b'})
     child = Context({'c': 'd',
                      'e': 'f',
-                     'g': 'h'})
+                    'g': 'h'})
 
     pype.write_child_context_to_parent(['c', 'g'], parent, child)
 
@@ -919,7 +1244,7 @@ def test_write_child_context_to_parent_dict():
     parent = Context({'a': 'b'})
     child = Context({'c': 'd',
                      'e': 'f',
-                     'g': 'h'})
+                    'g': 'h'})
 
     pype.write_child_context_to_parent({'new-c': 'c',
                                         'new-g': 'g'},
@@ -936,7 +1261,7 @@ def test_write_child_context_to_parent_dict_with_formatting():
     parent = Context({'a': 'b'})
     child = Context({'c': 'd',
                      'e': 'f',
-                     'g': 'h and {e}'})
+                    'g': 'h and {e}'})
 
     pype.write_child_context_to_parent({'new-c': 'c',
                                         'new-g': 'g'},

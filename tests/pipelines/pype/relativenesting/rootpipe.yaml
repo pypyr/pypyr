@@ -1,0 +1,28 @@
+steps:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: A
+
+  - name: pypyr.steps.py
+    in:
+      pycode: |
+        assert context.current_pipeline.name.rpartition('/')[2] == 'rootpipe'
+        assert context.get_stack_depth() == 1
+
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        # relative to current pipeline
+        name: nested/arb/arbchild
+
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: D
+
+  - name: pypyr.steps.py
+    in:
+      pycode: assert context.current_pipeline.name.rpartition('/')[2] == 'rootpipe'

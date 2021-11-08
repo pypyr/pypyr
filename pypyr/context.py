@@ -1,9 +1,13 @@
 """pypyr context class. Dictionary ahoy."""
-from collections import namedtuple
 from collections.abc import Mapping, Set
+from collections import deque, namedtuple
+from contextlib import contextmanager
+import logging
 
 from pypyr.dsl import SpecialTagDirective
-from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
+from pypyr.errors import (ContextError,
+                          KeyInContextHasNoValueError,
+                          KeyNotInContextError)
 from pypyr.formatting import RecursiveFormatter
 from pypyr.moduleloader import _ChainMapPretendDict
 from pypyr.utils import asserts, types
@@ -16,6 +20,9 @@ ContextItemInfo = namedtuple('ContextItemInfo',
                               'has_value'])
 
 
+logger = logging.getLogger(__name__)
+
+
 class Context(dict):
     """The pypyr context.
 
@@ -23,12 +30,15 @@ class Context(dict):
     a pipeline.
 
     This class only adds functionality on top of dictionary, it should not
-    override anything in dict.
+    override anything in dict unless official Python docs mark a method as
+    safe for override.
 
     Attributes:
-        pipeline_name (str): name of pipeline that is currently running
-        working_dir (path-like): working directory path. Either CWD or
-                                 initialized from the cli --dir arg.
+        current_pipeline (pypyr.pipeline.Pipeline): instance of the currently
+            running Pipeline. Don't set me directly, use context.pipeline_scope
+            instead.
+        is_in_pipeline_scope (bool): True if under active running pipeline
+            scope.
     """
 
     # I *think* instantiating formatter at class level is fine - far as I can
@@ -37,6 +47,7 @@ class Context(dict):
     # https://github.com/python/cpython/blob/master/Lib/string.py
     formatter = RecursiveFormatter(special_types=SpecialTagDirective)
 
+    # region dict overrides
     def __init__(self, *args, **kwargs):
         """Initialize context."""
         super().__init__(*args, **kwargs)
@@ -48,6 +59,11 @@ class Context(dict):
         self._pystring_namespace = _ChainMapPretendDict(self,
                                                         self._pystring_globals)
 
+        # controlled via Context.pipeline_scope context manager.
+        self._stack = deque()
+        self.current_pipeline = None
+
+    # region serialization
     def __getstate__(self):
         """Remove namespace from pickle serialization."""
         state = self.__dict__.copy()
@@ -66,6 +82,8 @@ class Context(dict):
         self._pystring_namespace = _ChainMapPretendDict(self,
                                                         self._pystring_globals)
 
+    # endregion serialization
+
     def __missing__(self, key):
         """Throw KeyNotInContextError rather than KeyError.
 
@@ -73,6 +91,10 @@ class Context(dict):
         https://docs.python.org/3/library/stdtypes.html#dict
         """
         raise KeyNotInContextError(f"{key} not found in the pypyr context.")
+
+    # endregion dict overrides
+
+    # region asserts
 
     def assert_child_key_has_value(self, parent, child, caller):
         """Assert that context contains key that has child which has a value.
@@ -229,6 +251,9 @@ class Context(dict):
         for context_item in context_items:
             self.assert_key_type_value(context_item, caller, extra_error_text)
 
+    # endregion asserts
+
+    # region formatting expressions
     def get_eval_string(self, input_string):
         """Dynamically evaluates the input_string python expression.
 
@@ -458,6 +483,8 @@ class Context(dict):
         for string in iterable_strings:
             yield self.formatter.vformat(string, None, self)
 
+    # endregion formatting expressions
+
     def keys_exist(self, *keys):
         """Check if keys exist in context.
 
@@ -592,6 +619,65 @@ class Context(dict):
         # first iteration starts at context dict root
         merge_recurse(self, add_me)
 
+    # region pipeline_scope
+
+    @contextmanager
+    def pipeline_scope(self, pipeline):
+        """Set the currently active pipeline on this context instance.
+
+        pypyr keeps track of the pipeline call-chain with a stack. This is
+        relevant when parent pipelines call child pipelines using
+        pypyr.steps.pype.
+
+        This scope adds the current pipeline's Pipeline instance to the stack
+        when it starts running.
+
+        When the pipeline finishes, removes it from the stack.
+
+        This is a context manager, so use with "with" for an easy life.
+
+        Args:
+            pipeline (pypyr.pipeline.Pipeline): Add this Pipeline object to the
+                stack.
+        """
+        pipeline_name = pipeline.name
+        stack = self._stack
+        try:
+            logger.debug('entering pipeline scope: %s', pipeline_name)
+            stack.append(pipeline)
+            self.current_pipeline = pipeline
+            yield
+        finally:
+            logger.debug('exiting pipeline scope: %s', pipeline_name)
+            stack.pop()
+            self.current_pipeline = stack[-1] if stack else None
+
+    def get_root_pipeline(self):
+        """Get the Pipeline instance of the root pipeline.
+
+        The root pipeline is the very first pipeline in the call stack.
+        """
+        try:
+            # This is O(1).
+            return self._stack[0]
+        except IndexError as err:
+            raise ContextError(
+                "There is no pipeline scope set on this context instance. A "
+                "pipeline should run inside a pipeline_scope for this method "
+                "to return the root pipeline.") from err
+
+    def get_stack_depth(self):
+        """Get how many pipelines are in the current call stack."""
+        return len(self._stack)
+
+    @property
+    def is_in_pipeline_scope(self):
+        """Return True if context under active pipeline_scope."""
+        return bool(self._stack)
+
+    # endregion pipeline_scope
+
+    # region pystring global namespace
     def pystring_globals_clear(self):
         """Clear the pystring globals namespace."""
         self._pystring_globals.clear()
@@ -610,6 +696,8 @@ class Context(dict):
         # pystring_globals initialized to {} on Context init, no None worries.
         self._pystring_globals.update(*args, **kwargs)
         return len(self._pystring_globals)
+
+    # region pystring global namespace
 
     def set_defaults(self, defaults):
         """Set defaults in context if keys do not exist already.

@@ -1,22 +1,25 @@
 """pipelinerunner.py integration tests."""
 import logging
 from pathlib import Path
-import pytest
 from unittest.mock import call
-from pypyr import pipelinerunner
-from pypyr.cache import pipelinecache
+
+import pytest
+
+from pypyr.cache.loadercache import loader_cache
 from pypyr.errors import KeyNotInContextError
+from pypyr import pipelinerunner
+
 from tests.common.utils import patch_logger
 
-working_dir_tests = Path(Path.cwd(), 'tests')
+working_dir_tests = Path.cwd().joinpath('tests')
 
 
 @pytest.fixture
 def pipeline_cache_reset():
     """Invoke for every test function in the module."""
-    pipelinecache.pipeline_cache.clear()
+    loader_cache.clear()
     yield
-    pipelinecache.pipeline_cache.clear()
+    loader_cache.clear()
 
 # region smoke
 
@@ -26,9 +29,9 @@ def test_pipeline_runner_main(pipeline_cache_reset):
 
     Strictly speaking this is an integration test, not a unit test.
     """
-    pipelinerunner.main(pipeline_name='smoke',
-                        pipeline_context_input=None,
-                        working_dir=working_dir_tests)
+    pipelinerunner.run(pipeline_name='tests/pipelines/smoke',
+                       args_in=None,
+                       py_dir=working_dir_tests)
 # endregion smoke
 
 # region main
@@ -38,14 +41,15 @@ def test_pipeline_runner_main_all(pipeline_cache_reset):
     """Run main with all arguments as expected."""
     expected_notify_output = ['sg1', 'sg1.2', 'success_handler']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        pipelinerunner.main(
+        pipelinerunner.run(
+            # this path works because naiveloader checks from tests subdir.
             pipeline_name='pipelines/api/main-all',
-            pipeline_context_input=['A', 'B', 'C'],
-            working_dir=working_dir_tests,
+            args_in=['A', 'B', 'C'],
             groups=['sg1'],
             success_group='sh',
             failure_group='fh',
-            loader='arbpack.naivefileloader')
+            loader='arbpack.naivefileloader',
+            py_dir=working_dir_tests)
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
@@ -55,14 +59,14 @@ def test_pipeline_runner_main_all_with_failure(pipeline_cache_reset):
     expected_notify_output = ['sg2', 'success_handler', 'fh']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         with pytest.raises(ValueError) as err:
-            pipelinerunner.main(
+            pipelinerunner.run(
                 pipeline_name='pipelines/api/main-all',
-                pipeline_context_input=['A', 'B', 'C', 'raise on sh'],
-                working_dir=working_dir_tests,
+                args_in=['A', 'B', 'C', 'raise on sh'],
                 groups=['sg2'],
                 success_group='sh',
                 failure_group='fh',
-                loader='arbpack.naivefileloader')
+                loader='arbpack.naivefileloader',
+                py_dir=working_dir_tests)
 
     assert str(err.value) == "err from sh"
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
@@ -74,7 +78,7 @@ def test_pipeline_runner_main_minimal():
 
     # working_dir will default to repo root rather than test root
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        pipelinerunner.main('tests/pipelines/api/main-all')
+        pipelinerunner.run('tests/pipelines/api/main-all')
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
@@ -84,7 +88,7 @@ def test_pipeline_runner_main_with_failure():
     expected_notify_output = ['sg3', 'fh']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         with pytest.raises(ValueError) as err:
-            pipelinerunner.main(
+            pipelinerunner.run(
                 pipeline_name='tests/pipelines/api/main-all',
                 groups=['sg3'],
                 failure_group='fh')
@@ -97,9 +101,9 @@ def test_pipeline_runner_main_minimal_with_failure_handled():
     """Run main minimal with failure argument as expected."""
     expected_notify_output = ['steps', 'on_success', 'on_failure']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        pipelinerunner.main(
+        pipelinerunner.run(
             pipeline_name='tests/pipelines/api/main-all',
-            pipeline_context_input=['A', 'B', 'C', 'raise on success'])
+            args_in=['A', 'B', 'C', 'raise on success'])
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
@@ -108,9 +112,9 @@ def test_pipeline_runner_main_with_failure_handled():
     """Run main with failure argument as expected."""
     expected_notify_output = ['sg3', 'on_failure']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        pipelinerunner.main(pipeline_name='tests/pipelines/api/main-all',
-                            groups=['sg3'],
-                            failure_group='on_failure')
+        pipelinerunner.run(pipeline_name='tests/pipelines/api/main-all',
+                           groups=['sg3'],
+                           failure_group='on_failure')
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
@@ -123,18 +127,17 @@ def test_pipeline_runner_main_with_context_all(pipeline_cache_reset):
     """Run main with context with all arguments as expected."""
     expected_notify_output = ['sg1', 'sg1.2', 'success_handler']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        out = pipelinerunner.main_with_context(
+        out = pipelinerunner.run(
             pipeline_name='pipelines/api/main-all',
             dict_in={'argList': ['A', 'B', 'C']},
-            working_dir=working_dir_tests,
+            # parse_args=False,
             groups=['sg1'],
             success_group='sh',
             failure_group='fh',
-            loader='arbpack.naivefileloader')
+            loader='arbpack.naivefileloader',
+            py_dir=working_dir_tests)
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
-    assert out.pipeline_name == 'pipelines/api/main-all'
-    assert out.working_dir == working_dir_tests
     assert out == {'argList': ['A', 'B', 'C'], 'set_in_pipe': 123}
 
 
@@ -144,14 +147,14 @@ def test_pipeline_runner_main_with_context_all_with_failure(
     expected_notify_output = ['sg2', 'success_handler', 'fh']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         with pytest.raises(ValueError) as err:
-            pipelinerunner.main_with_context(
+            pipelinerunner.run(
                 pipeline_name='pipelines/api/main-all',
                 dict_in={'argList': ['A', 'B', 'C', 'raise on sh']},
-                working_dir=working_dir_tests,
                 groups=['sg2'],
                 success_group='sh',
                 failure_group='fh',
-                loader='arbpack.naivefileloader')
+                loader='arbpack.naivefileloader',
+                py_dir=working_dir_tests)
 
     assert str(err.value) == "err from sh"
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
@@ -160,16 +163,15 @@ def test_pipeline_runner_main_with_context_all_with_failure(
 def test_pipeline_runner_main_with_context_minimal():
     """Run main with context with minimal arguments as expected."""
     # Not having argList==None proves context_parser didn't run.
-    expected_notify_output = ['steps', 'argList not exist', 'on_success']
+    expected_notify_output = ['steps', 'argList==None', 'on_success']
 
     # working_dir will default to repo root rather than test root
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        out = pipelinerunner.main_with_context('tests/pipelines/api/main-all')
+        out = pipelinerunner.run('tests/pipelines/api/main-all')
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
-    assert out.pipeline_name == 'tests/pipelines/api/main-all'
-    assert out.working_dir == Path.cwd()
-    assert out == {'set_in_pipe': 456}
+
+    assert out == {'argList': [], 'set_in_pipe': 456}
     # somewhat arbitrary check if behaves like Context()
     out.assert_key_has_value('set_in_pipe', 'caller')
 
@@ -179,7 +181,7 @@ def test_pipeline_runner_main_with_context_with_failure():
     expected_notify_output = ['sg3', 'fh']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         with pytest.raises(ValueError) as err:
-            pipelinerunner.main_with_context(
+            pipelinerunner.run(
                 pipeline_name='tests/pipelines/api/main-all',
                 groups=['sg3'],
                 failure_group='fh')
@@ -193,14 +195,11 @@ def test_pipeline_runner_main_with_context_relative_working_dir(
     """Run main with context with relative working directory."""
     expected_notify_output = ['steps', 'on_success', 'on_failure']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        out = pipelinerunner.main_with_context(
-            pipeline_name='api/main-all',
-            dict_in={'argList': ['A', 'B', 'C', 'raise on success']},
-            working_dir='tests/pipelines/')
+        out = pipelinerunner.run(
+            pipeline_name='tests/pipelines/api/main-all',
+            dict_in={'argList': ['A', 'B', 'C', 'raise on success']})
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
-    assert out.pipeline_name == 'api/main-all'
-    assert out.working_dir == Path('tests/pipelines/')
 
     assert len(out) == 4
     assert out['argList'] == ['A', 'B', 'C', 'raise on success']
@@ -227,13 +226,11 @@ def test_pipeline_runner_main_with_context_minimal_with_failure_handled():
     """Run main with context minimal with failure argument as expected."""
     expected_notify_output = ['steps', 'on_success', 'on_failure']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        out = pipelinerunner.main_with_context(
+        out = pipelinerunner.run(
             pipeline_name='tests/pipelines/api/main-all',
             dict_in={'argList': ['A', 'B', 'C', 'raise on success']})
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
-    assert out.pipeline_name == 'tests/pipelines/api/main-all'
-    assert out.working_dir == Path.cwd()
 
     assert len(out) == 4
     assert out['argList'] == ['A', 'B', 'C', 'raise on success']
@@ -260,16 +257,15 @@ def test_pipeline_runner_main_with_context_with_failure_handled():
     """Run main with context with failure argument as expected."""
     expected_notify_output = ['sg3', 'on_failure']
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        out = pipelinerunner.main_with_context(
+        out = pipelinerunner.run(
             pipeline_name='tests/pipelines/api/main-all',
             groups=['sg3'],
             failure_group='on_failure')
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
-    assert out.pipeline_name == 'tests/pipelines/api/main-all'
-    assert out.working_dir == Path.cwd()
 
-    assert len(out) == 2
+    # extra context items is argList: []
+    assert len(out) == 3
     assert out['py'] == "raise ValueError('err from sg3')"
 
     assert len(out['runErrors']) == 1

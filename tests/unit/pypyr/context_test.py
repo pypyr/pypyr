@@ -13,6 +13,7 @@ from pypyr.errors import (
     ContextError,
     KeyInContextHasNoValueError,
     KeyNotInContextError)
+from pypyr.pipeline import Pipeline
 
 # region behaves like a dictionary
 
@@ -2305,3 +2306,60 @@ def test_set_defaults_pass_nested_with_types():
     }
 
 # endregion set_defaults
+
+# region pipeline_scope
+
+
+def test_pipeline_scope_stack():
+    """Pipeline scope appends/pops Pipeline on the stack."""
+    context = Context()
+
+    pipe1 = Pipeline('pipe1')
+
+    assert not context.is_in_pipeline_scope
+    assert context.get_stack_depth() == 0
+    with context.pipeline_scope(pipe1):
+        assert context.current_pipeline.name == 'pipe1'
+        assert type(context.current_pipeline) is Pipeline
+        assert context.is_in_pipeline_scope
+        assert context.get_stack_depth() == 1
+
+        pipe2 = Pipeline('pipe2')
+
+        with context.pipeline_scope(pipe2):
+            assert context.current_pipeline.name == 'pipe2'
+            assert type(context.current_pipeline) is Pipeline
+            assert context.get_root_pipeline().name == 'pipe1'
+            assert type(context.get_root_pipeline()) is Pipeline
+            assert context.is_in_pipeline_scope
+            assert context.get_stack_depth() == 2
+
+        assert context.current_pipeline.name == 'pipe1'
+        assert context.is_in_pipeline_scope
+        assert context.get_stack_depth() == 1
+
+    assert context.current_pipeline is None
+    assert not context.is_in_pipeline_scope
+    assert context.get_stack_depth() == 0
+
+
+def test_get_current_pipeline_no_scope():
+    """The current_pipeline is None when not in scope."""
+    context = Context()
+
+    assert not context.current_pipeline
+
+    assert context.is_in_pipeline_scope is False
+    assert context.get_stack_depth() == 0
+
+
+def test_get_root_pipeline_no_scope():
+    """Get root pipeline info raises ContextError when not in scope."""
+    context = Context()
+
+    with pytest.raises(ContextError):
+        context.get_root_pipeline()
+
+    assert not context.is_in_pipeline_scope
+    assert context.get_stack_depth() == 0
+# endregion pipeline_scope

@@ -22,6 +22,8 @@ steps:
         this: !py arb_func_in_arbmod2('hello there')
         equals: hello there
 
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: B
+      append:
+        list: out
+        addMe: B
