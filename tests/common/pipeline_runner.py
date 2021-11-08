@@ -1,12 +1,15 @@
 """Runs a pipeline in ./tests/pipelines."""
 import logging
 from pathlib import Path
-import pytest
 from unittest.mock import call
+
+import pytest
+
 import pypyr.pipelinerunner
 from tests.common.utils import patch_logger, read_file_to_list
 
-working_dir = Path.joinpath(Path.cwd(), 'tests')
+cwd = Path.cwd()
+tests_dir = cwd.joinpath('tests')
 
 
 def assert_pipeline_notify_output_is(pipeline_name, expected_notify_output):
@@ -18,9 +21,8 @@ def assert_pipeline_notify_output_is(pipeline_name, expected_notify_output):
                                 the NOTIFY level output during pipeline run.
     """
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
-        pypyr.pipelinerunner.main(pipeline_name=pipeline_name,
-                                  pipeline_context_input=None,
-                                  working_dir=working_dir)
+        pypyr.pipelinerunner.run(pipeline_name=pipeline_name,
+                                 args_in=None)
 
     assert mock_log.mock_calls == [call(v) for v in expected_notify_output]
 
@@ -36,9 +38,7 @@ def assert_pipeline_notify_match_file(pipeline_name,
     """
     assert_pipeline_notify_output_is(
         pipeline_name,
-        read_file_to_list(Path.joinpath(working_dir,
-                                        'pipelines',
-                                        expected_notify_output_path)))
+        read_file_to_list(expected_notify_output_path))
 
 
 def assert_pipeline_raises(pipeline_name,
@@ -60,9 +60,9 @@ def assert_pipeline_raises(pipeline_name,
     """
     with patch_logger('pypyr.steps.echo', logging.NOTIFY) as mock_log:
         with pytest.raises(expected_error) as actual_err:
-            pypyr.pipelinerunner.main(pipeline_name=pipeline_name,
-                                      pipeline_context_input=context_arg,
-                                      working_dir=working_dir)
+            pypyr.pipelinerunner.run(pipeline_name=pipeline_name,
+                                     args_in=context_arg,
+                                     py_dir=tests_dir)
 
     if expected_error_msg:
         assert str(actual_err.value) == expected_error_msg
@@ -86,7 +86,5 @@ def assert_pipeline_raises_match_file(pipeline_name,
         pipeline_name,
         expected_error,
         expected_error_msg,
-        read_file_to_list(Path.joinpath(working_dir,
-                                        'pipelines',
-                                        expected_notify_output_path)),
+        read_file_to_list(expected_notify_output_path),
         context_arg)

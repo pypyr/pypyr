@@ -1,0 +1,11 @@
+steps:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: B
+  
+  - name: pypyr.steps.pype
+    in:
+      pype:
+        name: pipe-c

@@ -3,7 +3,7 @@
 Load modules dynamically, find things on file-system.
 
 Attributes:
-    working_dir (WorkingDir): Global shared current working dir.
+    CWD (Path): Global shared current working dir.
 """
 import ast
 import builtins
@@ -15,6 +15,8 @@ import sys
 from threading import Lock
 
 from pypyr.errors import PyModuleNotFoundError
+
+CWD = Path.cwd()
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ class _ChainMapPretendDict(ChainMap, dict):
     eval/exec only accepts dict type as globals argument.
 
     However, for the purposes of pypyr, rather than make a whole copy of the
-    context dict each and every time a py expression evaluations, it's much
+    context dict each and every time a py expression evaluates, it's much
     more performance efficient to use a chainmap to chain together the dynamic
     code's global namespace and context.
 
@@ -159,54 +161,6 @@ class ImportVisitor(ast.NodeVisitor):
             self._set_namespace(alias, imported_obj)
 
 
-class WorkingDir():
-    """The Working Directory.
-
-    Call set_working_directory before you call get_working_directory.
-    """
-
-    def __init__(self):
-        """Initialize cwd to None."""
-        self._cwd = None
-
-    def get_working_directory(self):
-        """Get current working directory.
-
-        Return:
-            Path object for current working directory.
-
-        Raises:
-            ValueError: If set_working_directory wasn't called before this.
-        """
-        if not self._cwd:
-            raise ValueError('working directory not set.')
-        return self._cwd
-
-    def set_working_directory(self, working_directory=None):
-        """Add working_directory to sys.paths.
-
-        Defaults to cwd if working_directory is None.
-
-        This allows dynamic loading of arbitrary python modules in cwd.
-
-        Args:
-            working_directory: string. path to add to sys.paths
-
-        """
-        logger.debug("starting")
-
-        if working_directory is None:
-            working_directory = Path.cwd()
-
-        logger.debug("adding %s to sys.paths", working_directory)
-        add_sys_path(working_directory)
-        self._cwd = Path(working_directory)
-
-        logger.debug("done")
-
-
-working_dir = WorkingDir()
-
 _sys_path_lock = Lock()
 _known_dirs = set()
 
@@ -227,21 +181,18 @@ def add_sys_path(path):
     if path in _known_dirs:
         return
 
-    if path is None:
-        path_obj = Path.cwd()
-    else:
-        path_obj = Path(path)
-        if not path_obj.exists():
-            _known_dirs.add(path)
-            return
+    path_obj = path if isinstance(path, Path) else Path(path)
+
+    if not path_obj.exists():
+        _known_dirs.add(path)
+        return
 
     # sys path doesn't accept Path
     path_str = str(path_obj)  # .resolve(True)? instead for extended paths?
     logger.debug("adding %s to sys.paths", path_str)
     with _sys_path_lock:
         if path_str not in sys.path:
-            # append not insert - don't overwrite api user's prior sys.path
-            # sys.path.insert(0, path_str)
+            # append not insert - don't overwrite user's prior sys.path
             sys.path.append(path_str)
 
     _known_dirs.add(path)
@@ -275,40 +226,17 @@ def get_module(module_abs_import):
                          module_abs_import)
         else:
             extended_msg = (
-                f"{module_abs_import}.py should be in your working "
-                "dir or it should be installed to the python path."
-                "\nIf you have 'package.sub.mod' your current working "
-                "dir should contain ./package/sub/mod.py\n"
-                "If you specified 'mymodulename', your current "
-                "working dir should contain ./mymodulename.py\n"
-                "If the module is not in your current working dir, it "
-                "must exist in your current python path - so you "
-                "should have run pip install or setup.py")
+                f"{module_abs_import}.py should be in your pipeline dir, or "
+                "in your working dir, or it should be installed in the "
+                "current python env."
+                "\nIf you have 'package.sub.mod' your pipeline dir should "
+                "contain ./package/sub/mod.py\n"
+                "If you specified 'mymodulename', your pipeline dir should "
+                "contain ./mymodulename.py\n"
+                "If the module is not in your pipeline dir nor in the current "
+                "working dir, it must exist in your current python env - so "
+                "you should have run pip install or setup.py")
             logger.error("The module doesn't exist. "
                          "Looking for a file like this: %s",
                          module_abs_import)
         raise PyModuleNotFoundError(extended_msg) from err
-
-
-def get_working_directory():
-    """Return current working directory as Path.
-
-    Really just a convenience wrapper for
-    moduleloader.working_dir.cwd
-    """
-    return working_dir.get_working_directory()
-
-
-def set_working_directory(working_directory=None):
-    """Add working_directory to sys.paths.
-
-    Really just a convenience wrapper for
-    moduleloader.working_dir.set_working_directory()
-
-    This allows dynamic loading of arbitrary python modules in cwd.
-
-    Args:
-        working_directory: string. path to add to sys.paths
-
-    """
-    working_dir.set_working_directory(working_directory)

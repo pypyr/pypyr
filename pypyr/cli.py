@@ -3,27 +3,60 @@
 Parse command line arguments in, invoke pipelinerunner.
 """
 import argparse
-from pathlib import Path
-import pypyr.log.logger
-import pypyr.pipelinerunner
-import pypyr.version
 import signal
 import sys
 import textwrap
 import traceback
 
+import pypyr.log.logger
+from pypyr.moduleloader import CWD
+import pypyr.pipelinerunner
+import pypyr.version
 
-def wrap(text, **kwargs):
-    """Wrap lines in argparse so they align nicely in 2 columns.
 
-    Default width is 70.
+def main(args=None):
+    """Entry point for pypyr cli.
 
-    With gratitude to paul.j3 https://bugs.python.org/issue12806
+    The setup_py entry_point wraps this in sys.exit already so this effectively
+    becomes sys.exit(main()).
+    The __main__ entry point similarly wraps sys.exit().
     """
-    # apply textwrap to each line individually
-    text = text.splitlines()
-    text = [textwrap.fill(line, **kwargs) for line in text]
-    return '\n'.join(text)
+    if args is None:
+        args = sys.argv[1:]
+
+    parsed_args = get_args(args)
+
+    try:
+        pypyr.log.logger.set_root_logger(log_level=parsed_args.log_level,
+                                         log_path=parsed_args.log_path)
+
+        pypyr.pipelinerunner.run(
+            pipeline_name=parsed_args.pipeline_name,
+            args_in=parsed_args.context_args,
+            parse_args=True,
+            groups=parsed_args.groups,
+            success_group=parsed_args.success_group,
+            failure_group=parsed_args.failure_group,
+            py_dir=parsed_args.py_dir)
+
+    except KeyboardInterrupt:
+        # Shell standard is 128 + signum = 130 (SIGINT = 2)
+        sys.stdout.write("\n")
+        return 128 + signal.SIGINT
+    except Exception as e:
+        # stderr and exit code 255
+        sys.stderr.write("\n")
+        sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}\033[0;0m")
+        sys.stderr.write("\n")
+        # at this point, you're guaranteed to have args and thus log_level
+        if parsed_args.log_level:
+            if parsed_args.log_level < 10:
+                # traceback prints to stderr by default
+                traceback.print_exc()
+
+        return 255
+
+# region cli args
 
 
 def get_args(args):
@@ -68,10 +101,11 @@ def get_parser():
                             'Step-Group to run on error completion of '
                             'pipeline.\n'
                             'Defaults to "on_failure"'))
-    parser.add_argument('--dir', dest='working_dir', default=Path.cwd(),
-                        help=wrap('Working directory. Use if your pipelines '
-                                  'directory is elsewhere.\n'
-                                  'Defaults to cwd.'))
+    parser.add_argument('--dir', dest='py_dir',
+                        default=CWD,
+                        help=wrap('Load custom python modules from this '
+                                  'directory.\n'
+                                  'Defaults to cwd (the current dir).'))
     parser.add_argument('--log', '--loglevel', dest='log_level', type=int,
                         default=None,
                         help=wrap(
@@ -92,42 +126,16 @@ def get_parser():
     return parser
 
 
-def main(args=None):
-    """Entry point for pypyr cli.
+def wrap(text, **kwargs):
+    """Wrap lines in argparse so they align nicely in 2 columns.
 
-    The setup_py entry_point wraps this in sys.exit already so this effectively
-    becomes sys.exit(main()).
-    The __main__ entry point similarly wraps sys.exit().
+    Default width is 70.
+
+    With gratitude to paul.j3 https://bugs.python.org/issue12806
     """
-    if args is None:
-        args = sys.argv[1:]
+    # apply textwrap to each line individually
+    text = text.splitlines()
+    text = [textwrap.fill(line, **kwargs) for line in text]
+    return '\n'.join(text)
 
-    parsed_args = get_args(args)
-
-    try:
-        pypyr.log.logger.set_root_logger(log_level=parsed_args.log_level,
-                                         log_path=parsed_args.log_path)
-
-        return pypyr.pipelinerunner.main(
-            pipeline_name=parsed_args.pipeline_name,
-            pipeline_context_input=parsed_args.context_args,
-            working_dir=parsed_args.working_dir,
-            groups=parsed_args.groups,
-            success_group=parsed_args.success_group,
-            failure_group=parsed_args.failure_group)
-    except KeyboardInterrupt:
-        # Shell standard is 128 + signum = 130 (SIGINT = 2)
-        sys.stdout.write("\n")
-        return 128 + signal.SIGINT
-    except Exception as e:
-        # stderr and exit code 255
-        sys.stderr.write("\n")
-        sys.stderr.write(f"\033[91m{type(e).__name__}: {str(e)}\033[0;0m")
-        sys.stderr.write("\n")
-        # at this point, you're guaranteed to have args and thus log_level
-        if parsed_args.log_level:
-            if parsed_args.log_level < 10:
-                # traceback prints to stderr by default
-                traceback.print_exc()
-
-        return 255
+# endregion cli args

@@ -19,6 +19,8 @@ steps:
         this: !py arb_func_in_arbmod2('will work') + tests.arbpack.arbmod3.arb_func_in_arbmod3(' too')
         equals: will work too
 
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: C
+      append:
+        list: out
+        addMe: C

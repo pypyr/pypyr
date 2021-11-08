@@ -1,17 +1,28 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: A
+      append:
+        list: out
+        addMe: A
   - name: pypyr.steps.pyimport
     in:
       pyImport: import math
   - name: pypyr.steps.pype
     in:
       pype:
-        name: pype/pyimport/child-new-context
+        name: tests/pipelines/pype/pyimport/child-new-context
         args:
           a: -3
           b: 4
+        out:
+          freshchildlist: out
+
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        unpack: True
+        addMe: '{freshchildlist}'
 
   # child only import doesn't apply to parent
   - name: pypyr.steps.assert
@@ -30,7 +41,7 @@ steps:
       a: -3
       b: 4
       pype:
-        name: pype/pyimport/child-parent-context
+        name: child-parent-context
 
   # can use child imports in parent because shared context
   - name: pypyr.steps.pyimport
@@ -49,6 +60,8 @@ steps:
           str(math.floor(arb_int))
         equals: will work too 2 end 6
 
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: D
+      append:
+        list: out
+        addMe: D

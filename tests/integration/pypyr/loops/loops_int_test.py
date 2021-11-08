@@ -1,15 +1,10 @@
 """Loops integration tests."""
-from pathlib import Path
 from pypyr import pipelinerunner
-
-working_dir_tests = Path(Path.cwd(), 'tests')
 
 
 def test_foreach_enumerables():
     """Builtin generators, on the fly generators, lists & dicts in foreach."""
-    context = pipelinerunner.main_with_context(
-        pipeline_name='pipelines/loops/foreach',
-        working_dir=working_dir_tests)
+    context = pipelinerunner.run('tests/pipelines/loops/foreach')
 
     assert context['just_list'] == [0, 1, 2]
     assert context['just_dict'] == ['a', 'c']

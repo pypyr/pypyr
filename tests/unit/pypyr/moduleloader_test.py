@@ -136,14 +136,15 @@ def test_get_module_raises():
         moduleloader.get_module('unlikelyblahmodulenameherexxssz')
 
     assert str(err.value) == (
-        "unlikelyblahmodulenameherexxssz.py should be in your working "
-        "dir or it should be installed to the python path."
-        "\nIf you have 'package.sub.mod' your current working "
+        "unlikelyblahmodulenameherexxssz.py should be in your pipeline dir, "
+        "or in your working dir, or it should be installed in the current "
+        "python env."
+        "\nIf you have 'package.sub.mod' your pipeline "
         "dir should contain ./package/sub/mod.py\n"
-        "If you specified 'mymodulename', your current "
-        "working dir should contain ./mymodulename.py\n"
-        "If the module is not in your current working dir, it "
-        "must exist in your current python path - so you "
+        "If you specified 'mymodulename', your pipeline "
+        "dir should contain ./mymodulename.py\n"
+        "If the module is not in your pipeline dir nor in the current working "
+        "dir, it must exist in your current python env - so you "
         "should have run pip install or setup.py")
 
 
@@ -157,20 +158,20 @@ def test_get_module_raises_compatible_error():
 def test_get_module_raises_friendly_on_package_import(known_dirs):
     """get_module should not obscure missing module in existing package."""
     p = Path.cwd().joinpath('tests')
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
 
     with pytest.raises(PyModuleNotFoundError) as err:
         moduleloader.get_module('arbpack.idontexist')
 
     assert str(err.value) == (
-        "arbpack.idontexist.py should be in your working "
-        "dir or it should be installed to the python path."
-        "\nIf you have 'package.sub.mod' your current working "
+        "arbpack.idontexist.py should be in your pipeline dir, or in your "
+        "working dir, or it should be installed in the current python env."
+        "\nIf you have 'package.sub.mod' your pipeline "
         "dir should contain ./package/sub/mod.py\n"
-        "If you specified 'mymodulename', your current "
-        "working dir should contain ./mymodulename.py\n"
-        "If the module is not in your current working dir, it "
-        "must exist in your current python path - so you "
+        "If you specified 'mymodulename', your pipeline "
+        "dir should contain ./mymodulename.py\n"
+        "If the module is not in your pipeline dir nor in the current working "
+        "dir, it must exist in your current python env - so you "
         "should have run pip install or setup.py")
 
     assert sys.path == ['arb', str(p)]
@@ -180,7 +181,7 @@ def test_get_module_raises_friendly_on_package_import(known_dirs):
 def test_get_module_raises_on_inner_import(known_dirs):
     """get_module should not hide failing import statements in imported mod."""
     p = Path.cwd().joinpath('tests')
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
 
     with pytest.raises(PyModuleNotFoundError) as err:
         moduleloader.get_module('arbpack.arbinvalidimportmod')
@@ -195,7 +196,7 @@ def test_get_module_raises_on_inner_import(known_dirs):
 def test_get_module_pass(known_dirs):
     """Pass when get_module finds a module in cwd."""
     p = Path.cwd().joinpath('tests', 'testfiles')
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
 
     arb_module = moduleloader.get_module('arb')
 
@@ -210,7 +211,7 @@ def test_get_module_pass(known_dirs):
 def test_get_module_in_package_pass(known_dirs):
     """See get_module find a module in a package in cwd using dot notation."""
     p = Path.cwd().joinpath('tests')
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
     arb_module = moduleloader.get_module('arbpack.arbmod')
 
     assert arb_module
@@ -221,57 +222,25 @@ def test_get_module_in_package_pass(known_dirs):
 
 # endregion get_module
 
-# region WorkingDir
+# region add_sys_path
 
 
 @patch.object(sys, 'path', ['arb'])
-def test_working_dir_set_default(known_dirs):
-    """Set working dir to cwd if not specified."""
-    w = moduleloader.WorkingDir()
-    w.set_working_directory()
-
-    cwd = Path.cwd()
-    assert w.get_working_directory() == cwd
-
-    assert sys.path == ['arb', str(cwd)]
-
-
-@patch.object(sys, 'path', ['arb'])
-def test_working_dir_set_explicit_none(known_dirs):
-    """Set working dir to cwd if None."""
-    w = moduleloader.WorkingDir()
-    w.set_working_directory(None)
-
-    cwd = Path.cwd()
-    assert w.get_working_directory() == cwd
-    assert sys.path == ['arb', str(cwd)]
-
-
-def test_working_dir_get_before_set():
-    """Get working dir before set raises."""
-    with pytest.raises(ValueError) as err:
-        w = moduleloader.WorkingDir()
-        w.get_working_directory()
-
-    assert str(err.value) == 'working directory not set.'
-
-
-@patch.object(sys, 'path', ['arb'])
-def test_set_nonexisting_working_dir(known_dirs):
-    """Working dir not added to sys paths if not exist."""
+def test_add_sys_path_nonexisting_dir(known_dirs):
+    """Dir not added to sys paths if not exist."""
     p = '/arb/path'
     assert sys.path == ['arb']
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
     assert sys.path == ['arb']
     assert moduleloader._known_dirs == {p}
 
 
 @patch.object(sys, 'path', ['arb'])
-def test_set_working_dir(known_dirs):
-    """Working dir added to sys paths."""
+def test_add_sys_path_str(known_dirs):
+    """Existing dir added to sys paths."""
     p = 'tests/arbpack'
     assert sys.path == ['arb']
-    moduleloader.set_working_directory(p)
+    moduleloader.add_sys_path(p)
     assert sys.path == ['arb', p]
     assert moduleloader._known_dirs == {p}
 
@@ -288,12 +257,14 @@ def test_add_sys_path_object(known_dirs):
 
 @patch.object(sys, 'path', ['arb'])
 def test_add_sys_path_none(known_dirs):
-    """None adds cwd to sys paths."""
+    """None raises TypeError when trying to add to sys paths."""
     assert None not in sys.path
-    moduleloader.add_sys_path(None)
+    with pytest.raises(TypeError):
+        moduleloader.add_sys_path(None)
+
     assert None not in sys.path
-    assert sys.path == ['arb', str(Path.cwd())]
-    assert moduleloader._known_dirs == {None}
+    assert sys.path == ['arb']
+    assert moduleloader._known_dirs == set()
 
 
 @patch.object(sys, 'path', ['arb'])
@@ -307,4 +278,16 @@ def test_add_sys_path_no_dupes(known_dirs):
     assert sys.path == ['arb', existing_path]
     assert moduleloader._known_dirs == {'tests/arbpack'}
 
-# endregion WorkingDir
+
+def test_add_sys_path_unknown_but_in_sys_path_already(known_dirs):
+    """Unknown dir but it's already in sys.path."""
+    moduleloader._known_dirs.clear()
+    p = Path.cwd().joinpath('tests')
+
+    with patch.object(sys, 'path', [str(p)]):
+        moduleloader.add_sys_path(p)
+        assert sys.path == [str(p)]
+
+    assert moduleloader._known_dirs == {p}
+
+# endregion add_sys_path

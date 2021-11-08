@@ -1,15 +1,31 @@
 """pypyr step that runs another pipeline from within the current pipeline."""
+from collections import namedtuple
 import logging
 import shlex
+
 from pypyr.context import Context
 from pypyr.errors import (ContextError,
                           ControlOfFlowInstruction,
                           KeyInContextHasNoValueError,
                           KeyNotInContextError,
                           Stop)
-import pypyr.pipelinerunner as pipelinerunner
+from pypyr.pipeline import Pipeline
 
-# logger means the log level will be set correctly
+PypeArgs = namedtuple('PypeArgs', ['pipeline_name',
+                                   'args',
+                                   'out',
+                                   'use_parent_context',
+                                   'pipe_arg',
+                                   'skip_parse',
+                                   'raise_error',
+                                   'loader',
+                                   'step_groups',
+                                   'success_group',
+                                   'failure_group',
+                                   'py_dir',
+                                   'parent'
+                                   ])
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,12 +76,27 @@ def run_step(context):
                 - success. str. optional. Step-Group to run on successful
                   pipeline completion.
                 - failure. str. optional. Step-Group to run on pipeline error.
+                - pyDir. Path. optional. Load custom python modules from this
+                  directory. You only need to set this if your custom modules
+                  do not resolve from the child pipeline's parent directory
+                  AND the modules are not installed to the current python
+                  environment.
+                - resolveFromParent. Bool. optional. Default True. Resolve
+                  pipeline_name from the current (i.e calling) pipeline's
+                  parent. If the child pipeline loads with the default file
+                  loader and resolveFromParent is False, it will look for the
+                  child pipeline in the current working directory.
+                - parent. str. optional. If resolveFromParent is True, default
+                  is the calling pipeline's parent.
 
     If none of groups, success & failure specified, will run the default pypyr
     steps, on_success & on_failure sequence.
 
     If groups specified, will only run groups, without a success or failure
     sequence, unless you specifically set these also.
+
+    You're very unlikely to need to set resolveFromParent & parent, unless you
+    are using a custom loader for deep customization to how pipelines load.
 
     Returns:
         None
@@ -78,72 +109,45 @@ def run_step(context):
     """
     logger.debug("started")
 
-    (pipeline_name,
-     args,
-     out,
-     use_parent_context,
-     pipe_arg,
-     skip_parse,
-     raise_error,
-     loader,
-     step_groups,
-     success_group,
-     failure_group
-     ) = get_arguments(context)
+    pype_args = get_arguments(context)
 
     try:
-        if use_parent_context:
-            logger.info("pyping %s, using parent context.", pipeline_name)
+        pipeline = Pipeline(name=pype_args.pipeline_name,
+                            context_args=pype_args.pipe_arg,
+                            parse_input=not pype_args.skip_parse,
+                            loader=pype_args.loader,
+                            groups=pype_args.step_groups,
+                            success_group=pype_args.success_group,
+                            failure_group=pype_args.failure_group,
+                            py_dir=pype_args.py_dir)
 
-            if args:
+        if pype_args.use_parent_context:
+            logger.info("pyping %s, using parent context.",
+                        pype_args.pipeline_name)
+
+            if pype_args.args:
                 logger.debug("writing args into parent context...")
-                context.update(args)
+                context.update(pype_args.args)
 
-            try:
-                og_pipeline_name = context.pipeline_name
-                context.pipeline_name = pipeline_name
-
-                pipelinerunner.load_and_run_pipeline(
-                    pipeline_name=pipeline_name,
-                    pipeline_context_input=pipe_arg,
-                    context=context,
-                    parse_input=not skip_parse,
-                    loader=loader,
-                    groups=step_groups,
-                    success_group=success_group,
-                    failure_group=failure_group
-                )
-            finally:
-                context.pipeline_name = og_pipeline_name
+            pipeline.load_and_run_pipeline(context, pype_args.parent)
 
         else:
-            logger.info("pyping %s, without parent context.", pipeline_name)
+            logger.info("pyping %s, without parent context.",
+                        pype_args.pipeline_name)
 
-            if args:
-                child_context = Context(args)
+            if pype_args.args:
+                child_context = Context(pype_args.args)
             else:
                 child_context = Context()
 
-            child_context.pipeline_name = pipeline_name
-            child_context.working_dir = context.working_dir
+            pipeline.load_and_run_pipeline(child_context, pype_args.parent)
 
-            pipelinerunner.load_and_run_pipeline(
-                pipeline_name=pipeline_name,
-                pipeline_context_input=pipe_arg,
-                context=child_context,
-                parse_input=not skip_parse,
-                loader=loader,
-                groups=step_groups,
-                success_group=success_group,
-                failure_group=failure_group
-            )
-
-            if out:
-                write_child_context_to_parent(out=out,
+            if pype_args.out:
+                write_child_context_to_parent(out=pype_args.out,
                                               parent_context=context,
                                               child_context=child_context)
 
-        logger.info("pyped %s.", pipeline_name)
+        logger.info("pyped %s.", pype_args.pipeline_name)
     except (ControlOfFlowInstruction, Stop):
         # Control-of-Flow/Stop are instructions to go somewhere
         # else, not errors per se.
@@ -152,14 +156,14 @@ def run_step(context):
         # yes, yes, don't catch Exception. Have to, though, in order to swallow
         # errs if !raise_error
         logger.error("Something went wrong pyping %s. %s: %s",
-                     pipeline_name, type(ex_info).__name__, ex_info)
+                     pype_args.pipeline_name, type(ex_info).__name__, ex_info)
 
-        if raise_error:
+        if pype_args.raise_error:
             logger.debug("Raising original exception to caller.")
             raise
         else:
-            logger.debug(
-                "raiseError is False. Swallowing error in %s.", pipeline_name)
+            logger.debug("raiseError is False. Swallowing error in %s.",
+                         pype_args.pipeline_name)
 
     logger.debug("done")
 
@@ -171,17 +175,19 @@ def get_arguments(context):
         context: pypyr.context.Context. context is mandatory.
 
     Returns:
-        tuple (pipeline_name, #str
-               args, #dict
-               out, #str or dict or list
-               use_parent_context, #bool
-               pipe_arg, #str
-               skip_parse, #bool
-               raise_error #bool
-               groups #list of str
-               success_group #str
-               failure_group #str
-               )
+        PypeArgs tuple (pipeline_name, #str
+                        args, #dict
+                        out, #str or dict or list
+                        use_parent_context, #bool
+                        pipe_arg, #str
+                        skip_parse, #bool
+                        raise_error, #bool
+                        groups, #list of str
+                        success_group, #str
+                        failure_group, #str
+                        py_dir, # Path-like,
+                        parent, #str
+                        )
 
     Raises:
        pypyr.errors.KeyNotInContextError: if ['pype']['name'] is missing.
@@ -234,7 +240,7 @@ def get_arguments(context):
             "under the hood, or set it to False yourself if you keep it in.")
 
     raise_error = pype.get('raiseError', True)
-    loader = pype.get('loader', None)
+
     groups = pype.get('groups', None)
     if isinstance(groups, str):
         groups = [groups]
@@ -242,19 +248,36 @@ def get_arguments(context):
     success_group = pype.get('success', None)
     failure_group = pype.get('failure', None)
 
-    return (
-        pipeline_name,
-        args,
-        out,
-        use_parent_context,
-        pipe_arg,
-        skip_parse,
-        raise_error,
-        loader,
-        groups,
-        success_group,
-        failure_group
-    )
+    # use same loader as parent by default
+    loader_info = context.current_pipeline.pipeline_definition.info
+    parent_loader = loader_info.loader
+
+    loader = pype.get('loader', parent_loader
+                      if loader_info.is_loader_cascading else None)
+    py_dir = pype.get('pyDir', None)
+
+    is_resolve_from_parent = pype.get('resolveFromParent',
+                                      loader_info.is_parent_cascading)
+
+    parent_default = (loader_info.parent
+                      if is_resolve_from_parent and (loader == parent_loader)
+                      else None)
+
+    parent = pype.get('parent', parent_default)
+
+    return PypeArgs(pipeline_name,
+                    args,
+                    out,
+                    use_parent_context,
+                    pipe_arg,
+                    skip_parse,
+                    raise_error,
+                    loader,
+                    groups,
+                    success_group,
+                    failure_group,
+                    py_dir,
+                    parent)
 
 
 def write_child_context_to_parent(out, parent_context, child_context):

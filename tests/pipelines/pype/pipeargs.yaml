@@ -8,17 +8,17 @@ steps:
         parent: A
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
-        name: pype/childpipeargs
+        name: childpipeargs
         pipeArg: b="set in pipe arg" c=arbvalue
         useParentContext: True
   # explicit useParentContext = True
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:
@@ -37,22 +37,23 @@ steps:
 
 
   - pypyr.steps.contextclearall
+  
   # implied useParentContext = False
-  - name: pypyr.steps.contextsetf
+  - name: pypyr.steps.set
     in:
-      contextSetf:
+      set:
         parent: A
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
-        name: pype/childpipeargs_noparent
+        name: childpipeargs_noparent
         pipeArg: b="set in pipe arg" c=arbvalue
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:
@@ -70,20 +71,21 @@ steps:
         parent: Aonset
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.pype
     in:
       pype:
-        name: pype/childpipeargs_noparent
+        name: childpipeargs_noparent
         pipeArg: b="set in pipe arg" c=arbvalue
         skipParse: False
         useParentContext: False
         out:
-          'd': 'b'
-          'e': 'c' 
+          d: b
+          e: c
+  
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeargs'
+      pycode: assert context.current_pipeline.name == 'tests/pipelines/pype/pipeargs'
   - name: pypyr.steps.assert
     in:
       assert:

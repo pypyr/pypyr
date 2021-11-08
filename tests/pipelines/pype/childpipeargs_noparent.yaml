@@ -15,10 +15,10 @@ steps:
         equals: arbvalue
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/childpipeargs_noparent'
-  - name: pypyr.steps.contextsetf
+      pycode: assert context.current_pipeline.name == 'childpipeargs_noparent'
+  - name: pypyr.steps.set
     in:
-      contextSetf:
+      set:
         parent: parent set in child
         b: b set in child
         c: c set in child

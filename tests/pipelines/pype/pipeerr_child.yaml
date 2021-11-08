@@ -1,9 +1,13 @@
 steps:
   - name: pypyr.steps.py
     in:
-      pycode: assert context.pipeline_name == 'pype/pipeerr_child'
+      pycode: assert context.current_pipeline.name == 'pipeerr_child'
 
-  - pypyr.steps.echo
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: '{arb}'
 
   - name: pypyr.steps.assert
     in:

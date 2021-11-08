@@ -10,10 +10,9 @@ working_dir_tests = Path(Path.cwd(), 'tests')
 @patch('time.sleep')
 def test_retry_with_yaml_anchor(mock_sleep, mock_random):
     """Retry uses common shared anchors."""
-    out = pipelinerunner.main_with_context(
-        pipeline_name='pipelines/retries/retry-anchors',
-        dict_in={'outList': []},
-        working_dir=working_dir_tests)
+    out = pipelinerunner.run(
+        pipeline_name='tests/pipelines/retries/retry-anchors',
+        dict_in={'outList': []})
 
     assert out['outList'] == ['s1.1',
                               's1.2',
