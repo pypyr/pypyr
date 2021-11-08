@@ -113,7 +113,7 @@ class StepsRunner():
             step_count = 0
 
             for step in steps:
-                step_instance = Step(step, self)
+                step_instance = Step(step)
                 step_instance.run_step(self.context)
                 step_count += 1
 

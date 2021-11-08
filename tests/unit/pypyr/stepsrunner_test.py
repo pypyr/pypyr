@@ -10,11 +10,12 @@ from pypyr.errors import (Call,
                           Stop,
                           StopPipeline,
                           StopStepGroup)
+from pypyr.pipeline import Pipeline
 from pypyr.stepsrunner import StepsRunner
 from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
-# ------------------------- test context--------------------------------------#
+# region test context
 
 
 def arb_step_mock(context):
@@ -84,11 +85,9 @@ def get_valid_steps_pipeline():
         'sg3': None
     }
 
-# ------------------------- test context--------------------------------------#
+# endregion test context
 
-# ------------------------- get_pipeline_steps -------------------------------#
-
-# ------------------------- init ---------------------------------------------#
+# region init
 
 
 def test_stepsrunner_init():
@@ -97,9 +96,9 @@ def test_stepsrunner_init():
     assert s.pipeline_body == 3
     assert s.context == 4
 
-# ------------------------- END init -----------------------------------------#
+# endregion init
 
-# ------------------------- get_pipeline_steps -------------------------------#
+# region get_pipeline_steps
 
 
 def test_get_pipeline_steps_pass():
@@ -137,9 +136,9 @@ def test_get_pipeline_steps_none():
 
     mock_logger_warn.assert_called_once_with(
         "sg4: sequence has no elements. So it won't do anything.")
-# ------------------------- get_pipeline_steps--------------------------------#
+# endregion get_pipeline_steps
 
-# ------------------------- run_failure_step_group----------------------------#
+# region run_failure_step_group
 
 
 def test_run_failure_step_group_pass():
@@ -189,9 +188,9 @@ def test_run_failure_step_group_stop():
     assert runner.context == Context()
     mock_run_group.assert_called_once_with('arb_failure', raise_stop=True)
 
-# ------------------------- run_failure_step_group----------------------------#
+# endregion run_failure_step_group
 
-# ------------------------- run_pipeline_steps--------------------------------#
+# region run_pipeline_steps
 
 
 def test_run_pipeline_steps_none():
@@ -271,7 +270,19 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
                        'key8': None,
                        'key9': 'arb'}
 
-# -----------------------  run_pipeline_steps: run ---------------------------#
+
+@patch('pypyr.moduleloader.get_module')
+@patch.object(Step, 'run_step')
+def test_run_pipeline_steps_simple(mock_run_step, mock_module):
+    """Simple step run."""
+    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
+        StepsRunner(None, {'k1': 'v1'}).run_pipeline_steps(['step1'])
+
+    mock_logger_debug.assert_any_call('step1 is a simple string.')
+    mock_run_step.assert_called_once_with({'k1': 'v1'})
+
+
+# region run_pipeline_steps: run
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -375,9 +386,9 @@ def test_run_pipeline_steps_complex_with_multistep_none_run(mock_invoke_step,
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
-# -----------------------  run_pipeline_steps: run ---------------------------#
+# endregion  run_pipeline_steps: run
 
-# -----------------------  run_pipeline_steps: skip --------------------------#
+# region  run_pipeline_steps: skip
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -491,9 +502,9 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
 
-# -----------------------  END run_pipeline_steps: skip ----------------------#
+# endregion run_pipeline_steps: skip
 
-# -----------------------  run_pipeline_steps: swallow -----------------------#
+# region run_pipeline_steps: swallow
 
 
 @patch('pypyr.moduleloader.get_module')
@@ -624,25 +635,12 @@ def test_run_pipeline_steps_swallow_sequence(mock_invoke_step, mock_module):
     assert step4_run_error_swallow == context['runErrors'][0]
     assert step6_run_error_raise == context['runErrors'][1]
 
-# -----------------------  END run_pipeline_steps: swallow------------------#
-
-# ------------------------- run_pipeline_steps--------------------------------#
+# endregion run_pipeline_steps: swallow
 
 
-@patch('pypyr.moduleloader.get_module')
-@patch.object(Step, 'run_step')
-def test_run_pipeline_steps_simple(mock_run_step, mock_module):
-    """Simple step run."""
-    with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-        StepsRunner(None, {'k1': 'v1'}).run_pipeline_steps(['step1'])
+# endregion run_pipeline_steps
 
-    mock_logger_debug.assert_any_call('step1 is a simple string.')
-    mock_run_step.assert_called_once_with({'k1': 'v1'})
-
-
-# ------------------------- run_pipeline_steps--------------------------------#
-
-# ------------------------- run_step_group------------------------------------#
+# region run_step_group
 
 @patch.object(StepsRunner, 'run_pipeline_steps')
 def test_run_step_group_pass(mock_run_steps):
@@ -696,9 +694,9 @@ def test_run_step_group_raise(mock_run_steps):
         'step4'
     ])
 
-# ------------------------- run_step_group------------------------------------#
+# endregion run_step_group
 
-# ------------------------- run_step_groups ----------------------------------#
+# region run_step_groups
 
 
 @patch.object(StepsRunner, 'run_step_group')
@@ -887,9 +885,9 @@ def test_run_step_groups_none_groups():
 
     assert str(err.value) == (
         'you must specify which step-groups you want to run. groups is None.')
-# ------------------------- END: run_step_groups -----------------------------#
+# endregion run_step_groups
 
-# ------------------------- Jump ---------------------------------------------#
+# region Jump
 
 
 def get_jump_pipeline():
@@ -1198,10 +1196,10 @@ def test_jump_with_for(mock_step_cache):
                                           call('sg5.step1')]
 
     assert context == {'a': 'b', 'i': 'two'}
-# ------------------------- END: Jump ----------------------------------------#
+# endregion Jump
 
 
-# ------------------------- StopStepGroup ------------------------------------#
+# region StopStepGroup
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_stop_step_group_with_success_handler(mock_step_cache):
     """Stop step group with success handler."""
@@ -1397,10 +1395,10 @@ def test_stop_step_group_with_success_handler_while(mock_step_cache):
                                           call('sg3.step1'),
                                           call('sg3.step2')
                                           ]
-# ------------------------- END: StopStepGroup -------------------------------#
+# endregion StopStepGroup
 
 
-# ------------------------- Call ---------------------------------------------#
+# region Call
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_call_with_success_handler(mock_step_cache):
     """Call between different step groups with success handler."""
@@ -1423,10 +1421,16 @@ def test_call_with_success_handler(mock_step_cache):
     ]
 
     context = Context({'call': {'groups': 'sg1'}})
-    StepsRunner(get_jump_pipeline(), context).run_step_groups(
-        groups=['sg2'],
-        success_group='sg5',
-        failure_group=None)
+
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_jump_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        steps_runner.run_step_groups(
+            groups=['sg2'],
+            success_group='sg5',
+            failure_group=None)
 
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
                                           call('sg1.step1'),
@@ -1456,11 +1460,17 @@ def test_call_with_failure_handler(mock_step_cache):
     ]
 
     context = Context({'call': {'groups': 'sg3'}})
-    with pytest.raises(ValueError) as err_info:
-        StepsRunner(get_jump_pipeline(), context).run_step_groups(
-            groups=['sg2', 'sg1'],
-            success_group='sg5',
-            failure_group='sg4')
+
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_jump_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        with pytest.raises(ValueError) as err_info:
+            steps_runner.run_step_groups(
+                groups=['sg2', 'sg1'],
+                success_group='sg5',
+                failure_group='sg4')
 
     assert str(err_info.value) == '3.1'
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
@@ -1494,11 +1504,17 @@ def test_call_with_failure_handler_while(mock_step_cache):
     ]
 
     context = Context({'a': 'b'})
-    with pytest.raises(ValueError) as err_info:
-        StepsRunner(get_while_pipeline(), context).run_step_groups(
-            groups=['sg2', 'sg1'],
-            success_group='sg5',
-            failure_group='sg4')
+
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_while_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        with pytest.raises(ValueError) as err_info:
+            steps_runner.run_step_groups(
+                groups=['sg2', 'sg1'],
+                success_group='sg5',
+                failure_group='sg4')
 
     assert str(err_info.value) == '3.1'
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
@@ -1545,11 +1561,17 @@ def test_call_with_no_failure_handler(mock_step_cache):
     ]
 
     context = Context({'call': {'groups': 'sg3'}})
-    with pytest.raises(ValueError) as err_info:
-        StepsRunner(get_jump_pipeline(), context).run_step_groups(
-            groups=['sg2', 'sg1'],
-            success_group=None,
-            failure_group=None)
+
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_jump_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        with pytest.raises(ValueError) as err_info:
+            steps_runner.run_step_groups(
+                groups=['sg2', 'sg1'],
+                success_group=None,
+                failure_group=None)
 
     assert str(err_info.value) == '3.1'
     assert mock_step_cache.mock_calls == [call('sg2.step1'),
@@ -1594,10 +1616,15 @@ def test_call_with_success_handler_for(mock_step_cache):
     ]
 
     context = Context({'a': 'b'})
-    StepsRunner(get_for_pipeline(), context).run_step_groups(
-        groups=['sg2'],
-        success_group='sg5',
-        failure_group=None)
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_for_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        steps_runner.run_step_groups(
+            groups=['sg2'],
+            success_group='sg5',
+            failure_group=None)
 
     assert mock21.mock_calls == [call({'a': 'b',
                                        'i': 'one'}),
@@ -1682,10 +1709,15 @@ def test_call_with_success_handler_retry(mock_step_cache):
     ]
 
     context = Context({'a': 'b'})
-    StepsRunner(get_retry_pipeline(), context).run_step_groups(
-        groups=['sg2'],
-        success_group='sg5',
-        failure_group=None)
+    pipeline = Pipeline('arb')
+    steps_runner = StepsRunner(get_retry_pipeline(), context)
+    pipeline.steps_runner = steps_runner
+
+    with context.pipeline_scope(pipeline):
+        steps_runner.run_step_groups(
+            groups=['sg2'],
+            success_group='sg5',
+            failure_group=None)
 
     assert mock21.mock_calls == [call({'a': 'b',
                                        'retryCounter': 1}),
@@ -1704,4 +1736,4 @@ def test_call_with_success_handler_retry(mock_step_cache):
                                           call('sg2.step2'),
                                           call('sg5.step1')]
 
-# ------------------------- END: Call ----------------------------------------#
+# endregion Call
