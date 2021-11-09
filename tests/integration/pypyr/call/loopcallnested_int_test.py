@@ -1,87 +1,189 @@
 """Nested calls inside loops. These pipelines are in ./tests/pipelines/."""
-import tests.common.pipeline_runner as test_pipe_runner
-
+from pypyr import pipelinerunner
+from tests.common.utils import read_file_to_list
 
 expected_file_name = '{0}_expected_output.txt'
 
 
 def test_pipeline_nested():
     """Nested call control-of-flow works."""
-    pipename = 'tests/pipelines/call/nested'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nested')
 
-# ------------------------- for ----------------------------------------------#
+    assert out == {'out': [
+        'begin',
+        'A',
+        'B',
+        'C',
+        'D',
+        'end D',
+        'end C',
+        'end B',
+        'end A',
+        'end.'
+    ]}
+
+# region for
 
 
 def test_pipeline_nested_for():
     """Nested call control-of-flow works with for loop."""
-    pipename = 'tests/pipelines/call/nestedfor'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nestedfor')
+
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'sg2.a',
+        'sg2.b',
+        'sg2.c',
+        'sg1.2',
+        'sg2.a',
+        'sg2.b',
+        'sg2.c',
+        'sg1.3',
+        'sg2.a',
+        'sg2.b',
+        'sg2.c',
+        'end'
+    ]
 
 
 def test_pipeline_nested_for_deep():
     """Deep nested call control-of-flow works with for loop."""
     pipename = 'tests/pipelines/call/nestedfordeep'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nestedfordeep')
+
+    assert out['out'] == read_file_to_list(expected_file_name.format(pipename))
 
 
 def test_pipeline_nested_for_groups_from_iterators():
     """Nested call control-of-flow works with groups set from iterators."""
-    pipename = 'tests/pipelines/call/nestedforgroupsfromiterator'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run(
+        'tests/pipelines/call/nestedforgroupsfromiterator')
+
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'A: a',
+        'B: b',
+        'C: c',
+        'end SG1',
+        'sg1.2',
+        'A: a',
+        'B: b',
+        'C: c',
+        'end SG1',
+        'sg1.3',
+        'A: a',
+        'B: b',
+        'C: c',
+        'end SG1',
+        'end'
+    ]
 
 
 def test_pipeline_nested_for_formatted_groups():
     """Nested call control-of-flow works with groups set dynamically."""
-    pipename = 'tests/pipelines/call/nestedforformatted'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nestedforformatted')
 
-# ------------------------- for ----------------------------------------------#
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'sg2.a',
+        'sg2.b',
+        'sg2.c',
+        'sg1.2',
+        'gr2==end',
+        'gr2==end',
+        'gr2==end',
+        'sg1.3',
+        'gr2==end',
+        'gr2==end',
+        'gr2==end',
+        'end'
+    ]
 
-# ------------------------- while --------------------------------------------#
+# endregion for
+
+# region while
 
 
 def test_pipeline_nested_while():
     """Nested call control-of-flow works with while loop."""
-    pipename = 'tests/pipelines/call/nestedwhile'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nestedwhile')
+
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'sg1.2',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'sg1.3',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'end'
+    ]
 
 
 def test_pipeline_nested_while_swallow():
     """Nested call control-of-flow works with while loop swallowing errors."""
-    pipename = 'tests/pipelines/call/nestedwhileswallow'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run('tests/pipelines/call/nestedwhileswallow')
+
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'sg1.2',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'sg1.3',
+        'sg2.1',
+        'sg2.2',
+        'sg2.3',
+        'end'
+    ]
 
 
 def test_pipeline_nested_while_for():
     """Nested call control-of-flow works with while loop AND foreach."""
     pipename = 'tests/pipelines/call/nestedwhilefor'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+
+    out = pipelinerunner.run(pipename)
+    assert out['out'] == read_file_to_list(expected_file_name.format(pipename))
 
 
 def test_pipeline_nested_while_for_retry():
     """Nested call control-of-flow works with while AND foreach AND retry."""
     pipename = 'tests/pipelines/call/nestedwhileforretry'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    out = pipelinerunner.run(pipename)
+    assert out['out'] == read_file_to_list(expected_file_name.format(pipename))
 
-# ------------------------- while --------------------------------------------#
+# endregion while
 
-# ------------------------- retries ------------------------------------------#
+# region retries
 
 
 def test_pipeline_nested_retries():
-    """Nested call control-of-flow works with while loop."""
-    pipename = 'tests/pipelines/call/nestedretries'
-    expected = expected_file_name.format(pipename)
-    test_pipe_runner.assert_pipeline_notify_match_file(pipename, expected)
+    """Nested call control-of-flow works with retry loop."""
+    out = pipelinerunner.run('tests/pipelines/call/nestedretries')
 
-# ------------------------- retries ------------------------------------------#
+    assert out['out'] == [
+        'begin',
+        'sg1.1',
+        'sg2.1',
+        'sg1.2',
+        'sg2.1',
+        'sg1.3',
+        'sg2.1',
+        'no err on sg1.3 Retry counter because of nesting is 1',
+        'outer retry counter = 3',
+        'end'
+    ]
+# endregion retries

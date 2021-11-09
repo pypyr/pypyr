@@ -1,55 +1,75 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     foreach: [1,2,3]
     in:
       call:
         groups: A
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 A:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'A.{i}'
+      append:
+        list: out
+        addMe: 'A.{i}'
   - name: pypyr.steps.call
     foreach: ['a', 'b', 'c']
     in:
       call:
         groups: B
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end A
+      append:
+        list: out
+        addMe: end A
 B:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'B.{i}'
+      append:
+        list: out
+        addMe: 'B.{i}'
   - name: pypyr.steps.call
     foreach: ['i', 'ii', 'iii']
     in:
       call:
         groups: C
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end B
+      append:
+        list: out
+        addMe: end B
 C:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'C.{i}'
+      append:
+        list: out
+        addMe: 'C.{i}'
   - name: pypyr.steps.call
     foreach: ['x', 'xx', 'xxx']
     in:
       call:
         groups: D
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end C
+      append:
+        list: out
+        addMe: end C
 D:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'D.{i}'
-  - name: pypyr.steps.echo
+      append:
+        list: out
+        addMe: 'D.{i}'
+  - name: pypyr.steps.append
     in:
-      echoMe: end D
+      append:
+        list: out
+        addMe: end D

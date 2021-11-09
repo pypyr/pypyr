@@ -1,25 +1,33 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     foreach: [1,2,3]
     in:
       call:
         groups: ['sg1']
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{i}'
+      append:
+        list: out
+        addMe: 'sg1.{i}'
   - name: pypyr.steps.call
     foreach: ['a', 'b', 'c']
     in:
       call:
         groups: ['sg2']
 sg2:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg2.{i}'
+      append:
+        list: out
+        addMe: 'sg2.{i}'

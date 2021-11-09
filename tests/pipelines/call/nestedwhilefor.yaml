@@ -1,7 +1,9 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     while:
       max: 3
@@ -9,18 +11,22 @@ steps:
     in:
       call:
         groups: sg1
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.contextsetf
+  - name: pypyr.steps.set
     in:
-      contextSetf:
+      set:
         outerwhile: '{whileCounter}'
         sg1i: '{i}'
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{whileCounter}.{i}'
+      append:
+        list: out
+        addMe: 'sg1.{whileCounter}.{i}'
   - name: pypyr.steps.call
     foreach: ['i', 'ii', 'iii']
     while:
@@ -28,10 +34,14 @@ sg1:
     in:
       call:
         groups: sg2
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: sg1 end
+      append:
+        list: out
+        addMe: sg1 end
 sg2:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}'
+      append:
+        list: out
+        addMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}'
