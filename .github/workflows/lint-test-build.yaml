@@ -3,12 +3,12 @@ name: lint-test-build
 on:
   push:
     branches:
-      - master
+      - main
     tags-ignore:
       - '**'
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -47,7 +47,7 @@ jobs:
             ${{ runner.os }}-tox-
 
       - name: Run build pipeline for linting, testing & packaging verification.
-        uses: pypyr/run-in-tox-action@master
+        uses: pypyr/run-in-tox-action@main
         with:
           pipeline: ops/build package
           # python-version: ${{ matrix.python-version }}

@@ -1,12 +1,12 @@
 name: tag-release
 
-# only runs on master push AFTER full ci lint/test/build job matrix completes.
+# only runs on main push AFTER full ci lint/test/build job matrix completes.
 on:
   workflow_run:
     workflows:
       - lint-test-build
     branches:
-      - master
+      - main
     types:
       - completed
 
@@ -44,6 +44,6 @@ jobs:
             ${{ runner.os }}-tox-
 
       - name: run tag pipeline.
-        uses: pypyr/run-in-tox-action@master
+        uses: pypyr/run-in-tox-action@main
         with:
           pipeline: ops/tag
