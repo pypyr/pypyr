@@ -1,43 +1,57 @@
 steps:
-  - name: pypyr.steps.contextsetf
+  - name: pypyr.steps.set
     in:
-      contextSetf:
+      set:
         fr1: [1,2,3]
         fr2: ['a', 'b', 'c']
         gr1: 'sg1'
         gr2: 'sg2'
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     foreach: '{fr1}'
     in:
       call:
         groups: '{gr1}'
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{i}'
+      append:
+        list: out
+        addMe: 'sg1.{i}'
   - name: pypyr.steps.call
     foreach: '{fr2}'
     in:
       call:
         groups: '{i}'
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end SG1
+      append:
+        list: out
+        addMe: end SG1
 a:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'A: {i}'
+      append:
+        list: out
+        addMe: 'A: {i}'
 b:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'B: {i}'
+      append:
+        list: out
+        addMe: 'B: {i}'
 c:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'C: {i}'
+      append:
+        list: out
+        addMe: 'C: {i}'

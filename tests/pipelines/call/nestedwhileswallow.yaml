@@ -1,7 +1,9 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     while:
       max: 3
@@ -9,13 +11,17 @@ steps:
     in:
       call:
         groups: sg1
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{whileCounter}'
+      append:
+        list: out
+        addMe: 'sg1.{whileCounter}'
   - name: pypyr.steps.call
     while:
       max: 3
@@ -27,6 +33,8 @@ sg1:
       assert:
         this: false
 sg2:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg2.{whileCounter}'
+      append:
+        list: out
+        addMe: 'sg2.{whileCounter}'

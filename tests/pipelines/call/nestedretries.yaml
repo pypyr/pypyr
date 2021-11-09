@@ -1,23 +1,31 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     retry:
       max: 3
     in:
       call:
         groups: sg1
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'outer retry counter = {retryCounter}'
-  - name: pypyr.steps.echo
+      append:
+        list: out
+        addMe: 'outer retry counter = {retryCounter}'
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{retryCounter}'
+      append:
+        list: out
+        addMe: 'sg1.{retryCounter}'
   - name: pypyr.steps.contextcopy
     in:
       contextCopy:
@@ -33,10 +41,14 @@ sg1:
     in:
       assert:
         this: false
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'no err on sg1.{counterCopy} Retry counter because of nesting is {retryCounter}'
+      append:
+        list: out
+        addMe: 'no err on sg1.{counterCopy} Retry counter because of nesting is {retryCounter}'
 sg2:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg2.{retryCounter}'
+      append:
+        list: out
+        addMe: 'sg2.{retryCounter}'

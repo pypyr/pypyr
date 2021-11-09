@@ -1,7 +1,9 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
   - name: pypyr.steps.call
     while:
       max: 3
@@ -11,16 +13,20 @@ steps:
     in:
       call:
         groups: sg1
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'root.{whileCounter}.{i}.{retryCounter}'
-  - name: pypyr.steps.echo
+      append:
+        list: out
+        addMe: 'root.{whileCounter}.{i}.{retryCounter}'
+  - name: pypyr.steps.append
     in:
-      echoMe: end
+      append:
+        list: out
+        addMe: end
 sg1:
-  - name: pypyr.steps.contextsetf
+  - name: pypyr.steps.set
     in:
-      contextSetf:
+      set:
         outerwhile: '{whileCounter}'
         sg1i: '{i}'
   - name: pypyr.steps.call
@@ -32,26 +38,34 @@ sg1:
     in:
       call:
         groups: sg2
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg1.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
+      append:
+        list: out
+        addMe: 'sg1.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
   - name: pypyr.steps.assert
     run: !py 'retryCounter < 2'
     in:
       assert:
         this: false
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: sg1 end
+      append:
+        list: out
+        addMe: sg1 end
 sg2:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
+      append:
+        list: out
+        addMe: 'sg2.{outerwhile}.{sg1i}.{whileCounter}.{i}.{retryCounter}'
   - name: pypyr.steps.assert
     run: !py 'retryCounter < 3'
     in:
       assert:
         this: false
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: sg2 end
+      append:
+        list: out
+        addMe: sg2 end

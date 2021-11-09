@@ -1,51 +1,72 @@
 steps:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: begin
+      append:
+        list: out
+        addMe: begin
+
   - name: pypyr.steps.call
     in:
       call:
         groups: A
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end.
+      append:
+        list: out
+        addMe: end.
 A:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: A
+      append:
+        list: out
+        addMe: A
   - name: pypyr.steps.call
     in:
       call:
         groups: B
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end A
+      append:
+        list: out
+        addMe: end A
 B:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: B
+      append:
+        list: out
+        addMe: B
   - name: pypyr.steps.call
     in:
       call:
         groups: C
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end B
+      append:
+        list: out
+        addMe: end B
 C:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: C
+      append:
+        list: out
+        addMe: C
   - name: pypyr.steps.call
     in:
       call:
         groups: D
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: end C
+      append:
+        list: out
+        addMe: end C
 D:
-  - name: pypyr.steps.echo
+  - name: pypyr.steps.append
     in:
-      echoMe: D
-  - name: pypyr.steps.echo
+      append:
+        list: out
+        addMe: D
+  - name: pypyr.steps.append
     in:
-      echoMe: end D
+      append:
+        list: out
+        addMe: end D
