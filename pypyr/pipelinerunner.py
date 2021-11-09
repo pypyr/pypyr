@@ -82,7 +82,7 @@ def run(
         failure_group: (str): Step-group name to run on pipeline failure.
             Default is on_failure.
         loader (str): optional. Absolute name of pipeline loader module.
-                      If not specified will use pypyr.pypeloaders.fileloader.
+                      If not specified will use pypyr.loaders.file.
         py_dir (Path-like): Custom python modules resolve from this dir.
 
     Returns:

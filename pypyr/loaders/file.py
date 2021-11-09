@@ -176,7 +176,6 @@ def load_pipeline_from_file(path):
     # since path itself resolved, parent also already resolved.
     parent_dir = path.parent
 
-    # TODO: ONLY do this IF no py_dir in Pipeline??!
     add_sys_path(parent_dir)
 
     info = PipelineFileInfo(pipeline_name=path.name,

@@ -69,7 +69,7 @@ def run_step(context):
                   pipeline.
                 - loader: str. optional. Absolute name of pipeline loader
                   module. If not specified will use
-                  pypyr.pypeloaders.fileloader.
+                  pypyr.loaders.file.
                 - groups. list of str, or str. optional. Step-Groups to run in
                   pipeline. If you specify a str, will convert it to a single
                   entry list for you.

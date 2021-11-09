@@ -43,7 +43,7 @@ class Pipeline():
             name from cli.
         parse_input (bool): Default True. Run context_parser in pipeline.
         loader (str): Absolute name of pipeline loader module. If not specified
-            will use pypyr.pypeloaders.fileloader.
+            will use pypyr.loaders.file.
         groups (list[str]): Step-group names
         to run in pipeline. Default if not set is ['steps'].
         success_group (str): Step-group name to run on success completion.
@@ -80,7 +80,7 @@ class Pipeline():
                 pipeline name from cli.
             parse_input (bool): Default True. Run context_parser in pipeline.
             loader (str): Absolute name of pipeline loader module.
-                        If not specified will use pypyr.pypeloaders.fileloader.
+                        If not specified will use pypyr.loaders.file.
             groups (list[str]): Step-group names to run in pipeline.
                                 Default if not set is ['steps'].
             success_group (str): Step-group name to run on success completion.

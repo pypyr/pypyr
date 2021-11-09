@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 import pytest
 
 from pypyr.errors import PipelineNotFoundError
-import pypyr.pypeloaders.fileloader as fileloader
+import pypyr.loaders.file as fileloader
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
 
 # region get_pipeline_path
@@ -39,9 +39,9 @@ def test_get_pipeline_path_in_parent():
 def test_get_pipeline_path_in_cwd_pipelines():
     """Find a pipeline in cwd/pipelines."""
     # artificially change the cwd constant
-    with (patch('pypyr.pypeloaders.fileloader.CWD',
+    with (patch('pypyr.loaders.file.CWD',
                 new=cwd_tests),
-          patch('pypyr.pypeloaders.fileloader.cwd_pipelines_dir',
+          patch('pypyr.loaders.file.cwd_pipelines_dir',
           new=cwd_tests.joinpath('pipelines'))):
         path_found = fileloader.get_pipeline_path('testpipeline', None)
 
@@ -128,12 +128,12 @@ def test_get_pipeline_path_raises_parent_is_cwd():
 
 
 @patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
-@patch('pypyr.pypeloaders.fileloader.get_pipeline_path',
+@patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_pass(mocked_get_path,
                                       mocked_yaml):
     """get_pipeline_definition passes correct params to all methods."""
-    with patch('pypyr.pypeloaders.fileloader.open',
+    with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
         pipeline_def = fileloader.get_pipeline_definition(
             'pipename', '/parent/dir')
@@ -151,12 +151,12 @@ def test_get_pipeline_definition_pass(mocked_get_path,
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
 
 
-@patch('pypyr.pypeloaders.fileloader.get_pipeline_path',
+@patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_file_not_found(mocked_get_path):
     """get_pipeline_definition raises file not found."""
     fileloader._file_cache.clear()
-    with patch('pypyr.pypeloaders.fileloader.open',
+    with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
         mocked_open.side_effect = FileNotFoundError('deliberate err')
         with pytest.raises(FileNotFoundError):

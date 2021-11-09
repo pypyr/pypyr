@@ -109,7 +109,7 @@ class LoaderCache(Cache):
     def get_pype_loader(self, loader=None):
         """Get cached Loader instance.
 
-        Defaults to pypyr.pypeloaders.fileloader if loader not specified.
+        Defaults to pypyr.loaders.file if loader not specified.
 
         Load the module specified by this absolute name, get its
         get_pipeline_definition function, wrap it in a Loader instance, and add
@@ -128,7 +128,7 @@ class LoaderCache(Cache):
         if loader:
             logger.debug("you set the pype loader to: %s", loader)
         else:
-            loader = 'pypyr.pypeloaders.fileloader'
+            loader = 'pypyr.loaders.file'
             logger.debug("use default pype loader: %s", loader)
 
         loader_instance = self.get(loader, lambda: load_the_loader(loader))
