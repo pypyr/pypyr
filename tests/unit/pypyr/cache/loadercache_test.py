@@ -81,8 +81,8 @@ def test_get_pype_loader_default():
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader()
 
-    mock_get_module.assert_called_once_with('pypyr.pypeloaders.fileloader')
-    assert loader.name == 'pypyr.pypeloaders.fileloader'
+    mock_get_module.assert_called_once_with('pypyr.loaders.file')
+    assert loader.name == 'pypyr.loaders.file'
 
     loader.get_pipeline('arb', 'parent')
     mock_get_def.assert_called_once_with(pipeline_name='arb', parent='parent')

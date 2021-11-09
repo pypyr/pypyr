@@ -223,9 +223,9 @@ def test_loader_no_get_pipeline_definition():
     )
 
 
-@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition')
+@patch('pypyr.loaders.file.get_pipeline_definition')
 def test_empty_loader_set_up_to_default(mock_get_pipeline_definition):
-    """Default loader should be pypyr.pypeloaders.fileloader."""
+    """Default loader should be pypyr.loaders.file."""
     loader_cache.clear()
 
     mock_get_pipeline_definition.return_value = get_pipe_def({'steps': None})
@@ -239,10 +239,10 @@ def test_empty_loader_set_up_to_default(mock_get_pipeline_definition):
     )
 
 
-@patch('pypyr.pypeloaders.fileloader.get_pipeline_definition')
+@patch('pypyr.loaders.file.get_pipeline_definition')
 def test_empty_loader_set_up_to_default_with_parent(
         mock_get_pipeline_definition):
-    """Default loader should be pypyr.pypeloaders.fileloader with parent."""
+    """Default loader should be pypyr.loaders.file with parent."""
     loader_cache.clear()
 
     mock_get_pipeline_definition.return_value = get_pipe_def({'steps': None})
