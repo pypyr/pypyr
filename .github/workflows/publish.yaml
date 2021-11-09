@@ -35,7 +35,7 @@ jobs:
             ${{ runner.os }}-tox-
               
       - name: Run publish pipeline
-        uses: pypyr/run-in-tox-action@master
+        uses: pypyr/run-in-tox-action@main
         with:
           pipeline: ops/build package publish
         env:
