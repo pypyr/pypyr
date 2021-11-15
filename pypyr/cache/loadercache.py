@@ -63,7 +63,7 @@ class Loader():
                 metadata for the pipeline.
         """
         # str keys perform better than tuples in dicts
-        normalized_name = f'{empty_if_none(parent)}+{empty_if_none(name)}'
+        normalized_name = f'{parent}+{name}' if parent else name
         return self._pipeline_cache.get(
             normalized_name,
             lambda: self._load_pipeline(name, parent))
