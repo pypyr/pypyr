@@ -8,7 +8,6 @@ import logging
 from pypyr.cache.cache import Cache
 import pypyr.moduleloader
 from pypyr.pipedef import PipelineDefinition, PipelineInfo
-from pypyr.utils.types import empty_if_none
 
 logger = logging.getLogger(__name__)
 

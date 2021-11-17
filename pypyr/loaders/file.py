@@ -54,10 +54,11 @@ def find_pipeline(file_name, dirs):
 def get_pipeline_path(pipeline_name, parent):
     """Look for the pipeline in the various places it could be.
 
-    1. Check in parent, if it's specified
-    2. Checks the cwd, if it's not the same as parent (1)
-    3. Then check cwd/pipelines
-    4. Then check {pypyr install dir}/pipelines dir.
+    1. If absolute path, just check that
+    2. Check in parent, if it's specified
+    3. Checks the cwd, if it's not the same as parent (2)
+    4. Then check cwd/pipelines
+    5. Then check {pypyr install dir}/pipelines dir.
 
     Args:
         pipeline_name (str): Name of pipeline to find
@@ -76,40 +77,51 @@ def get_pipeline_path(pipeline_name, parent):
     search_locations = []
     file_name = f'{pipeline_name}.yaml'
 
-    # 1. parent/{pipeline_name}.yaml: go to 2 if parent == cwd
-    if parent:
-        parent = parent if isinstance(parent, Path) else Path(parent)
-        # do a resolve so that full path ends up in searched_locations err msg.
-        parent = parent.resolve()
-        # samefile raises err if either path doesn't .exist
-        if parent.exists():
-            if not parent.samefile(CWD):
-                search_locations.append((
-                    parent,
-                    "%s not found in parent pipeline directory. "
-                    "Looking in cwd instead."))
+    # 1. absolute paths
+    abs_candidate = Path(file_name)
+    if abs_candidate.is_absolute():
+        if abs_candidate.is_file():
+            logger.debug("Found %s", abs_candidate)
+            logger.debug("done")
+            return abs_candidate.resolve()
         else:
-            logger.debug(
-                'parent dir %s does not exist. skipping to cwd look-up.',
-                parent)
+            raise PipelineNotFoundError(f"{abs_candidate} does not exist.")
+    else:
+        # 2. parent/{pipeline_name}.yaml: go to 2 if parent == cwd
+        if parent:
+            parent = parent if isinstance(parent, Path) else Path(parent)
+            # do a resolve so that full path in searched_locations err msg.
+            parent = parent.resolve()
+            # samefile raises err if either path doesn't .exist
+            if parent.exists():
+                if not parent.samefile(CWD):
+                    search_locations.append((
+                        parent,
+                        "%s not found in parent pipeline directory. "
+                        "Looking in cwd instead."))
+            else:
+                logger.debug(
+                    'parent dir %s does not exist. skipping to cwd look-up.',
+                    parent)
 
-    # 2. cwd/{pipeline_name}.yaml
-    search_locations.append((CWD,
-                             "%s not found in cwd. "
-                             "Looking in 'cwd/pipelines' instead."))
+        # 3. {cwd}/{pipeline_name}.yaml
+        search_locations.append((CWD,
+                                "%s not found in cwd. "
+                                 "Looking in 'cwd/pipelines' instead."))
 
-    # 3. {cwd}/pipelines/{pipeline_name}.yaml
-    search_locations.append((cwd_pipelines_dir,
-                             "%s not found in cwd/pipelines. "
-                             "Looking in pypyr install directory instead."))
+        # 4. {cwd}/pipelines/{pipeline_name}.yaml
+        search_locations.append((cwd_pipelines_dir,
+                                "%s not found in cwd/pipelines. "
+                                 "Looking in pypyr install directory instead.")
+                                )
 
-    # 4. {pypyr dir}/pipelines/{pipeline_name}.yaml
-    search_locations.append((builtin_pipelines_dir,
-                             "%s not found in {pypyr-dir}/pipelines."))
+        # 5. {pypyr dir}/pipelines/{pipeline_name}.yaml
+        search_locations.append((builtin_pipelines_dir,
+                                "%s not found in {pypyr-dir}/pipelines."))
 
-    pipeline_path = find_pipeline(file_name, search_locations)
-    logger.debug("done")
-    return pipeline_path
+        pipeline_path = find_pipeline(file_name, search_locations)
+        logger.debug("done")
+        return pipeline_path
 
 # endregion find pipeline path
 

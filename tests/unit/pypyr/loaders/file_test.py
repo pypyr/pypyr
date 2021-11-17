@@ -15,6 +15,39 @@ cwd_tests = cwd.joinpath('tests')
 pypyr_path = cwd.joinpath('pypyr', 'pipelines')
 
 
+def test_get_pipeline_path_absolute_path():
+    """Find a pipeline with absolute path."""
+    abs_path = Path('tests/testpipelinewd.yaml').resolve()
+    str_abs_sans_yaml = str(abs_path.with_suffix(''))
+
+    path_found = fileloader.get_pipeline_path(str_abs_sans_yaml, None)
+
+    expected_path = cwd_tests.joinpath('testpipelinewd.yaml')
+    assert path_found == expected_path
+
+
+def test_get_pipeline_path_absolute_path_ignore_parent():
+    """Find a pipeline with absolute path ignore parent input."""
+    abs_path = Path('tests/testpipelinewd.yaml').resolve()
+    str_abs_sans_yaml = str(abs_path.with_suffix(''))
+
+    path_found = fileloader.get_pipeline_path(str_abs_sans_yaml, 'parent')
+
+    expected_path = cwd_tests.joinpath('testpipelinewd.yaml')
+    assert path_found == expected_path
+
+
+def test_get_pipeline_path_absolute_path_not_found():
+    """Error when can't find pipeline with absolute path."""
+    abs_path = Path('tests/XXXZZZ.yaml').resolve()
+    str_abs_sans_yaml = str(abs_path.with_suffix(''))
+
+    with pytest.raises(PipelineNotFoundError) as err:
+        fileloader.get_pipeline_path(str_abs_sans_yaml, None)
+
+    assert str(err.value) == f'{cwd_tests}/XXXZZZ.yaml does not exist.'
+
+
 def test_get_pipeline_path_no_parent():
     """Find a pipeline in the working dir when no parent."""
     path_found = fileloader.get_pipeline_path(
