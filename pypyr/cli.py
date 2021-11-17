@@ -71,8 +71,8 @@ def get_parser():
         description='pypyr pipeline runner',
         formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('pipeline_name',
-                        help=wrap('Name of pipeline to run. It should exist '
-                                  'in the ./pipelines directory.'))
+                        help=wrap('Name of pipeline to run. Don`t add the '
+                                  '.yaml at the end.'))
     parser.add_argument(dest='context_args',
                         nargs='*',
                         default=None,
