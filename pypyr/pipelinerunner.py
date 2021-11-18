@@ -4,9 +4,10 @@ This is the entrypoint for the pypyr API.
 
 Use run() to run a pipeline.
 """
+# can remove __future__ once py 3.10 the lowest supported version
+from __future__ import annotations
 import logging
 from os import PathLike
-from typing import Optional, Union
 
 from pypyr.context import Context
 from pypyr.pipeline import Pipeline
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 
 def run(
     pipeline_name: str,
-    args_in: Optional[list[str]] = None,
-    parse_args: Optional[bool] = None,
-    dict_in: Optional[dict] = None,
-    groups: Optional[list[str]] = None,
-    success_group: Optional[str] = None,
-    failure_group: Optional[str] = None,
-    loader: Optional[str] = None,
-    py_dir: Optional[Union[str, bytes, PathLike]] = None
+    args_in: list[str] | None = None,
+    parse_args: bool | None = None,
+    dict_in: dict | None = None,
+    groups: list[str] | None = None,
+    success_group: str | None = None,
+    failure_group: str | None = None,
+    loader: str | None = None,
+    py_dir: str | bytes | PathLike | None = None
 ) -> Context:
     """Run a pipeline. pypyr's entrypoint.
 

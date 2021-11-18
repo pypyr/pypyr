@@ -8,9 +8,10 @@ body & loader properties. The Pipeline is specific to a single running instance
 of a pipeline, whereas the PipelineDefinition is shared by different Pipeline
 instances.
 """
+# can remove __future__ once py 3.10 the lowest supported version
+from __future__ import annotations
 import logging
 from os import PathLike
-from typing import Optional, Union
 
 from pypyr.cache.loadercache import loader_cache
 from pypyr.cache.parsercache import contextparser_cache
@@ -65,13 +66,13 @@ class Pipeline():
 
     def __init__(self,
                  name: str,
-                 context_args: Optional[list[str]] = None,
-                 parse_input: Optional[bool] = True,
-                 loader: Optional[str] = None,
-                 groups: Optional[list[str]] = None,
-                 success_group: Optional[str] = None,
-                 failure_group: Optional[str] = None,
-                 py_dir: Optional[Union[str, bytes, PathLike]] = None) -> None:
+                 context_args: list[str] | None = None,
+                 parse_input: bool | None = True,
+                 loader: str | None = None,
+                 groups: list[str] | None = None,
+                 success_group: str | None = None,
+                 failure_group: str | None = None,
+                 py_dir: str | bytes | PathLike | None = None) -> None:
         """Initialize a Pipeline.
 
         Args:
