@@ -50,8 +50,8 @@ class Loader():
         The cache is local to this Loader instance.
 
         The combination of parent+name must be unique for this Loader. Parent
-        should therefore have a sensible __str__ implementation because
-        it's forms part of the pipeline's identifying key in the cache.
+        should therefore have a sensible __str__ implementation because it
+        forms part of the pipeline's identifying str key in the cache.
 
         Args:
             name (str): Name of pipeline, sans .yaml at end.

@@ -1,7 +1,6 @@
 """context.py unit tests."""
 import builtins
 from collections.abc import MutableMapping
-from pathlib import Path
 import pickle
 import typing
 
@@ -132,8 +131,7 @@ def test_context_missing_raise_key_error():
 def test_context_pickles():
     """Context survives a pickle."""
     og = Context(a='b', c='e f')
-    og.pipeline_name = 'arb'
-    og.working_dir = Path('/arb')
+
     og.pystring_globals_update(g='h')
 
     dumped = pickle.dumps(og)
@@ -149,8 +147,8 @@ def test_context_pickles():
     assert og._pystring_namespace['c'] == 'e f'
 
     assert type(reloaded) is Context
-    assert reloaded.pipeline_name == 'arb'
-    assert reloaded.working_dir == Path('/arb')
+    assert reloaded.current_pipeline is None
+    assert not reloaded._stack
     assert reloaded == {'a': 'b', 'c': 'e f'}
     assert reloaded._pystring_globals == {'g': 'h'}
     assert list(dict.items(reloaded._pystring_namespace)) == [
