@@ -3,7 +3,7 @@
 # pypyr automation task runner
 All documentation is here: <https://pypyr.io/>
 
-[![build status](https://github.com/pypyr/pypyr/workflows/lint-test-build/badge.svg)](https://github.com/pypyr/pypyr/actions)
+[![build status](https://github.com/pypyr/pypyr/workflows/lint-test-build/badge.svg?branch=main)](https://github.com/pypyr/pypyr/actions)
 [![coverage status](https://codecov.io/gh/pypyr/pypyr/branch/main/graph/badge.svg)](https://codecov.io/gh/pypyr/pypyr)
 [![pypi version](https://badge.fury.io/py/pypyr.svg)](https://pypi.python.org/pypi/pypyr/)
 [![apache 2.0 license](https://img.shields.io/github/license/pypyr/pypyr)](https://opensource.org/licenses/Apache-2.0)

@@ -72,10 +72,10 @@ def test_get_pipeline_path_in_parent():
 def test_get_pipeline_path_in_cwd_pipelines():
     """Find a pipeline in cwd/pipelines."""
     # artificially change the cwd constant
-    with (patch('pypyr.loaders.file.CWD',
-                new=cwd_tests),
-          patch('pypyr.loaders.file.cwd_pipelines_dir',
-          new=cwd_tests.joinpath('pipelines'))):
+    # when py 3.10 can use () instead of \ for multiline "with"
+    with patch('pypyr.loaders.file.CWD', new=cwd_tests), \
+        patch('pypyr.loaders.file.cwd_pipelines_dir',
+              new=cwd_tests.joinpath('pipelines')):
         path_found = fileloader.get_pipeline_path('testpipeline', None)
 
     expected_path = cwd_tests.joinpath('pipelines', 'testpipeline.yaml')
