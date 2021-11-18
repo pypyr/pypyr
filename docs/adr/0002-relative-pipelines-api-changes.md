@@ -416,7 +416,7 @@ does not incur this degree of risky open-heart surgery.
         - pipeline yaml references is amenable to update with find & replace.
         - cli invocation becomes `$ pypyr mydir/mypipe` rather than `$ pypyr
           mypipe --dir mydir`.
-- This _could_ a breaking change for pipeline authors that use `pype`.
+- This _could_ be a breaking change for pipeline authors that use `pype`.
     - `pype` will only break in some cases when the containing pipeline was
       called with `working_dir`.
     - This aside, the mitigation is that the pipeline sequence and custom module

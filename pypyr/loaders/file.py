@@ -171,7 +171,7 @@ def load_pipeline_from_file(path):
         dict describing the pipeline, parsed from the pipeline yaml.
 
     Raises:
-    FileNotFoundError: path not found.
+        FileNotFoundError: path not found.
     """
     logger.debug("starting")
 

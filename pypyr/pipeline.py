@@ -12,8 +12,8 @@ import logging
 from os import PathLike
 from typing import Optional, Union
 
-from pypyr.cache.parsercache import contextparser_cache
 from pypyr.cache.loadercache import loader_cache
+from pypyr.cache.parsercache import contextparser_cache
 from pypyr.context import Context
 from pypyr.errors import Stop, StopPipeline, StopStepGroup
 import pypyr.moduleloader
@@ -44,12 +44,12 @@ class Pipeline():
         parse_input (bool): Default True. Run context_parser in pipeline.
         loader (str): Absolute name of pipeline loader module. If not specified
             will use pypyr.loaders.file.
-        groups (list[str]): Step-group names
-        to run in pipeline. Default if not set is ['steps'].
+        groups (list[str]): Step-group names to run in pipeline.
+            Default if not set is ['steps'].
         success_group (str): Step-group name to run on success completion.
             Default if not set is on_success.
-        failure_group (str: Step-group name to run on pipeline
-        failure. Default if not set is on_failure.
+        failure_group (str: Step-group name to run on pipeline failure.
+            Default if not set is on_failure.
         py_dir (Path-like): Custom python modules resolve from this dir.
         pipeline_definition (pypyr.pipedef.PipelineDefinition): The pipeline
             definition (its body/yaml payload) and loader information.

@@ -70,6 +70,12 @@ class Context(dict):
         # no need to persist builtins - will rehydrate these on setstate.
         # do want to keep any custom py imports, though.
         del state['_pystring_namespace']
+
+        # can't pickle Pipeline - refs PipelineDefinition in cache that might
+        # not exist anymore
+        del state['_stack']
+        del state['current_pipeline']
+
         return state
 
     def __setstate__(self, state):
@@ -81,6 +87,9 @@ class Context(dict):
         self.__dict__.update(state)
         self._pystring_namespace = _ChainMapPretendDict(self,
                                                         self._pystring_globals)
+
+        self._stack = deque()
+        self.current_pipeline = None
 
     # endregion serialization
 

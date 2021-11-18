@@ -27,8 +27,7 @@ def run(
 ) -> Context:
     """Run a pipeline. pypyr's entrypoint.
 
-    Call this once per pypyr run. Call me if you want to run a pypyr pipeline
-    from your own code.
+    Call me if you want to run a pypyr pipeline from your own code.
 
     If you want to run a pipeline exactly like the cli does, use args_in to
     pass a list of str arguments for the pipeline's context_parser. If you
@@ -38,9 +37,9 @@ def run(
     (parse_args=False) - if you do want to run the context_parser in this case,
     explicitly set parse_args=True.
 
-    If you're invoking pypyr from your own application via the API,
-    it's your responsibility to set up and configure logging. If you just want
-    to replicate the log handlers & formatters that the pypyr cli uses, you can
+    If you're invoking pypyr from your own application via the API, it's your
+    responsibility to set up and configure logging. If you just want to
+    replicate the log handlers & formatters that the pypyr cli uses, you can
     call pypyr.log.logger.set_root_logger() once and only once before invoking
     run() for every pipeline you want to run.
 
@@ -53,19 +52,22 @@ def run(
     You only need to specify py_dir if your pipeline relies on custom modules
     that are NOT installed in the current Python environment. For convenience,
     pypyr allows pipeline authors to use ad hoc python modules that are not
-    installed in the current environment by looking for these in the py_dir
-    1st. Regardless of whether you set py_dir or not, be aware that if you are
-    using the default file loader, pypyr will also add the pipeline's immediate
+    installed in the current environment by looking for these in py_dir 1st.
+
+    Regardless of whether you set py_dir or not, be aware that if you are using
+    the default file loader, pypyr will also add the pipeline's immediate
     parent directory to sys.path (only if it's not been added already), so that
     each pipeline can reference ad hoc modules relative to itself in the
     filesystem.
 
+    Therefore you do NOT need to set py_dir if your ad hoc custom modules are
+    relative to the pipeline itself.
+
     If your pipelines are only using built-in functionality, you don't need to
     set py_dir.
 
-    Example:
-    Run ./dir/pipe-name.yaml, resolve ad hoc custom modules from the current
-    directory and initialize context with dict {'a': 'b'}:
+    Example: Run ./dir/pipe-name.yaml, resolve ad hoc custom modules from the
+    current directory and initialize context with dict {'a': 'b'}:
 
     context = run('dir/pipe-name', dict_in={'a': 'b'}, py_dir=Path.cwd())
 
@@ -75,19 +77,19 @@ def run(
             from cli.
         parse_args (bool): run context_parser in pipeline. Default True.
         dict_in (dict): Dict-like object to initialize the Context.
-        groups: (list[str]): Step-group names to run in pipeline. Default
-            is ['steps'].
+        groups: (list[str]): Step-group names to run in pipeline.
+            Default is ['steps'].
         success_group (str): Step-group name to run on success completion.
             Default is on_success.
         failure_group: (str): Step-group name to run on pipeline failure.
             Default is on_failure.
         loader (str): optional. Absolute name of pipeline loader module.
-                      If not specified will use pypyr.loaders.file.
+            If not specified will use pypyr.loaders.file.
         py_dir (Path-like): Custom python modules resolve from this dir.
 
     Returns:
         pypyr.context.Context(): The pypyr context as it is after the pipeline
-                                 completes.
+                                  completes.
     """
     logger.debug("starting pypyr")
 
