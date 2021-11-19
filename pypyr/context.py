@@ -344,37 +344,6 @@ class Context(dict):
                 f'because {err}'
             ) from err
 
-    def get_formatted_iterable(self, obj, memo=None):
-        """Use get_formatted_value(input_value) instead. Deprecated."""
-        from warnings import warn
-        warn(
-            ("Use get_formatted_value(input_value) instead of "
-             "get_formatted_iterable"),
-            DeprecationWarning)
-        return self.formatter.vformat(obj, None, self)
-
-    def get_formatted_string(self, input_string):
-        """Use get_formatted_value(input_value) instead. Deprecated."""
-        from warnings import warn
-        warn(
-            ("Use get_formatted_value(input_value) instead of "
-             "get_formatted_string"),
-            DeprecationWarning)
-        if isinstance(input_string, str):
-            try:
-                return self.formatter.vformat(input_string, None, self)
-            except KeyNotInContextError as err:
-                # Wrapping the KeyError into a less cryptic error for end-user
-                # friendliness
-                raise KeyNotInContextError(
-                    f'Unable to format \'{input_string}\' because {err}'
-                ) from err
-        elif isinstance(input_string, SpecialTagDirective):
-            return input_string.get_value(self)
-        else:
-            raise TypeError(f"can only format on strings. {input_string} is a "
-                            f"{type(input_string)} instead.")
-
     def get_formatted_as_type(self, value, default=None, out_type=str):
         """Return formatted value for input value, returns as out_type.
 
@@ -464,15 +433,6 @@ class Context(dict):
 
         """
         return self.formatter.vformat(input_value, None, self)
-
-    def get_processed_string(self, input_string):
-        """Use get_formatted_value(input_value) instead. Deprecated."""
-        from warnings import warn
-        warn(
-            ("Use get_formatted_value(input_value) instead of "
-             "get_processed_string"),
-            DeprecationWarning)
-        return self.formatter.vformat(input_string, None, self)
 
     def iter_formatted_strings(self, iterable_strings):
         """Yield a formatted string from iterable_strings.

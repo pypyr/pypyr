@@ -869,35 +869,30 @@ def test_context_item_list_should_iterate():
     assert val == ['string1', 'value1', 'string3']
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_interpolate_works():
     """Interpolate strings."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'Piping {key1} the {key2} wild'
-    output = context.get_formatted_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'Piping down the valleys wild', (
         "string interpolation incorrect")
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_tag_not_in_context_should_throw():
     """Interpolate not in context."""
     with pytest.raises(KeyNotInContextError) as err_info:
         context = Context({'key1': 'value1'})
         input_string = '{key1} this is {key2} string'
-        context.get_formatted_string(input_string)
+        context.get_formatted_value(input_string)
 
-    assert str(err_info.value) == (
-        "Unable to format '{key1} this is {key2} "
-        "string' because key2 not found in the pypyr context.")
+    assert str(err_info.value) == "key2 not found in the pypyr context."
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_input_string_interpolate_sic():
     """Interpolate sic."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = SicString("Piping {key1} the {key2} wild")
-    output = context.get_formatted_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == "Piping {key1} the {key2} wild", (
         "string interpolation incorrect")
 
@@ -920,35 +915,10 @@ def test_input_string_interpolate_py_singlequote():
         "string interpolation incorrect")
 
 
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_input_string_not_a_string_throw():
-    """Interpolate takes string."""
-    with pytest.raises(TypeError) as err_info:
-        context = Context({'key1': 'value1'})
-        input_string = 77
-        context.get_formatted_string(input_string)
-
-    assert str(err_info.value) == (
-        "can only format on strings. 77 is a <class 'int'> instead.")
-
-
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_get_formatted_iterable_list_deprecated():
-    """Simple list."""
-    input_obj = ['k1', 'k2', '{ctx3}', True, False, 44]
-
-    context = Context(
-        {'ctx1': 'ctxvalue1', 'ctx2': 'ctxvalue2', 'ctx3': 'ctxvalue3'})
-
-    output = context.get_formatted_iterable(input_obj)
-
-    assert output is not input_obj
-    assert output[0] == 'k1'
-    assert output[1] == 'k2'
-    assert output[2] == 'ctxvalue3'
-    assert output[3]
-    assert not output[4]
-    assert output[5] == 44
+def test_input_string_not_a_string_on_interpolate_return_og():
+    """Interpolate returns original if not string."""
+    context = Context({'key1': 'value1'})
+    assert 77 == context.get_formatted_value(77)
 
 
 def test_get_formatted_iterable_list():
@@ -1609,7 +1579,6 @@ def test_get_formatted_value_list():
     assert context.get_formatted_value(['{k1}', 12, 13]) == [10, 12, 13]
 
 
-@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_no_interpolation():
     """On get_processed_string on plain string returns plain."""
     context = Context(
@@ -1620,27 +1589,25 @@ def test_get_processed_string_no_interpolation():
 
     input_string = 'test string here'
 
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
 
     assert input_string == output
 
 
-@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_get_processed_string_with_interpolation():
     """Process string with interpolation."""
     context = Context({'key1': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = 'Piping {key1} the {key2} wild'
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'Piping down the valleys wild', (
         "string interpolation incorrect")
 
 
-@ pytest.mark.filterwarnings("ignore::DeprecationWarning")
-def test_get_processed_string_shorter_than_6_with_interpolation():
-    """Process string with interpolation."""
+def test_get_processed_string_bare_interpolation():
+    """Process string with interpolation with bare expression."""
     context = Context({'k': 'down', 'key2': 'valleys', 'key3': 'value3'})
     input_string = '{k}'
-    output = context.get_processed_string(input_string)
+    output = context.get_formatted_value(input_string)
     assert output == 'down', (
         "string interpolation incorrect")
 
