@@ -9,7 +9,7 @@ steps:
     description: --> validate code & packaging before version bump
     in:
       pype:
-         name: ops/build
+         name: build
          args:
           argList:
             - package
@@ -17,7 +17,7 @@ steps:
     description: --> getting current version
     in:
       pype:
-          name: ops/build
+          name: build
           groups: get_version
   - name: pypyr.steps.cmd
     description: --> bumping version
@@ -31,5 +31,5 @@ steps:
     description: --> getting new version
     in:
       pype:
-          name: ops/build
+          name: build
           groups: get_version
