@@ -1,5 +1,5 @@
 """yaml handling functions."""
-import ruamel.yaml as yamler
+import ruamel.yaml as yamler  # type: ignore
 from pypyr.context import Context
 from pypyr.dsl import Jsonify, PyString, SicString
 
