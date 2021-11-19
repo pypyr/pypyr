@@ -3,7 +3,7 @@ steps:
     description: --> getting current version
     in:
       pype:
-          name: ops/build
+          name: build
           groups: get_version
   - name: pypyr.steps.envget
     comment: CI is true in a github action environment.
