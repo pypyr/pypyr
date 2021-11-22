@@ -104,3 +104,29 @@ def assert_key_is_truthy(obj, key, caller, parent=None):
             msg = f"context[{key!r}] must have a value for {caller}."
 
         raise KeyInContextHasNoValueError(msg)
+
+
+def assert_keys_are_truthy(obj, keys, caller, parent=None):
+    """Assert keys exists in obj and evaluates truthy.
+
+    Empty string or 0 does NOT count as a value.
+
+    Error messages are structured as if obj is a pypyr Context.
+
+    Keys is an iterable of key names to check.
+
+    Args:
+        obj (mapping): object to check for key.
+        keys (list[hashable]): iterable of keys to check in obj
+        caller (string): calling function name - this used to construct
+                         error messages. Tip: use .__name__
+        parent (string): parent key name. Used to construct error messages to
+                         indicate the name of obj in context.
+
+    Raises:
+        ContextError: if obj is None or not iterable.
+        KeyInContextHasNoValueError: if not bool(context[key])
+        KeyNotInContextError: Key doesn't exist
+    """
+    for key in keys:
+        assert_key_is_truthy(obj, key, caller, parent)
