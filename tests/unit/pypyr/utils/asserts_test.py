@@ -248,3 +248,42 @@ def test_assert_key_is_truthy_object_none_no_parent():
         "context['k1'] must exist and be iterable for arb caller. argument of "
         "type 'NoneType' is not iterable")
 # endregion assert_key_is_truthy
+
+# region assert_keys_are_truthy
+
+
+def test_assert_keys_are_truthy():
+    """Multiple keys on truthy check."""
+    asserts.assert_keys_are_truthy(obj={'k1': 'v1', 'k2': 'v2', 'k3': 'v3'},
+                                   keys=('k1', 'k3'),
+                                   caller='arb caller',
+                                   parent='parent name')
+
+
+def test_assert_keys_are_truthy_none():
+    """Key value is none for one of the keys raise error."""
+    with pytest.raises(KeyInContextHasNoValueError) as err:
+        asserts.assert_keys_are_truthy(obj={'k1': 'v1',
+                                            'k2': None,
+                                            'k3': 'v3'},
+                                       keys=['k1', 'k3', 'k2'],
+                                       caller='arb caller',
+                                       parent='parent name')
+
+    assert str(err.value) == ("context['parent name']['k2'] must have a value "
+                              "for arb caller.")
+
+
+def test_assert_keys_are_truthy_empty():
+    """Key value is empty for one of the keys raise error."""
+    with pytest.raises(KeyInContextHasNoValueError) as err:
+        asserts.assert_keys_are_truthy(obj={'k1': 'v1',
+                                            'k2': '',
+                                            'k3': 'v3'},
+                                       keys=['k1', 'k3', 'k2'],
+                                       caller='arb caller',
+                                       parent='parent name')
+
+    assert str(err.value) == ("context['parent name']['k2'] must have a value "
+                              "for arb caller.")
+# endregion assert_keys_are_truthy
