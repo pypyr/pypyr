@@ -48,7 +48,7 @@ def run_step(context):
 
     file_path = file_read['path']
     destination_key = file_read['key']
-    mode = 'rb' if file_read.get('binary', False) is True else 'r'
+    mode = 'rb' if file_read.get('binary', False) else 'r'
 
     logger.debug("attempting to open file with mode '%s': %s", mode, file_path)
 
