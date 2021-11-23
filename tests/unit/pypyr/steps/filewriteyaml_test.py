@@ -1,7 +1,9 @@
 """filewriteyaml.py unit tests."""
-import pytest
 import io
 from unittest.mock import mock_open, patch
+
+import pytest
+
 from pypyr.context import Context
 from pypyr.dsl import Jsonify
 from pypyr.errors import (
@@ -82,8 +84,8 @@ def test_filewriteyaml_no_path_raises():
                                    "pypyr.steps.filewriteyaml.")
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_no_payload(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_no_payload(mock_path):
     """Success case writes all context out when no payload."""
     context = Context({
         'k1': 'v1',
@@ -102,16 +104,20 @@ def test_filewriteyaml_pass_no_payload(mock_makedirs):
         assert context['k1'] == 'v1'
         assert context['fileWriteYaml'] == {'path': '/arb/blah'}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # yaml well formed & new lines and indents are where they should be
         assert out_text.getvalue() == ('k1: v1\n'
                                        'fileWriteYaml:\n'
                                        '  path: /arb/blah\n')
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_with_payload(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_with_payload(mock_path):
     """Success case writes only specific context payload."""
     context = Context({
         'k1': 'v1',
@@ -154,8 +160,12 @@ def test_filewriteyaml_pass_with_payload(mock_makedirs):
                                                 True
                                             ]}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('  - first\n'
                                        '  - second\n'
@@ -169,8 +179,8 @@ def test_filewriteyaml_pass_with_payload(mock_makedirs):
                                        '  - true\n')
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_no_payload_substitutions(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_no_payload_substitutions(mock_path):
     """Success case writes all context out with substitutions."""
     context = Context({
         'k1': 'v1',
@@ -193,8 +203,12 @@ def test_filewriteyaml_pass_no_payload_substitutions(mock_makedirs):
         assert context['k1'] == 'v1'
         assert context['fileWriteYaml'] == {'path': '{pathkey}'}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/path', 'w')
+        mock_path.assert_called_once_with('/arb/path')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('k1: v1\n'
                                        'pathkey: /arb/path\n'
@@ -208,8 +222,8 @@ def test_filewriteyaml_pass_no_payload_substitutions(mock_makedirs):
                                        '  path: /arb/path\n')
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_with_payload_substitutions(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_with_payload_substitutions(mock_path):
     """Success case writes only specified context with substitutions."""
     context = Context({
         'k1': 'v1',
@@ -247,8 +261,11 @@ def test_filewriteyaml_pass_with_payload_substitutions(mock_makedirs):
                                       }
                                      ]
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/path', 'w')
+        mock_path.assert_called_once_with('/arb/path')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('child:\n'
                                        '  - v1\n'
@@ -258,8 +275,8 @@ def test_filewriteyaml_pass_with_payload_substitutions(mock_makedirs):
                                        '      - c\n')
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_with_empty_payload(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_with_empty_payload(mock_path):
     """Empty payload write empty file."""
     context = Context({
         'k1': 'v1',
@@ -280,14 +297,17 @@ def test_filewriteyaml_pass_with_empty_payload(mock_makedirs):
         assert context['fileWriteYaml']['path'] == '/arb/blah'
         assert context['fileWriteYaml']['payload'] == ''
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "''\n"
 
 
-@patch('os.makedirs')
-def test_filewriteyaml_pass_with_none_payload(mock_makedirs):
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_with_none_payload(mock_path):
     """None payload write empty file."""
     context = Context({
         'k1': 'v1',
@@ -308,7 +328,10 @@ def test_filewriteyaml_pass_with_none_payload(mock_makedirs):
         assert context['fileWriteYaml']['path'] == '/arb/blah'
         assert context['fileWriteYaml']['payload'] is None
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "null\n...\n"

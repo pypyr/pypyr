@@ -1,6 +1,7 @@
 """pypyr step that writes payload out to a yaml file."""
-import os
 import logging
+from pathlib import Path
+
 from pypyr.utils.asserts import assert_key_has_value
 import pypyr.yaml
 
@@ -38,7 +39,7 @@ def run_step(context):
                          key='path',
                          caller=__name__,
                          parent='fileWriteYaml')
-    out_path = input_context['path']
+    out_path = Path(input_context['path'])
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
@@ -47,7 +48,9 @@ def run_step(context):
     yaml_writer = pypyr.yaml.get_yaml_parser_roundtrip_for_context()
 
     logger.debug("opening destination file for writing: %s", out_path)
-    os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
     with open(out_path, 'w') as outfile:
         if is_payload_specified:
             payload = input_context['payload']

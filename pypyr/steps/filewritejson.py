@@ -1,9 +1,10 @@
 """pypyr step that writes payload out to a json file."""
 import json
 import logging
-import os
+from pathlib import Path
+
 from pypyr.utils.asserts import assert_key_has_value
-# logger means the log level will be set correctly
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,14 +39,16 @@ def run_step(context):
                          caller=__name__,
                          parent='fileWriteJson')
 
-    out_path = input_context['path']
+    out_path = Path(input_context['path'])
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
     is_payload_specified = 'payload' in input_context
 
     logger.debug("opening destination file for writing: %s", out_path)
-    os.makedirs(os.path.abspath(os.path.dirname(out_path)), exist_ok=True)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
     with open(out_path, 'w') as outfile:
         if is_payload_specified:
             payload = input_context['payload']

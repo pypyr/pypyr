@@ -1,7 +1,9 @@
 """filewritejson.py unit tests."""
-import pytest
 import io
 from unittest.mock import mock_open, patch
+
+import pytest
+
 from pypyr.context import Context
 from pypyr.errors import (
     ContextError,
@@ -81,8 +83,8 @@ def test_filewritejson_no_path_raises():
                                    "pypyr.steps.filewritejson.")
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_no_payload(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_no_payload(mock_path):
     """Success case writes all context out when no payload."""
     context = Context({
         'k1': 'v1',
@@ -101,8 +103,11 @@ def test_filewritejson_pass_no_payload(mock_makedirs):
         assert context['k1'] == 'v1'
         assert context['fileWriteJson'] == {'path': '/arb/blah'}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # json well formed & new lines and indents are where they should be
         assert out_text.getvalue() == ('{\n'
                                        '  "k1": "v1",\n'
@@ -112,8 +117,8 @@ def test_filewritejson_pass_no_payload(mock_makedirs):
                                        '}')
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_with_payload(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_payload(mock_path):
     """Success case writes only specific context payload."""
     context = Context({
         'k1': 'v1',
@@ -156,8 +161,12 @@ def test_filewritejson_pass_with_payload(mock_makedirs):
                                                 True
                                             ]}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('[\n'
                                        '  "first",\n'
@@ -176,8 +185,8 @@ def test_filewritejson_pass_with_payload(mock_makedirs):
                                        ']')
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_no_payload_substitutions(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_no_payload_substitutions(mock_path):
     """Success case writes all context out with substitutions."""
     context = Context({
         'k1': 'v1',
@@ -199,8 +208,11 @@ def test_filewritejson_pass_no_payload_substitutions(mock_makedirs):
         assert context['k1'] == 'v1'
         assert context['fileWriteJson'] == {'path': '{pathkey}'}
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/path', 'w')
+        mock_path.assert_called_once_with('/arb/path')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('{\n'
                                        '  "k1": "v1",\n'
@@ -219,8 +231,8 @@ def test_filewritejson_pass_no_payload_substitutions(mock_makedirs):
                                        '}')
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_with_payload_substitutions(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_payload_substitutions(mock_path):
     """Success case writes only specified context with substitutions."""
     context = Context({
         'k1': 'v1',
@@ -258,8 +270,11 @@ def test_filewritejson_pass_with_payload_substitutions(mock_makedirs):
                                       }
                                      ]
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/path', 'w')
+        mock_path.assert_called_once_with('/arb/path')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == (
             '{\n'
@@ -275,8 +290,8 @@ def test_filewritejson_pass_with_payload_substitutions(mock_makedirs):
             '}')
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_with_empty_payload(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_empty_payload(mock_path):
     """Empty payload write empty file."""
     context = Context({
         'k1': 'v1',
@@ -297,14 +312,18 @@ def test_filewritejson_pass_with_empty_payload(mock_makedirs):
         assert context['fileWriteJson']['path'] == '/arb/blah'
         assert context['fileWriteJson']['payload'] == ''
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == '""'
 
 
-@patch('os.makedirs')
-def test_filewritejson_pass_with_none_payload(mock_makedirs):
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_none_payload(mock_path):
     """None payload write empty file."""
     context = Context({
         'k1': 'v1',
@@ -325,7 +344,11 @@ def test_filewritejson_pass_with_none_payload(mock_makedirs):
         assert context['fileWriteJson']['path'] == '/arb/blah'
         assert context['fileWriteJson']['payload'] is None
 
-        mock_makedirs.assert_called_once_with('/arb', exist_ok=True)
-        mock_output.assert_called_once_with('/arb/blah', 'w')
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(mocked_path, 'w')
+
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "null"
