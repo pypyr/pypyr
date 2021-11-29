@@ -141,7 +141,7 @@ def get_pipeline_definition(pipeline_name, parent):
 
     Returns:
         PipelineDefinition describing the pipeline. The dict parsed from the
-            pipeline yaml is in it .pipeline property.
+            pipeline yaml is in its .pipeline property.
     """
     logger.debug("starting")
 
@@ -164,11 +164,15 @@ def get_pipeline_definition(pipeline_name, parent):
 def load_pipeline_from_file(path):
     """Load pipeline yaml from path on disk.
 
+    Initialize a PipelineFileInfo for the pipeline with file loader specific
+    properties.
+
     Args:
         path (Path-like): path to pipeline
 
     Returns:
-        dict describing the pipeline, parsed from the pipeline yaml.
+        PipelineDefinition describing the pipeline, parsed from the yaml file
+            at path.
 
     Raises:
         FileNotFoundError: path not found.
