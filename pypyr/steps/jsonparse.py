@@ -1,10 +1,11 @@
 """pypyr step that parses a json string to context."""
-from collections.abc import MutableMapping
+from collections.abc import Mapping
 import json
 import logging
 from pypyr.errors import KeyInContextHasNoValueError
 from pypyr.utils.asserts import assert_key_exists
-# logger means the log level will be set correctly
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +56,7 @@ def run_step(context):
                      destination_key)
         context[destination_key] = payload
     else:
-        if not isinstance(payload, MutableMapping):
+        if not isinstance(payload, Mapping):
             raise TypeError(
                 'json input should describe an object at the top '
                 'level when jsonParse.key isn\'t specified. You should have '

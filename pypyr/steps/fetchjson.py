@@ -1,5 +1,5 @@
 """pypyr step that loads json file into context."""
-from collections.abc import MutableMapping
+from collections.abc import Mapping
 import json
 import logging
 from pypyr.utils.asserts import assert_key_has_value
@@ -66,7 +66,7 @@ def run_step(context):
                      destination_key)
         context[destination_key] = payload
     else:
-        if not isinstance(payload, MutableMapping):
+        if not isinstance(payload, Mapping):
             raise TypeError(
                 'json input should describe an object at the top '
                 'level when fetchJsonKey isn\'t specified. You should have '
