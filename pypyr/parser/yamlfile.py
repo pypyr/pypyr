@@ -1,6 +1,5 @@
 """Context parser that returns a dictionary from a local yaml file."""
-
-from collections.abc import MutableMapping
+from collections.abc import Mapping
 import logging
 import ruamel.yaml as yaml
 
@@ -22,7 +21,7 @@ def get_parsed_context(args):
         yaml_loader = yaml.YAML(typ='safe', pure=True)
         payload = yaml_loader.load(yaml_file)
 
-    if not isinstance(payload, MutableMapping):
+    if not isinstance(payload, Mapping):
         raise TypeError("yaml input should describe a dictionary at the top "
                         "level. You should have something like\n"
                         "key1: value1\n key2: value2\n"

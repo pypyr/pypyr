@@ -1,5 +1,5 @@
 """pypyr step that loads yaml file into context."""
-from collections.abc import MutableMapping
+from collections.abc import Mapping
 import logging
 import ruamel.yaml as yaml
 from pypyr.utils.asserts import assert_key_has_value
@@ -65,7 +65,7 @@ def run_step(context):
                      destination_key)
         context[destination_key] = payload
     else:
-        if not isinstance(payload, MutableMapping):
+        if not isinstance(payload, Mapping):
             raise TypeError(
                 "yaml input should describe a dictionary at the top "
                 "level when fetchYamlKey isn't specified. You should have "
