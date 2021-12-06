@@ -49,12 +49,12 @@ def run_step(context):
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(out_path, 'w') as outfile:
-        if is_payload_specified:
-            payload = input_context['payload']
-        else:
-            payload = context.get_formatted_value(context)
+    if is_payload_specified:
+        payload = input_context['payload']
+    else:
+        payload = context.get_formatted_value(context)
 
+    with open(out_path, 'w') as outfile:
         json.dump(payload, outfile,
                   indent=2, ensure_ascii=False)
 
