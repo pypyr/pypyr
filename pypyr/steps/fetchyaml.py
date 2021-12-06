@@ -68,7 +68,7 @@ def run_step(context):
         if not isinstance(payload, Mapping):
             raise TypeError(
                 "yaml input should describe a dictionary at the top "
-                "level when fetchYamlKey isn't specified. You should have "
+                "level when fetchYaml.key isn't specified. You should have "
                 "something like \n'key1: value1'\n key2: value2'\n"
                 "in the yaml top-level, not \n'- value1\n - value2'")
 

@@ -69,7 +69,7 @@ def run_step(context):
         if not isinstance(payload, Mapping):
             raise TypeError(
                 'json input should describe an object at the top '
-                'level when fetchJsonKey isn\'t specified. You should have '
+                'level when fetchJson.key isn\'t specified. You should have '
                 'something like {"key1": "value1", "key2": "value2"} '
                 'in the json top-level, not ["value1", "value2"]')
 
