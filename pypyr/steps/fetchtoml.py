@@ -25,7 +25,7 @@ def run_step(context):
                     - key. string. If exists, write toml structure to this
                       context key. Else toml writes to context root.
 
-    Also supports a passing path as string to fetchToml, but in this case you
+    Also supports passing a path as string to fetchToml, but in this case you
     won't be able to specify a key.
 
     All inputs support formatting expressions.

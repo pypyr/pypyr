@@ -13,7 +13,7 @@ def read_file(path):
         dict.
     """
     with open(path, 'rb') as file:
-        return toml_reader.load(file)
+        return load(file)
 
 
 def write_file(path, payload):
@@ -30,4 +30,34 @@ def write_file(path, payload):
         None.
     """
     with open(path, 'wb') as file:
-        toml_writer.dump(payload, file)
+        dump(payload, file)
+
+
+def load(file):
+    """Read open file object as toml.
+
+    File-like MUST be open in binary mode.
+
+    Args:
+        file (file-like): Open file-like object.
+
+    Returns:
+        dict
+    """
+    return toml_reader.load(file)
+
+
+def dump(payload, file):
+    """Write payload to open file-like object.
+
+    File-like MUST be open in binary mode.
+
+    Args:
+        file (file-like): Open file-like object.
+        payload (dict-like): Serialize this object to toml string & write to
+                             file.
+
+    Returns:
+        None.
+    """
+    toml_writer.dump(payload, file)
