@@ -5,8 +5,9 @@ from pathlib import Path
 from pypyr.utils.asserts import assert_key_has_value
 import pypyr.yaml
 
-# logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
+
+sentinel = object()
 
 
 def run_step(context):
@@ -43,7 +44,7 @@ def run_step(context):
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
-    is_payload_specified = 'payload' in input_context
+    payload = input_context.get('payload', sentinel)
 
     yaml_writer = pypyr.yaml.get_yaml_parser_roundtrip_for_context()
 
@@ -51,10 +52,10 @@ def run_step(context):
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if is_payload_specified:
-        payload = input_context['payload']
-    else:
+    if payload is sentinel:
         payload = context.get_formatted_value(context)
+    else:
+        payload = input_context['payload']
 
     with open(out_path, 'w') as outfile:
         yaml_writer.dump(payload, outfile)

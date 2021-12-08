@@ -7,6 +7,8 @@ from pypyr.utils.asserts import assert_key_has_value
 
 logger = logging.getLogger(__name__)
 
+sentinel = object()
+
 
 def run_step(context):
     """Write payload out to json file.
@@ -43,16 +45,16 @@ def run_step(context):
     # doing it like this to safeguard against accidentally dumping all context
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
-    is_payload_specified = 'payload' in input_context
+    payload = input_context.get('payload', sentinel)
 
     logger.debug("opening destination file for writing: %s", out_path)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if is_payload_specified:
-        payload = input_context['payload']
-    else:
+    if payload is sentinel:
         payload = context.get_formatted_value(context)
+    else:
+        payload = input_context['payload']
 
     with open(out_path, 'w') as outfile:
         json.dump(payload, outfile,
