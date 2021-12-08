@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from pypyr.errors import Error
+import pypyr.toml
 import pypyr.yaml
 
 # pypyr logger means the log level will be set correctly and output formatted.
@@ -179,11 +180,9 @@ class ObjectRewriter(FileRewriter):
                        from in file. Formatter signature:
                        iterable = formatter(iterable)
             object_representer: An ObjectRepresenter instance.
-
         """
         super().__init__(formatter)
         self.object_representer = object_representer
-        logger.debug('obj loader set')
 
     def in_to_out(self, in_path, out_path=None):
         """Load file into object, formats, writes object to out.
@@ -211,19 +210,22 @@ class ObjectRewriter(FileRewriter):
             out_path = None
 
         logger.debug("opening source file: %s", in_path)
-        with open(in_path) as infile:
+
+        read_mode = self.object_representer.read_mode
+        with open(in_path, read_mode) as infile:
             obj = self.object_representer.load(infile)
 
+        write_mode = self.object_representer.write_mode
         if out_path:
             logger.debug(
                 f"opening destination file for writing: {out_path}")
             ensure_dir(out_path)
-            with open(out_path, 'w') as outfile:
+            with open(out_path, write_mode) as outfile:
                 self.object_representer.dump(outfile, self.formatter(obj))
             return
         else:
             logger.debug("opening temp file for writing...")
-            with NamedTemporaryFile(mode='w+t',
+            with NamedTemporaryFile(mode=write_mode,
                                     dir=os.path.dirname(in_path),
                                     delete=False) as outfile:
                 self.object_representer.dump(outfile, self.formatter(obj))
@@ -310,7 +312,24 @@ class ObjectRepresenter(ABC):
     serialize and deserialize a payload.
 
     This tends to be useful for the ObjectRewriter.
+
+    Attributes:
+        read_mode: open underlying file in text 'rt' or binary 'rb' mode.
+        write_mode: open underlying file in text 'wt' or binary 'wb' mode.
     """
+
+    def __init__(self, is_binary=False):
+        """Initialize object representer in binary or text mode.
+
+        Args:
+            is_binary (bool): Set true if representer expects bytes, not str.
+        """
+        if is_binary:
+            self.read_mode = 'rb'
+            self.write_mode = 'wb'
+        else:
+            self.read_mode = 'rt'
+            self.write_mode = 'wt'
 
     @abstractmethod
     def load(self, file):
@@ -333,13 +352,12 @@ class JsonRepresenter(ObjectRepresenter):
             file: Open file-like object.
 
         Returns:
-            None.
-
+            Json represented as a python object.
         """
         return json.load(file)
 
     def dump(self, file, payload):
-        """Dump json oject to open file output.
+        """Dump json object to open file output.
 
         Writes json with 2 spaces indentation.
 
@@ -354,11 +372,43 @@ class JsonRepresenter(ObjectRepresenter):
         json.dump(payload, file, indent=2, ensure_ascii=False)
 
 
+class TomlRepresenter(ObjectRepresenter):
+    """Load and dump a toml payload. Useful for ObjectRewriter."""
+
+    def __init__(self):
+        """Initialize in binary mode."""
+        super().__init__(True)
+
+    def load(self, file):
+        """Load Toml object from open file input.
+
+        Args:
+            file: Open file-like object in binary mode.
+
+        Returns:
+            Dict.
+        """
+        return pypyr.toml.load(file)
+
+    def dump(self, file, payload):
+        """Dump toml object to open file output.
+
+        Args:
+            file: Open file-like object. Must be open for binary writing.
+            payload: The Toml object to write to file.
+
+        Returns:
+            None.
+        """
+        pypyr.toml.dump(payload, file)
+
+
 class YamlRepresenter(ObjectRepresenter):
     """Load and dump a Yaml payload. Useful for ObjectRewriter."""
 
     def __init__(self):
         """Instantiate the yaml representer."""
+        super().__init__()
         self.yaml_parser = pypyr.yaml.get_yaml_parser_roundtrip()
 
     def load(self, file):
@@ -370,8 +420,7 @@ class YamlRepresenter(ObjectRepresenter):
             file: Open file-like object.
 
         Returns:
-            None.
-
+            Yaml represented as python object.
         """
         return self.yaml_parser.load(file)
 

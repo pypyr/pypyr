@@ -9,7 +9,7 @@ from pypyr.errors import Error
 import pypyr.utils.filesystem as filesystem
 
 
-# ------------------------ setup/teardown/fixtures ----------------------------
+# region setup/teardown/fixtures
 from tests.common.utils import patch_logger
 
 
@@ -48,9 +48,9 @@ def temp_file_creator(temp_dir):
             pass
 
 
-# ------------------------ END setup/teardown/fixtures ------------------------
+# endregion setup/teardown/fixtures
 
-# ------------------------ FileRewriter ---------------------------------------
+# region FileRewriter
 
 class ArbRewriter(filesystem.FileRewriter):
     """Derived FileRewriter useful for capturing test inputs."""
@@ -95,7 +95,7 @@ class ArbRewriter(filesystem.FileRewriter):
                     and dict['out'] == out_resolved))
 
     def assert_in_to_out_call_count(self, count):
-        """Assert that the in_to_out call is count."""
+        """Assert that the number of in_to_out calls is count."""
         assert len(self.in_out_calls) == count
 
 
@@ -342,16 +342,17 @@ def test_filerewriter_files_in_to_out_in_list_no_out(temp_file_creator):
     rewriter.assert_in_to_out_call_path(file2, None)
     rewriter.assert_in_to_out_call_path(file3, None)
 
-# ------------------------ END of FileRewriter --------------------------------
+# endregion FileRewriter
 
-# ------------------------ ObjectRewriter -------------------------------------
+# region ObjectRewriter
 
 
 class ArbRepresenter(filesystem.ObjectRepresenter):
     """Test representer."""
 
-    def __init__(self):
+    def __init__(self, is_binary=False):
         """Initialize me."""
+        super().__init__(is_binary)
         self.load_payload = None
         self.dump_payload = None
         self.load_call_count = 0
@@ -373,6 +374,11 @@ class ArbRepresenter(filesystem.ObjectRepresenter):
 def get_arb_formatted(input):
     """Arbitrary formatter takes a string and returns a string."""
     return f'X{input}X'
+
+
+def get_binary_formatted(input):
+    """Arbitrary formatter takes bytes and concats some bytes."""
+    return b'X' + input + b'X'
 
 
 def get_arb_formatted_iter(input):
@@ -442,6 +448,29 @@ def test_objectrewriter_in_to_out_path(temp_dir, temp_file_creator):
     assert path_out.read_text() == 'XyyyX'
 
 
+def test_objectrewriter_in_to_out_path_binary(temp_dir, temp_file_creator):
+    """Object Rewriter writes single in to out path object in binary mode."""
+    representer = ArbRepresenter(True)
+    rewriter = filesystem.ObjectRewriter(get_binary_formatted,
+                                         representer)
+
+    path_in = temp_file_creator()
+    path_in.write_text('yyy')
+    path_out = temp_dir.joinpath('sub', 'filename')
+
+    rewriter.in_to_out(path_in, path_out)
+
+    assert representer.load_payload == b'yyy'
+    assert representer.load_call_count == 1
+    assert representer.dump_payload == b'XyyyX'
+    assert representer.dump_call_count == 1
+
+    assert path_in.is_file()
+    assert path_in.read_text() == 'yyy'
+    assert path_out.is_file()
+    assert path_out.read_text() == 'XyyyX'
+
+
 def test_objectrewriter_in_to_out_no_out_path(temp_file_creator):
     """Object Rewriter in place edit with path object."""
     representer = ArbRepresenter()
@@ -465,6 +494,26 @@ def test_objectrewriter_in_to_out_no_out_path(temp_file_creator):
         call(f"opening source file: {path_in}"),
         call("opening temp file for writing..."),
         call(f"moving temp file to: {path_in}")]
+
+    assert path_in.is_file()
+    assert path_in.read_text() == 'XyyyX'
+
+
+def test_objectrewriter_in_to_out_no_out_path_binary(temp_file_creator):
+    """Object Rewriter in place edit with path object in binary mode."""
+    representer = ArbRepresenter(True)
+    rewriter = filesystem.ObjectRewriter(get_binary_formatted,
+                                         representer)
+
+    path_in = temp_file_creator()
+    path_in.write_text('yyy')
+
+    rewriter.in_to_out(path_in, None)
+
+    assert representer.load_payload == b'yyy'
+    assert representer.load_call_count == 1
+    assert representer.dump_payload == b'XyyyX'
+    assert representer.dump_call_count == 1
 
     assert path_in.is_file()
     assert path_in.read_text() == 'XyyyX'
@@ -528,9 +577,9 @@ def test_objectrewriter_in_to_out_same_path(temp_file_creator):
 
     assert path_in.is_file()
     assert path_in.read_text() == 'XyyyX'
-# ------------------------ END of ObjectRewriter ------------------------------
+# endregion ObjectRewriter
 
-# ------------------------ StreamRewriter -------------------------------------
+# region StreamRewriter
 
 
 def test_streamrewriter_in_to_out_path(temp_dir, temp_file_creator):
@@ -645,15 +694,15 @@ def test_streamrewriter_in_to_out_same_path(temp_file_creator):
     assert path_in.is_file()
     assert path_in.read_text() == 'XyyyX'
 
-# ------------------------ END of StreamRewriter ------------------------------
+# endregion StreamRewriter
 
-# ------------------------ ObjectRepresenter ----------------------------------
+# region ObjectRepresenter
 
 
 def test_jsonrepresenter_loads():
     """Json Representer loads."""
     representer = filesystem.JsonRepresenter()
-    with open('./tests/testfiles/test.json') as file:
+    with open('./tests/testfiles/test.json', representer.read_mode) as file:
         obj = representer.load(file)
 
     assert obj
@@ -671,7 +720,7 @@ def test_jsonrepresenter_dumps(temp_file_creator):
     }
     representer = filesystem.JsonRepresenter()
     file_path = temp_file_creator()
-    with open(file_path, 'w') as file:
+    with open(file_path, representer.write_mode) as file:
         representer.dump(file, payload)
 
     assert file_path.read_text() == ('{\n'
@@ -688,7 +737,7 @@ def test_jsonrepresenter_dumps(temp_file_creator):
 def test_yamlrepresenter_loads():
     """Yaml Representer loads."""
     representer = filesystem.YamlRepresenter()
-    with open('./tests/testfiles/test.yaml') as file:
+    with open('./tests/testfiles/test.yaml', representer.read_mode) as file:
         obj = representer.load(file)
 
     assert obj
@@ -712,7 +761,7 @@ def test_yamlrepresenter_dumps(temp_file_creator):
     }
     representer = filesystem.YamlRepresenter()
     file_path = temp_file_creator()
-    with open(file_path, 'w') as file:
+    with open(file_path, representer.write_mode) as file:
         representer.dump(file, payload)
 
     assert file_path.read_text() == ('key1: value1\n'
@@ -721,9 +770,9 @@ def test_yamlrepresenter_dumps(temp_file_creator):
                                      '  - 0\n'
                                      '  - 1\n'
                                      '  - 2\n')
-# ------------------------ END ObjectRepresenter ------------------------------
+# endregion ObjectRepresenter
 
-# ------------------------ ensure_dir -----------------------------------------
+# region ensure_dir
 
 
 def test_ensure_dir(temp_dir):
@@ -741,9 +790,9 @@ def test_ensure_dir_path(temp_dir):
     filesystem.ensure_dir(path)
     assert temp_dir.joinpath('sub1').is_dir()
 
-# ------------------------ END ensure_dir -------------------------------------
+# endregion ensure_dir
 
-# ------------------------ get_glob -------------------------------------------
+# region get_glob
 
 
 def test_get_glob_str():
@@ -811,9 +860,9 @@ def test_get_glob_path_doesnt_exist():
     """Non existent paths return nothing."""
     paths = filesystem.get_glob(['./arbX', './arb/**/x'])
     assert not paths
-# ------------------------ END get_glob ---------------------------------------
+# endregion get_glob
 
-# ------------------------ is_same_file --------------------------------------
+# region is_same_file
 
 
 def test_is_same_file():
@@ -851,9 +900,9 @@ def test_is_same_file_paths_dont_exist():
     assert not filesystem.is_same_file('arb/arb1', 'arb/arb')
     assert not filesystem.is_same_file('arb/arb2', None)
     assert not filesystem.is_same_file(None, None)
-# ------------------------ END is_same_file -----------------------------------
+# endregion is_same_file
 
-# ------------------------ move_file --------------------------------------
+# region move_file
 
 
 def test_move_file_new(temp_dir, temp_file_creator):
@@ -917,9 +966,9 @@ def test_move_file_dest_parent_not_exist(temp_dir, temp_file_creator):
         f"[Errno 2] No such file or directory: '{file1}' -> '{file2}'")
     assert file1.is_file()
     assert not file2.is_file()
-# ------------------------ END move_file -----------------------------------
+# endregion move_file
 
-# ------------------------ move_temp_file ---------------------------------
+# region move_temp_file
 
 
 def test_move_temp_file_new(temp_dir, temp_file_creator):
@@ -998,4 +1047,4 @@ def test_move_temp_file_new_relative_paths(temp_dir, temp_file_creator):
     with open(file2) as f2:
         assert f2.read() == 'arb file content'
 
-# ------------------------ END move__temp_file ------------------------------
+# endregion move__temp_file
