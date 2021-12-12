@@ -2,7 +2,7 @@
 import logging
 from pathlib import Path
 
-from pypyr.utils.asserts import assert_key_is_truthy
+from pypyr.utils.asserts import assert_key_exists, assert_key_is_truthy
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,11 @@ def run_step(context):
                          key='path',
                          caller=__name__,
                          parent='fileWrite')
+
+    assert_key_exists(obj=file_write,
+                      key='payload',
+                      caller=__name__,
+                      parent='fileWrite')
 
     path = Path(file_write['path'])
     is_append = file_write.get('append', False)

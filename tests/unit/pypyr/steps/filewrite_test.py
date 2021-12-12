@@ -100,9 +100,24 @@ def test_filewrite_no_path_raises():
                                    "pypyr.steps.filewrite.")
 
 
+def test_filewrite_no_payload_raises():
+    """No payload raises."""
+    context = Context({
+        'fileWrite': {
+            'path': 'arb'
+        }})
+
+    with pytest.raises(KeyNotInContextError) as err_info:
+        filewrite.run_step(context)
+
+    assert str(err_info.value) == ("context['fileWrite']['payload'] "
+                                   "doesn't exist. It must exist for "
+                                   "pypyr.steps.filewrite.")
 # endregion validation
 
 # region write text
+
+
 @patch('pypyr.steps.filewrite.Path')
 def test_filewrite_pass_with_payload(mock_path):
     """Success case writes only specific context payload."""
