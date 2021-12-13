@@ -8,10 +8,17 @@ logger = logging.getLogger(__name__)
 def run_step(context):
     """Load a file into context.
 
-    Open file at path as text using locale.getpreferredencoding().
+    Open file at path as text using locale.getpreferredencoding() or encoding,
+    if specified.
+
     Open file at path as binary bytes if binary=True.
 
     Save file payload to key in context.
+
+    All inputs support formatting expressions.
+
+    For list of available encodings, see:
+    https://docs.python.org/3/library/codecs.html#standard-encodings
 
     Args:
         context: pypyr.context.Context. Mandatory.
@@ -21,8 +28,8 @@ def run_step(context):
                     - key. string. Write file payload to this context key.
                     - binary. boolean. Default False. Set to True to read file
                       content as bytes in binary mode.
-
-    All inputs support formatting expressions.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     Returns:
         None. mutates context arg.
@@ -49,10 +56,11 @@ def run_step(context):
     file_path = file_read['path']
     destination_key = file_read['key']
     mode = 'rb' if file_read.get('binary', False) else 'r'
+    encoding = file_read.get('encoding', None)
 
     logger.debug("attempting to open file with mode '%s': %s", mode, file_path)
 
-    with open(file_path, mode) as file:
+    with open(file_path, mode, encoding=encoding) as file:
         payload = file.read()
 
     context[destination_key] = payload
