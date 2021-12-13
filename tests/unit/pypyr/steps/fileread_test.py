@@ -119,7 +119,25 @@ def test_fileread_defaults():
 
     assert context['out'] == 'one\ntwo\nthree'
 
-    mocked_open.assert_called_once_with('/arb', 'r')
+    mocked_open.assert_called_once_with('/arb', 'r', encoding=None)
+
+
+def test_fileread_all():
+    """Read file with all args."""
+    context = Context({
+        'fileRead': {
+            'path': '/arb',
+            'key': 'out',
+            'encoding': 'arb'}})
+
+    with patch('pypyr.steps.fileread.open',
+               mock_open(read_data='one\ntwo\nthree')) as mocked_open:
+        fileread.run_step(context)
+
+    assert context['out'] == 'one\ntwo\nthree'
+
+    mocked_open.assert_called_once_with('/arb', 'r', encoding='arb')
+
 # endregion text mode
 
 # region binary mode
@@ -139,7 +157,7 @@ def test_fileread_binary_true():
 
     assert context['out'] == b'12345'
 
-    mocked_open.assert_called_once_with('/arb', 'rb')
+    mocked_open.assert_called_once_with('/arb', 'rb', encoding=None)
 
 
 def test_fileread_binary_explicit_false():
@@ -156,7 +174,7 @@ def test_fileread_binary_explicit_false():
 
     assert context['out'] == 'one\ntwo\nthree'
 
-    mocked_open.assert_called_once_with('/arb', 'r')
+    mocked_open.assert_called_once_with('/arb', 'r', encoding=None)
 
 # endregion binary mode
 
@@ -169,10 +187,12 @@ def test_fileread_substitutions():
         'p': '/arb',
         'k': 'out',
         'b': False,
+        'c': 'arb',
         'fileRead': {
             'path': '{p}',
             'key': '{k}',
-            'binary': '{b}'}})
+            'binary': '{b}',
+            'encoding': '{c}'}})
 
     with patch('pypyr.steps.fileread.open',
                mock_open(read_data='one\ntwo\nthree')) as mocked_open:
@@ -184,12 +204,14 @@ def test_fileread_substitutions():
         'p': '/arb',
         'k': 'out',
         'b': False,
+        'c': 'arb',
         'out': 'one\ntwo\nthree',
         'fileRead': {
             'path': '{p}',
             'key': '{k}',
-            'binary': '{b}'}}
+            'binary': '{b}',
+            'encoding': '{c}'}}
 
-    mocked_open.assert_called_once_with('/arb', 'r')
+    mocked_open.assert_called_once_with('/arb', 'r', encoding='arb')
 
 # endregion substitutions

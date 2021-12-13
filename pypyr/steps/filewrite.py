@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 def run_step(context):
     """Write payload to file.
 
+    For list of available encodings, see:
+    https://docs.python.org/3/library/codecs.html#standard-encodings
+
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context keys expected:
@@ -23,6 +26,8 @@ def run_step(context):
                     - binary. boolean. Default False. Set to True to write file
                       content as bytes in binary mode. Set both append & binary
                       True to append to binary file.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     Returns:
         None.
@@ -51,6 +56,7 @@ def run_step(context):
     path = Path(file_write['path'])
     is_append = file_write.get('append', False)
     is_binary = file_write.get('binary', False)
+    encoding = file_write.get('encoding', None)
 
     if is_binary:
         mode = 'ab' if is_append else 'wb'
@@ -64,7 +70,7 @@ def run_step(context):
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, mode) as file:
+    with open(path, mode, encoding=encoding) as file:
         file.write(payload)
 
     logger.info("formatted context & wrote to %s", path)

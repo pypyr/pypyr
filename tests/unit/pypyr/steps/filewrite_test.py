@@ -146,7 +146,42 @@ def test_filewrite_pass_with_payload(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
+
+    assert payload == 'one\ntwo\nthree'
+
+
+@patch('pypyr.steps.filewrite.Path')
+def test_filewrite_pass_with_payload_encoding(mock_path):
+    """Success case writes only specific context payload and encoding."""
+    context = Context({
+        'k1': 'v1',
+        'fileWrite': {
+            'path': '/arb/blah',
+            'payload': 'one\ntwo\nthree',
+            'encoding': 'arb'
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewrite.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        payload = out_text.getvalue()
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 2, "context should have 2 items"
+    assert context['k1'] == 'v1'
+    assert context['fileWrite'] == {'path': '/arb/blah',
+                                    'payload': 'one\ntwo\nthree',
+                                    'encoding': 'arb'}
+
+    mock_path.assert_called_once_with('/arb/blah')
+    mocked_path = mock_path.return_value
+    mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                     exist_ok=True)
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding='arb')
 
     assert payload == 'one\ntwo\nthree'
 
@@ -173,7 +208,7 @@ def test_filewrite_pass_with_non_string_payload(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == '123'
 
@@ -200,7 +235,7 @@ def test_filewrite_pass_with_empty_payload(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == ''
 
@@ -227,7 +262,7 @@ def test_filewrite_pass_with_none_payload(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == 'None'
 
@@ -258,7 +293,7 @@ def test_filewrite_append(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'a')
+    mock_output.assert_called_once_with(mocked_path, 'a', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -286,7 +321,7 @@ def test_filewrite_append_false(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -318,7 +353,7 @@ def test_filewrite_binary(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'wb')
+    mock_output.assert_called_once_with(mocked_path, 'wb', encoding=None)
 
     assert payload == b'one\ntwo\nthree'
 
@@ -346,7 +381,7 @@ def test_filewrite_binary_false(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -379,7 +414,7 @@ def test_filewrite_binary_append(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'ab')
+    mock_output.assert_called_once_with(mocked_path, 'ab', encoding=None)
 
     assert payload == b'one\ntwo\nthree'
 
@@ -408,7 +443,7 @@ def test_filewrite_binary_true_append_false(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'wb')
+    mock_output.assert_called_once_with(mocked_path, 'wb', encoding=None)
 
     assert payload == b'one\ntwo\nthree'
 
@@ -437,7 +472,7 @@ def test_filewrite_binary_false_append_true(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'a')
+    mock_output.assert_called_once_with(mocked_path, 'a', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -466,7 +501,7 @@ def test_filewrite_binary_false_append_false(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -484,11 +519,13 @@ def test_filewrite_pass_with_substitutions(mock_path):
         'intkey': 3,
         'is_bin': True,
         'is_append': True,
+        'enc': 'arb',
         'fileWrite': {
             'path': '{p}',
             'payload': 'begin {k1} {intkey} end',
             'binary': '{is_bin}',
-            'append': '{is_append}'
+            'append': '{is_append}',
+            'encoding': '{enc}'
         }})
 
     with io.StringIO() as out_text:
@@ -500,20 +537,21 @@ def test_filewrite_pass_with_substitutions(mock_path):
         payload = out_text.getvalue()
 
     assert context, "context shouldn't be None"
-    assert len(context) == 6, "context should have 6 items"
+    assert len(context) == 7, "context should have 7 items"
     assert context['k1'] == 'v1'
     assert context['fileWrite'] == {
         'path': '{p}',
         'payload': 'begin {k1} {intkey} end',
         'binary': '{is_bin}',
-        'append': '{is_append}'
+        'append': '{is_append}',
+        'encoding': '{enc}'
     }
 
     mock_path.assert_called_once_with('/arb/path')
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'ab')
+    mock_output.assert_called_once_with(mocked_path, 'ab', encoding='arb')
 
     assert payload == 'begin v1 3 end'
 
@@ -553,7 +591,7 @@ def test_filewrite_pass_with_substitutions_bare_payload(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == 'one\ntwo\nthree'
 
@@ -586,7 +624,7 @@ def test_filewrite_pass_with_non_string_substitutions(mock_path):
     mocked_path = mock_path.return_value
     mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                      exist_ok=True)
-    mock_output.assert_called_once_with(mocked_path, 'w')
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
     assert payload == '123'
 # endregion substitutions
