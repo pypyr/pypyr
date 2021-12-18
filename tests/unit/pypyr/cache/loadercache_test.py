@@ -4,7 +4,9 @@ from unittest.mock import call, patch, Mock
 import pytest
 
 import pypyr.cache.loadercache as loadercache
-from pypyr.errors import PipelineNotFoundError, PyModuleNotFoundError
+from pypyr.errors import (PipelineDefinitionError,
+                          PipelineNotFoundError,
+                          PyModuleNotFoundError)
 from pypyr.pipedef import PipelineDefinition, PipelineInfo
 
 
@@ -78,6 +80,7 @@ def test_get_pype_loader_default():
     """Loader defaults to fileloader."""
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
+        mock_get_def.return_value = Mock(spec=dict())
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader()
 
@@ -93,7 +96,7 @@ def test_get_pype_loader_specified_returning_pipe_def():
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
         mock_get_def.return_value = PipelineDefinition(
-            pipeline='mypipe',
+            pipeline={'my': 'pipe'},
             info=PipelineInfo('pipename', 'arbloader', 'parent'))
 
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
@@ -104,7 +107,7 @@ def test_get_pype_loader_specified_returning_pipe_def():
 
     pipeline = loader.get_pipeline('arb', None)
     assert pipeline == PipelineDefinition(
-        pipeline='mypipe',
+        pipeline={'my': 'pipe'},
         info=PipelineInfo('pipename', 'arbloader', 'parent'))
     mock_get_def.assert_called_once_with(pipeline_name='arb', parent=None)
 
@@ -127,6 +130,25 @@ def test_get_pype_loader_specified_wraps_in_pipedef():
         info=PipelineInfo('arb', 'arbloader', 'parent'))
 
     mock_get_def.assert_called_once_with(pipeline_name='arb', parent='parent')
+
+
+def test_get_pype_loader_specified_raises_error_on_bad_yaml():
+    """Raise error on get_pipeline where top-level yaml malformed."""
+    with patch('pypyr.moduleloader.get_module') as mock_get_module:
+        mock_get_def = Mock()
+        # top-level yaml must be a dict, not a list.
+        mock_get_def.return_value = ['a', 'b']
+
+        mock_get_module.return_value.get_pipeline_definition = mock_get_def
+        loader = loadercache.LoaderCache().get_pype_loader('arbloader')
+
+    mock_get_module.assert_called_once_with('arbloader')
+    assert loader.name == 'arbloader'
+
+    with pytest.raises(PipelineDefinitionError):
+        loader.get_pipeline('arb', 'parent')
+
+    mock_get_def.assert_called_once_with(pipeline_name='arb', parent='parent')
 # endregion LoaderCache: get_pype_loader
 
 # region LoaderCache: clear_pipes
@@ -136,6 +158,8 @@ def test_loader_clear():
     """Clear pipeline cache in Loader."""
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
+        mock_get_def.return_value = Mock(spec=dict())
+
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader('arbloader')
 
@@ -158,6 +182,7 @@ def test_loadercache_clear_pipes():
     lc = loadercache.LoaderCache()
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
+        mock_get_def.return_value = Mock(spec=dict())
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
 
         arb_loader = lc.get_pype_loader('arbloader')
@@ -195,6 +220,7 @@ def test_loadercache_clear_pipes_all():
     lc = loadercache.LoaderCache()
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
+        mock_get_def.return_value = Mock(spec=dict())
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         arb_loader = lc.get_pype_loader('arbloader')
         arb_loader2 = lc.get_pype_loader('arbloader2')
