@@ -4,8 +4,11 @@ Attributes:
     loader_cache: Global instance of the loader cache.
                   Use this attribute to access the cache from elsewhere.
 """
+from collections.abc import Mapping
 import logging
+
 from pypyr.cache.cache import Cache
+from pypyr.errors import PipelineDefinitionError
 import pypyr.moduleloader
 from pypyr.pipedef import PipelineDefinition, PipelineInfo
 
@@ -98,6 +101,20 @@ class Loader():
                 info=PipelineInfo(pipeline_name=name,
                                   loader=self.name,
                                   parent=parent))
+
+        # if the pipeline is not a dict at top level, failures down-stream get
+        # mysterious - this prevents malformed pipe from even making it into
+        # cache.
+        if not isinstance(pipeline_definition.pipeline, Mapping):
+            raise PipelineDefinitionError(
+                "A pipeline must be a mapping at the top level. "
+                "Does your top-level yaml have a 'steps:' key? "
+                "For example:\n\n"
+                "steps:\n"
+                "  - name: pypyr.steps.echo\n"
+                "    in:\n"
+                "      echoMe: this is a bare bones pipeline example.\n")
+
         logger.debug("done")
         return pipeline_definition
 
