@@ -9,11 +9,14 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
+from distutils.util import convert_path
 from os import path
 
-import pypyr.version
-
 here = path.abspath(path.dirname(__file__))
+
+version = {}
+with open(convert_path('pypyr/version.py')) as fv:
+    exec(fv.read(), version)
 
 short_description = (
     "task-runner for automation pipelines defined in yaml. cli & api.")
@@ -28,7 +31,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version=pypyr.version.__version__,
+    version=version['__version__'],
 
     description=short_description,
     long_description=long_description,
