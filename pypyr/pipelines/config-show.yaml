@@ -1,0 +1,6 @@
+steps:
+  - name: pypyr.steps.py
+    in:
+      py: |
+        from pypyr.config import config
+        print(config)

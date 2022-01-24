@@ -1,9 +1,6 @@
 """pypyr dynamic modules, namespaces and path discovery.
 
 Load modules dynamically, find things on file-system.
-
-Attributes:
-    CWD (Path): Global shared current working dir.
 """
 import ast
 import builtins
@@ -16,9 +13,6 @@ from threading import Lock
 
 from pypyr.errors import PyModuleNotFoundError
 
-CWD = Path.cwd()
-
-# use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
 

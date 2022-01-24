@@ -1,6 +1,9 @@
 """Custom exceptions for pypyr.
 
 All pypyr specific exceptions derive from Error.
+
+Do NOT import any modules here. This is to prevent circular imports. Every
+other module in pypyr potentially uses this module.
 """
 
 
@@ -29,6 +32,10 @@ def get_error_name(error):
 
 class Error(Exception):
     """Base class for all pypyr exceptions."""
+
+
+class ConfigError(Error):
+    """Error loading configuration."""
 
 
 class ContextError(Error):
@@ -71,7 +78,7 @@ class PyModuleNotFoundError(Error, ModuleNotFoundError):
     """Could not load python module because it wasn't found."""
 
 
-# -------------------------- Control of Flow Instructions ---------------------
+# region Control of Flow Instructions
 class Stop(Error):
     """Control of flow. Stop all execution."""
 
@@ -119,4 +126,4 @@ class Call(ControlOfFlowInstruction):
 class Jump(ControlOfFlowInstruction):
     """Stop step execution and jump to a new step group."""
 
-# -------------------------- END Control of Flow Instructions -----------------
+# endregion Control of Flow Instructions

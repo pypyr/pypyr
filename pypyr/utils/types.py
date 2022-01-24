@@ -1,4 +1,5 @@
 """Utility functions for type checking, conversion and handling."""
+from typing import Any
 
 
 def are_all_this_type(type, *objects):
@@ -17,7 +18,7 @@ def are_all_this_type(type, *objects):
     return all(isinstance(object, type) for object in objects)
 
 
-def cast_to_bool(obj):
+def cast_to_bool(obj: Any) -> bool:
     """Convert to bool with special string parsing.
 
     If obj is string: case-insensitive 'True', '1' or '1.0' is True.
@@ -32,9 +33,24 @@ def cast_to_bool(obj):
         bool. Truthy value of input obj.
     """
     if isinstance(obj, str):
-        return obj.lower() in ['true', '1', '1.0']
+        return cast_str_to_bool(obj)
     else:
         return bool(obj)
+
+
+def cast_str_to_bool(input_string: str) -> bool:
+    """Convert string to boolean with special handling for case, "True", 1.
+
+    Special string parsing for booleans.
+
+    Args:
+        input_string (str): Evaluate this string as bool.
+
+    Returns:
+        case-insensitive 'True', '1' or '1.0' is True.
+        It will be False for all other strings.
+    """
+    return input_string.lower() in ['true', '1', '1.0']
 
 
 def cast_to_type(obj, out_type):

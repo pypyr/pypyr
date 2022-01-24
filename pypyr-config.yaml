@@ -1,2 +1,3 @@
-package_name: pypyr
-version_module_name: 'pypyr.version'
+vars:
+  package_name: pypyr
+  version_module_name: 'pypyr.version'

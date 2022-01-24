@@ -1,6 +1,8 @@
 """logger.py unit tests."""
 import logging
 from unittest.mock import patch
+
+from pypyr.config import config
 import pypyr.log.logger
 from tests.common.utils import patch_logger
 
@@ -55,6 +57,50 @@ def test_logger_with_file_and_console_handler():
     assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
     assert isinstance(kwargs['handlers'][1], logging.FileHandler)
+
+
+def test_logger_with_dict_config():
+    """Add dict config to logger."""
+    log_path = '/arb/path/here'
+    config.log_config = {
+        'version': 1,
+        'handlers': {
+            'nullinfohandler': {
+                'class': 'logging.NullHandler',
+                'level': 'INFO',
+            },
+            'streamhandler': {
+                'level': 'INFO',
+                'class': 'logging.StreamHandler',
+            },
+        },
+        'loggers': {
+            'arbroot': {
+                'handlers': ['nullinfohandler'],
+                'level': 'INFO',
+            },
+            'pypyr': {
+                'handlers': ['streamhandler'],
+                'level': 'INFO',
+            }
+        }
+    }
+
+    with patch.object(logging, 'basicConfig') as mock_logger:
+        # will ignore level + path because config.log_config is set.
+        pypyr.log.logger.set_root_logger(10, log_path)
+
+    mock_logger.assert_not_called()
+
+    arbroot_logger = logging.getLogger('arbroot')
+
+    assert len(arbroot_logger.handlers) == 1
+    assert arbroot_logger.handlers[0].name == 'nullinfohandler'
+
+    arbroot_logger.removeHandler(arbroot_logger.handlers[0])
+
+    # clean-up
+    config.log_config = None
 
 
 def test_notify_log_level_available():

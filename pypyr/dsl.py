@@ -1,8 +1,13 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
 import json
 import logging
+
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.nodes import ScalarNode
+
+from pypyr.cache.stepcache import step_cache
+from pypyr.cache.backoffcache import backoff_cache
+from pypyr.config import config
 from pypyr.errors import (Call,
                           ControlOfFlowInstruction,
                           get_error_name,
@@ -10,8 +15,6 @@ from pypyr.errors import (Call,
                           LoopMaxExhaustedError,
                           PipelineDefinitionError,
                           Stop)
-from pypyr.cache.stepcache import step_cache
-from pypyr.cache.backoffcache import backoff_cache
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -904,7 +907,7 @@ class RetryDecorator:
 
         sleep = context.get_formatted_value(self.sleep)
         backoff_name = context.get_formatted_value(
-            self.backoff) if self.backoff else 'fixed'
+            self.backoff) if self.backoff else config.default_backoff
 
         max_sleep = None
         if self.sleep_max:

@@ -148,10 +148,7 @@ set_config:
         output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
         output_test_results: "{output_results_dir}/testresults/junitresults.xml"
         argList: null
-  - name: pypyr.steps.fetchyaml
-    description: --> loading repo pypyr-config.yaml
-    in:
-      fetchYaml: ./pypyr-config.yaml
+  - pypyr.steps.configvars
   - name: pypyr.steps.assert
     description: --> check expected keys in pypyr-config.yaml
     foreach:
@@ -167,8 +164,8 @@ set_config:
         env: CI
         key: isCi
         default: False
-  - name: pypyr.steps.contextsetf
+  - name: pypyr.steps.set
     comment: flag that config has been set.
     in:
-      contextSetf:
+      set:
         isConfigSet: True

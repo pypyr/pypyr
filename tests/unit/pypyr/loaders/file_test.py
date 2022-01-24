@@ -1,6 +1,6 @@
 """fileloader.py unit tests."""
 from pathlib import Path
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open, patch, PropertyMock
 
 import pytest
 
@@ -73,14 +73,13 @@ def test_get_pipeline_path_in_cwd_pipelines():
     """Find a pipeline in cwd/pipelines."""
     # artificially change the cwd constant
     # when py 3.10 can use () instead of \ for multiline "with"
-    with patch('pypyr.loaders.file.CWD', new=cwd_tests), \
+    with patch('pypyr.config.Config.cwd',
+               new_callable=PropertyMock(return_value=cwd_tests)), \
         patch('pypyr.loaders.file.cwd_pipelines_dir',
               new=cwd_tests.joinpath('pipelines')):
         path_found = fileloader.get_pipeline_path('testpipeline', None)
 
-    expected_path = cwd_tests.joinpath('pipelines', 'testpipeline.yaml')
-
-    assert path_found == expected_path
+    assert path_found == cwd_tests.joinpath('pipelines', 'testpipeline.yaml')
 
 
 def test_get_pipeline_path_in_pypyr_dir():
