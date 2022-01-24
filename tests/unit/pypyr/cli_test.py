@@ -7,7 +7,8 @@ import pytest
 import pypyr.cli
 
 
-def test_main_pass_with_sysargv_context_positional():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_positional(mock_config_init):
     """Invoke from cli sets sys.argv, check assigns correctly to args."""
     arg_list = ['pypyr',
                 'blah',
@@ -30,6 +31,7 @@ def test_main_pass_with_sysargv_context_positional():
             with patch('pypyr.log.logger.set_root_logger') as mock_logger:
                 pypyr.cli.main()
 
+    mock_config_init.assert_called_once()
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
@@ -44,7 +46,8 @@ def test_main_pass_with_sysargv_context_positional():
     )
 
 
-def test_main_pass_with_sysargv_single_group():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_single_group(mock_config_init):
     """Invoke from cli sets sys.argv, check assigns correctly to group."""
     arg_list = ['pypyr',
                 'blah',
@@ -68,6 +71,8 @@ def test_main_pass_with_sysargv_single_group():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string'],
@@ -79,7 +84,8 @@ def test_main_pass_with_sysargv_single_group():
     )
 
 
-def test_main_pass_with_sysargv_context_multiple_positional():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_multiple_positional(mock_config_init):
     """Multiple positional arguments."""
     arg_list = ['pypyr',
                 'blah',
@@ -108,6 +114,8 @@ def test_main_pass_with_sysargv_context_multiple_positional():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string', 'arg 2', 'arg 3', 'arg4=hello'],
@@ -119,7 +127,8 @@ def test_main_pass_with_sysargv_context_multiple_positional():
     )
 
 
-def test_main_pass_with_sysargv_context_positional_log_alias():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_positional_log_alias(mock_config_init):
     """Invoke from cli sets sys.argv with log alias."""
     arg_list = ['pypyr',
                 'blah',
@@ -137,6 +146,8 @@ def test_main_pass_with_sysargv_context_positional_log_alias():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string'],
@@ -148,7 +159,9 @@ def test_main_pass_with_sysargv_context_positional_log_alias():
     )
 
 
-def test_main_pass_with_sysargv_context_positional_abbreviations():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_positional_abbreviations(
+        mock_config_init):
     """Invoke from cli sets sys.argv with log abbreviations."""
     arg_list = ['pypyr',
                 'blah',
@@ -168,6 +181,8 @@ def test_main_pass_with_sysargv_context_positional_abbreviations():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path='/blah')
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string'],
@@ -179,7 +194,9 @@ def test_main_pass_with_sysargv_context_positional_abbreviations():
     )
 
 
-def test_main_pass_with_sysargv_context_positional_flags_last():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_positional_flags_last(
+        mock_config_init):
     """Check assigns correctly to args when positional last not first."""
     arg_list = ['pypyr',
                 '--loglevel',
@@ -197,6 +214,8 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string'],
@@ -208,7 +227,9 @@ def test_main_pass_with_sysargv_context_positional_flags_last():
     )
 
 
-def test_main_pass_with_sysargv_context_multiple_positional_flags_last():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_sysargv_context_multiple_positional_flags_last(
+        mock_config_init):
     """Check assigns correctly to multiple args when positional last."""
     arg_list = ['pypyr',
                 '--loglevel',
@@ -228,6 +249,8 @@ def test_main_pass_with_sysargv_context_multiple_positional_flags_last():
     mock_logger.assert_called_once_with(log_level=50,
                                         log_path=None)
 
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=['ctx string', 'arb 2', 'arb3=arbvalue'],
@@ -239,7 +262,8 @@ def test_main_pass_with_sysargv_context_multiple_positional_flags_last():
     )
 
 
-def test_main_pass_with_defaults_context_positional():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_defaults_context_positional(mock_config_init):
     """Default values assigned - log 25 and cwd."""
     arg_list = ['blah',
                 'ctx string']
@@ -250,6 +274,8 @@ def test_main_pass_with_defaults_context_positional():
 
     mock_logger.assert_called_once_with(log_level=None,
                                         log_path=None)
+
+    mock_config_init.assert_called_once()
 
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
@@ -262,7 +288,8 @@ def test_main_pass_with_defaults_context_positional():
     )
 
 
-def test_main_pass_with_no_context():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_no_context(mock_config_init):
     """No context is None."""
     arg_list = ['blah']
 
@@ -284,7 +311,8 @@ def test_main_pass_with_no_context():
     )
 
 
-def test_main_pass_with_no_context_other_flags_set():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_no_context_other_flags_set(mock_config_init):
     """No context is None and other flag still work."""
     arg_list = ['blah',
                 '--loglevel',
@@ -296,6 +324,8 @@ def test_main_pass_with_no_context_other_flags_set():
 
     mock_logger.assert_called_once_with(log_level=11,
                                         log_path=None)
+
+    mock_config_init.assert_called_once()
 
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
@@ -320,7 +350,8 @@ def test_pipeline_name_required():
         assert exit_err.value.code == 2
 
 
-def test_interrupt_signal():
+@patch('pypyr.config.config.init')
+def test_interrupt_signal(mock_config_init):
     """Interrupt signal handled."""
     arg_list = ['blah',
                 'ctx string']
@@ -330,8 +361,11 @@ def test_interrupt_signal():
         val = pypyr.cli.main(arg_list)
         assert val == 130
 
+    mock_config_init.assert_called_once()
 
-def test_arb_error():
+
+@patch('pypyr.config.config.init')
+def test_arb_error(mock_config_init):
     """Arbitrary error should return 255."""
     arg_list = ['blah',
                 'ctx string']
@@ -341,8 +375,11 @@ def test_arb_error():
         val = pypyr.cli.main(arg_list)
         assert val == 255
 
+    mock_config_init.assert_called_once()
 
-def test_trace_log_level_less_10():
+
+@patch('pypyr.config.config.init')
+def test_trace_log_level_less_10(mock_config_init):
     """Log Level < 10 produces traceback on error."""
     arg_list = ['blah',
                 'ctx string',
@@ -357,8 +394,11 @@ def test_trace_log_level_less_10():
 
     mock_traceback.assert_called_once()
 
+    mock_config_init.assert_called_once()
 
-def test_trace_log_level_over_10():
+
+@patch('pypyr.config.config.init')
+def test_trace_log_level_over_10(mock_config_init):
     """Log Level > 10 doesn't produce traceback on error."""
     arg_list = ['blah',
                 'ctx string',
@@ -372,9 +412,11 @@ def test_trace_log_level_over_10():
             assert val == 255
 
     mock_traceback.assert_not_called()
+    mock_config_init.assert_called_once()
 
 
-def test_trace_log_level_none():
+@patch('pypyr.config.config.init')
+def test_trace_log_level_none(mock_config_init):
     """Log Level None doesn't produce traceback on error."""
     arg_list = ['blah',
                 'ctx string']
@@ -386,9 +428,11 @@ def test_trace_log_level_none():
             assert val == 255
 
     mock_traceback.assert_not_called()
+    mock_config_init.assert_called_once()
 
 
-def test_main_pass_with_logpath():
+@patch('pypyr.config.config.init')
+def test_main_pass_with_logpath(mock_config_init):
     """The logpath set to tempfile."""
     arg_list = ['blah',
                 '--logpath',
@@ -400,6 +444,9 @@ def test_main_pass_with_logpath():
 
     mock_logger.assert_called_once_with(log_level=None,
                                         log_path='tmp.log',)
+
+    mock_config_init.assert_called_once()
+
     mock_pipeline_run.assert_called_once_with(
         pipeline_name='blah',
         args_in=[],

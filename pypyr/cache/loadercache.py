@@ -8,6 +8,7 @@ from collections.abc import Mapping
 import logging
 
 from pypyr.cache.cache import Cache
+from pypyr.config import config
 from pypyr.errors import PipelineDefinitionError
 import pypyr.moduleloader
 from pypyr.pipedef import PipelineDefinition, PipelineInfo
@@ -144,7 +145,7 @@ class LoaderCache(Cache):
         if loader:
             logger.debug("you set the pype loader to: %s", loader)
         else:
-            loader = 'pypyr.loaders.file'
+            loader = config.default_loader
             logger.debug("use default pype loader: %s", loader)
 
         loader_instance = self.get(loader, lambda: load_the_loader(loader))

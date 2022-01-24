@@ -8,8 +8,8 @@ import sys
 import textwrap
 import traceback
 
+from pypyr.config import config
 import pypyr.log.logger
-from pypyr.moduleloader import CWD
 import pypyr.pipelinerunner
 import pypyr.version
 
@@ -27,6 +27,7 @@ def main(args=None):
     parsed_args = get_args(args)
 
     try:
+        config.init()
         pypyr.log.logger.set_root_logger(log_level=parsed_args.log_level,
                                          log_path=parsed_args.log_path)
 
@@ -102,7 +103,7 @@ def get_parser():
                             'pipeline.\n'
                             'Defaults to "on_failure"'))
     parser.add_argument('--dir', dest='py_dir',
-                        default=CWD,
+                        default=config.cwd,
                         help=wrap('Load custom python modules from this '
                                   'directory.\n'
                                   'Defaults to cwd (the current dir).'))

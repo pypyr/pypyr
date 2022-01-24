@@ -3,8 +3,9 @@ import logging
 from pathlib import Path
 
 from pypyr.cache.cache import Cache
+from pypyr.config import config
 from pypyr.errors import PipelineNotFoundError
-from pypyr.moduleloader import add_sys_path, CWD
+from pypyr.moduleloader import add_sys_path
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
 import pypyr.yaml
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 _file_cache = Cache()
-cwd_pipelines_dir = CWD.joinpath('pipelines')
+cwd_pipelines_dir = config.cwd.joinpath(config.pipelines_subdir)
 pypyr_dir = Path(__file__).parents[1]
 builtin_pipelines_dir = pypyr_dir.joinpath('pipelines')
 
@@ -94,7 +95,7 @@ def get_pipeline_path(pipeline_name, parent):
             parent = parent.resolve()
             # samefile raises err if either path doesn't .exist
             if parent.exists():
-                if not parent.samefile(CWD):
+                if not parent.samefile(config.cwd):
                     search_locations.append((
                         parent,
                         "%s not found in parent pipeline directory. "
@@ -105,7 +106,7 @@ def get_pipeline_path(pipeline_name, parent):
                     parent)
 
         # 3. {cwd}/{pipeline_name}.yaml
-        search_locations.append((CWD,
+        search_locations.append((config.cwd,
                                 "%s not found in cwd. "
                                  "Looking in 'cwd/pipelines' instead."))
 

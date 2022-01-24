@@ -15,6 +15,7 @@ from os import PathLike
 
 from pypyr.cache.loadercache import loader_cache
 from pypyr.cache.parsercache import contextparser_cache
+from pypyr.config import config
 from pypyr.context import Context
 from pypyr.errors import Stop, StopPipeline, StopStepGroup
 import pypyr.moduleloader
@@ -225,11 +226,11 @@ class Pipeline():
         failure_group = self.failure_group
 
         if not groups:
-            groups = ['steps']
+            groups = [config.default_group]
 
             if not self.success_group and not self.failure_group:
-                success_group = 'on_success'
-                failure_group = 'on_failure'
+                success_group = config.default_success_group
+                failure_group = config.default_failure_group
 
         steps_runner = StepsRunner(
             pipeline_body=self.pipeline_definition.pipeline,
