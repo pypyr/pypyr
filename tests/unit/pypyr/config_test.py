@@ -10,10 +10,19 @@ from pypyr.platform import PlatformPaths
 
 CWD = Path.cwd()
 
+
+@pytest.fixture
+def no_envs(monkeypatch):
+    """Remove PYPYR_ env variables for test duration."""
+    monkeypatch.delenv('PYPYR_ENCODING', raising=False)
+    monkeypatch.delenv('PYPYR_SKIP_INIT', raising=False)
+    monkeypatch.delenv('PYPYR_CONFIG_GLOBAL', raising=False)
+    monkeypatch.delenv('PYPYR_CONFIG_LOCAL', raising=False)
+
 # region default initialization
 
 
-def test_config_defaults():
+def test_config_defaults(no_envs):
     """Default config instance with all attributes as expected."""
     config = Config()
     assert config.config_loaded_paths == []
@@ -40,7 +49,7 @@ def test_config_defaults():
     assert config.default_failure_group == 'on_failure'
 
 
-def test_config_with_encoding(monkeypatch):
+def test_config_with_encoding(monkeypatch, no_envs):
     """Set encoding via env variable."""
     monkeypatch.setenv('PYPYR_ENCODING', 'arb')
     config = Config()
@@ -51,7 +60,7 @@ def test_config_with_encoding(monkeypatch):
 # region init (heavy)
 
 
-def test_config_skip_init(monkeypatch):
+def test_config_skip_init(monkeypatch, no_envs):
     """Skip init when $PYPYR_SKIP_INIT true."""
     monkeypatch.setenv('PYPYR_SKIP_INIT', '1')
     config = Config()
@@ -67,9 +76,8 @@ fake_platform_paths = PlatformPaths(config_user=Path('/cu'),
 
 
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
-def test_config_init_no_files_found(mock_get_platform, monkeypatch):
+def test_config_init_no_files_found(mock_get_platform, no_envs):
     """Heavy init does not raise if no files found."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     mock_opens = [
         OSError(),
         OSError(),
@@ -89,7 +97,7 @@ def test_config_init_no_files_found(mock_get_platform, monkeypatch):
     assert config.config_loaded_paths == []
     assert config.platform_paths == fake_platform_paths
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc'), encoding=None),
@@ -99,9 +107,8 @@ def test_config_init_no_files_found(mock_get_platform, monkeypatch):
 
 
 @patch('pypyr.platform.get_platform_paths')
-def test_config_init_all_files_found(mock_get_platform, monkeypatch):
+def test_config_init_all_files_found(mock_get_platform, no_envs):
     """Heavy init merges all files."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data='pipelines_subdir: arb1\ndefault_backoff: x')
     f2 = mock_open(read_data='pipelines_subdir: arb2\ndefault_loader: y')
     f3 = mock_open(read_data='pipelines_subdir: arb3\ndefault_group: z')
@@ -157,7 +164,7 @@ def test_config_init_all_files_found(mock_get_platform, monkeypatch):
 
     assert config.platform_paths == fake_pp_multiple_common
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc2'), encoding=None),
@@ -169,9 +176,8 @@ def test_config_init_all_files_found(mock_get_platform, monkeypatch):
 
 @patch('pypyr.platform.get_platform_paths')
 def test_config_init_all_files_found_scalars_and_dicts(mock_get_platform,
-                                                       monkeypatch):
+                                                       no_envs):
     """Heavy init merges all files with scalar and dict properties."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data='pipelines_subdir: arb1\nvars:\n  a: b\n  f1: 1')
     f2 = mock_open(read_data='pipelines_subdir: arb2\nvars:\n  a: c\n  f2: 2')
     f3 = mock_open(read_data='pipelines_subdir: arb3\nvars:\n  a: d\n  f3: 3')
@@ -243,7 +249,7 @@ def test_config_init_all_files_found_scalars_and_dicts(mock_get_platform,
 
     assert config.platform_paths == fake_pp_multiple_common
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc2'), encoding=None),
@@ -255,9 +261,8 @@ def test_config_init_all_files_found_scalars_and_dicts(mock_get_platform,
 
 @patch('pypyr.platform.get_platform_paths')
 def test_config_init_all_files_only_dicts(mock_get_platform,
-                                          monkeypatch):
+                                          no_envs):
     """Heavy init merges all files with only dict properties."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data='vars:\n  a: b\n  f1: 1')
     f2 = mock_open(read_data='vars:\n  a: c\n  f2: 2\nshortcuts:\n  s1: one')
     f3 = mock_open(read_data='vars:\n  a: d\n  f3: 3\nshortcuts:\n  s2: two')
@@ -330,7 +335,7 @@ def test_config_init_all_files_only_dicts(mock_get_platform,
 
     assert config.platform_paths == fake_pp_multiple_common
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc2'), encoding=None),
@@ -341,9 +346,8 @@ def test_config_init_all_files_only_dicts(mock_get_platform,
 
 
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
-def test_config_init_property_invalid(mock_get_platform, monkeypatch):
+def test_config_init_property_invalid(mock_get_platform, no_envs):
     """Heavy init raises on invalid property."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data='arb: varb1\narb2: varb2\ndefault_backoff: x')
 
     mock_opens = [
@@ -365,8 +369,10 @@ def test_config_init_property_invalid(mock_get_platform, monkeypatch):
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
 def test_config_init_filename_set_by_env(mock_get_platform, monkeypatch):
     """Override config file name with $PYPYR_CONFIG_FILENAME."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
-    monkeypatch.setenv('PYPYR_CONFIG_FILENAME', 'arb')
+    monkeypatch.delenv('PYPYR_ENCODING', raising=False)
+    monkeypatch.delenv('PYPYR_SKIP_INIT', raising=False)
+    monkeypatch.delenv('PYPYR_CONFIG_GLOBAL', raising=False)
+    monkeypatch.setenv('PYPYR_CONFIG_LOCAL', 'arb')
     mock_opens = [
         OSError,
         OSError(),
@@ -386,7 +392,7 @@ def test_config_init_filename_set_by_env(mock_get_platform, monkeypatch):
     assert config.config_loaded_paths == []
     assert config.platform_paths == fake_platform_paths
 
-    mock_get_platform.assert_called_once_with('pypyr', 'arb')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc'), encoding=None),
@@ -395,9 +401,9 @@ def test_config_init_filename_set_by_env(mock_get_platform, monkeypatch):
         call(Path('arb'), encoding=None)]
 
 
-def test_config_file_env_override(monkeypatch):
+def test_config_file_env_override(monkeypatch, no_envs):
     """Heavy init with $PYPYR_CONFIG_FILE override."""
-    monkeypatch.setenv('PYPYR_CONFIG_FILE', '/arb/path')
+    monkeypatch.setenv('PYPYR_CONFIG_GLOBAL', '/arb/path')
 
     f1 = mock_open(read_data='pipelines_subdir: arb')
 
@@ -429,9 +435,9 @@ def test_config_file_env_override(monkeypatch):
         call(Path('pypyr-config.yaml'), encoding=None)]
 
 
-def test_config_file_env_override_merges_locals(monkeypatch):
+def test_config_file_env_override_merges_locals(monkeypatch, no_envs):
     """Heavy init with $PYPYR_CONFIG_FILE still merges ./ config files."""
-    monkeypatch.setenv('PYPYR_CONFIG_FILE', '/arb/path')
+    monkeypatch.setenv('PYPYR_CONFIG_GLOBAL', '/arb/path')
 
     f1 = mock_open(read_data='pipelines_subdir: arb')
     f2 = mock_open(read_data=(
@@ -481,9 +487,9 @@ def test_config_file_env_override_merges_locals(monkeypatch):
         call(Path('pypyr-config.yaml'), encoding=None)]
 
 
-def test_config_file_env_override_not_found(monkeypatch):
+def test_config_file_env_override_not_found(monkeypatch, no_envs):
     """Heavy init with $PYPYR_CONFIG_FILE override raises on not found."""
-    monkeypatch.setenv('PYPYR_CONFIG_FILE', '/arb/path')
+    monkeypatch.setenv('PYPYR_CONFIG_GLOBAL', 'arb/path')
 
     config = Config()
 
@@ -491,13 +497,14 @@ def test_config_file_env_override_not_found(monkeypatch):
         with pytest.raises(ConfigError) as err:
             config.init()
 
-    assert str(err.value) == ('Could not open config file at /arb/path.')
-    f1.assert_called_with(Path('/arb/path'), encoding=None)
+    path = Path('arb/path')
+    assert str(err.value) == f'Could not open config file at {path}.'
+    f1.assert_called_with(path, encoding=None)
 
 
-def test_config_file_env_override_malformed(monkeypatch):
+def test_config_file_env_override_malformed(monkeypatch, no_envs):
     """Heavy init with $PYPYR_CONFIG_FILE override raises on not mapping."""
-    monkeypatch.setenv('PYPYR_CONFIG_FILE', '/arb/path')
+    monkeypatch.setenv('PYPYR_CONFIG_GLOBAL', 'arb/path')
 
     config = Config()
 
@@ -505,10 +512,11 @@ def test_config_file_env_override_malformed(monkeypatch):
         with pytest.raises(ConfigError) as err:
             config.init()
 
+    path = Path('arb/path')
     assert str(err.value) == (
-        'Config file /arb/path should be a mapping (i.e a dict or table) at '
+        f'Config file {path} should be a mapping (i.e a dict or table) at '
         'the top level.')
-    f1.assert_called_with(Path('/arb/path'), encoding=None)
+    f1.assert_called_with(path, encoding=None)
 
 # endregion init (heavy)
 
@@ -516,9 +524,8 @@ def test_config_file_env_override_malformed(monkeypatch):
 
 
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
-def test_config_init_pyprojtoml_no_tool(mock_get_platform, monkeypatch):
+def test_config_init_pyprojtoml_no_tool(mock_get_platform, no_envs):
     """Load pyproject.toml with no tool table."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data=(
                    b'arbkey = 123\n'
                    b'[mytable]\n'
@@ -551,7 +558,7 @@ def test_config_init_pyprojtoml_no_tool(mock_get_platform, monkeypatch):
 
     assert config.platform_paths == fake_platform_paths
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc'), encoding=None),
@@ -561,9 +568,8 @@ def test_config_init_pyprojtoml_no_tool(mock_get_platform, monkeypatch):
 
 
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
-def test_config_init_pyprojtoml_tool_no_pypyr(mock_get_platform, monkeypatch):
+def test_config_init_pyprojtoml_tool_no_pypyr(mock_get_platform, no_envs):
     """Load pyproject.toml with tool table but no pypyr.tool sub-table."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data=(
                    b'arbkey = 123\n'
                    b'[tool.arbtool]\n'
@@ -596,7 +602,7 @@ def test_config_init_pyprojtoml_tool_no_pypyr(mock_get_platform, monkeypatch):
 
     assert config.platform_paths == fake_platform_paths
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc'), encoding=None),
@@ -606,9 +612,8 @@ def test_config_init_pyprojtoml_tool_no_pypyr(mock_get_platform, monkeypatch):
 
 
 @patch('pypyr.platform.get_platform_paths', return_value=fake_platform_paths)
-def test_config_init_pyprojtoml_empty(mock_get_platform, monkeypatch):
+def test_config_init_pyprojtoml_empty(mock_get_platform, no_envs):
     """Load pyproject.toml this is totally empty."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data=(b''))
     mock_opens = [
         OSError(),
@@ -633,7 +638,7 @@ def test_config_init_pyprojtoml_empty(mock_get_platform, monkeypatch):
 
     assert config.platform_paths == fake_platform_paths
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(Path('/cc'), encoding=None),
@@ -642,7 +647,7 @@ def test_config_init_pyprojtoml_empty(mock_get_platform, monkeypatch):
         call(Path('pypyr-config.yaml'), encoding=None)]
 
 
-def test_pyproject_toml_with_raise():
+def test_pyproject_toml_with_raise(no_envs):
     """Raise error option when pyproject.toml not found."""
     config = Config()
     with patch('builtins.open', side_effect=OSError) as mock_files:
@@ -664,7 +669,7 @@ def test_pyproject_toml_with_raise():
 # region __str__
 
 
-def test_config_default_str():
+def test_config_default_str(no_envs):
     """Config object default represents as nice friendly string."""
     config = Config()
     assert str(config) == ("""WRITEABLE PROPERTIES:
@@ -696,9 +701,8 @@ skip_init: False
 
 
 @patch('pypyr.platform.get_platform_paths')
-def test_config_all_str(mock_get_platform, monkeypatch):
+def test_config_all_str(mock_get_platform, no_envs):
     """Config represents all properties as string after heavy init."""
-    monkeypatch.delenv('PYPYR_CONFIG_FILE', raising=False)
     f1 = mock_open(read_data=(
                    b'arbkey = 123\n'
                    b'[tool.pypyr]\n'
@@ -741,7 +745,7 @@ def test_config_all_str(mock_get_platform, monkeypatch):
 
     assert config.platform_paths == fake_pp
 
-    mock_get_platform.assert_called_once_with('pypyr', 'pypyr-config.yaml')
+    mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
         call(cc, encoding=None),

@@ -156,17 +156,17 @@ By default `%ALLUSERSPROFILE%` is `C:\ProgramData` for Vista and later, XP was
 ## Environment variable
 pypyr should allow the operator explicitly to over-ride these defaults by
 specifying an explicit location for a config file in an environment variable
-named something like `$PYPYR_CONFIG_FILE`.
+named something like `$PYPYR_CONFIG_GLOBAL`.
 
 The idea is that setting this environment variable to a path will replace the
 per-user and system-wide config look-ups, but pypyr will still do the current
 directory check first.
 
 ## Configuration file names
-The obvious candidate is `pypyr-config.yaml`. This means that the file can live
-inside a project in the root of the repo and not just in a pypyr specific
-directory. Examples in the field include `swagger-config.yaml`,
-`docker-compose.yaml`.
+The obvious candidate for local (i.e current directory) configuration is to use
+filename `pypyr-config.yaml`. This means that the file can live inside a project
+in the root of the repo and not just in a pypyr specific directory. Examples in
+the field include `swagger-config.yaml`, `docker-compose.yaml`.
 
 Alternatively, you could do `.pypyr/config.yaml` - in other words, the config
 file goes into a `.pypyr` directory. In general, dotted directories are hidden
@@ -181,6 +181,10 @@ straightforward way of associating a file format to files without extensions
 like dotfiles, so you lose the auto-formatting, pretty colors and structural
 error checking a full-powered IDE gives. But nothing stops you from adding an
 extension, so `.pypyr.yaml` etc. Example in the field is `.travis.yml`.
+
+The current directory filename should over-ride with something like environment
+variable `$PYPYR_CONFIG_LOCAL`, meaning operators can distinguish between
+`$PYPYR_CONFIG_GLOBAL` and `$PYPYR_CONFIG_LOCAL`.
 
 ## Configuration file format
 Given how much pypyr uses YAML, it makes sense to have the default configuration
@@ -253,10 +257,10 @@ config properties.
         - Windows: `%ALLUSERSPROFILE%` (usually `C:\ProgramData``)
 3. In the user/shared config dirs, look for `pypyr/config.yaml`
 4. To mitigate upset where users have strong opinions about where config should
-   live, environment variable `PYPYR_CONFIG_FILE` over-rides opinionated
+   live, environment variable `$PYPYR_CONFIG_GLOBAL` over-rides opinionated
    implementation of per user/shared config locations, while still doing the
-   current directory look-up a usual.
+   current directory look-up as usual.
 5. All config is optional. pypyr work with sensible defaults without any special
    config intervention necessary.
-6. Only allow known properties in config file with a clear explicit error on
+6. Only allow known properties in config files with a clear explicit error on
    unexpected keys.

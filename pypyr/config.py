@@ -173,9 +173,9 @@ class Config():
         Order of precedence:
         1. /pypyr-config.yaml
         2. ./pyproject.toml
-        3. Use $PYPYR_CONFIG_FILE if available. If not, go to 4 & 5.
-        4. $XDG_CONFIG_HOME - ~/.config/share/pypyr/pypyr-config.yaml
-        5. $XDG_CONFIG_DIRS/pypyr/pypyr-config.yaml
+        3. Use $PYPYR_CONFIG_GLOBAL if available. If not, go to 4 & 5.
+        4. $XDG_CONFIG_HOME - ~/.config/pypyr/config.yaml
+        5. $XDG_CONFIG_DIRS/pypyr/config.yaml
 
         If $PYPYR_SKIP_INIT is 'true' or '1', this method returns without doing
         anything.
@@ -185,12 +185,10 @@ class Config():
             return
 
         # The final merge sticks, therefore go in reverse order 5 -> 1.
-        env_config_path_str = os.getenv('PYPYR_CONFIG_FILE', None)
-        config_file_name = os.getenv('PYPYR_CONFIG_FILENAME',
-                                     'pypyr-config.yaml')
+        env_config_path_str = os.getenv('PYPYR_CONFIG_GLOBAL', None)
 
         if env_config_path_str:
-            # 3. Use $PYPYR_CONFIG_FILE if available. If not, go to 4 & 5.
+            # 3. Use $PYPYR_CONFIG_GLOBAL if available. If not, go to 4 & 5.
             env_config_path = Path(env_config_path_str)
             # Since user explicitly set this path, raise error if not exist.
             self.handle_path(env_config_path, raise_not_found=True)
@@ -200,25 +198,27 @@ class Config():
                 data_dir_user=env_config_path,
                 data_dir_common=[env_config_path])
         else:
-            platform_paths = pypyr.platform.get_platform_paths(
-                'pypyr',
-                config_file_name)
+            platform_paths = pypyr.platform.get_platform_paths('pypyr',
+                                                               'config.yaml')
 
             self._platform_paths = platform_paths
 
-            # 5. $XDG_CONFIG_DIRS/pypyr/pypyr-config.yaml
+            # 5. $XDG_CONFIG_DIRS/pypyr/config.yaml
             for path in reversed(platform_paths.config_common):
                 # going in reverse order because the last update in the
                 # sequence is the prevailing value.
                 self.handle_path(path)
 
-            # 4. $XDG_CONFIG_HOME - ~/.config/share/pypyr/pypyr-config.yaml
+            # 4. $XDG_CONFIG_HOME - ~/.config/pypyr/config.yaml
             self.handle_path(platform_paths.config_user)
 
         # 2. ./pyproject.toml
         self.handle_path(Path('pyproject.toml'), self.load_pyproject_toml)
 
         # 1. /pypyr-config.yaml
+        config_file_name = os.getenv('PYPYR_CONFIG_LOCAL',
+                                     'pypyr-config.yaml')
+
         self.handle_path(Path(config_file_name))
 
     def handle_path(self,
