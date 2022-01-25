@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 
+from pypyr.config import config
 from pypyr.utils.asserts import assert_key_exists, assert_key_is_truthy
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ def run_step(context):
     path = Path(file_write['path'])
     is_append = file_write.get('append', False)
     is_binary = file_write.get('binary', False)
-    encoding = file_write.get('encoding', None)
+    encoding = file_write.get('encoding', config.default_encoding)
 
     if is_binary:
         mode = 'ab' if is_append else 'wb'

@@ -1,5 +1,7 @@
 """pypyr step that reads a file into context."""
 import logging
+
+from pypyr.config import config
 from pypyr.utils.asserts import assert_keys_are_truthy
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,7 @@ def run_step(context):
     file_path = file_read['path']
     destination_key = file_read['key']
     mode = 'rb' if file_read.get('binary', False) else 'r'
-    encoding = file_read.get('encoding', None)
+    encoding = file_read.get('encoding', config.default_encoding)
 
     logger.debug("attempting to open file with mode '%s': %s", mode, file_path)
 

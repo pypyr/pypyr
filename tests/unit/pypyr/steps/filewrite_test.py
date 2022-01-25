@@ -187,6 +187,78 @@ def test_filewrite_pass_with_payload_encoding(mock_path):
 
 
 @patch('pypyr.steps.filewrite.Path')
+def test_filewrite_pass_encoding_from_config_override(mock_path,
+                                                      monkeypatch):
+    """Direct encoding overrides config encoding.."""
+    monkeypatch.setattr('pypyr.config.config.default_encoding', 'arbx')
+    context = Context({
+        'k1': 'v1',
+        'fileWrite': {
+            'path': '/arb/blah',
+            'payload': 'one\ntwo\nthree',
+            'encoding': 'arb'
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewrite.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        payload = out_text.getvalue()
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 2, "context should have 2 items"
+    assert context['k1'] == 'v1'
+    assert context['fileWrite'] == {'path': '/arb/blah',
+                                    'payload': 'one\ntwo\nthree',
+                                    'encoding': 'arb'}
+
+    mock_path.assert_called_once_with('/arb/blah')
+    mocked_path = mock_path.return_value
+    mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                     exist_ok=True)
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding='arb')
+
+    assert payload == 'one\ntwo\nthree'
+
+
+@patch('pypyr.steps.filewrite.Path')
+def test_filewrite_pass_encoding_from_config(mock_path,
+                                             monkeypatch):
+    """Encoding comes from config."""
+    monkeypatch.setattr('pypyr.config.config.default_encoding', 'arbx')
+    context = Context({
+        'k1': 'v1',
+        'fileWrite': {
+            'path': '/arb/blah',
+            'payload': 'one\ntwo\nthree'
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewrite.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        payload = out_text.getvalue()
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 2, "context should have 2 items"
+    assert context['k1'] == 'v1'
+    assert context['fileWrite'] == {'path': '/arb/blah',
+                                    'payload': 'one\ntwo\nthree'}
+
+    mock_path.assert_called_once_with('/arb/blah')
+    mocked_path = mock_path.return_value
+    mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                     exist_ok=True)
+    mock_output.assert_called_once_with(mocked_path, 'w', encoding='arbx')
+
+    assert payload == 'one\ntwo\nthree'
+
+
+@patch('pypyr.steps.filewrite.Path')
 def test_filewrite_pass_with_non_string_payload(mock_path):
     """Empty payload write non string types to file."""
     context = Context({
