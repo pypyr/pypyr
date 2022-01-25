@@ -122,8 +122,43 @@ def test_fileread_defaults():
     mocked_open.assert_called_once_with('/arb', 'r', encoding=None)
 
 
+def test_fileread_defaults_with_encoding(monkeypatch):
+    """Read file with minimal defaults and encoding set by config."""
+    monkeypatch.setattr('pypyr.config.config.default_encoding', 'arbe')
+    context = Context({
+        'fileRead': {
+            'path': '/arb',
+            'key': 'out'}})
+
+    with patch('pypyr.steps.fileread.open',
+               mock_open(read_data='one\ntwo\nthree')) as mocked_open:
+        fileread.run_step(context)
+
+    assert context['out'] == 'one\ntwo\nthree'
+
+    mocked_open.assert_called_once_with('/arb', 'r', encoding='arbe')
+
+
 def test_fileread_all():
     """Read file with all args."""
+    context = Context({
+        'fileRead': {
+            'path': '/arb',
+            'key': 'out',
+            'encoding': 'arb'}})
+
+    with patch('pypyr.steps.fileread.open',
+               mock_open(read_data='one\ntwo\nthree')) as mocked_open:
+        fileread.run_step(context)
+
+    assert context['out'] == 'one\ntwo\nthree'
+
+    mocked_open.assert_called_once_with('/arb', 'r', encoding='arb')
+
+
+def test_fileread_all_encoding_override(monkeypatch):
+    """Read file with all args, overriding config encoding."""
+    monkeypatch.setattr('pypyr.config.config.default_encoding', 'XXX')
     context = Context({
         'fileRead': {
             'path': '/arb',
