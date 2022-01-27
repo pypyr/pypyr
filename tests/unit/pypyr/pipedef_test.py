@@ -99,6 +99,24 @@ def test_pipelinefileinfo_eq():
                              loader='arbloader',
                              parent='arbdir',
                              path='arbpath')
+            != PipelineFileInfo(pipeline_name='arbpipe',
+                                loader='arbloader',
+                                parent='arbdir2',
+                                path='arbpath'))
+
+    assert (PipelineFileInfo(pipeline_name='arbpipe',
+                             loader='arbloader',
+                             parent='arbdir',
+                             path='arbpath')
+            != PipelineFileInfo(pipeline_name='arbpipe',
+                                loader='arbloader',
+                                parent='arbdir',
+                                path='arbpath2'))
+
+    assert (PipelineFileInfo(pipeline_name='arbpipe',
+                             loader='arbloader',
+                             parent='arbdir',
+                             path='arbpath')
             != PipelineInfo(pipeline_name='arbpipe',
                             parent='arbdir',
                             loader='arbloader'))
