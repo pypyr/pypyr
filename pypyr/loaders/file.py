@@ -152,7 +152,7 @@ def get_pipeline_definition(pipeline_name, parent):
     logger.debug("Trying to open pipeline at path %s", pipeline_path)
 
     pipeline_definition = _file_cache.get(
-        pipeline_path,
+        str(pipeline_path),
         lambda: load_pipeline_from_file(pipeline_path))
 
     logger.debug("found %d stages in pipeline.",
@@ -181,7 +181,7 @@ def load_pipeline_from_file(path):
     logger.debug("starting")
 
     try:
-        with open(path) as yaml_file:
+        with open(path, encoding=config.default_encoding) as yaml_file:
             pipeline_yaml = pypyr.yaml.get_pipeline_yaml(yaml_file)
     except FileNotFoundError:
         # this can only happen if file disappears between get_pipeline_path

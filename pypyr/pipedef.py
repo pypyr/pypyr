@@ -39,10 +39,16 @@ class PipelineDefinition():
 
     def __eq__(self, other):
         """Equality comparison checks Pipeline and info objects are equal."""
-        return (isinstance(other, type(self))
-                and all(
-                    getattr(self, s, object()) == getattr(other, s, object())
-                    for s in self.__slots__))
+        type_self = type(self)
+
+        if type_self is type(other):
+            all_slots = [p for c in type_self.__mro__ for p in getattr(
+                c, '__slots__', [])]
+            return all(
+                getattr(self, s, id(self)) == getattr(other, s, id(other))
+                for s in all_slots)
+        else:
+            return False
 
 
 class PipelineInfo():
@@ -87,10 +93,16 @@ class PipelineInfo():
 
     def __eq__(self, other):
         """Check all instance attributes are equal."""
-        return (isinstance(other, type(self))
-                and all(
-                    getattr(self, s, object()) == getattr(other, s, object())
-            for s in self.__slots__))
+        type_self = type(self)
+
+        if type_self is type(other):
+            all_slots = [p for c in type_self.__mro__ for p in getattr(
+                c, '__slots__', [])]
+            return all(
+                getattr(self, s, id(self)) == getattr(other, s, id(other))
+                for s in all_slots)
+        else:
+            return False
 
 
 class PipelineFileInfo(PipelineInfo):
