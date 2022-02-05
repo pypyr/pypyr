@@ -42,16 +42,8 @@ $ pip install --upgrade pypyr
 
 Tested against Python \>=3.7
 
-Stuck with an older version of python? Want to run pypyr in an
-environment that you don't control, like a CI server somewhere?
-
-You can use the [official pypyr docker
-image](https://hub.docker.com/r/pypyr/pypyr/) as a drop-in replacement
-for the pypyr executable.
-
-```console
-$ docker run pypyr/pypyr echo "Ceci n'est pas une pipe"
-```
+pypyr runs on Linux, MacOS & Windows. pypyr also runs fine on CI servers &
+containers - pretty much anywhere with a Python run-time will work.
 
 ## Usage
 ### This is a pipeline
