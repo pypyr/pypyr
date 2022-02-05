@@ -108,7 +108,7 @@ def test_filewriteyaml_pass_no_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
         # yaml well formed & new lines and indents are where they should be
         assert out_text.getvalue() == ('k1: v1\n'
@@ -116,6 +116,7 @@ def test_filewriteyaml_pass_no_payload(mock_path):
                                        '  path: /arb/blah\n')
 
 
+@patch('pypyr.config.config.default_encoding', new='utf-8')
 @patch('pypyr.steps.filewriteyaml.Path')
 def test_filewriteyaml_pass_with_payload(mock_path):
     """Success case writes only specific context payload."""
@@ -164,7 +165,74 @@ def test_filewriteyaml_pass_with_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding='utf-8')
+
+        # yaml well formed & new lines + indents are where they should be
+        assert out_text.getvalue() == ('  - first\n'
+                                       '  - second\n'
+                                       '  - a: b\n'
+                                       '    c: 123.45\n'
+                                       '    d:\n'
+                                       '      - 0\n'
+                                       '      - 1\n'
+                                       '      - 2\n'
+                                       '  - 12\n'
+                                       '  - true\n')
+
+
+@patch('pypyr.config.config.default_encoding', new='utf-8')
+@patch('pypyr.steps.filewriteyaml.Path')
+def test_filewriteyaml_pass_with_payload_encoding_set(mock_path):
+    """Success case writes only specific context payload."""
+    context = Context({
+        'k1': 'v1',
+        'fileWriteYaml': {
+            'path': '/arb/blah',
+            'payload': [
+                'first',
+                'second',
+                {'a': 'b', 'c': 123.45, 'd': [0, 1, 2]},
+                12,
+                True
+            ],
+            'encoding': 'utf-16'
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewriteyaml.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        assert context, "context shouldn't be None"
+        assert len(context) == 2, "context should have 2 items"
+        assert context['k1'] == 'v1'
+        assert context['fileWriteYaml']['payload'] == [
+            'first',
+            'second',
+            {'a': 'b', 'c': 123.45,
+             'd': [0, 1, 2]},
+            12,
+            True
+        ]
+        assert context['fileWriteYaml'] == {'path': '/arb/blah',
+                                            'payload': [
+                                                'first',
+                                                'second',
+                                                {'a': 'b',
+                                                 'c': 123.45,
+                                                 'd': [0, 1, 2]},
+                                                12,
+                                                True
+                                            ],
+                                            'encoding': 'utf-16'}
+
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(
+            mocked_path, 'w', encoding='utf-16')
 
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('  - first\n'
@@ -207,7 +275,7 @@ def test_filewriteyaml_pass_no_payload_substitutions(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('k1: v1\n'
@@ -265,7 +333,7 @@ def test_filewriteyaml_pass_with_payload_substitutions(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('child:\n'
                                        '  - v1\n'
@@ -301,7 +369,7 @@ def test_filewriteyaml_pass_with_empty_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "''\n"
 
@@ -332,6 +400,6 @@ def test_filewriteyaml_pass_with_none_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
         # yaml well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "null\n...\n"

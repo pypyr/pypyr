@@ -108,6 +108,7 @@ setup(
             'codecov',
             'flake8',
             'flake8-docstrings',
+            'pyfakefs',
             'pytest',
             'pytest-cov',
             'setuptools',

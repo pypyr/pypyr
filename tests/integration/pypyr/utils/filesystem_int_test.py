@@ -4,7 +4,9 @@ import os
 from pathlib import Path
 import tempfile
 from unittest.mock import call, patch
+
 import pytest
+
 from pypyr.errors import Error
 import pypyr.utils.filesystem as filesystem
 
@@ -32,20 +34,18 @@ def temp_file_creator(temp_dir):
 
     def create_temp_file():
         """Create a temp file for each function invocation."""
-        tmp = tempfile.NamedTemporaryFile(dir=temp_dir)
-        temp_files.append(tmp)
-        return Path(tmp.name)
+        # close file handle to allow other code to use file on windows
+        with tempfile.NamedTemporaryFile(dir=temp_dir, delete=False) as tmp:
+            p = Path(tmp.name)
+
+        temp_files.append(p)
+        return p
 
     yield create_temp_file
 
     # this runs after the decorated test goes out of scope
     for file in temp_files:
-        try:
-            # calling close on NamedTemporaryFile removes it
-            file.close()
-        except FileNotFoundError:
-            # maybe the decorated test got rid of it already, no harm no foul.
-            pass
+        file.unlink(missing_ok=True)
 
 
 # endregion setup/teardown/fixtures
@@ -795,25 +795,30 @@ def test_ensure_dir_path(temp_dir):
 # region get_glob
 
 
+def assert_list_of_paths_equal(obj, other):
+    """Cross platform compare of list of paths."""
+    assert set([Path(p) for p in obj]) == set([Path(p) for p in other])
+
+
 def test_get_glob_str():
     """Glob takes strings."""
     paths = filesystem.get_glob('./tests/testfiles/t???.txt')
-    assert paths == ['./tests/testfiles/test.txt']
+
+    assert_list_of_paths_equal(paths, ['./tests/testfiles/test.txt'])
 
 
 def test_get_glob_path():
     """Glob takes paths."""
     paths = filesystem.get_glob(Path('./tests/testfiles/t???.txt'))
-    assert paths == ['tests/testfiles/test.txt']
+    assert_list_of_paths_equal(paths, ['./tests/testfiles/test.txt'])
 
 
 def test_get_glob_list():
     """Glob takes list of str and paths."""
     paths = filesystem.get_glob([Path('./tests/testfiles/t???.txt'),
                                  './tests/testfiles/a*.py'])
-    assert frozenset(paths) == frozenset(
-        ['tests/testfiles/test.txt',
-         './tests/testfiles/arb.py'])
+    assert_list_of_paths_equal(paths, ['tests/testfiles/test.txt',
+                                       './tests/testfiles/arb.py'])
 
 
 def test_get_glob_chain():
@@ -821,12 +826,12 @@ def test_get_glob_chain():
     paths = filesystem.get_glob([Path('./tests/testfiles/glob/a*.1'),
                                  './tests/testfiles/glob/a*2',
                                  './tests/testfiles/glob/a*.3'])
-    assert frozenset(paths) == frozenset(
-        ['tests/testfiles/glob/arb.1.1',
-         'tests/testfiles/glob/arb.1',
-         './tests/testfiles/glob/arb.2',
-         './tests/testfiles/glob/arb.2.2',
-         './tests/testfiles/glob/arb.3'])
+    assert_list_of_paths_equal(paths,
+                               ['tests/testfiles/glob/arb.1.1',
+                                'tests/testfiles/glob/arb.1',
+                                './tests/testfiles/glob/arb.2',
+                                './tests/testfiles/glob/arb.2.2',
+                                './tests/testfiles/glob/arb.3'])
 
 
 def test_get_glob_recurse():
@@ -835,16 +840,16 @@ def test_get_glob_recurse():
                                  './tests/testfiles/glob/**/a*2',
                                  './tests/testfiles/glob/**/a*.3'])
 
-    assert frozenset(paths) == frozenset(
-        ['tests/testfiles/glob/arb.1.1',
-         'tests/testfiles/glob/arb.1',
-         'tests/testfiles/glob/sub/asub.1',
-         'tests/testfiles/glob/sub/arbsub.1',
-         './tests/testfiles/glob/arb.2',
-         './tests/testfiles/glob/arb.2.2',
-         './tests/testfiles/glob/sub/arbsub.2',
-         './tests/testfiles/glob/arb.3',
-         './tests/testfiles/glob/sub/arbsub.3'])
+    assert_list_of_paths_equal(paths,
+                               ['tests/testfiles/glob/arb.1.1',
+                                'tests/testfiles/glob/arb.1',
+                                'tests/testfiles/glob/sub/asub.1',
+                                'tests/testfiles/glob/sub/arbsub.1',
+                                './tests/testfiles/glob/arb.2',
+                                './tests/testfiles/glob/arb.2.2',
+                                './tests/testfiles/glob/sub/arbsub.2',
+                                './tests/testfiles/glob/arb.3',
+                                './tests/testfiles/glob/sub/arbsub.3'])
 
 
 def test_get_glob_wrong_type():

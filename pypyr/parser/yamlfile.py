@@ -1,9 +1,11 @@
 """Context parser that returns a dictionary from a local yaml file."""
 from collections.abc import Mapping
 import logging
+
 import ruamel.yaml as yaml
 
-# use pypyr logger to ensure loglevel is set correctly
+from pypyr.config import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,7 @@ def get_parsed_context(args):
             "pypyr pipelinename ./myyamlfile.yaml")
     path = ' '.join(args)
     logger.debug("attempting to open file: %s", path)
-    with open(path) as yaml_file:
+    with open(path, encoding=config.default_encoding) as yaml_file:
         yaml_loader = yaml.YAML(typ='safe', pure=True)
         payload = yaml_loader.load(yaml_file)
 

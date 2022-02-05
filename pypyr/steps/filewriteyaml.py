@@ -2,6 +2,7 @@
 import logging
 from pathlib import Path
 
+from pypyr.config import config
 from pypyr.utils.asserts import assert_key_has_value
 import pypyr.yaml
 
@@ -13,6 +14,9 @@ sentinel = object()
 def run_step(context):
     """Write payload out to yaml file.
 
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
+
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context keys expected:
@@ -21,6 +25,8 @@ def run_step(context):
                       here. Will create directories in path for you.
                     - payload. optional. Write this to output file. If not
                       specified, output entire context.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     Returns:
         None.
@@ -45,6 +51,7 @@ def run_step(context):
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
     payload = input_context.get('payload', sentinel)
+    encoding = input_context.get('encoding', config.default_encoding)
 
     yaml_writer = pypyr.yaml.get_yaml_parser_roundtrip_for_context()
 
@@ -57,7 +64,7 @@ def run_step(context):
     else:
         payload = input_context['payload']
 
-    with open(out_path, 'w') as outfile:
+    with open(out_path, 'w', encoding=encoding) as outfile:
         yaml_writer.dump(payload, outfile)
 
     logger.info("formatted context content and wrote to %s", out_path)

@@ -3,7 +3,8 @@ from collections.abc import Mapping
 import logging
 import json
 
-# use pypyr logger to ensure loglevel is set correctly
+from pypyr.config import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,7 +20,7 @@ def get_parsed_context(args):
     path = ' '.join(args)
     # open the json file on disk so that you can initialize the dictionary
     logger.debug("attempting to open file: %s", path)
-    with open(path) as json_file:
+    with open(path, encoding=config.default_encoding) as json_file:
         payload = json.load(json_file)
 
     if not isinstance(payload, Mapping):

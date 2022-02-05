@@ -28,6 +28,8 @@ def run_step(context):
     Also supports passing a path as string to fetchToml, but in this case you
     won't be able to specify a key.
 
+    Note that TOML must always be utf-8, per spec.
+
     All inputs support formatting expressions.
 
     Returns:

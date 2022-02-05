@@ -23,8 +23,10 @@ def test_filerewriter_in_to_out_abstract():
         def in_to_out(self, in1):
             super().in_to_out('blah', 'blah')
 
-    x = MyRewriter('blahinit')
-
+    x = MyRewriter('blahinit', encoding_in='in', encoding_out='out')
+    assert x.formatter == 'blahinit'
+    assert x.encoding_in == 'in'
+    assert x.encoding_out == 'out'
     with pytest.raises(NotImplementedError):
         x.in_to_out('blah')
 # endregion FileRewriter

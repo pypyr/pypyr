@@ -107,7 +107,7 @@ def test_filewritejson_pass_no_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
         # json well formed & new lines and indents are where they should be
         assert out_text.getvalue() == ('{\n'
                                        '  "k1": "v1",\n'
@@ -165,7 +165,77 @@ def test_filewritejson_pass_with_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
+
+        # json well formed & new lines + indents are where they should be
+        assert out_text.getvalue() == ('[\n'
+                                       '  "first",\n'
+                                       '  "second",\n'
+                                       '  {\n'
+                                       '    "a": "b",\n'
+                                       '    "c": 123.45,\n'
+                                       '    "d": [\n'
+                                       '      0,\n'
+                                       '      1,\n'
+                                       '      2\n'
+                                       '    ]\n'
+                                       '  },\n'
+                                       '  12,\n'
+                                       '  true\n'
+                                       ']')
+
+
+@patch('pypyr.config.config.default_encoding', new='utf-16')
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_payload_encoding_from_config(mock_path):
+    """Success case writes only specific context payload with encoding."""
+    context = Context({
+        'k1': 'v1',
+        'fileWriteJson': {
+            'path': '/arb/blah',
+            'payload': [
+                'first',
+                'second',
+                {'a': 'b', 'c': 123.45, 'd': [0, 1, 2]},
+                12,
+                True
+            ]
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewritejson.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        assert context, "context shouldn't be None"
+        assert len(context) == 2, "context should have 2 items"
+        assert context['k1'] == 'v1'
+        assert context['fileWriteJson']['payload'] == [
+            'first',
+            'second',
+            {'a': 'b', 'c': 123.45,
+             'd': [0, 1, 2]},
+            12,
+            True
+        ]
+        assert context['fileWriteJson'] == {'path': '/arb/blah',
+                                            'payload': [
+                                                'first',
+                                                'second',
+                                                {'a': 'b',
+                                                 'c': 123.45,
+                                                 'd': [0, 1, 2]},
+                                                12,
+                                                True
+                                            ]}
+
+        mock_path.assert_called_once_with('/arb/blah')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(
+            mocked_path, 'w', encoding='utf-16')
 
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('[\n'
@@ -212,7 +282,7 @@ def test_filewritejson_pass_no_payload_substitutions(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == ('{\n'
                                        '  "k1": "v1",\n'
@@ -274,7 +344,70 @@ def test_filewritejson_pass_with_payload_substitutions(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
+        # json well formed & new lines + indents are where they should be
+        assert out_text.getvalue() == (
+            '{\n'
+            '  "child": [\n'
+            '    "v1",\n'
+            '    3,\n'
+            '    [\n'
+            '      "a",\n'
+            '      "b",\n'
+            '      "c"\n'
+            '    ]\n'
+            '  ]\n'
+            '}')
+
+
+@patch('pypyr.steps.filewritejson.Path')
+def test_filewritejson_pass_with_payload_substitutions_encoding(mock_path):
+    """Success case writes only specified context with substitutions."""
+    context = Context({
+        'k1': 'v1',
+        'intkey': 3,
+        'pathkey': '/arb/path',
+        'enc': 'utf-32',
+        'parent': [0,
+                   1,
+                   {'child': ['{k1}',
+                              '{intkey}',
+                              ['a', 'b', 'c']
+                              ]}],
+        'nested': '{parent[2][child]}',
+        'fileWriteJson': {
+            'path': '{pathkey}',
+            'payload': '{parent[2]}',
+            'encoding': '{enc}'
+        }})
+
+    with io.StringIO() as out_text:
+        with patch('pypyr.steps.filewritejson.open',
+                   mock_open()) as mock_output:
+            mock_output.return_value.write.side_effect = out_text.write
+            filewrite.run_step(context)
+
+        assert context, "context shouldn't be None"
+        assert len(context) == 7, "context should have 7 items"
+        assert context['k1'] == 'v1'
+        assert context['fileWriteJson'] == {'path': '{pathkey}',
+                                            'payload': '{parent[2]}',
+                                            'encoding': '{enc}'}
+        assert context['parent'] == [0,
+                                     1,
+                                     {'child': ['{k1}',
+                                                '{intkey}',
+                                                ['a', 'b', 'c']
+                                                ]
+                                      }
+                                     ]
+
+        mock_path.assert_called_once_with('/arb/path')
+        mocked_path = mock_path.return_value
+        mocked_path.parent.mkdir.assert_called_once_with(parents=True,
+                                                         exist_ok=True)
+        mock_output.assert_called_once_with(
+            mocked_path, 'w', encoding='utf-32')
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == (
             '{\n'
@@ -316,7 +449,7 @@ def test_filewritejson_pass_with_empty_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == '""'
@@ -348,7 +481,7 @@ def test_filewritejson_pass_with_none_payload(mock_path):
         mocked_path = mock_path.return_value
         mocked_path.parent.mkdir.assert_called_once_with(parents=True,
                                                          exist_ok=True)
-        mock_output.assert_called_once_with(mocked_path, 'w')
+        mock_output.assert_called_once_with(mocked_path, 'w', encoding=None)
 
         # json well formed & new lines + indents are where they should be
         assert out_text.getvalue() == "null"

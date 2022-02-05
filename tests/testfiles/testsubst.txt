@@ -1,5 +1,0 @@
-this {k1} is line 1
-this is line 2 {k2}
-this is line 3
-this {k3} is  {k4} line 4
-this !£$% * is {k5} line 5

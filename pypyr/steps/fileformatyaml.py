@@ -30,6 +30,19 @@ def run_step(context):
               end.
               If out_path is not specified or None, will in-place edit
               and overwrite the in-files.
+            - encoding. string. In & out both use this encoding.
+                Defaults None (platform default, usually 'utf-8').
+            - encodingIn. str. Read in files with this encoding.
+                Default to value for 'encoding'.
+            - encodingOut. str. Write out files with this encoding.
+                Default to value for 'encoding'.
+
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
+
+    Set 'encoding' to override system default for both in & out. Use encodingIn
+    and encodingOut instead when you want different encodings for reading in
+    and writing out.
 
     Returns:
         None.

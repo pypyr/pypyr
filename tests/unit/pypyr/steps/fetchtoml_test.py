@@ -35,15 +35,18 @@ def test_fetch_toml_empty_path_raises():
                                    "value for pypyr.steps.fetchtoml.")
 
 
-def test_fetch_toml_pass():
-    """Relative path to toml should succeed.
+def test_fetch_toml_pass(fs):
+    """Relative path to toml should succeed."""
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'ok1': 'ov1',
         'fetchToml': {
-            'path': './tests/testfiles/test.toml'}})
+            'path': in_path}})
 
     tomlfetcher.run_step(context)
 
@@ -56,14 +59,17 @@ def test_fetch_toml_pass():
     assert context["key3"] == "value3", "key3 should be value2"
 
 
-def test_fetch_toml_pass_with_string():
-    """Relative path to toml should succeed with string input.
+def test_fetch_toml_pass_with_string(fs):
+    """Relative path to toml should succeed with string input."""
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'ok1': 'ov1',
-        'fetchToml': './tests/testfiles/test.toml'})
+        'fetchToml': in_path})
 
     tomlfetcher.run_step(context)
 
@@ -76,11 +82,14 @@ def test_fetch_toml_pass_with_string():
     assert context["key3"] == "value3", "key3 should be value2"
 
 
-def test_fetch_toml_pass_with_path_substitution():
-    """Relative path to toml should succeed, with string subsitution on path.
+def test_fetch_toml_pass_with_path_substitution(fs):
+    """Relative path to toml with string substitution on path."""
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'ok1': 'ov1',
         'fileName': 'test',

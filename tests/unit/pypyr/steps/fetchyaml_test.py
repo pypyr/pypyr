@@ -32,15 +32,31 @@ def test_fetchyaml_empty_path_raises():
                                    "value for pypyr.steps.fetchyaml.")
 
 
-def test_fetchyaml_pass():
-    """Relative path to yaml should succeed.
+def test_fetchyaml_pass(fs):
+    """Relative path to yaml should succeed."""
+    payload = """key1: value1
+key2: value2
+key3: value3
+key4:
+  k41: k41value
+  k42:
+    - k42list1
+    - k42list2
+    - k42list3
+  k43: True
+  k44: 77
+key5:
+  - k5list1
+  - k5list2
+"""
 
-    Strictly speaking not a unit test.
-    """
+    in_path = './tests/testfiles/dict.yaml'
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
         'fetchYaml': {
-            'path': './tests/testfiles/dict.yaml'}})
+            'path': in_path}})
 
     filefetcher.run_step(context)
 
@@ -56,11 +72,27 @@ def test_fetchyaml_pass():
     assert len(context['key5']) == 2, "2 items in key5"
 
 
-def test_fetchyaml_pass_with_substitution():
-    """Relative path to yaml should succeed with path substitution.
+def test_fetchyaml_pass_with_substitution(fs):
+    """Relative path to yaml should succeed with path substitution."""
+    payload = """key1: value1
+key2: value2
+key3: value3
+key4:
+  k41: k41value
+  k42:
+    - k42list1
+    - k42list2
+    - k42list3
+  k43: True
+  k44: 77
+key5:
+  - k5list1
+  - k5list2
+"""
 
-    Strictly speaking not a unit test.
-    """
+    in_path = './tests/testfiles/dict.yaml'
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
         'fileName': 'dict',
@@ -81,11 +113,26 @@ def test_fetchyaml_pass_with_substitution():
     assert len(context['key5']) == 2, "2 items in key5"
 
 
-def test_fetchyaml_pass_with_substitution_string():
-    """Relative path to yaml should succeed with path substitution.
+def test_fetchyaml_pass_with_substitution_string(fs):
+    """Relative path to yaml should succeed with path substitution."""
+    payload = """key1: value1
+key2: value2
+key3: value3
+key4:
+  k41: k41value
+  k42:
+    - k42list1
+    - k42list2
+    - k42list3
+  k43: True
+  k44: 77
+key5:
+  - k5list1
+  - k5list2
+"""
 
-    Strictly speaking not a unit test.
-    """
+    in_path = './tests/testfiles/dict.yaml'
+    fs.create_file(in_path, contents=payload)
     context = Context({
         'ok1': 'ov1',
         'fileName': 'dict',
@@ -105,8 +152,18 @@ def test_fetchyaml_pass_with_substitution_string():
     assert len(context['key5']) == 2, "2 items in key5"
 
 
-def test_fetchyaml_list_fails():
+def test_fetchyaml_list_fails(fs):
     """Yaml describing a list rather than a dict should fail."""
+    payload = """- listitem1
+- listitem2
+  - listitem2.1
+  - listitem2.2
+- listitem3
+"""
+
+    in_path = './tests/testfiles/list.yaml'
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
         'fetchYaml': './tests/testfiles/list.yaml'})
@@ -126,7 +183,7 @@ def test_fetchyaml_with_destination():
             read_data='[1,2,3]')) as mock_file:
         filefetcher.run_step(context)
 
-    mock_file.assert_called_with('/arb/arbfile')
+    mock_file.assert_called_with('/arb/arbfile', encoding=None)
     assert context['outkey'] == [1, 2, 3]
     assert len(context) == 2
 
@@ -145,8 +202,9 @@ def test_fetchyaml_with_destination_int():
     assert len(context) == 2
 
 
-def test_fetchyaml_with_destination_formatting():
-    """Yaml writes to destination key found by formatting expression."""
+@patch('pypyr.config.config.default_encoding', new='utf-16')
+def test_fetchyaml_with_destination_encoding_config():
+    """Get encoding from config."""
     context = Context({
         'keyhere': {'sub': ['outkey', 2, 3], 'arbk': 'arbfile'},
         'fetchYaml': {
@@ -157,7 +215,7 @@ def test_fetchyaml_with_destination_formatting():
             read_data='1: 2\n2: 3')) as mock_file:
         filefetcher.run_step(context)
 
-    mock_file.assert_called_with('/arb/arbfile')
+    mock_file.assert_called_with('/arb/arbfile', encoding='utf-16')
 
     assert len(context) == 3
     assert context['outkey'] == {1: 2, 2: 3}
@@ -165,3 +223,29 @@ def test_fetchyaml_with_destination_formatting():
     assert context['fetchYaml'] == {
         'path': '/arb/{keyhere[arbk]}',
         'key': '{keyhere[sub][0]}'}
+
+
+@patch('pypyr.config.config.default_encoding', new='ascii')
+def test_fetchyaml_with_destination_encoding_from_input():
+    """Get encoding from input."""
+    context = Context({
+        'enc': 'utf-16',
+        'keyhere': {'sub': ['outkey', 2, 3], 'arbk': 'arbfile'},
+        'fetchYaml': {
+            'path': '/arb/{keyhere[arbk]}',
+            'key': '{keyhere[sub][0]}',
+            'encoding': '{enc}'}})
+
+    with patch('pypyr.steps.fetchyaml.open', mock_open(
+            read_data='1: 2\n2: 3')) as mock_file:
+        filefetcher.run_step(context)
+
+    mock_file.assert_called_with('/arb/arbfile', encoding='utf-16')
+
+    assert len(context) == 4
+    assert context['outkey'] == {1: 2, 2: 3}
+    assert context['keyhere'] == {'sub': ['outkey', 2, 3], 'arbk': 'arbfile'}
+    assert context['fetchYaml'] == {
+        'path': '/arb/{keyhere[arbk]}',
+        'key': '{keyhere[sub][0]}',
+        'encoding': '{enc}'}
