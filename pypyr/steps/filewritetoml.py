@@ -25,6 +25,8 @@ def run_step(context):
 
     If you do specify a payload, it cannot be None or empty.
 
+    Note that TOML is always in utf-8, per TOML spec.
+
     Returns:
         None.
 

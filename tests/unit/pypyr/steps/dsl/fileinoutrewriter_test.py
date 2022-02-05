@@ -12,7 +12,7 @@ from pypyr.utils.filesystem import (ObjectRepresenter,
                                     FileRewriter,
                                     StreamRewriter)
 
-# ------------------------- FileInRewriterStep -------------------------------
+# region FileInRewriterStep
 
 
 def test_fileinrewriterstep_root_required():
@@ -22,7 +22,8 @@ def test_fileinrewriterstep_root_required():
     with pytest.raises(KeyNotInContextError) as err:
         FileInRewriterStep('blah.name', 'Xroot', context)
 
-    assert str(err.value) == "Xroot not found in the pypyr context."
+    assert str(err.value) == (
+        "context['Xroot'] doesn't exist. It must exist for blah.name.")
 
 
 def test_fileinrewriterstep_in_required():
@@ -118,21 +119,131 @@ def test_fileinrewriterstep_run_step_no_out():
         in_path='inpathhere',
         out_path=None)
 
-# ------------------------- END FileInRewriterStep ---------------------------
 
-# ------------------------- ObjectRewriterStep -------------------------------
+def test_fileinrewriterstep_encoding_default():
+    """Default encoding from config."""
+    context = Context({'root': {'in': 'inpathhere'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arb'
+    assert obj.encoding_out == 'arb'
+
+
+def test_fileinrewriterstep_encoding_in():
+    """Explicitly set encoding in."""
+    context = Context({'root': {'in': 'inpathhere', 'encodingIn': 'arbIn'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arbIn'
+    assert obj.encoding_out == 'arb'
+
+
+def test_fileinrewriterstep_encoding_out():
+    """Explicitly set encoding out."""
+    context = Context({'root': {'in': 'inpathhere', 'encodingOut': 'arbOut'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arb'
+    assert obj.encoding_out == 'arbOut'
+
+
+def test_fileinrewriterstep_encoding_in_out():
+    """Explicitly set encoding in & out."""
+    context = Context({'root': {'in': 'inpathhere',
+                                'encodingIn': 'arbIn',
+                                'encodingOut': 'arbOut'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arbIn'
+    assert obj.encoding_out == 'arbOut'
+
+
+def test_fileinrewriterstep_encoding_substitutions_in_out():
+    """Encoding works with substitutions for in and out."""
+    context = Context({
+        'encIn': 'arbIn',
+        'encOut': 'arbOut',
+        'root': {'in': 'inpathhere',
+                 'encodingIn': '{encIn}',
+                 'encodingOut': '{encOut}'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arbIn'
+    assert obj.encoding_out == 'arbOut'
+
+
+def test_fileinrewriterstep_bare_encoding_substitutions():
+    """Encoding works with substitutions for bare encoding."""
+    context = Context({
+        'enc': 'arbenc',
+        'root': {'in': 'inpathhere',
+                 'encoding': '{enc}'}})
+
+    with patch('pypyr.config.config.default_encoding', 'arb'):
+        obj = FileInRewriterStep('blah.name', 'root', context)
+
+    assert obj.path_in == 'inpathhere'
+    assert not obj.path_out
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+
+    assert obj.encoding_in == 'arbenc'
+    assert obj.encoding_out == 'arbenc'
+# endregion FileInRewriterStep
+
+# region ObjectRewriterStep
 
 
 @patch('pypyr.steps.dsl.fileinoutrewriter.ObjectRewriter', spec=FileRewriter)
 def test_objectrewriterstep_run_step(mock_rewriter):
     """Object rewriter runs files_in_to_out on object rewriter."""
-    context = Context({'root': {'in': 'inpathhere', 'out': 'outpathhere'}})
+    context = Context({'root': {'in': 'inpathhere',
+                                'out': 'outpathhere',
+                                'encodingIn': 'encIn',
+                                'encodingOut': 'encOut'}})
 
     obj = ObjectRewriterStep('blah.name', 'root', context)
     assert obj.path_in == 'inpathhere'
     assert obj.path_out == 'outpathhere'
     assert obj.context == context
     assert obj.logger.name == 'blah.name'
+    assert obj.encoding_in == 'encIn'
+    assert obj.encoding_out == 'encOut'
 
     mock_representer = Mock(spec=ObjectRepresenter)
     obj.run_step(mock_representer)
@@ -140,7 +251,9 @@ def test_objectrewriterstep_run_step(mock_rewriter):
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
     assert mock_rewriter.mock_calls[0] == call(context.get_formatted_value,
-                                               mock_representer)
+                                               mock_representer,
+                                               encoding_in='encIn',
+                                               encoding_out='encOut')
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
@@ -164,32 +277,41 @@ def test_objectrewriterstep_run_step_no_out(mock_rewriter):
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
     assert mock_rewriter.mock_calls[0] == call(context.get_formatted_value,
-                                               mock_representer)
+                                               mock_representer,
+                                               encoding_in=None,
+                                               encoding_out=None)
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
         out_path=None)
-# ------------------------- END ObjectRewriterStep ----------------------------
+# endregion ObjectRewriterStep
 
-# ------------------------- StreamRewriterStep -------------------------------
+# region StreamRewriterStep
 
 
 @patch('pypyr.steps.dsl.fileinoutrewriter.StreamRewriter', spec=FileRewriter)
 def test_streamrewriterstep_run_step(mock_rewriter):
     """Stream rewriter runs files_in_to_out on stream rewriter."""
-    context = Context({'root': {'in': 'inpathhere', 'out': 'outpathhere'}})
+    context = Context({'root': {'in': 'inpathhere',
+                                'out': 'outpathhere',
+                                'encodingIn': 'encIn',
+                                'encodingOut': 'encOut'}})
 
     obj = StreamRewriterStep('blah.name', 'root', context)
     assert obj.path_in == 'inpathhere'
     assert obj.path_out == 'outpathhere'
     assert obj.context == context
     assert obj.logger.name == 'blah.name'
+    assert obj.encoding_in == 'encIn'
+    assert obj.encoding_out == 'encOut'
 
     obj.run_step()
 
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
-    assert mock_rewriter.mock_calls[0] == call(context.iter_formatted_strings)
+    assert mock_rewriter.mock_calls[0] == call(context.iter_formatted_strings,
+                                               encoding_in='encIn',
+                                               encoding_out='encOut')
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
@@ -211,14 +333,16 @@ def test_streamrewriterstep_run_step_no_out(mock_rewriter):
 
     # assert_called from mock will never think the generator/iter are equal,
     # hence assert by hand.
-    assert mock_rewriter.mock_calls[0] == call(context.iter_formatted_strings)
+    assert mock_rewriter.mock_calls[0] == call(context.iter_formatted_strings,
+                                               encoding_in=None,
+                                               encoding_out=None)
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
         out_path=None)
-# ------------------------- END StreamRewriterStep ----------------------------
+# endregion StreamRewriterStep
 
-# ------------------------- StreamReplacePairsRewriterStep -------------------
+# region StreamReplacePairsRewriterStep
 
 
 @patch('pypyr.steps.dsl.fileinoutrewriter.StreamRewriter', spec=StreamRewriter)
@@ -229,7 +353,9 @@ def test_streamreplacepairsrewriterstep_run_step(mock_rewriter):
                                 'replacePairs': {
                                     'a': 'b',
                                     'c': 'd'
-                                }}})
+                                },
+                                'encodingIn': 'encIn',
+                                'encodingOut': 'encOut'}})
 
     obj = StreamReplacePairsRewriterStep('blah.name', 'root', context)
     assert obj.path_in == 'inpathhere'
@@ -237,6 +363,8 @@ def test_streamreplacepairsrewriterstep_run_step(mock_rewriter):
     assert obj.context == context
     assert obj.logger.name == 'blah.name'
     assert obj.replace_pairs == {'a': 'b', 'c': 'd'}
+    assert obj.encoding_in == 'encIn'
+    assert obj.encoding_out == 'encOut'
 
     iter_replace_strings_target = ('pypyr.steps.dsl.fileinoutrewriter.'
                                    'StreamReplacePairsRewriterStep.'
@@ -246,7 +374,10 @@ def test_streamreplacepairsrewriterstep_run_step(mock_rewriter):
 
     # the rewriter should've been instantiated with the iter_replace_strings
     # function.
-    mock_rewriter.mock_calls[0] == call(mock_iter)
+    mock_iter.assert_called_once_with({'a': 'b', 'c': 'd'})
+    assert mock_rewriter.mock_calls[0] == call(mock_iter.return_value,
+                                               encoding_in='encIn',
+                                               encoding_out='encOut')
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
@@ -260,7 +391,8 @@ def test_streamreplacepairsrewriterstep_run_step_no_out(mock_rewriter):
                                 'replacePairs': {
                                     'a': 'b',
                                     'c': 'd'
-                                }}})
+                                },
+                                'encoding': 'arb'}})
 
     obj = StreamReplacePairsRewriterStep('blah.name', 'root', context)
     assert obj.path_in == 'inpathhere'
@@ -268,6 +400,8 @@ def test_streamreplacepairsrewriterstep_run_step_no_out(mock_rewriter):
     assert obj.context == context
     assert obj.logger.name == 'blah.name'
     assert obj.replace_pairs == {'a': 'b', 'c': 'd'}
+    assert obj.encoding_in == 'arb'
+    assert obj.encoding_out == 'arb'
 
     iter_replace_strings_target = ('pypyr.steps.dsl.fileinoutrewriter.'
                                    'StreamReplacePairsRewriterStep.'
@@ -277,13 +411,16 @@ def test_streamreplacepairsrewriterstep_run_step_no_out(mock_rewriter):
 
     # the rewriter should've been instantiated with the iter_replace_strings
     # function.
-    mock_rewriter.mock_calls[0] == call(mock_iter)
+    mock_iter.assert_called_once_with({'a': 'b', 'c': 'd'})
+    assert mock_rewriter.mock_calls[0] == call(mock_iter.return_value,
+                                               encoding_in='arb',
+                                               encoding_out='arb')
 
     mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
         in_path='inpathhere',
         out_path=None)
 
-# ------------------------ iter_replace_strings--------------------------------
+# region iter_replace_strings
 
 
 def test_iter_replace_string_empties():
@@ -349,6 +486,6 @@ def test_iter_replace_string_later_replace_earlier():
     assert result[1] == 'four five XXX'
     assert result[2] == 'seven eight nine'
 
-# ------------------------ iter_replace_strings--------------------------------
+# endregion iter_replace_strings
 
-# ------------------------- END StreamReplacePairsRewriterStep ----------------
+# endregion StreamReplacePairsRewriterStep

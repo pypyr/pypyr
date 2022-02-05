@@ -3,6 +3,7 @@ import json
 import logging
 from pathlib import Path
 
+from pypyr.config import config
 from pypyr.utils.asserts import assert_key_has_value
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,9 @@ sentinel = object()
 def run_step(context):
     """Write payload out to json file.
 
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
+
     Args:
         context: pypyr.context.Context. Mandatory.
                  The following context keys expected:
@@ -21,6 +25,8 @@ def run_step(context):
                       here. Will create directories in path for you.
                     - payload. optional. Write this key to output file. If not
                       specified, output entire context.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     Returns:
         None.
@@ -46,6 +52,7 @@ def run_step(context):
     # with potentially sensitive values in it to disk if payload exists but is
     # None.
     payload = input_context.get('payload', sentinel)
+    encoding = input_context.get('encoding', config.default_encoding)
 
     logger.debug("opening destination file for writing: %s", out_path)
 
@@ -56,7 +63,7 @@ def run_step(context):
     else:
         payload = input_context['payload']
 
-    with open(out_path, 'w') as outfile:
+    with open(out_path, 'w', encoding=encoding) as outfile:
         json.dump(payload, outfile,
                   indent=2, ensure_ascii=False)
 

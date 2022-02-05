@@ -2,8 +2,10 @@
 from collections.abc import Mapping
 import json
 import logging
+
+from pypyr.config import config
 from pypyr.utils.asserts import assert_key_has_value
-# logger means the log level will be set correctly
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,11 +26,16 @@ def run_step(context):
                     - path. path-like. Path to file on disk.
                     - key. string. If exists, write json structure to this
                       context key. Else json writes to context root.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     Also supports a passing path as string to fetchJson, but in this case you
     won't be able to specify a key.
 
     All inputs support formatting expressions.
+
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
 
     Returns:
         None. updates context arg.
@@ -49,6 +56,7 @@ def run_step(context):
     if isinstance(fetch_json_input, str):
         file_path = fetch_json_input
         destination_key = None
+        encoding = config.default_encoding
     else:
         assert_key_has_value(obj=fetch_json_input,
                              key='path',
@@ -56,9 +64,10 @@ def run_step(context):
                              parent='fetchJson')
         file_path = fetch_json_input['path']
         destination_key = fetch_json_input.get('key', None)
+        encoding = fetch_json_input.get('encoding', config.default_encoding)
 
     logger.debug("attempting to open file: %s", file_path)
-    with open(file_path) as json_file:
+    with open(file_path, encoding=encoding) as json_file:
         payload = json.load(json_file)
 
     if destination_key:

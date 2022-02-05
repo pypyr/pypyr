@@ -1,12 +1,14 @@
 """fileformat.py unit tests."""
-import os
+from pathlib import Path
+
+import pytest
+
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.filereplace as filereplace
-import pytest
 
 
-# ------------------------ arg validation -------------------------------------
+# region arg validation
 def test_filereplace_no_inpath_raises():
     """None in path raises."""
     context = Context({
@@ -16,7 +18,8 @@ def test_filereplace_no_inpath_raises():
         filereplace.run_step(context)
 
     assert str(err_info.value) == (
-        "fileReplace not found in the pypyr context.")
+        "context['fileReplace'] doesn't exist. "
+        "It must exist for pypyr.steps.filereplace.")
 
 
 def test_filereplace_empty_inpath_raises():
@@ -60,19 +63,25 @@ def test_filereplace_empty_replacepairs_raises():
         "context['fileReplace']['replacePairs'] must have "
         "a value for pypyr.steps.filereplace.")
 
-# ------------------------ arg validation -------------------------------------
+# endregion arg validation
 
-# ------------------------ run_step -------------------------------------------
+# region run_step
 
 
-def test_filereplace_pass_no_matches():
-    """Relative path to file should succeed.
+def test_filereplace_pass_no_matches(fs):
+    """Relative path to file should succeed."""
+    payload = ('this is line 1\n'
+               'this is line 2\n'
+               'this is line 3\n'
+               'this is line 4\n'
+               'this !£$% * is line 5\n')
 
-    Strictly speaking not a unit test.
-    """
+    in_path = './tests/testfiles/test.txt'
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
-        'fileReplace': {'in': './tests/testfiles/test.txt',
+        'fileReplace': {'in': in_path,
                         'out': './tests/testfiles/out/outreplace.txt',
                         'replacePairs': {
                             'XXXXX': 'doesnt exist',
@@ -93,26 +102,28 @@ def test_filereplace_pass_no_matches():
         }}
 
     with open('./tests/testfiles/out/outreplace.txt') as outfile:
-        outcontents = list(outfile)
+        outcontents = outfile.read()
 
-    assert outcontents[0] == "this is line 1\n"
-    assert outcontents[1] == "this is line 2\n"
-    assert outcontents[2] == "this is line 3\n"
-    assert outcontents[3] == "this is line 4\n"
-    assert outcontents[4] == "this !£$% * is line 5\n"
-
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outreplace.txt')
+    assert outcontents == payload
 
 
-def test_filereplace_pass_with_replacements():
+def test_filereplace_pass_with_replacements(fs):
     """Relative path to file should succeed.
 
     Strictly speaking not a unit test.
     """
+    payload = ('this {k1} X1 is line 1\n'
+               'this is line 2 REPLACEME2\n'
+               'this is line 3\n'
+               'this rm3 RM3 is  RM4 line 4\n'
+               'this !£$% * is rm5 line 5\n')
+
+    in_path = './tests/testfiles/testreplace.txt'
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'k1': 'X1',
-        'fileReplace': {'in': './tests/testfiles/testreplace.txt',
+        'fileReplace': {'in': in_path,
                         'out': './tests/testfiles/out/outreplace.txt',
                         'replacePairs': {
                             '{k1}': 'v1',
@@ -128,7 +139,7 @@ def test_filereplace_pass_with_replacements():
     assert len(context) == 2, "context should have 2 items"
     assert context['k1'] == 'X1'
     assert context['fileReplace'] == {
-        'in': './tests/testfiles/testreplace.txt',
+        'in': in_path,
         'out': './tests/testfiles/out/outreplace.txt',
         'replacePairs': {
             '{k1}': 'v1',
@@ -146,21 +157,26 @@ def test_filereplace_pass_with_replacements():
     assert outcontents[3] == "this rm3 v3 is  v4 line 4\n"
     assert outcontents[4] == "this !£$% * is v5 line 5\n"
 
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outreplace.txt')
 
+def test_filereplace_pass_with_substitutions(fs):
+    """Relative path to file should succeed with input substitutions."""
+    payload = ('this {k1} X1 is line 1\n'
+               'this is line 2 REPLACEME2\n'
+               'this is line 3\n'
+               'this rm3 RM3 is  RM4 line 4\n'
+               'this !£$% * is rm5 line 5\n')
 
-def test_filereplace_pass_with_path_replacements():
-    """Relative path to file should succeed with path replacements.
+    in_path = './tests/testfiles/testreplace.txt'
+    fs.create_file(in_path, contents=payload, encoding='utf-16')
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'k1': 'X1',
         'inFile': 'testreplace',
         'outFile': 'outreplace',
+        'enc': 'utf-16',
         'fileReplace': {'in': './tests/testfiles/{inFile}.txt',
                         'out': './tests/testfiles/out/{outFile}.txt',
+                        'encoding': '{enc}',
                         'replacePairs': {
                             '{k1}': 'v1',
                             'REPLACEME2': 'v2',
@@ -171,11 +187,12 @@ def test_filereplace_pass_with_path_replacements():
     filereplace.run_step(context)
 
     assert context, "context shouldn't be None"
-    assert len(context) == 4, "context should have 4 items"
+    assert len(context) == 5, "context should have 5 items"
     assert context['k1'] == 'X1'
     assert context['fileReplace'] == {
         'in': './tests/testfiles/{inFile}.txt',
         'out': './tests/testfiles/out/{outFile}.txt',
+        'encoding': '{enc}',
         'replacePairs': {
             '{k1}': 'v1',
             'REPLACEME2': 'v2',
@@ -183,24 +200,107 @@ def test_filereplace_pass_with_path_replacements():
             'RM4': 'v4',
             'rm5': 'v5'}}
 
-    with open('./tests/testfiles/out/outreplace.txt') as outfile:
-        outcontents = list(outfile)
+    outcontent = Path('./tests/testfiles/out/outreplace.txt').read_bytes()
 
-    assert outcontents[0] == "this {k1} v1 is line 1\n"
-    assert outcontents[1] == "this is line 2 v2\n"
-    assert outcontents[2] == "this is line 3\n"
-    assert outcontents[3] == "this rm3 v3 is  v4 line 4\n"
-    assert outcontents[4] == "this !£$% * is v5 line 5\n"
+    expected = ("this {k1} v1 is line 1\n"
+                "this is line 2 v2\n"
+                "this is line 3\n"
+                "this rm3 v3 is  v4 line 4\n"
+                "this !£$% * is v5 line 5\n").encode('utf-16')
 
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outreplace.txt')
-
-# ------------------------ run_step -------------------------------------------
+    assert outcontent == expected
 
 
-# ------------------------ setup/teardown -------------------------------------
+def test_filereplace_pass_out_is_dir(fs):
+    """Relative path to file should write same filename if out is dir."""
+    payload = ('this {k1} X1 is line 1\n'
+               'this is line 2 REPLACEME2\n'
+               'this is line 3\n'
+               'this rm3 RM3 is  RM4 line 4\n'
+               'this !£$% * is rm5 line 5\n')
+
+    in_path = '/testreplace.txt'
+    fs.create_file(in_path, contents=payload)
+
+    context = Context({
+        'k1': 'X1',
+        'inFile': 'testreplace',
+        'outDir': '/out/',
+        'enc': 'utf-16',
+        'fileReplace': {'in': '/{inFile}.txt',
+                        'out': '{outDir}',
+                        'encodingOut': '{enc}',
+                        'replacePairs': {
+                            '{k1}': 'v1',
+                            'REPLACEME2': 'v2',
+                            'RM3': 'v3',
+                            'RM4': 'v4',
+                            'rm5': 'v5'}}})
+
+    filereplace.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 5, "context should have 5 items"
+    assert context['k1'] == 'X1'
+    assert context['fileReplace'] == {
+        'in': '/{inFile}.txt',
+        'out': '{outDir}',
+        'encodingOut': '{enc}',
+        'replacePairs': {
+            '{k1}': 'v1',
+            'REPLACEME2': 'v2',
+            'RM3': 'v3',
+            'RM4': 'v4',
+            'rm5': 'v5'}}
+
+    outcontent = Path('/out/testreplace.txt').read_bytes()
+
+    expected = ("this {k1} v1 is line 1\n"
+                "this is line 2 v2\n"
+                "this is line 3\n"
+                "this rm3 v3 is  v4 line 4\n"
+                "this !£$% * is v5 line 5\n").encode('utf-16')
+
+    assert outcontent == expected
 
 
-def teardown_module(module):
-    """Teardown."""
-    os.rmdir('./tests/testfiles/out/')
+def test_filereplace_pass_out_encoding_in_to_out(fs):
+    """Change encoding from in to out."""
+    payload = ('this {k1} X1 is line 1\n'
+               'this is line 2 REPLACEME2\n'
+               'this is line 3\n'
+               'this rm3 RM3 is  RM4 line 4\n'
+               'this !£$% * is rm5 line 5\n')
+
+    in_path = '/testreplace.txt'
+    fs.create_file(in_path, contents=payload, encoding='utf-32')
+
+    context = Context({
+        'k1': 'X1',
+        'inFile': 'testreplace',
+        'outDir': '/out/',
+        'encIn': 'utf-32',
+        'encOut': 'utf-16',
+        'fileReplace': {'in': '/{inFile}.txt',
+                        'out': '{outDir}',
+                        'encodingIn': '{encIn}',
+                        'encodingOut': '{encOut}',
+                        'replacePairs': {
+                            '{k1}': 'v1',
+                            'REPLACEME2': 'v2',
+                            'RM3': 'v3',
+                            'RM4': 'v4',
+                            'rm5': 'v5'}}})
+
+    filereplace.run_step(context)
+
+    outcontent = Path('/out/testreplace.txt').read_bytes()
+
+    expected = ("this {k1} v1 is line 1\n"
+                "this is line 2 v2\n"
+                "this is line 3\n"
+                "this rm3 v3 is  v4 line 4\n"
+                "this !£$% * is v5 line 5\n").encode('utf-16')
+
+    assert outcontent == expected
+# endregion run_step

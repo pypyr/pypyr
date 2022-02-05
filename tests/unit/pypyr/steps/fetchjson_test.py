@@ -1,9 +1,11 @@
 """fetchjson.py unit tests."""
 from unittest.mock import mock_open, patch
+
+import pytest
+
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fetchjson as filefetcher
-import pytest
 
 
 def test_fetchjson_no_path_raises():
@@ -32,15 +34,21 @@ def test_fetchjson_empty_path_raises():
                                    "value for pypyr.steps.fetchjson.")
 
 
-def test_json_pass():
-    """Relative path to json should succeed.
+def test_json_pass(fs):
+    """Relative path to json should succeed."""
+    payload = """{
+    "key1": "value1",
+    "key2": "value2",
+    "key3": "value3"
+}
+"""
+    in_path = './tests/testfiles/test.json'
 
-    Strictly speaking not a unit test.
-    """
+    fs.create_file(in_path, contents=payload)
     context = Context({
         'ok1': 'ov1',
         'fetchJson': {
-            'path': './tests/testfiles/test.json'}})
+            'path': in_path}})
 
     filefetcher.run_step(context)
 
@@ -53,11 +61,18 @@ def test_json_pass():
     assert context["key3"] == "value3", "key3 should be value2"
 
 
-def test_json_pass_with_string():
-    """Relative path to json should succeed with string input.
+def test_json_pass_with_string(fs):
+    """Relative path to json should succeed with string input."""
+    payload = """{
+    "key1": "value1",
+    "key2": "value2",
+    "key3": "value3"
+}
+"""
+    in_path = './tests/testfiles/test.json'
 
-    Strictly speaking not a unit test.
-    """
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
         'fetchJson': './tests/testfiles/test.json'})
@@ -73,11 +88,18 @@ def test_json_pass_with_string():
     assert context["key3"] == "value3", "key3 should be value2"
 
 
-def test_json_pass_with_path_substitution():
-    """Relative path to json should succeed, with string subsitution on path.
+def test_json_pass_with_path_substitution(fs):
+    """Relative path to json succeeds with string substitution on path."""
+    payload = """{
+    "key1": "value1",
+    "key2": "value2",
+    "key3": "value3"
+}
+"""
+    in_path = './tests/testfiles/test.json'
 
-    Strictly speaking not a unit test.
-    """
+    fs.create_file(in_path, contents=payload)
+
     context = Context({
         'ok1': 'ov1',
         'fileName': 'test',
@@ -88,6 +110,68 @@ def test_json_pass_with_path_substitution():
 
     assert context, "context shouldn't be None"
     assert len(context) == 6, "context should have 6 items"
+    assert context['ok1'] == 'ov1'
+    assert 'fetchJsonPath' not in context
+    assert context["key1"] == "value1", "key1 should be value2"
+    assert context["key2"] == "value2", "key2 should be value2"
+    assert context["key3"] == "value3", "key3 should be value2"
+
+
+@patch('pypyr.config.config.default_encoding', new='utf-16')
+def test_json_pass_with_encoding_from_config(fs):
+    """Json loads with encoding from config."""
+    payload = """{
+    "key1": "value1",
+    "key2": "value2",
+    "key3": "value3"
+}
+"""
+    in_path = './tests/testfiles/test.json'
+
+    fs.create_file(in_path, contents=payload, encoding='utf-16')
+
+    context = Context({
+        'ok1': 'ov1',
+        'fileName': 'test',
+        'fetchJson': {
+            'path': './tests/testfiles/{fileName}.json'}})
+
+    filefetcher.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 6, "context should have 6 items"
+    assert context['ok1'] == 'ov1'
+    assert 'fetchJsonPath' not in context
+    assert context["key1"] == "value1", "key1 should be value2"
+    assert context["key2"] == "value2", "key2 should be value2"
+    assert context["key3"] == "value3", "key3 should be value2"
+
+
+@patch('pypyr.config.config.default_encoding', new='ascii')
+def test_json_pass_with_encoding_from_input(fs):
+    """Json loads with encoding from input."""
+    payload = """{
+    "key1": "value1",
+    "key2": "value2",
+    "key3": "value3"
+}
+"""
+    in_path = './tests/testfiles/test.json'
+
+    fs.create_file(in_path, contents=payload, encoding='utf-16')
+
+    context = Context({
+        'ok1': 'ov1',
+        'fileName': 'test',
+        'enc': 'utf-16',
+        'fetchJson': {
+            'path': './tests/testfiles/{fileName}.json',
+            'encoding': '{enc}'}})
+
+    filefetcher.run_step(context)
+
+    assert context, "context shouldn't be None"
+    assert len(context) == 7, "context should have 7 items"
     assert context['ok1'] == 'ov1'
     assert 'fetchJsonPath' not in context
     assert context["key1"] == "value1", "key1 should be value2"

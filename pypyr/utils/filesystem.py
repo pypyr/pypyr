@@ -7,12 +7,14 @@ import logging
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+
 from pypyr.errors import Error
 import pypyr.toml
 import pypyr.yaml
 
-# pypyr logger means the log level will be set correctly and output formatted.
 logger = logging.getLogger(__name__)
+
+# region Rewriters
 
 
 class FileRewriter(ABC):
@@ -25,14 +27,22 @@ class FileRewriter(ABC):
     classes.
     """
 
-    def __init__(self, formatter):
+    def __init__(self, formatter, encoding_in=None, encoding_out=None):
         """Initialize formatter.
 
         Args:
             formatter: Callable object that will format the IN file payload to
                        create OUT file.
+            encoding_in: str | None. Encoding when reading input.
+            encoding_out: str | None. Encoding when reading output.
+
+        If you do not set encoding, will use the system default, which is utf-8
+        for everything except windows.
+
         """
         self.formatter = formatter
+        self.encoding_in = encoding_in
+        self.encoding_out = encoding_out
 
     @abstractmethod
     def in_to_out(self, in_path, out_path):
@@ -120,7 +130,7 @@ class FileRewriter(ABC):
                     # at this point it must be a file (not dir) path
                     # make sure that the parent dir exists
                     basedir_out = pathlib_out.parent
-                    basedir_out.parent.mkdir(parents=True, exist_ok=True)
+                    basedir_out.mkdir(parents=True, exist_ok=True)
                     is_outfile_name_known = True
 
             # loop through all the in files and write them to the out dir
@@ -172,7 +182,8 @@ class ObjectRewriter(FileRewriter):
     serialization.
     """
 
-    def __init__(self, formatter, object_representer):
+    def __init__(self, formatter, object_representer,
+                 encoding_in=None, encoding_out=None):
         """Initialize formatter and object representer.
 
         Args:
@@ -180,8 +191,13 @@ class ObjectRewriter(FileRewriter):
                        from in file. Formatter signature:
                        iterable = formatter(iterable)
             object_representer: An ObjectRepresenter instance.
+            encoding_in: str | None. Optional. Encoding when reading input.
+            encoding_out: str | None. Optional. Encoding when reading output.
+
+        If you do not set encoding, will use the system default, which is utf-8
+        for everything except windows.
         """
-        super().__init__(formatter)
+        super().__init__(formatter, encoding_in, encoding_out)
         self.object_representer = object_representer
 
     def in_to_out(self, in_path, out_path=None):
@@ -212,22 +228,25 @@ class ObjectRewriter(FileRewriter):
         logger.debug("opening source file: %s", in_path)
 
         read_mode = self.object_representer.read_mode
-        with open(in_path, read_mode) as infile:
+
+        with open(in_path, read_mode, encoding=self.encoding_in) as infile:
             obj = self.object_representer.load(infile)
 
         write_mode = self.object_representer.write_mode
         if out_path:
             logger.debug(
                 f"opening destination file for writing: {out_path}")
-            ensure_dir(out_path)
-            with open(out_path, write_mode) as outfile:
+            # out directory must exist
+            with open(out_path, write_mode,
+                      encoding=self.encoding_out) as outfile:
                 self.object_representer.dump(outfile, self.formatter(obj))
             return
         else:
             logger.debug("opening temp file for writing...")
             with NamedTemporaryFile(mode=write_mode,
                                     dir=os.path.dirname(in_path),
-                                    delete=False) as outfile:
+                                    delete=False,
+                                    encoding=self.encoding_out) as outfile:
                 self.object_representer.dump(outfile, self.formatter(obj))
 
             logger.debug("moving temp file to: %s", in_path)
@@ -279,19 +298,21 @@ class StreamRewriter(FileRewriter):
             is_in_place_edit = True
 
         logger.debug("opening source file: %s", in_path)
-        with open(in_path) as infile:
+        with open(in_path, encoding=self.encoding_in) as infile:
             if out_path:
                 logger.debug(
                     "opening destination file for writing: %s", out_path)
-                ensure_dir(out_path)
-                with open(out_path, 'w') as outfile:
+                # at this point out dir must exist
+                with open(out_path, 'w',
+                          encoding=self.encoding_out) as outfile:
                     outfile.writelines(self.formatter(infile))
                 return
             else:
                 logger.debug("opening temp file for writing...")
                 with NamedTemporaryFile(mode='w+t',
                                         dir=os.path.dirname(in_path),
-                                        delete=False) as outfile:
+                                        delete=False,
+                                        encoding=self.encoding_out) as outfile:
                     outfile.writelines(self.formatter(infile))
 
                 is_in_place_edit = True
@@ -303,6 +324,10 @@ class StreamRewriter(FileRewriter):
         if is_in_place_edit:    # pragma: no branch
             logger.debug("moving temp file to: %s", in_path)
             move_temp_file(outfile.name, infile.name)
+
+# endregion Rewriters
+
+# region Representers
 
 
 class ObjectRepresenter(ABC):
@@ -438,6 +463,8 @@ class YamlRepresenter(ObjectRepresenter):
 
         """
         self.yaml_parser.dump(payload, file)
+
+# endregion Representers
 
 
 def ensure_dir(path):

@@ -1,7 +1,4 @@
 """fileformattoml.py unit tests."""
-import os
-import shutil
-
 import pytest
 
 from pypyr.context import Context
@@ -19,7 +16,8 @@ def test_fileformattoml_no_in_obj_raises():
         fileformat.run_step(context)
 
     assert str(err_info.value) == (
-        "fileFormatToml not found in the pypyr context.")
+        "context['fileFormatToml'] doesn't exist. "
+        "It must exist for pypyr.steps.fileformattoml.")
 
 
 def test_fileformattoml_no_inpath_raises():
@@ -49,15 +47,18 @@ def test_fileformattoml_empty_inpath_raises():
 
 # endregion validation
 
-# region integration tests
-def test_fileformattoml_pass_no_substitutions():
-    """Relative path to file should succeed.
+# region functional tests
+def test_fileformattoml_pass_no_substitutions(fs):
+    """Relative path to file should succeed."""
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'ok1': 'ov1',
-        'fileFormatToml': {'in': './tests/testfiles/test.toml',
+        'fileFormatToml': {'in': in_path,
                            'out': './tests/testfiles/out/out.toml'}})
 
     fileformat.run_step(context)
@@ -66,7 +67,7 @@ def test_fileformattoml_pass_no_substitutions():
     assert len(context) == 2, "context should have 2 items"
     assert context['ok1'] == 'ov1'
     assert context['fileFormatToml'] == {
-        'in': './tests/testfiles/test.toml',
+        'in': in_path,
         'out': './tests/testfiles/out/out.toml'}
 
     with open('./tests/testfiles/out/out.toml') as outfile:
@@ -76,18 +77,19 @@ def test_fileformattoml_pass_no_substitutions():
 key2 = "value2"
 key3 = "value3"
 """
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/out.toml')
 
 
-def test_fileformattoml_pass_to_out_dir():
-    """Relative path to file should succeed with out dir rather than full path.
+def test_fileformattoml_pass_to_out_dir(fs):
+    """Relative path to file succeed with out dir rather than full path."""
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'ok1': 'ov1',
-        'fileFormatToml': {'in': './tests/testfiles/test.toml',
+        'fileFormatToml': {'in': in_path,
                            'out': './tests/testfiles/out/'}})
 
     fileformat.run_step(context)
@@ -96,7 +98,7 @@ def test_fileformattoml_pass_to_out_dir():
     assert len(context) == 2, "context should have 2 items"
     assert context['ok1'] == 'ov1'
     assert context['fileFormatToml'] == {
-        'in': './tests/testfiles/test.toml',
+        'in': in_path,
         'out': './tests/testfiles/out/'}
 
     with open('./tests/testfiles/out/test.toml') as outfile:
@@ -106,17 +108,15 @@ def test_fileformattoml_pass_to_out_dir():
 key2 = "value2"
 key3 = "value3"
 """
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/test.toml')
 
 
-def test_fileformattoml_edit_no_substitutions():
-    """Relative path to file should succeed, no out means in place edit.
-
-    Strictly speaking not a unit test.
-    """
-    shutil.copyfile('./tests/testfiles/test.toml',
-                    './tests/testfiles/out/edittest.toml')
+def test_fileformattoml_edit_no_substitutions(fs):
+    """Relative path to file should succeed, no out means in place edit."""
+    in_path = './tests/testfiles/out/edittest.toml'
+    fs.create_file(in_path, contents="""key1 = "value1"
+key2 = "value2"
+key3 = "value3"
+""")
 
     context = Context({
         'ok1': 'ov1',
@@ -138,22 +138,27 @@ key2 = "value2"
 key3 = "value3"
 """
 
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/edittest.toml')
 
-
-def test_fileformattoml_pass_with_substitutions():
-    """Relative path to file should succeed.
-
-    Strictly speaking not a unit test.
-    """
+def test_fileformattoml_pass_with_substitutions(fs):
+    """Relative path to file should succeed."""
+    in_path = './tests/testfiles/testsubst.toml'
+    fs.create_file(in_path, contents="""key1 = "{k1}value !£$% *"
+["key2_{k2}"]
+abc = "{k3} def {k4}"
+def = [
+  "l1",
+  "l2 {k5}",
+  "l3",
+]
+k21 = "value"
+""")
     context = Context({
         'k1': 'v1',
         'k2': 'v2',
         'k3': 'v3',
         'k4': 'v4',
         'k5': 'v5',
-        'fileFormatToml': {'in': './tests/testfiles/testsubst.toml',
+        'fileFormatToml': {'in': in_path,
                            'out': './tests/testfiles/out/outsubst.toml'}})
 
     fileformat.run_step(context)
@@ -182,15 +187,21 @@ k21 = "value"
 
     assert outcontents == expected
 
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outsubst.toml')
 
+def test_fileformattoml_pass_with_path_substitutions(fs):
+    """Relative path to file should succeed with path substitutions."""
+    in_path = './tests/testfiles/testsubst.toml'
+    fs.create_file(in_path, contents="""key1 = "{k1}value !£$% *"
+["key2_{k2}"]
+abc = "{k3} def {k4}"
+def = [
+  "l1",
+  "l2 {k5}",
+  "l3",
+]
+k21 = "value"
+""")
 
-def test_fileformattoml_pass_with_path_substitutions():
-    """Relative path to file should succeed with path subsitutions.
-
-    Strictly speaking not a unit test.
-    """
     context = Context({
         'k1': 'v1',
         'k2': 'v2',
@@ -228,16 +239,22 @@ k21 = "value"
 
     assert outcontents == expected
 
-    # atrociously lazy test clean-up
-    os.remove('./tests/testfiles/out/outsubst.toml')
 
-# endregion integration tests
+def test_fileformattoml_with_encoding():
+    """Toml parses binary for utf-8 only, no encoding."""
+    # currently no fakefs here because of bug
+    # https://github.com/jmcgeheeiv/pyfakefs/issues/664
+    # for this test to work it still touches the real filesystem, therefore
+    # ./tests/testfiles/test.toml needs to exist.
+    # Can remove this testfile soon as update to pyfakefs live.
+    context = Context({
+        'ok1': 'ov1',
+        'fileFormatToml': {'in': './tests/testfiles/test.toml',
+                           'out': 'test/out/output.toml',
+                           'encoding': 'utf-16'}})
 
-# region teardown
+    with pytest.raises(ValueError) as err:
+        fileformat.run_step(context)
 
-
-def teardown_module(module):
-    """Teardown."""
-    os.rmdir('./tests/testfiles/out/')
-
-# endregion teardown
+    assert str(err.value) == "binary mode doesn't take an encoding argument"
+# endregion functional tests

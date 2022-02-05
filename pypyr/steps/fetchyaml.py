@@ -1,9 +1,12 @@
 """pypyr step that loads yaml file into context."""
 from collections.abc import Mapping
 import logging
+
 import ruamel.yaml as yaml
+
+from pypyr.config import config
 from pypyr.utils.asserts import assert_key_has_value
-# logger means the log level will be set correctly
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,11 +25,16 @@ def run_step(context):
                     - path. path-like. Path to file on disk.
                     - key. string. If exists, write yaml to this context key.
                       Else yaml writes to context root.
+                    - encoding. string. Defaults None (platform default,
+                      usually 'utf-8').
 
     All inputs support formatting expressions.
 
     Also supports a passing path as string to fetchYaml, but in this case you
     won't be able to specify a key.
+
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
 
     Returns:
         None. updates context arg.
@@ -47,6 +55,7 @@ def run_step(context):
     if isinstance(fetch_yaml_input, str):
         file_path = fetch_yaml_input
         destination_key = None
+        encoding = config.default_encoding
     else:
         assert_key_has_value(obj=fetch_yaml_input,
                              key='path',
@@ -54,9 +63,10 @@ def run_step(context):
                              parent='fetchYaml')
         file_path = fetch_yaml_input['path']
         destination_key = fetch_yaml_input.get('key', None)
+        encoding = fetch_yaml_input.get('encoding', config.default_encoding)
 
     logger.debug("attempting to open file: %s", file_path)
-    with open(file_path) as yaml_file:
+    with open(file_path, encoding=encoding) as yaml_file:
         yaml_loader = yaml.YAML(typ='safe', pure=True)
         payload = yaml_loader.load(yaml_file)
 

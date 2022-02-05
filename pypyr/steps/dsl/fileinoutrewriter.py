@@ -1,10 +1,13 @@
 """pypyr step yaml definition classes - domain specific language."""
 from functools import reduce
 import logging
+
+from pypyr.config import config
+from pypyr.utils.asserts import assert_key_has_value
 from pypyr.utils.filesystem import (ObjectRewriter,
                                     StreamRewriter)
 
-# logger means the log level will be set correctly
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +18,16 @@ class FileInRewriterStep():
         root_key:
             in: str/path-like, or list of str/paths. Mandatory.
             out: str/path-like. Optional.
+            encoding: str. Optional. Encoding to use on both in & out.
+            encodingIn: str. Optional. Encoding to use on reading In.
+            encodingOut: str. Optional. Encoding to use on reading Out.
+
+    If you do not set encoding, will use the system default, which is utf-8
+    for everything except windows.
+
+    Set 'encoding' to override system default for both in & out. Use encodingIn
+    and encodingOut instead when you want different encodings for reading in
+    and writing out.
 
     The run_step method does the actual work.
     """
@@ -26,6 +39,9 @@ class FileInRewriterStep():
             root_key:
                 in: str/path-like, or list of str/paths. Mandatory.
                 out: str/path-like. Optional.
+                encoding: str. Optional. Encoding to use on both in & out.
+                encodingIn: str. Optional. Encoding to use on reading In.
+                encodingOut: str. Optional. Encoding to use on writing Out.
         Args:
             name: Unique name for step. Likely __name__ of calling step.
             root_key: str. Context key name where step's config is saved under.
@@ -41,14 +57,22 @@ class FileInRewriterStep():
         self.logger = logging.getLogger(name)
 
         self.context = context
-        root_dict = context[root_key]
-        # this verifies both root_key and child exists
-        context.assert_child_key_has_value(parent=root_key,
-                                           child='in',
-                                           caller=name)
+        context.assert_key_has_value(root_key, name)
+        root_dict = context.get_formatted(root_key)
+        self.formatted_root = root_dict
 
-        self.path_in = context.get_formatted_value(root_dict['in'])
-        self.path_out = context.get_formatted_value(root_dict.get('out', None))
+        assert_key_has_value(obj=root_dict,
+                             key='in',
+                             caller=name,
+                             parent=root_key)
+
+        self.path_in = root_dict['in']
+        self.path_out = root_dict.get('out', None)
+
+        encoding = root_dict.get('encoding', config.default_encoding)
+
+        self.encoding_in = root_dict.get('encodingIn', encoding)
+        self.encoding_out = root_dict.get('encodingOut', encoding)
 
     def run_step(self, rewriter):
         """Do the file in to out rewrite.
@@ -77,7 +101,9 @@ class ObjectRewriterStep(FileInRewriterStep):
         assert representer, ("ObjectRepresenter instance required to run "
                              "ObjectRewriterStep.")
         rewriter = ObjectRewriter(self.context.get_formatted_value,
-                                  representer)
+                                  representer,
+                                  encoding_in=self.encoding_in,
+                                  encoding_out=self.encoding_out)
         super().run_step(rewriter)
 
 
@@ -95,7 +121,9 @@ class StreamRewriterStep(FileInRewriterStep):
 
     def run_step(self):
         """Do the file in-out rewrite."""
-        rewriter = StreamRewriter(self.context.iter_formatted_strings)
+        rewriter = StreamRewriter(self.context.iter_formatted_strings,
+                                  encoding_in=self.encoding_in,
+                                  encoding_out=self.encoding_out)
         super().run_step(rewriter)
 
 
@@ -110,21 +138,35 @@ class StreamReplacePairsRewriterStep(FileInRewriterStep):
                 in: str/path-like, or list of str/paths. Mandatory.
                 out: str/path-like. Optional.
                 replacePairs: mandatory. Dictionary where items are:
-                              'find_string': 'replace_string'
+                    'find_string': 'replace_string'
+                encoding: str. Optional. Encoding to use on both in & out.
+                encodingIn: str. Optional. Encoding to use on reading In.
+                encodingOut: str. Optional. Encoding to use on writing Out.
+
+        If you do not set encoding, will use the system default, which is utf-8
+        for everything except windows.
+
+        Set 'encoding' to override system default for both in & out. Use
+        encodingIn and encodingOut instead when you want different encodings
+        for reading in and writing out.
+
         Args:
             name: Unique name for step. Likely __name__ of calling step.
             root_key: str. Context key name where step's config is saved under.
             context: pypyr.context.Context. Look for config in this context
                      instance.
 
+        Returns: None
         """
         super().__init__(name=name, root_key=root_key, context=context)
-        # this verifies both root_key and child exists
-        context.assert_child_key_has_value(parent=root_key,
-                                           child='replacePairs',
-                                           caller=name)
+        root_dict = self.formatted_root
 
-        self.replace_pairs = context[root_key]['replacePairs']
+        assert_key_has_value(obj=root_dict,
+                             key='replacePairs',
+                             caller=name,
+                             parent=root_key)
+
+        self.replace_pairs = root_dict['replacePairs']
 
     def run_step(self):
         """Write in to out, replacing strings per the replace_pairs."""
@@ -133,7 +175,9 @@ class StreamReplacePairsRewriterStep(FileInRewriterStep):
 
         iter = StreamReplacePairsRewriterStep.iter_replace_strings(
             formatted_replacements)
-        rewriter = StreamRewriter(iter)
+        rewriter = StreamRewriter(iter,
+                                  encoding_in=self.encoding_in,
+                                  encoding_out=self.encoding_out)
         super().run_step(rewriter)
 
     @staticmethod
