@@ -1,5 +1,6 @@
 """pypyr step that parses json file for string substitutions, writes output."""
 import logging
+
 from pypyr.steps.dsl.fileinoutrewriter import ObjectRewriterStep
 from pypyr.utils.filesystem import JsonRepresenter
 

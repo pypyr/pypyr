@@ -65,7 +65,7 @@ def run_step(context):
 
     with open(out_path, 'w', encoding=encoding) as outfile:
         json.dump(payload, outfile,
-                  indent=2, ensure_ascii=False)
+                  indent=config.json_indent, ensure_ascii=config.json_ascii)
 
     logger.info("formatted context content and wrote to %s", out_path)
     logger.debug("done")

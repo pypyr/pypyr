@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
+from pypyr.config import config
 from pypyr.errors import Error
 import pypyr.toml
 import pypyr.yaml
@@ -394,7 +395,8 @@ class JsonRepresenter(ObjectRepresenter):
             None.
 
         """
-        json.dump(payload, file, indent=2, ensure_ascii=False)
+        json.dump(payload, file, indent=config.json_indent,
+                  ensure_ascii=config.json_ascii)
 
 
 class TomlRepresenter(ObjectRepresenter):

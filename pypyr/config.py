@@ -41,6 +41,8 @@ class Config():
 
     Attributes:
         cwd: Path. The current working directory.
+        json_indent: int. Indent for json output files.
+        json_ascii: bool. If True escapes non-ascii chars.
         pipeline_subdir: str. 2nd pipeline look-up dir - subdir of cwd.
         log_config: dict. Logging config dict for logging.config.dictConfig.
         log_date_format: str. Format str for datetime in log output.
@@ -69,6 +71,8 @@ class Config():
     """
 
     all_writable_props = {
+        'json_ascii',
+        'json_indent',
         'pipelines_subdir',
         # logging
         'log_config',
@@ -95,6 +99,8 @@ class Config():
         # When adding an attr here, MUST add to Config.all_writable_props too.
         # Remember to amend custom __str__ overload when adding props/attrs.
 
+        self.json_ascii = False
+        self.json_indent = 2
         self.pipelines_subdir = 'pipelines'
 
         # logging

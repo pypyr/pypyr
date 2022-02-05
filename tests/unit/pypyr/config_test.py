@@ -34,6 +34,8 @@ def test_config_defaults(no_envs):
     assert config.vars == {}
     assert config.shortcuts == {}
 
+    assert config.json_ascii is False
+    assert config.json_indent == 2
     assert config.pipelines_subdir == 'pipelines'
     assert config.log_config is None
     assert config.log_date_format == '%Y-%m-%d %H:%M:%S'
@@ -680,6 +682,8 @@ default_failure_group: on_failure
 default_group: steps
 default_loader: pypyr.loaders.file
 default_success_group: on_success
+json_ascii: false
+json_indent: 2
 log_config:
 log_date_format: '%Y-%m-%d %H:%M:%S'
 log_detail_format: '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s'
@@ -761,6 +765,8 @@ default_failure_group: on_failure
 default_group: steps
 default_loader: pypyr.loaders.file
 default_success_group: dsg
+json_ascii: false
+json_indent: 2
 log_config:
 log_date_format: '%Y-%m-%d %H:%M:%S'
 log_detail_format: '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s'
