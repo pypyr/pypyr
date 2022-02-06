@@ -45,12 +45,17 @@ def temp_file_creator(temp_dir):
 
     # this runs after the decorated test goes out of scope
     for file in temp_files:
-        file.unlink(missing_ok=True)
-
+        try:
+            # can't use missing_ok=True until py 3.8 the min ver.
+            file.unlink()
+        except FileNotFoundError:
+            # just clean-up, if file already been removed no probs
+            pass
 
 # endregion setup/teardown/fixtures
 
 # region FileRewriter
+
 
 class ArbRewriter(filesystem.FileRewriter):
     """Derived FileRewriter useful for capturing test inputs."""
