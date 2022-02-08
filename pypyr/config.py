@@ -9,6 +9,7 @@ from collections.abc import Mapping
 from io import StringIO
 import os
 from pathlib import Path
+import sys
 from typing import Any, Callable
 
 import ruamel.yaml
@@ -125,6 +126,13 @@ class Config():
 
         # endregion writeable attributes
 
+        # readonly properties set by default/light init
+        current_platform = sys.platform
+        self._platform: str = current_platform
+        self._is_macos: bool = current_platform == 'darwin'
+        self._is_windows: bool = current_platform == 'win32'
+        self._is_posix: bool = not (self._is_macos or self._is_windows)
+
         # not writeable from config - readonly properties set by self.init()
         self._platform_paths: pypyr.platform.PlatformPaths | None = None
         self._pyproject_toml: dict | None = None
@@ -145,6 +153,26 @@ class Config():
     def cwd(self) -> Path:
         """Return the current working directory."""
         return CWD
+
+    @property
+    def is_macos(self) -> bool:
+        """Is True if current platform is MacOS."""
+        return self._is_macos
+
+    @property
+    def is_posix(self) -> bool:
+        """Is True if current platform is POSIX."""
+        return self._is_posix
+
+    @property
+    def is_windows(self) -> bool:
+        """Is True if current platform is MacOS."""
+        return self._is_windows
+
+    @property
+    def platform(self) -> str:
+        """Platform (O/S) identifier."""
+        return self._platform
 
     @property
     def platform_paths(self) -> pypyr.platform.PlatformPaths | None:
@@ -368,6 +396,11 @@ class Config():
             out.write('config_loaded_paths:[]\n')
 
         out.write(f'cwd: {self.cwd}\n')
+
+        out.write(f'is_macos: {self._is_macos}\n')
+        out.write(f'is_posix: {self._is_posix}\n')
+        out.write(f'is_windows: {self._is_windows}\n')
+        out.write(f'platform: {self._platform}\n')
 
         if self._platform_paths:
             out.write(f'platform_paths:\n{self._platform_paths.to_str(2)}')

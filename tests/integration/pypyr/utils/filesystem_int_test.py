@@ -1,16 +1,13 @@
 """fileformat.py integration tests."""
 import logging
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 from unittest.mock import call, patch
 
-import pytest
-
-from pypyr.errors import Error
 import pypyr.utils.filesystem as filesystem
-
-
+import pytest
+from pypyr.errors import Error
 # region setup/teardown/fixtures
 from tests.common.utils import patch_logger
 
@@ -742,7 +739,9 @@ def test_jsonrepresenter_dumps(temp_file_creator):
 def test_yamlrepresenter_loads():
     """Yaml Representer loads."""
     representer = filesystem.YamlRepresenter()
-    with open('./tests/testfiles/test.yaml', representer.read_mode) as file:
+    with open('./tests/testfiles/test.yaml',
+              representer.read_mode,
+              encoding='utf-8') as file:
         obj = representer.load(file)
 
     assert obj
@@ -972,8 +971,10 @@ def test_move_file_dest_parent_not_exist(temp_dir, temp_file_creator):
     with pytest.raises(FileNotFoundError) as err:
         filesystem.move_file(file1, file2)
 
-    assert str(err.value) == (
-        f"[Errno 2] No such file or directory: '{file1}' -> '{file2}'")
+    the_err = err.value
+    assert file1 == Path(the_err.filename)
+    assert file2 == Path(the_err.filename2)
+
     assert file1.is_file()
     assert not file2.is_file()
 # endregion move_file
@@ -1006,8 +1007,10 @@ def test_move_temp_file_dest_parent_not_exist(temp_dir, temp_file_creator):
     with pytest.raises(FileNotFoundError) as err:
         filesystem.move_temp_file(file1, file2)
 
-    assert str(err.value) == (
-        f"[Errno 2] No such file or directory: '{file1}' -> '{file2}'")
+    the_err = err.value
+    assert file1 == Path(the_err.filename)
+    assert file2 == Path(the_err.filename2)
+
     assert not file1.is_file()
     assert not file2.is_file()
 
@@ -1027,13 +1030,14 @@ def test_move_temp_file_err_removing_src(mock_remove,
         with pytest.raises(FileNotFoundError) as err:
             filesystem.move_temp_file(file1, file2)
 
+    the_err = err.value
+    assert file1 == Path(the_err.filename)
+    assert file2 == Path(the_err.filename2)
+
     assert mock_logger_err.mock_calls == [
-        call(f"error moving file {file1} to {file2}. [Errno 2] No such file "
-             f"or directory: '{file1}' -> '{file2}'"),
+        call(f"error moving file {file1} to {file2}. {the_err}"),
         call(f'error removing temp file {file1}. test remove failed')]
 
-    assert str(err.value) == (
-        f"[Errno 2] No such file or directory: '{file1}' -> '{file2}'")
     assert file1.is_file()
     assert not file2.is_file()
 

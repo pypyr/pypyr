@@ -1,73 +1,95 @@
-"""cmd.py unit tests."""
+"""pypyr.steps.cmd unit tests."""
 from pathlib import Path
-import platform
+import subprocess
+
+import pytest
+
+from pypyr.config import config
 from pypyr.context import Context
 from pypyr.errors import KeyNotInContextError
 import pypyr.steps.cmd
-import pytest
-import subprocess
+
+cmd_path = Path.cwd().joinpath('tests/testfiles/cmds')
+is_windows = config.is_windows
 
 
-@pytest.fixture(autouse=True)
-def lang_c(monkeypatch):
-    """Ensure commands print messages in English.
-
-    Without this, running tests in non-english locale print unexpected messages
-    """
-    monkeypatch.setenv("LANG", "C")
+def get_cmd(posix, win):
+    """Return posix or win depending on current platform."""
+    return win if is_windows else posix
 
 
-def test_cmd_single_word():
-    """One word command works."""
-    context = Context({'cmd': 'date'})
-    pypyr.steps.cmd.run_step(context)
-
-
-def test_cmd_sequence():
-    """Sequence of commands work."""
-    context = Context({'cmd': 'touch deleteme.arb'})
-    pypyr.steps.cmd.run_step(context)
-
-    context = Context({'cmd': 'ls deleteme.arb'})
-    pypyr.steps.cmd.run_step(context)
-
-    context = Context({'cmd': 'rm -f deleteme.arb'})
-    pypyr.steps.cmd.run_step(context)
-
-
-def test_cmd_sequence_with_string_interpolation():
+def test_cmd_str_with_args():
     """Single command string works with string interpolation."""
-    context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': 'touch {fileName}'})
+    cmd = get_cmd('tests/testfiles/cmds/args.sh',
+                  r'tests\testfiles\cmds\args.bat')
+    context = Context({'a': 'one',
+                       'b': 'two two',
+                       'c': 'three',
+                       'd': cmd,
+                       'cmd': '{d} {a} "{b}" {c}'})
     pypyr.steps.cmd.run_step(context)
 
-    context = Context({'cmd': 'ls deleteinterpolatedme.arb'})
-    pypyr.steps.cmd.run_step(context)
-
-    context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': 'rm -f {fileName}'})
-    pypyr.steps.cmd.run_step(context)
-
-
-def test_cmd_dict_input_sequence_with_string_interpolation():
-    """Single command string works with string interpolation."""
-    context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': {'run': 'touch {fileName}'}})
-    pypyr.steps.cmd.run_step(context)
-
-    context = Context({'cmd': 'ls deleteinterpolatedme.arb'})
-    pypyr.steps.cmd.run_step(context)
-
-    context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': 'rm -f {fileName}'})
-    pypyr.steps.cmd.run_step(context)
     assert 'cmdOut' not in context
 
 
-def test_cmd_dict_input_sequence_with_string_interpolation_save_out():
+def test_cmd_str_with_spaces_in_path():
+    """Single command string works with spaces in path."""
+    cmd = get_cmd('tests/testfiles/cmds/"file with space.sh"',
+                  r'tests\testfiles\cmds\file with space.bat')
+    context = Context({'a': 'one two',
+                       'd': cmd,
+                       'cmd': '{d} "{a}"'})
+    pypyr.steps.cmd.run_step(context)
+
+    assert 'cmdOut' not in context
+
+    # and with quotes
+    if is_windows:
+        context = Context({
+            'cmd': r'"tests\testfiles\cmds\file with space.bat" "one two"'})
+        pypyr.steps.cmd.run_step(context)
+
+        assert 'cmdOut' not in context
+
+
+def test_cmd_str_with_args_rel_path_with_backslash():
+    """On Windows can use relative path if backslash in path."""
+    if is_windows:
+        cmd = r'tests\testfiles\cmds\args.bat'
+    else:
+        cmd = 'tests/testfiles/cmds/args.sh'
+
+    context = Context({'a': 'one',
+                       'b': 'two two',
+                       'c': 'three',
+                       'd': cmd,
+                       'cmd': '{d} {a} "{b}" {c}'})
+    pypyr.steps.cmd.run_step(context)
+
+    assert 'cmdOut' not in context
+
+
+def test_cmd_dict_input_with_args():
+    """Single command string works with multiple args."""
+    cmd = get_cmd('tests/testfiles/cmds/args.sh',
+                  r'tests\testfiles\cmds\args.bat')
+    context = Context({'a': 'one',
+                       'b': 'two two',
+                       'c': 'three',
+                       'd': cmd,
+                       'cmd': {
+                           'run': '{d} {a} "{b}" {c}'}})
+    pypyr.steps.cmd.run_step(context)
+
+    assert 'cmdOut' not in context
+
+
+def test_cmd_dict_input_with_string_interpolation_save_out():
     """Single command string works with string interpolation."""
+    cmd = get_cmd('echo blah',
+                  r'tests\testfiles\cmds\echo.bat blah')
     context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': {'run': 'echo blah',
+                       'cmd': {'run': cmd,
                                'save': True}})
     pypyr.steps.cmd.run_step(context)
 
@@ -78,10 +100,12 @@ def test_cmd_dict_input_sequence_with_string_interpolation_save_out():
 
 def test_cmd_dict_input_sequence_with_cwd():
     """Single command string works with cwd."""
+    cmd = get_cmd('pwd', str(cmd_path.joinpath('pwd.bat')))
+
     context = Context({'fileName': 'deleteinterpolatedme.arb',
-                       'cmd': {'run': 'pwd',
+                       'cmd': {'run': cmd,
                                'save': True,
-                               'cwd': './tests'}})
+                               'cwd': 'tests'}})
     pypyr.steps.cmd.run_step(context)
 
     assert context['cmdOut']['returncode'] == 0
@@ -91,8 +115,15 @@ def test_cmd_dict_input_sequence_with_cwd():
 
 def test_cmd_dict_input_sequence_with_cwd_interpolate():
     """Single command string works with cwd interpolation."""
-    context = Context({'k1': './tests',
-                       'cmd': {'run': 'pwd',
+    if is_windows:
+        # windows path supports front slashes IF it's absolute
+        cmd = cmd_path.joinpath('pwd.bat').as_posix()
+    else:
+        # deliberately testing relative path resolution here
+        cmd = 'testfiles/cmds/pwd.sh'
+
+    context = Context({'k1': 'tests',
+                       'cmd': {'run': cmd,
                                'save': True,
                                'cwd': '{k1}'}})
     pypyr.steps.cmd.run_step(context)
@@ -103,23 +134,28 @@ def test_cmd_dict_input_sequence_with_cwd_interpolate():
 
 
 def test_cmd_error_throws():
-    """Process returning 1 should throw CalledProcessError."""
-    cmd = '/bin/false' if platform.system() != 'Darwin' else '/usr/bin/false'
+    """Process returning 1 should throw CalledProcessError with no save."""
+    cmd = get_cmd('tests/testfiles/cmds/exit1.sh',
+                  r'tests\testfiles\cmds\exit1.bat')
     with pytest.raises(subprocess.CalledProcessError):
         context = Context({'cmd': cmd})
         pypyr.steps.cmd.run_step(context)
 
+    assert 'cmdOut' not in context
+
 
 def test_cmd_error_throws_with_save_true():
     """Process returning 1 should throw CalledProcessError."""
-    cmd = '/bin/cat xblahx'
+    cmd = get_cmd('tests/testfiles/cmds/exitwitherr.sh',
+                  r'tests\testfiles\cmds\exitwitherr.bat')
+
     with pytest.raises(subprocess.CalledProcessError):
         context = Context({'cmd': {'run': cmd, 'save': True}})
         pypyr.steps.cmd.run_step(context)
 
     assert context['cmdOut']['returncode'] == 1
     assert not context['cmdOut']['stdout']
-    assert 'xblahx: No such file or directory' in context['cmdOut']['stderr']
+    assert context['cmdOut']['stderr'] == 'arb err here'
 
 
 def test_cmd_context_cmd_throw():

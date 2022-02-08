@@ -1,5 +1,7 @@
 """pathcheck.py integration tests."""
 import logging
+from pathlib import Path
+
 from pypyr.context import Context
 import pypyr.steps.pathcheck as pathchecker
 from tests.common.utils import patch_logger
@@ -60,6 +62,11 @@ def test_pathcheck_single_with_formatting():
     }}
 
 
+def assert_list_of_paths_equal(obj, other):
+    """Cross platform compare of list of paths."""
+    assert set([Path(p) for p in obj]) == set([Path(p) for p in other])
+
+
 def test_pathcheck_list():
     """Multiple paths ok with some returning no match."""
     context = Context({
@@ -94,11 +101,10 @@ def test_pathcheck_list():
     assert found
     assert found['exists']
     assert found['count'] == 2
-    frozen_actual_found = frozenset(found['found'])
-    frozen_expected_found = frozenset(['./tests/testfiles/glob/arb.2',
-                                       './tests/testfiles/glob/arb.2.2'])
 
-    assert frozen_actual_found == frozen_expected_found
+    assert_list_of_paths_equal(found['found'],
+                               ['./tests/testfiles/glob/arb.2',
+                                './tests/testfiles/glob/arb.2.2'])
 
     found = context["pathCheckOut"]['./tests/testfiles/glob/arb.XX']
     assert found

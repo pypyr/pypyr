@@ -1,6 +1,4 @@
 """fileformat.py unit tests."""
-from pathlib import Path
-
 import pytest
 
 from pypyr.context import Context
@@ -200,13 +198,15 @@ def test_filereplace_pass_with_substitutions(fs):
             'RM4': 'v4',
             'rm5': 'v5'}}
 
-    outcontent = Path('./tests/testfiles/out/outreplace.txt').read_bytes()
+    with open('./tests/testfiles/out/outreplace.txt',
+              encoding='utf-16') as file:
+        outcontent = file.read()
 
     expected = ("this {k1} v1 is line 1\n"
                 "this is line 2 v2\n"
                 "this is line 3\n"
                 "this rm3 v3 is  v4 line 4\n"
-                "this !£$% * is v5 line 5\n").encode('utf-16')
+                "this !£$% * is v5 line 5\n")
 
     assert outcontent == expected
 
@@ -253,13 +253,14 @@ def test_filereplace_pass_out_is_dir(fs):
             'RM4': 'v4',
             'rm5': 'v5'}}
 
-    outcontent = Path('/out/testreplace.txt').read_bytes()
+    with open('/out/testreplace.txt', encoding='utf-16') as file:
+        outcontent = file.read()
 
     expected = ("this {k1} v1 is line 1\n"
                 "this is line 2 v2\n"
                 "this is line 3\n"
                 "this rm3 v3 is  v4 line 4\n"
-                "this !£$% * is v5 line 5\n").encode('utf-16')
+                "this !£$% * is v5 line 5\n")
 
     assert outcontent == expected
 
@@ -294,13 +295,14 @@ def test_filereplace_pass_out_encoding_in_to_out(fs):
 
     filereplace.run_step(context)
 
-    outcontent = Path('/out/testreplace.txt').read_bytes()
+    with open('/out/testreplace.txt', encoding='utf-16') as file:
+        outcontent = file.read()
 
     expected = ("this {k1} v1 is line 1\n"
                 "this is line 2 v2\n"
                 "this is line 3\n"
                 "this rm3 v3 is  v4 line 4\n"
-                "this !£$% * is v5 line 5\n").encode('utf-16')
+                "this !£$% * is v5 line 5\n")
 
     assert outcontent == expected
 # endregion run_step

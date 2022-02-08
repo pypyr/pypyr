@@ -45,7 +45,7 @@ def test_get_pipeline_path_absolute_path_not_found():
     with pytest.raises(PipelineNotFoundError) as err:
         fileloader.get_pipeline_path(str_abs_sans_yaml, None)
 
-    assert str(err.value) == f'{cwd_tests}/XXXZZZ.yaml does not exist.'
+    assert str(err.value) == f'{abs_path} does not exist.'
 
 
 def test_get_pipeline_path_no_parent():
@@ -181,11 +181,12 @@ def test_get_pipeline_definition_pass(mocked_get_path,
                          parent=Path('arb/path'),
                          path=Path('arb/path/x.yaml')))
 
+    path = Path('arb/path/x.yaml')
     mocked_get_path.assert_called_once_with(pipeline_name='pipename',
                                             parent='/parent/dir')
-    mocked_open.assert_called_once_with(Path('arb/path/x.yaml'), encoding=None)
+    mocked_open.assert_called_once_with(path, encoding=None)
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
-    assert fileloader._file_cache._cache == {'arb/path/x.yaml': pipeline_def}
+    assert fileloader._file_cache._cache == {str(path): pipeline_def}
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
 
     fileloader._file_cache.clear()
@@ -220,12 +221,13 @@ def test_get_pipeline_definition_from_cache(mocked_get_path,
         call(pipeline_name='pipename', parent='/parent/dir'),
         call(pipeline_name='pipename', parent='/parent/dir')]
 
-    mocked_open.assert_called_once_with(Path('arb/path/x.yaml'), encoding=None)
+    path = Path('arb/path/x.yaml')
+    mocked_open.assert_called_once_with(path, encoding=None)
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
 
-    assert fileloader._file_cache._cache == {'arb/path/x.yaml': pipeline_def_1}
-    assert fileloader._file_cache._cache['arb/path/x.yaml'] is pipeline_def_1
+    assert fileloader._file_cache._cache == {str(path): pipeline_def_1}
+    assert fileloader._file_cache._cache[str(path)] is pipeline_def_1
 
     fileloader._file_cache.clear()
 
@@ -255,9 +257,9 @@ def test_get_pipeline_definition_with_encoding(mocked_get_path,
 
     mocked_get_path.assert_called_once_with(pipeline_name='pipename',
                                             parent='/parent/dir')
-    mocked_open.assert_called_once_with(
-        Path('arb/path/x.yaml'), encoding='arb')
-    assert fileloader._file_cache._cache == {'arb/path/x.yaml': pipeline_def}
+    path = Path('arb/path/x.yaml')
+    mocked_open.assert_called_once_with(path, encoding='arb')
+    assert fileloader._file_cache._cache == {str(path): pipeline_def}
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
     fileloader._file_cache.clear()

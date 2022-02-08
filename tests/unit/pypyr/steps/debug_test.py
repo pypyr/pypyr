@@ -3,10 +3,14 @@ import datetime
 import logging
 from collections import OrderedDict
 from unittest.mock import call, patch
+import sys
+
 from pypyr.context import Context
 import pypyr.steps.debug as debug
 from pypyr.dsl import Jsonify, PyString, SicString
 from tests.common.utils import patch_logger
+
+is_windows = sys.platform.startswith("win")
 
 
 def test_no_inputs():
@@ -151,6 +155,14 @@ def test_multiline():
              "'with_extra_ordinary_key_value'}}")]
 
 
+def get_obj_hex(obj):
+    """Get platform appropriate object hex."""
+    if is_windows:
+        return f'0x{id(obj):0{16}X}'
+    else:
+        return hex(id(obj))
+
+
 def test_complex_object():
     """Check different complex objects, like error, date, type..."""
     py_str = PyString('py_arb')
@@ -190,10 +202,10 @@ def test_complex_object():
         " 'datetime': datetime.datetime(2019, 10, 10, 0, 0),\n"
         " 'exception': ValueError('Test', 'exc_arg'),\n"
         " 'func': <function test_complex_object.<locals>.arb_func"
-        f" at {hex(id(arb_func))}>,\n"
+        f" at {get_obj_hex(arb_func)}>,\n"
         " 'jsonify': Jsonify('jsonify arb'),\n"
         " 'lambda': <function test_complex_object.<locals>.<lambda>"
-        f" at {hex(id(arb_lambda))}>,\n"
+        f" at {get_obj_hex(arb_lambda)}>,\n"
         " 'list': ['arb1', 'arb2', ['arb3']],\n"
         " 'ordered_dict': OrderedDict([('a', 1), ('b', 2)]),\n"
         " 'py': PyString('py_arb'),\n"
