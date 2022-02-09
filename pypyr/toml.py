@@ -1,6 +1,6 @@
 """Toml handling."""
 import tomli as toml_reader
-import tomli_w as toml_writer
+import tomli_w as toml_writer  # type: ignore
 
 
 def read_file(path):

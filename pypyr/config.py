@@ -285,13 +285,13 @@ class Config():
             self.update(payload)
             self._config_loaded_paths.append(path)
 
-    def update(self, input: dict) -> None:
+    def update(self, input: Mapping) -> None:
         """Update self from input dict.
 
         Merges input dict into the current config instance (self).
 
         Args:
-            input (dict): Merge this into the current instance.
+            input (Mapping): Merge this into the current instance.
 
         Returns: None
         """

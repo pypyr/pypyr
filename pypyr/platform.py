@@ -246,7 +246,7 @@ class Android(BaseDirFinder):
         """
         try:
             # First try to get path to android app via pyjnius
-            from jnius import autoclass  # noqa: SC200
+            from jnius import autoclass  # type: ignore # noqa: SC200
 
             Context = autoclass('android.content.Context')  # noqa: SC200
             s: str = Context.getFilesDir().getParentFile().getAbsolutePath()
@@ -292,6 +292,7 @@ def get_platform_dir_finder() -> Type[BaseDirFinder]:
         Derived instance of BaseDirFinder appropriate to the current O/S.
     """
     current_platform = sys.platform
+    platform_type: Type[BaseDirFinder]
     if (os.getenv('ANDROID_DATA') == '/data'
             and os.getenv('ANDROID_ROOT') == '/system'):
         platform_type = Android
