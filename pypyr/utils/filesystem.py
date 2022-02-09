@@ -114,7 +114,7 @@ class FileRewriter(ABC):
                 # outpath could be a file, or a dir
                 pathlib_out = Path(out_path)
                 # yep, Path() strips trailing /, hence check original string
-                if isinstance(out_path, str) and out_path.endswith(os.sep):
+                if FileRewriter.is_str_dir(out_path):
                     # ensure dir - mimic posix mkdir -p
                     pathlib_out.mkdir(parents=True, exist_ok=True)
                     basedir_out = pathlib_out
@@ -166,6 +166,23 @@ class FileRewriter(ABC):
                     in_path, file_counter, out_path)
         else:
             logger.info("%s found no files", in_path)
+
+    @staticmethod
+    def is_str_dir(s: str) -> bool:
+        """Return True if s ends with platform's dir separator(s)."""
+        if isinstance(s, str):
+            if config.is_windows:
+                # Not using os.sep here, because on windows pythonistas will
+                # use / as separator as easily as \.
+                # this is fine because win won't allow either / or \
+                # in filenames.
+                if s[-1] in {'/', '\\'}:
+                    return True
+            else:
+                # on posix only check for /.
+                if s.endswith(os.sep):
+                    return True
+        return False
 
 
 class ObjectRewriter(FileRewriter):

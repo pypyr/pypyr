@@ -12,12 +12,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
-      # You can use PyPy versions in python-version.
-      # For example, pypy2 and pypy3
       matrix:
+        os: [ubuntu-latest]
         python-version: [3.7, 3.8, 3.9, '3.10']
+        include:
+          - os: windows-latest
+            python-version: '3.10'
+            
 
     steps:
       - uses: actions/checkout@v2

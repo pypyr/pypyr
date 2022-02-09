@@ -54,7 +54,7 @@ def test_fileformattoml_pass_no_substitutions(fs):
     fs.create_file(in_path, contents="""key1 = "value1"
 key2 = "value2"
 key3 = "value3"
-""")
+""", encoding='utf-8')
 
     context = Context({
         'ok1': 'ov1',
@@ -85,7 +85,7 @@ def test_fileformattoml_pass_to_out_dir(fs):
     fs.create_file(in_path, contents="""key1 = "value1"
 key2 = "value2"
 key3 = "value3"
-""")
+""", encoding='utf-8')
 
     context = Context({
         'ok1': 'ov1',
@@ -101,7 +101,7 @@ key3 = "value3"
         'in': in_path,
         'out': './tests/testfiles/out/'}
 
-    with open('./tests/testfiles/out/test.toml') as outfile:
+    with open('./tests/testfiles/out/test.toml', encoding='utf-8') as outfile:
         outcontents = outfile.read()
 
     assert outcontents == """key1 = "value1"
@@ -116,7 +116,7 @@ def test_fileformattoml_edit_no_substitutions(fs):
     fs.create_file(in_path, contents="""key1 = "value1"
 key2 = "value2"
 key3 = "value3"
-""")
+""", encoding='utf-8')
 
     context = Context({
         'ok1': 'ov1',
@@ -130,7 +130,8 @@ key3 = "value3"
     assert context['fileFormatToml'] == {
         'in': './tests/testfiles/out/edittest.toml'}
 
-    with open('./tests/testfiles/out/edittest.toml') as outfile:
+    with open('./tests/testfiles/out/edittest.toml',
+              encoding='utf-8') as outfile:
         outcontents = outfile.read()
 
     assert outcontents == """key1 = "value1"
@@ -151,7 +152,7 @@ def = [
   "l3",
 ]
 k21 = "value"
-""")
+""", encoding='utf-8')
     context = Context({
         'k1': 'v1',
         'k2': 'v2',
@@ -170,7 +171,8 @@ k21 = "value"
         'in': './tests/testfiles/testsubst.toml',
         'out': './tests/testfiles/out/outsubst.toml'}
 
-    with open('./tests/testfiles/out/outsubst.toml') as outfile:
+    with open('./tests/testfiles/out/outsubst.toml',
+              encoding='utf-8') as outfile:
         outcontents = outfile.read()
 
     expected = """key1 = "v1value !£$% *"
@@ -200,7 +202,7 @@ def = [
   "l3",
 ]
 k21 = "value"
-""")
+""", encoding='utf-8')
 
     context = Context({
         'k1': 'v1',
@@ -222,7 +224,8 @@ k21 = "value"
         'in': './tests/testfiles/{pathIn}.toml',
         'out': './tests/testfiles/out/{pathOut}.toml'}
 
-    with open('./tests/testfiles/out/outsubst.toml') as outfile:
+    with open('./tests/testfiles/out/outsubst.toml',
+              encoding='utf-8') as outfile:
         outcontents = outfile.read()
 
     expected = """key1 = "v1value !£$% *"

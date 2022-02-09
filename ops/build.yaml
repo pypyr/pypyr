@@ -24,7 +24,7 @@ lint:
              metadata.
     description: --> verify setup.py metadata
     in:
-      cmd: python setup.py check -m -s
+      cmd: '"{python}" setup.py check -m -s'
   - name: pypyr.steps.cmd
     comment: lint with flake8
     description: --> flake8 linting
@@ -56,7 +56,7 @@ package:
     comment: build wheel + sdist 
     description: --> build wheel + sdist to dist/
     in:
-      cmd: python setup.py bdist_wheel sdist
+      cmd: '"{python}" setup.py bdist_wheel sdist'
   - name: pypyr.steps.cmd
     comment: verify README/long_description
     description: --> verify/check new package in dist/
@@ -139,6 +139,10 @@ get_version:
       echoMe: version is {version}
 
 set_config:
+  - name: pypyr.steps.pyimport
+    in:
+      pyImport: import sys
+  
   - name: pypyr.steps.default
     comment: set configuration parameters & vars used throughout pipeline.
     in:
@@ -148,6 +152,7 @@ set_config:
         output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
         output_test_results: "{output_results_dir}/testresults/junitresults.xml"
         argList: null
+        python: !py sys.executable
   - pypyr.steps.configvars
   - name: pypyr.steps.assert
     description: --> check expected keys in pypyr-config.yaml

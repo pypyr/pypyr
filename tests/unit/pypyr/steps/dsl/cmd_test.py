@@ -1,8 +1,11 @@
 """cmd.py unit tests."""
 import logging
-import pytest
 import subprocess
 from unittest.mock import patch
+
+import pytest
+
+from pypyr.config import config
 from pypyr.context import Context
 from pypyr.dsl import SicString
 from pypyr.errors import (ContextError,
@@ -10,8 +13,14 @@ from pypyr.errors import (ContextError,
                           KeyNotInContextError)
 from pypyr.steps.dsl.cmd import CmdStep
 
-# ------------------------- FileInRewriterStep -------------------------------
 from tests.common.utils import patch_logger
+
+is_windows = config.is_windows
+
+
+def get_plat(posix, windows):
+    """Return windows if platform is windows, else posix."""
+    return windows if is_windows else posix
 
 
 def test_cmdstep_name_required():
@@ -140,7 +149,32 @@ def test_cmdstep_runstep_cmd_is_string_shell_false():
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=False)
 
-    # blah is in a list because shell == false
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['blah', '-blah1', '--blah2'],
+                            'blah -blah1 --blah2')
+
+    mock_run.assert_called_once_with(expected_cmd,
+                                     cwd=None, shell=False, check=True)
+
+
+def test_cmdstep_runstep_cmd_is_string_shell_false_force_no_win(monkeypatch):
+    """Force not windows."""
+    monkeypatch.setattr('pypyr.steps.dsl.cmd.config._is_windows', False)
+
+    with patch_logger('blahname', logging.DEBUG) as mock_logger_debug:
+        obj = CmdStep('blahname', Context({'cmd': 'blah -blah1 --blah2'}))
+
+    assert not obj.is_save
+    assert obj.logger.name == 'blahname'
+    assert obj.context == Context({'cmd': 'blah -blah1 --blah2'})
+    assert obj.cmd_text == 'blah -blah1 --blah2'
+    mock_logger_debug.assert_called_once_with(
+        'Processing command string: blah -blah1 --blah2')
+
+    with patch('subprocess.run') as mock_run:
+        obj.run_step(is_shell=False)
+
     mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
                                      cwd=None, shell=False, check=True)
 
@@ -163,8 +197,12 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false():
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=False)
 
-    # blah is in a list because shell == false
-    mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['blah', '-blah1', '--blah2'],
+                            'blah -blah1 --blah2')
+
+    mock_run.assert_called_once_with(expected_cmd,
                                      cwd=None, shell=False, check=True)
 
 
@@ -187,8 +225,12 @@ def test_cmdstep_runstep_cmd_is_string_formatting_shell_false_sic():
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=False)
 
-    # blah is in a list because shell == false
-    mock_run.assert_called_once_with(['{k1}', '-{k1}1', '--{k1}2'],
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['{k1}', '-{k1}1', '--{k1}2'],
+                            '{k1} -{k1}1 --{k1}2')
+
+    mock_run.assert_called_once_with(expected_cmd,
                                      cwd=None, shell=False, check=True)
 
 
@@ -250,8 +292,12 @@ def test_cmdstep_runstep_cmd_is_dict_save_false_shell_false():
     with patch('subprocess.run') as mock_run:
         obj.run_step(is_shell=False)
 
-    # blah is in a list because shell == false
-    mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['blah', '-blah1', '--blah2'],
+                            'blah -blah1 --blah2')
+
+    mock_run.assert_called_once_with(expected_cmd,
                                      cwd=None, shell=False, check=True)
 
 
@@ -330,8 +376,12 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
 
     mock_logger_error.assert_called_once_with('stderr: err')
 
-    # blah is in a list because shell == false
-    mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['blah', '-blah1', '--blah2'],
+                            'blah -blah1 --blah2')
+
+    mock_run.assert_called_once_with(expected_cmd,
                                      cwd=None,
                                      shell=False,
                                      stderr=subprocess.PIPE,
@@ -369,7 +419,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
 
     mock_logger_info.assert_called_once_with('stdout: std')
 
-    # blah is in a list because shell == false
+    # blah is in a str because shell == true
     mock_run.assert_called_once_with('blah -blah1 --blah2',
                                      cwd=None,
                                      shell=True,
@@ -411,7 +461,7 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
 
     mock_logger_info.assert_called_once_with('stdout: std')
 
-    # blah is in a list because shell == false
+    # blah is in a str because shell is true
     mock_run.assert_called_once_with('blah -blah1 --blah2',
                                      cwd='pathhere',
                                      shell=True,
@@ -455,8 +505,12 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
 
     mock_logger_error.assert_called_once_with('stderr: err')
 
-    # blah is in a list because shell == false
-    mock_run.assert_called_once_with(['blah', '-blah1', '--blah2'],
+    # blah is in a list because shell == false on posix.
+    # windows is always str
+    expected_cmd = get_plat(['blah', '-blah1', '--blah2'],
+                            'blah -blah1 --blah2')
+
+    mock_run.assert_called_once_with(expected_cmd,
                                      cwd=None,
                                      shell=False,
                                      # capture_output=True,

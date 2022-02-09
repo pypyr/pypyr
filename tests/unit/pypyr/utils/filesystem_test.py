@@ -3,9 +3,12 @@
 The bulk of coverage is in tests/integration/pypyr/utils/filesystem_int_test.py
 """
 import io
-from unittest.mock import mock_open
+from pathlib import Path
+from unittest.mock import Mock, mock_open
 
+from pyfakefs.fake_filesystem import OSType
 import pytest
+
 import pypyr.utils.filesystem as filesystem
 
 # region FileRewriter
@@ -29,6 +32,93 @@ def test_filerewriter_in_to_out_abstract():
     assert x.encoding_out == 'out'
     with pytest.raises(NotImplementedError):
         x.in_to_out('blah')
+
+
+@pytest.fixture
+def posix(monkeypatch):
+    """Set posix dir separator and is_windows False."""
+    monkeypatch.setattr('pypyr.utils.filesystem.os.sep', '/')
+    monkeypatch.setattr('pypyr.utils.filesystem.config._is_windows', False)
+
+
+@pytest.fixture
+def windows(monkeypatch):
+    """Set windows dir separator and is_windows True."""
+    monkeypatch.setattr('pypyr.utils.filesystem.os.sep', '\\')
+    monkeypatch.setattr('pypyr.utils.filesystem.config._is_windows', True)
+
+
+def test_filerewriter_is_str_dir_posix(posix):
+    """Dir terminators must be platform specific."""
+    assert filesystem.FileRewriter.is_str_dir(Path('/blah/')) is False
+    assert filesystem.FileRewriter.is_str_dir('/blah') is False
+    assert filesystem.FileRewriter.is_str_dir('blah/') is True
+    assert filesystem.FileRewriter.is_str_dir('\\blah\\') is False
+
+
+def test_filerewriter_is_str_dir_windows(windows):
+    """Dir terminators must be platform specific."""
+    assert filesystem.FileRewriter.is_str_dir(Path('blah\\')) is False
+    assert filesystem.FileRewriter.is_str_dir('/blah') is False
+    assert filesystem.FileRewriter.is_str_dir('/blah/') is True
+    assert filesystem.FileRewriter.is_str_dir('c:\\blah\\') is True
+    assert filesystem.FileRewriter.is_str_dir('c:/blah/') is True
+
+
+class FakeRewriter(filesystem.FileRewriter):
+    """TestRewriter that just logs calls."""
+
+    def __init__(self, formatter, encoding_in, encoding_out):
+        """Initialize the test."""
+        super().__init__(formatter, encoding_in, encoding_out)
+        self.in_to_out_mock = Mock()
+
+    def in_to_out(self, in_path, out_path):
+        """Log the in to out call."""
+        self.in_to_out_mock(in_path=in_path, out_path=out_path)
+
+
+def test_filerewriter_with_dir_out_posix(posix, fs):
+    """Parse str with / as dir out on files_in_to_out."""
+    fs.os = OSType.LINUX
+    fs.create_file('/arb/myfile')
+    tr = FakeRewriter('formatter', 'encin', 'encout')
+    tr.files_in_to_out('/arb/myfile', 'out/mydir/')
+
+    tr.in_to_out_mock.assert_called_once_with(
+        in_path=Path('/arb/myfile'),
+        out_path=Path('out/mydir/myfile'))
+
+    assert Path('out/mydir').is_dir()
+
+
+def test_filerewriter_with_dir_out_windows_slash(windows, fs):
+    """Parse str with / as dir out on files_in_to_out."""
+    fs.os = OSType.WINDOWS
+    fs.create_file('/arb/myfile')
+    tr = FakeRewriter('formatter', 'encin', 'encout')
+    tr.files_in_to_out('/arb/myfile', 'out/mydir/')
+
+    tr.in_to_out_mock.assert_called_once_with(
+        in_path=Path('/arb/myfile'),
+        out_path=Path('out/mydir/myfile'))
+
+    assert Path('out/mydir').is_dir()
+
+
+def test_filerewriter_with_dir_out_windows_backslash(windows, fs):
+    """Parse str with backslash as dir out on files_in_to_out."""
+    fs.os = OSType.WINDOWS
+    fs.create_file('arb\\myfile')
+    tr = FakeRewriter('formatter', 'encin', 'encout')
+    tr.files_in_to_out('arb\\myfile', 'out\\mydir\\')
+
+    tr.in_to_out_mock.assert_called_once_with(
+        in_path=Path('arb\\myfile'),
+        out_path=Path('out\\mydir\\myfile'))
+
+    assert Path('out\\mydir').is_dir()
+
 # endregion FileRewriter
 
 # region ObjectRepresenter

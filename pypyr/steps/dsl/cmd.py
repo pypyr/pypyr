@@ -2,6 +2,8 @@
 import shlex
 import subprocess
 import logging
+
+from pypyr.config import config
 from pypyr.errors import ContextError
 from pypyr.utils import types
 
@@ -106,7 +108,8 @@ class CmdStep():
 
         # why? If shell is True, it is recommended to pass args as a string
         # rather than as a sequence.
-        if is_shell:
+        # But not on windows, because windows wants strings, not sequences.
+        if is_shell or config.is_windows:
             args = self.cmd_text
         else:
             args = shlex.split(self.cmd_text)

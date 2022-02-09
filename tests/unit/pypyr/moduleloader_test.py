@@ -241,7 +241,7 @@ def test_add_sys_path_str(known_dirs):
     p = 'tests/arbpack'
     assert sys.path == ['arb']
     moduleloader.add_sys_path(p)
-    assert sys.path == ['arb', p]
+    assert sys.path == ['arb', str(Path(p))]
     assert moduleloader._known_dirs == {p}
 
 
@@ -267,15 +267,21 @@ def test_add_sys_path_none(known_dirs):
     assert moduleloader._known_dirs == set()
 
 
+def assert_list_of_paths_equal(obj, other):
+    """Cross platform compare of list of paths."""
+    assert [Path(p) for p in obj] == [Path(p) for p in other]
+
+
 @patch.object(sys, 'path', ['arb'])
 def test_add_sys_path_no_dupes(known_dirs):
     """Can't add duplicates to sys path."""
     existing_path = 'tests/arbpack'
     moduleloader.add_sys_path(existing_path)
-    assert sys.path == ['arb', existing_path]
+    assert_list_of_paths_equal(sys.path, ['arb', existing_path])
     moduleloader.add_sys_path(existing_path)
     moduleloader.add_sys_path(existing_path)
-    assert sys.path == ['arb', existing_path]
+    assert sys.path == ['arb', str(Path(existing_path))]
+    assert_list_of_paths_equal(sys.path, ['arb', existing_path])
     assert moduleloader._known_dirs == {'tests/arbpack'}
 
 

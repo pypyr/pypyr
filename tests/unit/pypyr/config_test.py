@@ -1,5 +1,6 @@
 """Unit tests for pypyr/config.py."""
 from pathlib import Path
+import sys
 from unittest.mock import call, mock_open, patch
 
 import pytest
@@ -9,6 +10,10 @@ from pypyr.errors import ConfigError
 from pypyr.platform import PlatformPaths
 
 CWD = Path.cwd()
+current_platform = sys.platform
+is_macos: bool = current_platform == 'darwin'
+is_windows: bool = current_platform == 'win32'
+is_posix: bool = not (is_macos or is_windows)
 
 
 @pytest.fixture
@@ -27,6 +32,10 @@ def test_config_defaults(no_envs):
     config = Config()
     assert config.config_loaded_paths == []
     assert config.cwd == CWD
+    assert config.is_macos is is_macos
+    assert config.is_posix is is_posix
+    assert config.is_windows is is_windows
+    assert config.platform == current_platform
     assert config.platform_paths is None
     assert config.pyproject_toml is None
     assert config.skip_init is False
@@ -56,6 +65,41 @@ def test_config_with_encoding(monkeypatch, no_envs):
     monkeypatch.setenv('PYPYR_ENCODING', 'arb')
     config = Config()
     config.default_encoding == 'arb'
+
+
+def test_config_platforms(monkeypatch):
+    """Boolean logic on which platform is correct for win vs mac vs posix."""
+    monkeypatch.setattr('pypyr.platform.sys.platform', 'win32')
+
+    config = Config()
+    assert config.platform == 'win32'
+    assert config.is_macos is False
+    assert config.is_posix is False
+    assert config.is_windows is True
+
+    monkeypatch.setattr('pypyr.platform.sys.platform', 'linux')
+
+    config = Config()
+    assert config.platform == 'linux'
+    assert config.is_macos is False
+    assert config.is_posix is True
+    assert config.is_windows is False
+
+    monkeypatch.setattr('pypyr.platform.sys.platform', 'darwin')
+
+    config = Config()
+    assert config.platform == 'darwin'
+    assert config.is_macos is True
+    assert config.is_posix is False
+    assert config.is_windows is False
+
+    monkeypatch.setattr('pypyr.platform.sys.platform', 'cygwin')
+
+    config = Config()
+    assert config.platform == 'cygwin'
+    assert config.is_macos is False
+    assert config.is_posix is True
+    assert config.is_windows is False
 
 # endregion default initialization
 
@@ -696,7 +740,11 @@ vars: {}
 COMPUTED PROPERTIES:
 
 config_loaded_paths:[]
-""" + f'cwd: {CWD}' + """
+""" + f'cwd: {CWD}' + f"""
+is_macos: {is_macos}
+is_posix: {is_posix}
+is_windows: {is_windows}
+platform: {current_platform}
 platform_paths:
 pyproject_toml:
 skip_init: False
@@ -786,6 +834,10 @@ config_loaded_paths:
   - pyproject.toml
   - pypyr-config.yaml
 """ + f"""cwd: {CWD}
+is_macos: {is_macos}
+is_posix: {is_posix}
+is_windows: {is_windows}
+platform: {current_platform}
 platform_paths:
   config_user: {cu}
   config_common:
