@@ -72,9 +72,17 @@ class FakePath():
         """Pretend to be PosixPath or WindowsPath, depending on os."""
         return type(self.path)
 
+    def __eq__(self, other):
+        """Allow equality check to work as per path."""
+        return self.path == other
+
     def __instancecheck__(self, instance):
         """Allow me to masquerade as an actual Path object."""
         return isinstance(instance, Path)
+
+    def __fspath__(self):
+        """Implement os.PathLike interface."""
+        return str(self.path)
 
     def exists(self):
         """Fake exists not actually to touch the filesystem.
@@ -113,7 +121,8 @@ class FakePath():
         underlying_attr = getattr(self.path, attr)
 
         if not callable(underlying_attr):
-            return underlying_attr
+            return FakePath(underlying_attr) if isinstance(
+                underlying_attr, Path) else underlying_attr
 
         # wrap the delegated callable so you can
         # capture the args+kwargs when callable

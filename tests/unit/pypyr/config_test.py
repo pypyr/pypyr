@@ -739,7 +739,7 @@ vars: {}
 
 COMPUTED PROPERTIES:
 
-config_loaded_paths:[]
+config_loaded_paths: []
 """ + f'cwd: {CWD}' + f"""
 is_macos: {is_macos}
 is_posix: {is_posix}

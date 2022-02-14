@@ -10,6 +10,8 @@ def test_fake_path():
     """A FakePath behaves like a Path."""
     fp = FakePath('/arb')
     assert isinstance(fp, Path)
+    assert isinstance(fp, os.PathLike)
+    assert fp.__fspath__() == f'{os.sep}arb'
     assert str(fp) == f'{os.sep}arb'
 
     # mocked out methods don't touch the file system
@@ -21,6 +23,7 @@ def test_fake_path():
     assert fp.is_dir() is False
 
     # delegate to underlying path
+    assert fp.name == 'arb'
     fp.mock_instance.joinpath.assert_not_called()
     assert fp.joinpath('sub') == Path('/arb/sub')
 
@@ -42,6 +45,16 @@ def test_fake_path():
     fp.mock.return_value.joinpath.assert_called_once_with('sub')
     fp.mock.return_value.is_dir.assert_called_once()
     fp.mock_instance.is_dir.assert_called_once()
+
+
+def test_fake_path_parent():
+    """Methods returning Paths return FakePaths."""
+    fp = FakePath('/arb/sub')
+    parent = fp.parent
+    assert fp.mock.mock_calls == [call('/arb/sub')]
+    assert fp.mock.parent.mock_calls == []
+    assert type(parent) is FakePath
+    assert parent == Path('/arb')
 
 
 def test_fake_path_constructor_overrides():

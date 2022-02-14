@@ -393,7 +393,7 @@ class Config():
             out.write('config_loaded_paths:\n')
             out.write(''.join(f'  - {k}\n' for k in self._config_loaded_paths))
         else:
-            out.write('config_loaded_paths:[]\n')
+            out.write('config_loaded_paths: []\n')
 
         out.write(f'cwd: {self.cwd}\n')
 
