@@ -1,13 +1,9 @@
 """fileformattoml.py unit tests."""
-from unittest.mock import call, patch
-
 import pytest
 
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
 import pypyr.steps.fileformattoml as fileformat
-
-from tests.common.path_mock import MultiPath, FakePath
 
 # region validation
 
@@ -248,35 +244,20 @@ k21 = "value"
     assert outcontents == expected
 
 
-@patch('pypyr.utils.filesystem.os.path.isfile', return_value=True)
-@patch('pypyr.utils.filesystem.os.path.samefile', return_value=False)
-def test_fileformattoml_with_encoding(patch_samefile, patch_isfile):
+def test_fileformattoml_with_encoding(fs):
     """Toml parses binary for utf-8 only, no encoding allowed."""
-    # currently no fakefs here because of bug
-    # https://github.com/jmcgeheeiv/pyfakefs/issues/664
-    # for this test to work it still touches the real filesystem, therefore
-    # ./tests/testfiles/test.toml needs to exist.
-    # Can remove this testfile soon as update to pyfakefs live.
+    in_path = './tests/testfiles/test.toml'
+    fs.create_file(in_path, contents='key1 = "value"')
 
     context = Context({
         'ok1': 'ov1',
-        'fileFormatToml': {'in': './tests/testfiles/test.toml',
+        'fileFormatToml': {'in': in_path,
                            'out': 'test/out/output.toml',
                            'encoding': 'utf-16'}})
 
-    fake_in = FakePath('./tests/testfiles/test.toml',
-                       is_file=True)
-
-    mock_paths = MultiPath(known={'./tests/testfiles/test.toml': fake_in})
-
     with pytest.raises(ValueError) as err:
-        with patch('pypyr.utils.filesystem.Path', new=mock_paths):
-            fileformat.run_step(context)
+        fileformat.run_step(context)
 
     assert str(err.value) == "binary mode doesn't take an encoding argument"
 
-    assert mock_paths.instances[0].mock.mock_calls == [
-        call('test/out/output.toml'), call().is_dir()]
-
-    assert mock_paths.instances[1] is fake_in
 # endregion functional tests
