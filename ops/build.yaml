@@ -139,10 +139,7 @@ get_version:
       echoMe: version is {version}
 
 set_config:
-  - name: pypyr.steps.pyimport
-    in:
-      pyImport: import sys
-  
+  - pypyr.steps.python
   - name: pypyr.steps.default
     comment: set configuration parameters & vars used throughout pipeline.
     in:
@@ -152,7 +149,6 @@ set_config:
         output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
         output_test_results: "{output_results_dir}/testresults/junitresults.xml"
         argList: null
-        python: !py sys.executable
   - pypyr.steps.configvars
   - name: pypyr.steps.assert
     description: --> check expected keys in pypyr-config.yaml
