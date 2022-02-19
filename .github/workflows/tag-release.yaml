@@ -22,26 +22,14 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
+          cache: pip
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"      
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
       - name: tox cache
         id: tox-cache
         uses: actions/cache@v2
         with:
           path: .tox
-          key: ${{ runner.os }}-tox-${{ hashFiles('tox.ini') }}
-          restore-keys: |
-            ${{ runner.os }}-tox-
+          key: ${{ runner.os }}-tox-${{ secrets.CACHE_VERSION }}-${{ hashFiles('tox.ini') }}-${{ hashFiles('setup.py') }}
 
       - name: run tag pipeline.
         uses: pypyr/run-in-tox-action@main
