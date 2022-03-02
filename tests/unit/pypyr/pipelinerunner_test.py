@@ -1,11 +1,14 @@
 """pipelinerunner.py unit tests."""
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from pypyr.context import Context
-from pypyr.errors import (ContextError)
+from pypyr.errors import (ConfigError, ContextError)
 from pypyr.pipelinerunner import run
+
+# region run
 
 
 @patch('pypyr.pipelinerunner.Pipeline', autospec=True)
@@ -224,3 +227,379 @@ def test_run_raises(mock_pipe):
     )
 
     mock_pipe.return_value.run.assert_called_once_with({})
+
+# endregion run
+
+# region shortcuts
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_not_found(mock_pipe, monkeypatch):
+    """Shortcuts configured but requested shortcut not found."""
+    shortcuts = {'xxx': {
+        'pipeline_name': 'sc pipe'
+    }}
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe',
+              args_in='arb context input',
+              parse_args=True,
+              dict_in={'a': 'b'},
+              groups=['g'],
+              success_group='sg',
+              failure_group='fg',
+              loader='arb loader',
+              py_dir='arb/dir')
+
+    assert type(out) is Context
+    assert out == Context({'a': 'b'})
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='arb pipe',
+        context_args='arb context input',
+        parse_input=True,
+        groups=['g'],
+        success_group='sg',
+        failure_group='fg',
+        loader='arb loader',
+        py_dir='arb/dir'
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    assert shortcuts == {'xxx': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_all(mock_pipe, monkeypatch):
+    """Run shortcut with maximal shortcut options."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': ['sc', 'context', 'input'],
+        'skip_parse': False,
+        'args': {'a': 'updated', 'c': 'd'},
+        'groups': ['sc g'],
+        'success': 'sc sg',
+        'failure': 'sc fg',
+        'loader': 'sc loader',
+        'py_dir': 'sc/dir'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe')
+
+    assert type(out) is Context
+    assert out == Context({'a': 'updated', 'c': 'd'})
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=['sc', 'context', 'input'],
+        parse_input=True,
+        groups=['sc g'],
+        success_group='sc sg',
+        failure_group='sc fg',
+        loader='sc loader',
+        py_dir=Path('sc/dir')
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': ['sc', 'context', 'input'],
+        'skip_parse': False,
+        'args': {'a': 'updated', 'c': 'd'},
+        'groups': ['sc g'],
+        'success': 'sc sg',
+        'failure': 'sc fg',
+        'loader': 'sc loader',
+        'py_dir': 'sc/dir'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_all_ignore_func_args(mock_pipe, monkeypatch):
+    """Run shortcut with maximal args superseding func args."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': ['sc', 'context', 'input'],
+        'skip_parse': False,
+        'args': {'a': 'b', 'c': 'd'},
+        'groups': ['sc g'],
+        'success': 'sc sg',
+        'failure': 'sc fg',
+        'loader': 'sc loader',
+        'py_dir': 'sc/dir'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe',
+              args_in=['arb', 'context', 'input'],
+              parse_args=True,
+              dict_in={'a': 'updated', 'e': 'f'},
+              groups=['g'],
+              success_group='sg',
+              failure_group='fg',
+              loader='arb loader',
+              py_dir='arb/dir')
+
+    assert type(out) is Context
+    assert out == Context({'a': 'updated', 'c': 'd', 'e': 'f'})
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=['sc', 'context', 'input', 'arb', 'context', 'input'],
+        parse_input=True,
+        groups=['sc g'],
+        success_group='sc sg',
+        failure_group='sc fg',
+        loader='sc loader',
+        py_dir=Path('sc/dir')
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': ['sc', 'context', 'input'],
+        'skip_parse': False,
+        'args': {'a': 'b', 'c': 'd'},
+        'groups': ['sc g'],
+        'success': 'sc sg',
+        'failure': 'sc fg',
+        'loader': 'sc loader',
+        'py_dir': 'sc/dir'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_minimal_fallback_func_args(mock_pipe, monkeypatch):
+    """Run shortcut with not set args overwritten by func args."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe',
+              args_in=['arb', 'context', 'input'],
+              parse_args=True,
+              dict_in={'a': 'b', 'e': 'f'},
+              groups=['g'],
+              success_group='sg',
+              failure_group='fg',
+              loader='arb loader',
+              py_dir='arb/dir')
+
+    assert type(out) is Context
+    assert out == Context({'a': 'b', 'e': 'f'})
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=['arb', 'context', 'input'],
+        parse_input=True,
+        groups=['g'],
+        success_group='sg',
+        failure_group='fg',
+        loader='arb loader',
+        py_dir='arb/dir'
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe'}}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_minimal(mock_pipe, monkeypatch):
+    """Run shortcut with minimal inputs."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe')
+
+    assert type(out) is Context
+    assert out == {}
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=None,
+        parse_input=True,
+        groups=None,
+        success_group=None,
+        failure_group=None,
+        loader=None,
+        py_dir=None
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
+    """Run shortcut ignores parse_args from func input."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe', parse_args=False)
+
+    assert type(out) is Context
+    assert out == {}
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=None,
+        parse_input=True,
+        groups=None,
+        success_group=None,
+        failure_group=None,
+        loader=None,
+        py_dir=None
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_skip_parse(mock_pipe, monkeypatch):
+    """Run shortcut with skip_parse true."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'skip_parse': True
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe')
+
+    assert type(out) is Context
+    assert out == {}
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=None,
+        parse_input=False,
+        groups=None,
+        success_group=None,
+        failure_group=None,
+        loader=None,
+        py_dir=None
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'skip_parse': True
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_groups_str(mock_pipe, monkeypatch):
+    """Run shortcut with str groups converting to list."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'groups': 'sc g'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+    out = run(pipeline_name='arb pipe')
+
+    assert type(out) is Context
+    assert out == {}
+    assert not out.is_in_pipeline_scope
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=None,
+        parse_input=True,
+        groups=['sc g'],
+        success_group=None,
+        failure_group=None,
+        loader=None,
+        py_dir=None
+    )
+
+    mock_pipe.return_value.run.assert_called_once_with(out)
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'groups': 'sc g'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_no_pipe_name(mock_pipe, monkeypatch):
+    """Run shortcut raises friendly error if no pipe name."""
+    shortcuts = {'arb pipe': {
+        'pipeline_nameX': 'sc pipe'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+
+    with pytest.raises(ConfigError) as err:
+        run(pipeline_name='arb pipe')
+
+    assert str(err.value) == (
+        "shortcut 'arb pipe' has no pipeline_name set. You must set "
+        "pipeline_name for this shortcut in config so that pypyr knows which "
+        "pipeline to run.")
+
+    mock_pipe.assert_not_called()
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_nameX': 'sc pipe'
+    }}
+
+
+@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
+def test_run_shortcut_pipe_arg_str_raises(mock_pipe, monkeypatch):
+    """Run shortcut raises friendly error if pipeArg is string."""
+    shortcuts = {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': 'arb'
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+
+    with pytest.raises(ConfigError) as err:
+        run(pipeline_name='arb pipe')
+
+    assert str(err.value) == (
+        "shortcut 'arb pipe' pipe_arg should be a list, not a string.")
+
+    mock_pipe.assert_not_called()
+
+    # run shouldn't mutate the shared original config
+    assert shortcuts == {'arb pipe': {
+        'pipeline_name': 'sc pipe',
+        'pipe_arg': 'arb'
+    }}
+# endregion shortcuts
