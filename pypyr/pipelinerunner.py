@@ -6,10 +6,14 @@ Use run() to run a pipeline.
 """
 # can remove __future__ once py 3.10 the lowest supported version
 from __future__ import annotations
+import copy
 import logging
 from os import PathLike
+from pathlib import Path
 
+from pypyr.config import config
 from pypyr.context import Context
+import pypyr.errors
 from pypyr.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -67,6 +71,13 @@ def run(
     If your pipelines are only using built-in functionality, you don't need to
     set py_dir.
 
+    If pipeline_name found in config.shortcuts, will use the configured values
+    from the shortcut to find & run the pipeline. If a shortcut does not have
+    a value for a particular argument, will fallback to the run() function's
+    inputs, if any. If you pass args_in and/or dict_in and a shortcut is found
+    for pipeline_name, will merge the function's input arguments into the
+    shortcut's pipe_arg and args respectively.
+
     Example: Run ./dir/pipe-name.yaml, resolve ad hoc custom modules from the
     current directory and initialize context with dict {'a': 'b'}:
 
@@ -93,6 +104,56 @@ def run(
                                   completes.
     """
     logger.debug("starting pypyr")
+
+    if config.shortcuts:
+        # assuming shortcuts is mostly empty dict, much faster to do truthy if
+        # check before .get(), even though it looks redundant.
+        shortcut = config.shortcuts.get(pipeline_name)
+        if shortcut:
+            shortcut_name = pipeline_name
+            logger.debug("found shortcut in config for %s", shortcut_name)
+            pipeline_name = shortcut.get('pipeline_name')
+            if not pipeline_name:
+                raise pypyr.errors.ConfigError(
+                    f"shortcut '{shortcut_name}' has no pipeline_name set. "
+                    "You must set pipeline_name for this shortcut in config "
+                    "so that pypyr knows which pipeline to run.")
+            pipe_arg = shortcut.get('pipe_arg')
+            if pipe_arg:
+                if isinstance(pipe_arg, str):
+                    raise pypyr.errors.ConfigError(
+                        f"shortcut '{shortcut_name}' pipe_arg should be a "
+                        "list, not a string.")
+                # append args_in to shortcut's pipe_args
+                args_in = pipe_arg + args_in if args_in else pipe_arg
+
+            skip_parse = shortcut.get('skip_parse')
+            # flip the bit - skip_args means inverse of parse_args, but only
+            # if it exists
+            parse_args = skip_parse if skip_parse is None else not skip_parse
+
+            shortcut_dict_in = shortcut.get('args')
+            if shortcut_dict_in:
+                # deepcopy so downstream mutations don't touch the original
+                # dict in config
+                sc_dict = copy.deepcopy(shortcut_dict_in)
+                if dict_in:
+                    # merge dict_in into shortcut's args
+                    sc_dict.update(dict_in)
+                dict_in = sc_dict
+
+            sc_groups = shortcut.get('groups', groups)
+            # if config specified a str, take it to mean a single group
+            groups = [sc_groups] if isinstance(sc_groups, str) else sc_groups
+
+            success_group = shortcut.get('success', success_group)
+            failure_group = shortcut.get('failure', failure_group)
+            loader = shortcut.get('loader', loader)
+            dir_str = shortcut.get('py_dir')
+            if dir_str:
+                # will still honor cwd for cli if not set, since it'll only
+                # override input if shortcut dir actually set.
+                py_dir = Path(dir_str)
 
     parse_input = _get_parse_input(parse_args=parse_args,
                                    args_in=args_in,
