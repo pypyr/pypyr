@@ -6,14 +6,10 @@ Use run() to run a pipeline.
 """
 # can remove __future__ once py 3.10 the lowest supported version
 from __future__ import annotations
-import copy
 import logging
 from os import PathLike
-from pathlib import Path
 
-from pypyr.config import config
 from pypyr.context import Context
-import pypyr.errors
 from pypyr.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -105,101 +101,20 @@ def run(
     """
     logger.debug("starting pypyr")
 
-    if config.shortcuts:
-        # assuming shortcuts is mostly empty dict, much faster to do truthy if
-        # check before .get(), even though it looks redundant.
-        shortcut = config.shortcuts.get(pipeline_name)
-        if shortcut:
-            shortcut_name = pipeline_name
-            logger.debug("found shortcut in config for %s", shortcut_name)
-            pipeline_name = shortcut.get('pipeline_name')
-            if not pipeline_name:
-                raise pypyr.errors.ConfigError(
-                    f"shortcut '{shortcut_name}' has no pipeline_name set. "
-                    "You must set pipeline_name for this shortcut in config "
-                    "so that pypyr knows which pipeline to run.")
-            pipe_arg = shortcut.get('pipe_arg')
-            if pipe_arg:
-                if isinstance(pipe_arg, str):
-                    raise pypyr.errors.ConfigError(
-                        f"shortcut '{shortcut_name}' pipe_arg should be a "
-                        "list, not a string.")
-                # append args_in to shortcut's pipe_args
-                args_in = pipe_arg + args_in if args_in else pipe_arg
+    pipeline, args = Pipeline.new_pipe_and_args(name=pipeline_name,
+                                                context_args=args_in,
+                                                parse_input=parse_args,
+                                                dict_in=dict_in,
+                                                loader=loader,
+                                                groups=groups,
+                                                success_group=success_group,
+                                                failure_group=failure_group,
+                                                py_dir=py_dir)
 
-            skip_parse = shortcut.get('skip_parse')
-            # flip the bit - skip_args means inverse of parse_args, but only
-            # if it exists
-            parse_args = skip_parse if skip_parse is None else not skip_parse
-
-            shortcut_dict_in = shortcut.get('args')
-            if shortcut_dict_in:
-                # deepcopy so downstream mutations don't touch the original
-                # dict in config
-                sc_dict = copy.deepcopy(shortcut_dict_in)
-                if dict_in:
-                    # merge dict_in into shortcut's args
-                    sc_dict.update(dict_in)
-                dict_in = sc_dict
-
-            sc_groups = shortcut.get('groups', groups)
-            # if config specified a str, take it to mean a single group
-            groups = [sc_groups] if isinstance(sc_groups, str) else sc_groups
-
-            success_group = shortcut.get('success', success_group)
-            failure_group = shortcut.get('failure', failure_group)
-            loader = shortcut.get('loader', loader)
-            dir_str = shortcut.get('py_dir')
-            if dir_str:
-                # will still honor cwd for cli if not set, since it'll only
-                # override input if shortcut dir actually set.
-                py_dir = Path(dir_str)
-
-    parse_input = _get_parse_input(parse_args=parse_args,
-                                   args_in=args_in,
-                                   dict_in=dict_in)
-
-    context = Context(dict_in) if dict_in else Context()
-
-    pipeline = Pipeline(name=pipeline_name,
-                        context_args=args_in,
-                        parse_input=parse_input,
-                        loader=loader,
-                        groups=groups,
-                        success_group=success_group,
-                        failure_group=failure_group,
-                        py_dir=py_dir)
+    context = Context(args) if args else Context()
 
     pipeline.run(context)
 
     logger.debug("pypyr done")
 
     return context
-
-
-def _get_parse_input(parse_args, args_in, dict_in):
-    """Return default for parse_input.
-
-    This is to decide if context_parser should run or not.
-
-    To make it easy on an API consumer, default behavior is ALWAYS to run
-    parser UNLESS dict_in initializes context and there is no args_in.
-
-    If dict_in specified, but no args_in: False
-    If dict_in specified, AND args_in too: True
-    If no dict_in specified, but args_in is: True
-    If no dict_in AND no args_in: True
-    If parse_args explicitly set, always honor its value.
-
-    Args:
-        parse_args (bool): Whether to run context parser.
-        args_in (list[str]): String arguments as passed from the cli.
-        dict_in (dict): Initialize context with this dict.
-
-    Returns:
-        Boolean. True if should parse input.
-    """
-    if parse_args is None:
-        return not (args_in is None and dict_in is not None)
-
-    return parse_args

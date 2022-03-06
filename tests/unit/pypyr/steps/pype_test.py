@@ -1,6 +1,6 @@
 """pype.py unit tests."""
 import logging
-from unittest.mock import call, patch
+from unittest.mock import call, Mock
 
 import pytest
 
@@ -16,6 +16,43 @@ from pypyr.pipedef import PipelineDefinition, PipelineInfo
 import pypyr.steps.pype as pype
 
 from tests.common.utils import patch_logger
+
+# region fixtures
+
+
+def new_pipe_and_args_wrapper(mock_pipe):
+    """Return ref to Pipeline new_pipe_and_args, overriding the cls arg.
+
+    Reason is normal patch does not patch out the cls arg on a class method.
+
+    Intercept the factory method, passing in a mock as type to instantiate.
+
+    Args:
+        mock_pipe: Replace the 1st arg (i.e cls) to the classmethod with me.
+    """
+    # get the reference to the underlying method before it's patched
+    og_ref = Pipeline.new_pipe_and_args.__func__
+
+    def new_pipe_and_args(*args, **kwargs):
+        # the first arg is cls - for which we're substituting the mock
+        return og_ref(mock_pipe, *args, **kwargs)
+
+    return new_pipe_and_args
+
+
+@pytest.fixture
+def mock_pipe(monkeypatch):
+    """Intercept Pipeline.new_pipe_and_args factory method."""
+    mock_pipe = Mock(spec=Pipeline)
+    mock_pipe._get_parse_input = Pipeline._get_parse_input
+
+    monkeypatch.setattr('pypyr.steps.pype.Pipeline.new_pipe_and_args',
+                        new_pipe_and_args_wrapper(mock_pipe))
+
+    return mock_pipe
+
+
+# endregion fixtures
 
 
 def get_arb_pipeline_scope(context):
@@ -691,8 +728,7 @@ def mocked_run_pipeline(*args, **kwargs):
     pass
 
 
-@ patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_use_parent_context(mock_run_pipeline):
+def test_pype_use_parent_context(mock_pipe):
     """Input pype use_parent_context True."""
     context = Context({
         'pype': {
@@ -709,7 +745,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -720,7 +756,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with(context, None)
 
     assert mock_logger_info.mock_calls == [
@@ -728,8 +764,7 @@ def test_pype_use_parent_context(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_use_parent_context_with_args(mock_run_pipeline):
+def test_pype_use_parent_context_with_args(mock_pipe):
     """Input pype use_parent_context True with args."""
     context = Context({
         'k1': 'v1',
@@ -763,7 +798,7 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
         }
     }
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -774,7 +809,7 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with(merged_context, None)
 
     assert mock_logger_info.mock_calls == [
@@ -782,8 +817,7 @@ def test_pype_use_parent_context_with_args(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_no_parent_context(mock_run_pipeline):
+def test_pype_no_parent_context(mock_pipe):
     """Input pype use_parent_context False."""
     context = Context({
         'pype': {
@@ -800,7 +834,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -811,7 +845,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     # using empty/fresh new context
     mocked_runner.assert_called_once_with({}, None)
 
@@ -820,8 +854,7 @@ def test_pype_no_parent_context(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_args(mock_run_pipeline):
+def test_pype_args(mock_pipe):
     """Input pype args used as context."""
     context = Context({
         'pype': {
@@ -834,7 +867,7 @@ def test_pype_args(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=None,
         parse_input=False,
@@ -849,13 +882,78 @@ def test_pype_args(mock_run_pipeline):
         call('pyping pipe name, without parent context.'),
         call('pyped pipe name.')]
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     # using args as context
     mocked_runner.assert_called_once_with({'a': 'b'}, None)
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_args_with_out(mock_run_pipeline):
+def test_pype_args_with_shortcut(mock_pipe, monkeypatch):
+    """Input pype args merged into shortcut used as context."""
+    shortcuts = {'pipe name': {
+        'pipeline_name': 'sc pipe',
+        'args': {
+            'a': 'og',
+            'c': ['d']
+        }
+    }}
+
+    monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
+
+    context = Context({
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'}
+        }
+    })
+
+    def l_and_r(context, parent):
+        assert parent is None
+        assert context == {'a': 'b', 'c': ['d']}
+        context['c'].append('updated')
+        context['e'] = 'new'
+
+    mock_pipe.return_value.load_and_run_pipeline.side_effect = l_and_r
+
+    with patch_logger('pypyr.steps.pype', logging.INFO) as mock_logger_info:
+        with get_arb_pipeline_scope(context):
+            pype.run_step(context)
+
+    mock_pipe.assert_called_once_with(
+        name='sc pipe',
+        context_args=None,
+        parse_input=False,
+        loader=None,
+        groups=None,
+        success_group=None,
+        failure_group=None,
+        py_dir=None
+    )
+
+    assert mock_logger_info.mock_calls == [
+        call('pyping pipe name, without parent context.'),
+        call('pyped pipe name.')]
+
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
+    mocked_runner.assert_called_once()
+
+    # original shortcut shouldn't mutate
+    assert shortcuts == {'pipe name': {
+        'pipeline_name': 'sc pipe',
+        'args': {
+            'a': 'og',
+            'c': ['d']
+        }
+    }}
+
+    # useParentContext is False, therfore no context mutations in parent.
+    assert context == {
+        'pype': {
+            'name': 'pipe name',
+            'args': {'a': 'b'}
+        }}
+
+
+def test_pype_args_with_out(mock_pipe):
     """Input pype args used as context with out."""
     context = Context({
         'parentkey': 'parentvalue',
@@ -870,7 +968,7 @@ def test_pype_args_with_out(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=None,
         parse_input=False,
@@ -881,7 +979,7 @@ def test_pype_args_with_out(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     # using args as new context
     mocked_runner.assert_called_once_with({'a': 'b'}, None)
 
@@ -899,8 +997,7 @@ def test_pype_args_with_out(mock_run_pipeline):
                        }
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_args_with_mapping_out(mock_run_pipeline):
+def test_pype_args_with_mapping_out(mock_pipe):
     """Input pype args used as context with mapping out."""
     context = Context({
         'parentkey': 'parentvalue',
@@ -916,7 +1013,7 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=None,
         parse_input=False,
@@ -927,7 +1024,7 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with({'a': 'av', 'b': 'bv', 'c': 'cv'},
                                           None)
 
@@ -947,8 +1044,7 @@ def test_pype_args_with_mapping_out(mock_run_pipeline):
                        }
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_no_skip_parse(mock_run_pipeline):
+def test_pype_no_skip_parse(mock_pipe):
     """Input pype use_parent_context False."""
     context = Context({
         'pype': {
@@ -964,7 +1060,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=True,
@@ -975,7 +1071,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with({}, None)
 
     assert mock_logger_info.mock_calls == [
@@ -983,8 +1079,7 @@ def test_pype_no_skip_parse(mock_run_pipeline):
         call('pyped pipe name.')]
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_no_pipe_arg(mock_run_pipeline):
+def test_pype_no_pipe_arg(mock_pipe):
     """Input pype use_parent_context False."""
     context = Context({
         'pype': {
@@ -1000,7 +1095,7 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=None,
         parse_input=True,
@@ -1011,7 +1106,7 @@ def test_pype_no_pipe_arg(mock_run_pipeline):
         py_dir=None
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with({}, None)
 
     assert mock_logger_info.mock_calls == [
@@ -1027,10 +1122,9 @@ def mocked_run_pipeline_with_runtime_error(*args, **kwargs):
     raise RuntimeError('whoops')
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
+def test_pype_use_parent_context_no_swallow(mock_pipe):
     """Input pype without swallowing error in child pipeline."""
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.side_effect = RuntimeError('whoops')
 
     context = Context({
@@ -1050,7 +1144,7 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
 
         assert str(err_info.value) == "whoops"
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -1075,10 +1169,9 @@ def test_pype_use_parent_context_no_swallow(mock_run_pipeline):
         'Something went wrong pyping pipe name. RuntimeError: whoops')
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
+def test_pype_use_parent_context_with_swallow(mock_pipe):
     """Input pype swallowing error in child pipeline."""
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.side_effect = RuntimeError('whoops')
 
     context = Context({
@@ -1096,7 +1189,7 @@ def test_pype_use_parent_context_with_swallow(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -1121,10 +1214,9 @@ def mocked_run_pipeline_with_stop(*args, **kwargs):
     raise Stop()
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
+def test_pype_use_parent_context_swallow_stop_error(mock_pipe):
     """Input pype doesn't swallow stop error in child pipeline."""
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.side_effect = Stop()
     context = Context({
         'pype': {
@@ -1143,7 +1235,7 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
 
         assert isinstance(err_info.value, Stop)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -1159,8 +1251,7 @@ def test_pype_use_parent_context_swallow_stop_error(mock_run_pipeline):
     mock_logger_error.assert_not_called()
 
 
-@patch('pypyr.steps.pype.Pipeline', autospec=True)
-def test_pype_set_groups(mock_run_pipeline):
+def test_pype_set_groups(mock_pipe):
     """Input pype with groups set."""
     context = Context({
         'pype': {
@@ -1181,7 +1272,7 @@ def test_pype_set_groups(mock_run_pipeline):
         with get_arb_pipeline_scope(context):
             pype.run_step(context)
 
-    mock_run_pipeline.assert_called_once_with(
+    mock_pipe.assert_called_once_with(
         name='pipe name',
         context_args=['argument', 'here'],
         parse_input=False,
@@ -1192,7 +1283,7 @@ def test_pype_set_groups(mock_run_pipeline):
         py_dir='test dir'
     )
 
-    mocked_runner = mock_run_pipeline.return_value.load_and_run_pipeline
+    mocked_runner = mock_pipe.return_value.load_and_run_pipeline
     mocked_runner.assert_called_once_with(context, None)
 
     assert mock_logger_info.mock_calls == [

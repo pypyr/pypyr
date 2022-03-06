@@ -1,17 +1,53 @@
 """pipelinerunner.py unit tests."""
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock
 
 import pytest
 
 from pypyr.context import Context
 from pypyr.errors import (ConfigError, ContextError)
+from pypyr.pipeline import Pipeline
 from pypyr.pipelinerunner import run
+
+# region fixtures
+
+
+def new_pipe_and_args_wrapper(mock_pipe):
+    """Return ref to Pipeline new_pipe_and_args, overriding the cls arg.
+
+    Reason is normal patch does not patch out the cls arg on a class method.
+
+    Intercept the factory method, passing in a mock as type to instantiate.
+
+    Args:
+        mock_pipe: Replace the 1st arg (i.e cls) to the classmethod with me.
+    """
+    # get the reference to the underlying method before it's patched
+    og_ref = Pipeline.new_pipe_and_args.__func__
+
+    def new_pipe_and_args(*args, **kwargs):
+        # the first arg is cls - for which we're substituting the mock
+        return og_ref(mock_pipe, *args, **kwargs)
+
+    return new_pipe_and_args
+
+
+@pytest.fixture
+def mock_pipe(monkeypatch):
+    """Intercept Pipeline.new_pipe_and_args factory method."""
+    mock_pipe = Mock(spec=Pipeline)
+    mock_pipe._get_parse_input = Pipeline._get_parse_input
+
+    monkeypatch.setattr('pypyr.pipelinerunner.Pipeline.new_pipe_and_args',
+                        new_pipe_and_args_wrapper(mock_pipe))
+
+    return mock_pipe
+
+
+# endregion fixtures
 
 # region run
 
-
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_all(mock_pipe):
     """Run with maximal args in."""
     out = run(pipeline_name='arb pipe',
@@ -42,7 +78,6 @@ def test_run_all(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with(out)
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_minimal(mock_pipe):
     """Run with minimal args in."""
     out = run('arb pipe')
@@ -65,7 +100,6 @@ def test_run_minimal(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with(out)
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_no_parse_when_dict_and_no_args_in(mock_pipe):
     """Default parse to false when dict_in exists and no args_in."""
     out = run('arb pipe', dict_in={'a': 'b'})
@@ -88,7 +122,6 @@ def test_run_no_parse_when_dict_and_no_args_in(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({'a': 'b'})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_parse_when_dict_and_args_in(mock_pipe):
     """Default parse to true when dict_in exists and args_in too."""
     out = run('arb pipe', args_in=['one', 'two'], dict_in={'a': 'b'})
@@ -111,7 +144,6 @@ def test_run_parse_when_dict_and_args_in(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({'a': 'b'})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_parse_when_no_dict_and_args_in(mock_pipe):
     """Default parse to true when dict_in doesn't exists and args_in does."""
     out = run('arb pipe', args_in=['one', 'two'])
@@ -134,7 +166,6 @@ def test_run_parse_when_no_dict_and_args_in(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_parse_when_no_dict_and_no_args_in(mock_pipe):
     """Default parse to true when dict_in doesn't exists and no args_in."""
     out = run('arb pipe')
@@ -157,7 +188,6 @@ def test_run_parse_when_no_dict_and_no_args_in(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_parse_when_parse_args_true(mock_pipe):
     """Always run parse when parse args explicitly true."""
     out = run('arb pipe', parse_args=True, dict_in={'a': 'b'})
@@ -180,7 +210,6 @@ def test_run_parse_when_parse_args_true(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({'a': 'b'})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_no_parse_when_parse_args_false(mock_pipe):
     """Never run parse when parse args explicitly true."""
     out = run('arb pipe', args_in=['one', 'two'], parse_args=False)
@@ -203,7 +232,6 @@ def test_no_parse_when_parse_args_false(mock_pipe):
     mock_pipe.return_value.run.assert_called_once_with({})
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_raises(mock_pipe):
     """Run raises unhandled error on pipeline failure."""
     mock_pipe.return_value.run.side_effect = ContextError('arb')
@@ -233,7 +261,6 @@ def test_run_raises(mock_pipe):
 # region shortcuts
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_not_found(mock_pipe, monkeypatch):
     """Shortcuts configured but requested shortcut not found."""
     shortcuts = {'xxx': {
@@ -272,12 +299,11 @@ def test_run_shortcut_not_found(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_all(mock_pipe, monkeypatch):
     """Run shortcut with maximal shortcut options."""
     shortcuts = {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': ['sc', 'context', 'input'],
+        'parser_args': ['sc', 'context', 'input'],
         'skip_parse': False,
         'args': {'a': 'updated', 'c': 'd'},
         'groups': ['sc g'],
@@ -310,7 +336,7 @@ def test_run_shortcut_all(mock_pipe, monkeypatch):
     # run shouldn't mutate the shared original config
     assert shortcuts == {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': ['sc', 'context', 'input'],
+        'parser_args': ['sc', 'context', 'input'],
         'skip_parse': False,
         'args': {'a': 'updated', 'c': 'd'},
         'groups': ['sc g'],
@@ -321,12 +347,11 @@ def test_run_shortcut_all(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_all_ignore_func_args(mock_pipe, monkeypatch):
     """Run shortcut with maximal args superseding func args."""
     shortcuts = {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': ['sc', 'context', 'input'],
+        'parser_args': ['sc', 'context', 'input'],
         'skip_parse': False,
         'args': {'a': 'b', 'c': 'd'},
         'groups': ['sc g'],
@@ -367,7 +392,7 @@ def test_run_shortcut_all_ignore_func_args(mock_pipe, monkeypatch):
     # run shouldn't mutate the shared original config
     assert shortcuts == {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': ['sc', 'context', 'input'],
+        'parser_args': ['sc', 'context', 'input'],
         'skip_parse': False,
         'args': {'a': 'b', 'c': 'd'},
         'groups': ['sc g'],
@@ -378,7 +403,6 @@ def test_run_shortcut_all_ignore_func_args(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_minimal_fallback_func_args(mock_pipe, monkeypatch):
     """Run shortcut with not set args overwritten by func args."""
     shortcuts = {'arb pipe': {
@@ -418,7 +442,6 @@ def test_run_shortcut_minimal_fallback_func_args(mock_pipe, monkeypatch):
         'pipeline_name': 'sc pipe'}}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_minimal(mock_pipe, monkeypatch):
     """Run shortcut with minimal inputs."""
     shortcuts = {'arb pipe': {
@@ -451,9 +474,8 @@ def test_run_shortcut_minimal(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
-    """Run shortcut ignores parse_args from func input."""
+    """Run shortcut honors parse_args from func input."""
     shortcuts = {'arb pipe': {
         'pipeline_name': 'sc pipe'
     }}
@@ -468,7 +490,7 @@ def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
     mock_pipe.assert_called_once_with(
         name='sc pipe',
         context_args=None,
-        parse_input=True,
+        parse_input=False,
         groups=None,
         success_group=None,
         failure_group=None,
@@ -484,7 +506,6 @@ def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_skip_parse(mock_pipe, monkeypatch):
     """Run shortcut with skip_parse true."""
     shortcuts = {'arb pipe': {
@@ -519,7 +540,6 @@ def test_run_shortcut_skip_parse(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_groups_str(mock_pipe, monkeypatch):
     """Run shortcut with str groups converting to list."""
     shortcuts = {'arb pipe': {
@@ -554,7 +574,6 @@ def test_run_shortcut_groups_str(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
 def test_run_shortcut_no_pipe_name(mock_pipe, monkeypatch):
     """Run shortcut raises friendly error if no pipe name."""
     shortcuts = {'arb pipe': {
@@ -579,12 +598,11 @@ def test_run_shortcut_no_pipe_name(mock_pipe, monkeypatch):
     }}
 
 
-@patch('pypyr.pipelinerunner.Pipeline', autospec=True)
-def test_run_shortcut_pipe_arg_str_raises(mock_pipe, monkeypatch):
+def test_run_shortcut_parser_args_str_raises(mock_pipe, monkeypatch):
     """Run shortcut raises friendly error if pipeArg is string."""
     shortcuts = {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': 'arb'
+        'parser_args': 'arb'
     }}
 
     monkeypatch.setattr('pypyr.config.config.shortcuts', shortcuts)
@@ -593,13 +611,13 @@ def test_run_shortcut_pipe_arg_str_raises(mock_pipe, monkeypatch):
         run(pipeline_name='arb pipe')
 
     assert str(err.value) == (
-        "shortcut 'arb pipe' pipe_arg should be a list, not a string.")
+        "shortcut 'arb pipe' parser_args should be a list, not a string.")
 
     mock_pipe.assert_not_called()
 
     # run shouldn't mutate the shared original config
     assert shortcuts == {'arb pipe': {
         'pipeline_name': 'sc pipe',
-        'pipe_arg': 'arb'
+        'parser_args': 'arb'
     }}
 # endregion shortcuts
