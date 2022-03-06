@@ -1,4 +1,9 @@
-"""pipeline.py unit tests."""
+"""pipeline.py unit tests.
+
+A lot of the tests for the Pipeline.new_pipe_and_args factory constructor
+exist in ./pipelinerunner_test.py, which tests at a higher level that the
+inputs from a run request map as expected into the Pipeline instance.
+"""
 import logging
 from unittest.mock import call, patch, Mock
 

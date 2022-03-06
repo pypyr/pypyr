@@ -112,22 +112,24 @@ def run_step(context):
     pype_args = get_arguments(context)
 
     try:
-        pipeline = Pipeline(name=pype_args.pipeline_name,
-                            context_args=pype_args.pipe_arg,
-                            parse_input=not pype_args.skip_parse,
-                            loader=pype_args.loader,
-                            groups=pype_args.step_groups,
-                            success_group=pype_args.success_group,
-                            failure_group=pype_args.failure_group,
-                            py_dir=pype_args.py_dir)
+        pipeline, args = Pipeline.new_pipe_and_args(
+            name=pype_args.pipeline_name,
+            context_args=pype_args.pipe_arg,
+            parse_input=not pype_args.skip_parse,
+            dict_in=pype_args.args,
+            loader=pype_args.loader,
+            groups=pype_args.step_groups,
+            success_group=pype_args.success_group,
+            failure_group=pype_args.failure_group,
+            py_dir=pype_args.py_dir)
 
         if pype_args.use_parent_context:
             logger.info("pyping %s, using parent context.",
                         pype_args.pipeline_name)
 
-            if pype_args.args:
+            if args:
                 logger.debug("writing args into parent context...")
-                context.update(pype_args.args)
+                context.update(args)
 
             pipeline.load_and_run_pipeline(context, pype_args.parent)
 
@@ -135,10 +137,7 @@ def run_step(context):
             logger.info("pyping %s, without parent context.",
                         pype_args.pipeline_name)
 
-            if pype_args.args:
-                child_context = Context(pype_args.args)
-            else:
-                child_context = Context()
+            child_context = Context(args) if args else Context()
 
             pipeline.load_and_run_pipeline(child_context, pype_args.parent)
 
