@@ -198,8 +198,12 @@ class Pipeline():
                 skip_parse = shortcut.get('skip_parse')
                 # flip the bit - skip_parse means inverse of parse_args, but
                 # only if it exists
+                # since cli always set parse_args=True, the shortcut has
+                # entirely to ignore the cli input to allow shortcut to calc
+                # if parse_input should True/False based on args and
+                # parser_args availability.
                 parse_input = (
-                    parse_input if skip_parse is None else not skip_parse)
+                    None if skip_parse is None else not skip_parse)
 
                 shortcut_dict_in = shortcut.get('args')
                 if shortcut_dict_in:
@@ -494,7 +498,6 @@ class Pipeline():
             Boolean. True if should parse input.
         """
         if parse_args is None:
-            return not (args_in is None and dict_in is not None)
-
+            return not (not args_in and dict_in is not None)
         return parse_args
     # endregion cli context input args

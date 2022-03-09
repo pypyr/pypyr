@@ -475,7 +475,7 @@ def test_run_shortcut_minimal(mock_pipe, monkeypatch):
 
 
 def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
-    """Run shortcut honors parse_args from func input."""
+    """Run shortcut bypasses parse_args from func input."""
     shortcuts = {'arb pipe': {
         'pipeline_name': 'sc pipe'
     }}
@@ -487,10 +487,11 @@ def test_run_shortcut_parse_args(mock_pipe, monkeypatch):
     assert out == {}
     assert not out.is_in_pipeline_scope
 
+    # when neither parser_args and args set, default True on parse_input.
     mock_pipe.assert_called_once_with(
         name='sc pipe',
         context_args=None,
-        parse_input=False,
+        parse_input=True,
         groups=None,
         success_group=None,
         failure_group=None,
