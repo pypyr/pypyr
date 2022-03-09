@@ -29,12 +29,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - name: tox cache
-        id: tox-cache
-        uses: actions/cache@v2
-        with:
-          path: .tox
-          key: ${{ runner.os }}-tox-${{ secrets.CACHE_VERSION }}-${{ hashFiles('tox.ini') }}-${{ hashFiles('setup.py') }}
 
       - name: Run build pipeline for linting, testing & packaging verification.
         uses: pypyr/run-in-tox-action@main

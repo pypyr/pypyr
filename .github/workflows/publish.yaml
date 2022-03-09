@@ -14,12 +14,6 @@ jobs:
         with:
           python-version: '3.x'
           cache: pip
-      - name: tox cache
-        id: tox-cache
-        uses: actions/cache@v2
-        with:
-          path: .tox
-          key: ${{ runner.os }}-tox-${{ secrets.CACHE_VERSION }}-${{ hashFiles('tox.ini') }}-${{ hashFiles('setup.py') }}
 
       - name: Run publish pipeline
         uses: pypyr/run-in-tox-action@main
