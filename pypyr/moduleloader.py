@@ -16,7 +16,8 @@ from pypyr.errors import PyModuleNotFoundError
 logger = logging.getLogger(__name__)
 
 
-class _ChainMapPretendDict(ChainMap, dict):
+class _ChainMapPretendDict(ChainMap, dict):  # type: ignore
+    # mypy gets confused with multiple inheritance, thus ignore
     """It's a ChainMap. But it will pass an isinstance check for dict.
 
     Don't Use Me. Seriously.
