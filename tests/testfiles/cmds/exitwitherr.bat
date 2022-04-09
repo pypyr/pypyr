@@ -1,3 +1,3 @@
 @ECHO OFF
-echo arb err here 1>&2
+1>&2 echo arb err here
 exit /b 1
