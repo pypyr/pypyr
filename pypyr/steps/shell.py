@@ -52,6 +52,6 @@ def run_step(context):
     """
     logger.debug("started")
 
-    CmdStep(name=__name__, context=context).run_step(is_shell=True)
+    CmdStep(name=__name__, context=context, is_shell=True).run_step()
 
     logger.debug("done")
