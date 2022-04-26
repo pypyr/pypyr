@@ -593,9 +593,9 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false():
                                      shell=False,
                                      text=True)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'std'
-    assert context['cmdOut']['stderr'] == 'err'
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'std'
+    assert context['cmdOut'].stderr == 'err'
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
@@ -636,9 +636,9 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true():
                                      shell=True,
                                      text=True)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'std'
-    assert context['cmdOut']['stderr'] is None
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'std'
+    assert context['cmdOut'].stderr is None
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
@@ -683,9 +683,9 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_true_cwd_set():
                                      shell=True,
                                      text=True)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'std'
-    assert context['cmdOut']['stderr'] is None
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'std'
+    assert context['cmdOut'].stderr is None
 
 
 def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
@@ -733,6 +733,6 @@ def test_cmdstep_runstep_cmd_is_dict_save_true_shell_false_formatting():
                                      shell=False,
                                      text=True)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'std'
-    assert context['cmdOut']['stderr'] == 'err'
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'std'
+    assert context['cmdOut'].stderr == 'err'
