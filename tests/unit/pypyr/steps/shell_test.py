@@ -53,10 +53,10 @@ def test_shell_sequence_with_ampersands_save_output():
                        })
     pypyr.steps.shell.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == ('1 \n2 \n3' if is_windows
-                                           else '1\n2\n3')
-    assert not context['cmdOut']['stderr']
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == ('1 \n2 \n3' if is_windows
+                                        else '1\n2\n3')
+    assert not context['cmdOut'].stderr
 
 
 def test_shell_dict_input_with_string_interpolation_save_out():
@@ -65,9 +65,9 @@ def test_shell_dict_input_with_string_interpolation_save_out():
                                'save': True}})
     pypyr.steps.shell.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert context['cmdOut']['stdout'] == 'blah'
-    assert not context['cmdOut']['stderr']
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'blah'
+    assert not context['cmdOut'].stderr
 
 
 def test_shell_with_cwd():
@@ -78,9 +78,9 @@ def test_shell_with_cwd():
                                'cwd': 'tests'}})
     pypyr.steps.shell.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert Path(context['cmdOut']['stdout']).samefile('tests')
-    assert not context['cmdOut']['stderr']
+    assert context['cmdOut'].returncode == 0
+    assert Path(context['cmdOut'].stdout).samefile('tests')
+    assert not context['cmdOut'].stderr
 
 
 def test_shell_error_throws():

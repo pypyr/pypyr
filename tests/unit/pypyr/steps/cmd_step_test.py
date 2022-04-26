@@ -97,9 +97,14 @@ def test_cmd_dict_input_with_string_interpolation_save_out():
                                'save': True}})
     pypyr.steps.cmd.run_step(context)
 
+    # dict like accessors only here for backwards compatibility
     assert context['cmdOut']['returncode'] == 0
     assert context['cmdOut']['stdout'] == 'blah'
     assert not context['cmdOut']['stderr']
+
+    assert context['cmdOut'].returncode == 0
+    assert context['cmdOut'].stdout == 'blah'
+    assert not context['cmdOut'].stderr
 
 
 def test_cmd_dict_input_sequence_with_cwd():
@@ -112,9 +117,9 @@ def test_cmd_dict_input_sequence_with_cwd():
                                'cwd': 'tests'}})
     pypyr.steps.cmd.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert Path(context['cmdOut']['stdout']).samefile('./tests')
-    assert not context['cmdOut']['stderr']
+    assert context['cmdOut'].returncode == 0
+    assert Path(context['cmdOut'].stdout).samefile('./tests')
+    assert not context['cmdOut'].stderr
 
 
 def test_cmd_dict_input_sequence_with_cwd_interpolate():
@@ -132,9 +137,9 @@ def test_cmd_dict_input_sequence_with_cwd_interpolate():
                                'cwd': '{k1}'}})
     pypyr.steps.cmd.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 0
-    assert Path(context['cmdOut']['stdout']).samefile('./tests')
-    assert not context['cmdOut']['stderr']
+    assert context['cmdOut'].returncode == 0
+    assert Path(context['cmdOut'].stdout).samefile('./tests')
+    assert not context['cmdOut'].stderr
 
 
 def test_cmd_error_throws():
@@ -157,9 +162,9 @@ def test_cmd_error_throws_with_save_true():
         context = Context({'cmd': {'run': cmd, 'save': True}})
         pypyr.steps.cmd.run_step(context)
 
-    assert context['cmdOut']['returncode'] == 1
-    assert not context['cmdOut']['stdout']
-    assert context['cmdOut']['stderr'] == 'arb err here'
+    assert context['cmdOut'].returncode == 1
+    assert not context['cmdOut'].stdout
+    assert context['cmdOut'].stderr == 'arb err here'
 
 
 def test_cmd_context_cmd_throw():
@@ -398,9 +403,9 @@ def test_cmd_list_input_with_complex_args_error_on_first_save():
     else:
         assert err.value.cmd == [cmd1, 'WRONG', 'two two', 'three']
     out = context['cmdOut']
-    assert out['returncode'] == 1
-    assert out['stdout'] == ''
-    assert out['stderr'] == 'assert failed'
+    assert out.returncode == 1
+    assert out.stdout == ''
+    assert out.stderr == 'assert failed'
 
 
 def test_cmd_run_has_list_input_save():
@@ -421,14 +426,14 @@ def test_cmd_run_has_list_input_save():
     out = context['cmdOut']
     assert len(out) == 2
     out1 = out[0]
-    assert out1['returncode'] == 0
-    assert out1['stdout'] == 'one'
-    assert not out1['stderr']
+    assert out1.returncode == 0
+    assert out1.stdout == 'one'
+    assert not out1.stderr
 
-    out1 = out[1]
-    assert out1['returncode'] == 0
-    assert out1['stdout'] == 'two three'
-    assert not out1['stderr']
+    out2 = out[1]
+    assert out2.returncode == 0
+    assert out2.stdout == 'two three'
+    assert not out2.stderr
 
 
 def test_cmd_run_has_list_and_run_with_list_save():
@@ -463,24 +468,24 @@ def test_cmd_run_has_list_and_run_with_list_save():
     assert len(out) == 4
 
     out1 = out[0]
-    assert out1['returncode'] == 0
-    assert out1['stdout'] == 'one'
-    assert not out1['stderr']
+    assert out1.returncode == 0
+    assert out1.stdout == 'one'
+    assert not out1.stderr
 
     out2 = out[1]
-    assert out2['returncode'] == 0
-    assert out2['stdout'] == 'two'
-    assert not out2['stderr']
+    assert out2.returncode == 0
+    assert out2.stdout == 'two'
+    assert not out2.stderr
 
     out3 = out[2]
-    assert out3['returncode'] == 0
-    assert out3['stdout'] == 'three'
-    assert not out3['stderr']
+    assert out3.returncode == 0
+    assert out3.stdout == 'three'
+    assert not out3.stderr
 
     out4 = out[3]
-    assert out4['returncode'] == 0
-    assert out4['stdout'] == 'four'
-    assert not out4['stderr']
+    assert out4.returncode == 0
+    assert out4.stdout == 'four'
+    assert not out4.stderr
 
 
 def test_cmd_run_has_list_input_save_dev_null():
@@ -527,9 +532,9 @@ def test_cmd_run_save_with_encoding():
     pypyr.steps.cmd.run_step(context)
 
     out = context['cmdOut']
-    assert out['returncode'] == 0
-    assert out['stdout'] == 'one two three'
-    assert out['stderr'] == 'four'
+    assert out.returncode == 0
+    assert out.stdout == 'one two three'
+    assert out.stderr == 'four'
 
 
 def test_cmd_run_save_with_binary_mode():
@@ -555,8 +560,8 @@ $err=[System.Text.Encoding]::Unicode.GetBytes(\\"two`n\\");
     pypyr.steps.cmd.run_step(context)
 
     out = context['cmdOut']
-    assert out['returncode'] == 0
-    assert out['stdout'].decode('utf-16') == 'one\n'
-    assert out['stderr'].decode('utf-16') == 'two\n'
+    assert out.returncode == 0
+    assert out.stdout.decode('utf-16') == 'one\n'
+    assert out.stderr.decode('utf-16') == 'two\n'
 
 # endregion encoding

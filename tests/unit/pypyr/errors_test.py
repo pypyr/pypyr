@@ -1,4 +1,6 @@
 """errors.py unit tests."""
+import pytest
+
 from pypyr.errors import Error as PypyrError
 from pypyr.errors import (
     ContextError,
@@ -14,10 +16,10 @@ from pypyr.errors import (
     Stop,
     StopStepGroup,
     StopPipeline,
+    SubprocessError,
     ControlOfFlowInstruction,
     Call,
     Jump)
-import pytest
 
 
 def test_get_error_name_builtin():
@@ -144,7 +146,77 @@ def test_pymodule_not_found_error_raises():
 
     assert str(err_info.value) == "this is error text right here"
 
-# -------------------------- Control of Flow Instructions ---------------------
+# region SubprocessError
+
+
+def test_subprocess_error_raises():
+    """Raise SubprocessError."""
+    assert isinstance(SubprocessError(0, 'cmd'), PypyrError)
+
+    with pytest.raises(SubprocessError) as err_caught:
+        raise SubprocessError(0, 'cmd')
+
+    err = err_caught.value
+    assert err.returncode == 0
+    assert err.cmd == 'cmd'
+    assert err.stdout is None
+    assert err.stderr is None
+
+
+def test_subprocess_error_repr():
+    """Convert to repr SubprocessError."""
+    err_repr = repr(SubprocessError(-123, 'cmd'))
+    rehydrated = eval(err_repr)
+
+    assert rehydrated.returncode == -123
+    assert rehydrated.cmd == 'cmd'
+    assert rehydrated.stdout is None
+    assert rehydrated.stderr is None
+
+    err_repr = repr(SubprocessError(123, 'cmd', 'std out'))
+    rehydrated = eval(err_repr)
+
+    assert rehydrated.returncode == 123
+    assert rehydrated.cmd == 'cmd'
+    assert rehydrated.stdout == 'std out'
+    assert rehydrated.stderr is None
+
+    err_repr = repr(SubprocessError(123, 'cmd', 'std out', 'std err'))
+    rehydrated = eval(err_repr)
+
+    assert rehydrated.returncode == 123
+    assert rehydrated.cmd == 'cmd'
+    assert rehydrated.stdout == 'std out'
+    assert rehydrated.stderr == 'std err'
+
+
+def test_subprocess_error_str():
+    """Convert to str SubprocessError."""
+    #  known signal
+    err_str = str(SubprocessError(-2, 'cmd'))
+    assert err_str == "Command 'cmd' died with <Signals.SIGINT: 2>."
+
+    #  unknown signal
+    err_str = str(SubprocessError(-999, 'cmd'))
+    assert err_str == "Command 'cmd' died with unknown signal 999."
+
+    # return-code > 0
+    err_str = str(SubprocessError(1, 'cmd'))
+    assert err_str == "Command 'cmd' returned non-zero exit status 1."
+
+    # return-code > 0 with stderr str.
+    err_str = str(SubprocessError(1, 'cmd', stderr='blah'))
+    assert err_str == (
+        "Command 'cmd' returned non-zero exit status 1. stderr: blah")
+
+    # return-code > 0 with stderr bytes.
+    err_str = str(SubprocessError(1, 'cmd', stderr=b'blah'))
+    assert err_str == (
+        "Command 'cmd' returned non-zero exit status 1. stderr: b'blah'")
+
+# endregion SubprocessError
+
+# region Control of Flow Instructions
 
 
 def test_stop_step_group_error_raises():
@@ -192,4 +264,4 @@ def test_call_control_of_flow_instruction_raises():
         assert err_info.failure_group == 'fg'
         assert err_info.original_config == 'og'
 
-# -------------------------- END Control of Flow Instructions -----------------
+# endregion Control of Flow Instructions

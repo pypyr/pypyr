@@ -10,7 +10,7 @@ import shlex
 import subprocess
 
 from pypyr.config import config
-from pypyr.errors import ContextError
+from pypyr.errors import ContextError, SubprocessError
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ class Command:
             the system's default encoding. Only applicable if is_save True.
         append (bool): If stdout/stderr refers to a file path, append to file
             rather than overwrite if it exists.
-        results (list[dict]): List of results. Populated with the result of
-            each run instruction in `cmd`. Only when is_save is True.
+        results (list[SubprocessResult]): List of results. Populated with the
+            result of each run instruction in `cmd`. Only when is_save is True.
     """
 
     def __init__(self,
@@ -69,7 +69,7 @@ class Command:
         self.encoding = encoding
         self.append = append
 
-        self.results: list[dict] = []
+        self.results: list[SubprocessResult] = []
 
     @contextmanager
     def output_handles(self):
@@ -238,11 +238,10 @@ class Command:
                 if stderr:
                     stderr = stderr.rstrip()
 
-            out = {
-                'returncode': completed_process.returncode,
-                'stdout': stdout,
-                'stderr': stderr
-            }
+            out = SubprocessResult(cmd=args,
+                                   returncode=completed_process.returncode,
+                                   stdout=stdout,
+                                   stderr=stderr)
 
             # when capture is true, output doesn't write to stdout
             logger.info("stdout: %s", stdout)
@@ -272,3 +271,70 @@ class Command:
             return self.__dict__ == other.__dict__
 
         return NotImplemented
+
+
+class SubprocessResult():
+    """Result from a subprocess invocation.
+
+    Attributes:
+      cmd: The list or str args passed to the subprocess run instruction.
+      returncode: The exit code of the process, negative for signals.
+      stdout: The standard output (None if not captured).
+      stderr: The standard error (None if not captured).
+
+    Will also getitem in a dict-like way like r['returncode'] where dict is:
+    {
+        'returncode': proc.returncode,
+        'stdout': stdout,
+        'stderr': stderr
+    }
+
+    The dict-like accessor is only there for backwards compatibility, don't
+    use it for anything new.
+    """
+
+    def __init__(self, cmd, returncode, stdout=None, stderr=None):
+        """Initialize result."""
+        self.cmd = cmd
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+    def __getitem__(self, key):
+        """Allow dict-like r['returncode'] access for backwards compat."""
+        return self.__dict__[key]
+
+    def __repr__(self) -> str:
+        """Return repr."""
+        args = ['cmd={!r}'.format(self.cmd),
+                'returncode={!r}'.format(self.returncode)]
+        if self.stdout is not None:
+            args.append('stdout={!r}'.format(self.stdout))
+        if self.stderr is not None:
+            args.append('stderr={!r}'.format(self.stderr))
+        return "{}({})".format(type(self).__name__, ', '.join(args))
+
+    def __str__(self) -> str:
+        """Get user friendly string."""
+        return f"""\
+cmd: {self.cmd}
+returncode: {self.returncode}
+stdout: {self.stdout}
+stderr: {self.stderr}
+"""
+
+    def check_returncode(self) -> SubprocessError | None:
+        """Return SubprocessError if the exit code is non-zero.
+
+        This does not raise the error, it just returns it.
+
+        Returns:
+            None if no return code 0.
+            SubprocessError if return code != 0.
+        """
+        if self.returncode:
+            return SubprocessError(returncode=self.returncode,
+                                   cmd=self.cmd,
+                                   stdout=self.stdout,
+                                   stderr=self.stderr)
+        return None
