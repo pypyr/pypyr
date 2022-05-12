@@ -222,6 +222,25 @@ def test_cmd_run_save_with_stdout_or_stderr():
     assert str(err.value) == (
         "You can't set `stdout` or `stderr` when `save` is True.")
 
+
+def test_cmd_error_throws_with_save_true_executable_not_found():
+    """Raise error when can't find the subprocess executable."""
+    cmd = get_cmd('tests/testfiles/cmds/xxx',
+                  r'tests\testfiles\cmds\xxx')
+
+    with pytest.raises(FileNotFoundError) as err:
+        context = Context({'cmd': {'run': cmd, 'save': True}})
+        pypyr.steps.cmd.run_step(context)
+
+    # cmdOut NOT populated because couldn't run subproc at all.
+    assert 'cmdOut' not in context
+
+    # on windows, FileNotFoundError does NOT set filename, instead:
+    # FileNotFoundError(2, 'The system cannot find the file specified',
+    #                   None, 2 None)
+    if not is_windows:
+        err.value.filename == cmd
+
 # region list input
 
 

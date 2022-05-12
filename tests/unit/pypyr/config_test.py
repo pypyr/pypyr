@@ -1,4 +1,5 @@
 """Unit tests for pypyr/config.py."""
+import locale
 from pathlib import Path
 import sys
 from unittest.mock import call, mock_open, patch
@@ -14,11 +15,13 @@ current_platform = sys.platform
 is_macos: bool = current_platform == 'darwin'
 is_windows: bool = current_platform == 'win32'
 is_posix: bool = not (is_macos or is_windows)
+locale_encoding = locale.getpreferredencoding(False)
 
 
 @pytest.fixture
 def no_envs(monkeypatch):
     """Remove PYPYR_ env variables for test duration."""
+    monkeypatch.delenv('PYPYR_CMD_ENCODING', raising=False)
     monkeypatch.delenv('PYPYR_ENCODING', raising=False)
     monkeypatch.delenv('PYPYR_SKIP_INIT', raising=False)
     monkeypatch.delenv('PYPYR_CONFIG_GLOBAL', raising=False)
@@ -53,6 +56,7 @@ def test_config_defaults(no_envs):
         '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
 
     assert config.default_backoff == 'fixed'
+    assert config.default_cmd_encoding == locale_encoding
     assert config.default_encoding is None
     assert config.default_loader == 'pypyr.loaders.file'
     assert config.default_group == 'steps'
@@ -63,8 +67,10 @@ def test_config_defaults(no_envs):
 def test_config_with_encoding(monkeypatch, no_envs):
     """Set encoding via env variable."""
     monkeypatch.setenv('PYPYR_ENCODING', 'arb')
+    monkeypatch.setenv('PYPYR_CMD_ENCODING', 'arb2')
     config = Config()
     config.default_encoding == 'arb'
+    config.default_cmd_encoding == 'arb2'
 
 
 def test_config_platforms(monkeypatch):
@@ -718,9 +724,10 @@ def test_pyproject_toml_with_raise(no_envs):
 def test_config_default_str(no_envs):
     """Config object default represents as nice friendly string."""
     config = Config()
-    assert str(config) == ("""WRITEABLE PROPERTIES:
+    assert str(config) == f"""WRITEABLE PROPERTIES:
 
 default_backoff: fixed
+default_cmd_encoding: {locale_encoding}
 default_encoding:
 default_failure_group: on_failure
 default_group: steps
@@ -733,14 +740,14 @@ log_date_format: '%Y-%m-%d %H:%M:%S'
 log_detail_format: '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s'
 log_notify_format: '%(message)s'
 pipelines_subdir: pipelines
-shortcuts: {}
-vars: {}
+shortcuts: {{}}
+vars: {{}}
 
 
 COMPUTED PROPERTIES:
 
 config_loaded_paths: []
-""" + f'cwd: {CWD}' + f"""
+cwd: {CWD}
 is_macos: {is_macos}
 is_posix: {is_posix}
 is_windows: {is_windows}
@@ -748,7 +755,7 @@ platform: {current_platform}
 platform_paths:
 pyproject_toml:
 skip_init: False
-""")  # noqa: 501
+"""  # noqa: 501
     # the noqa is to ignore line length.
 
 
@@ -805,9 +812,10 @@ def test_config_all_str(mock_get_platform, no_envs):
         call(Path('pyproject.toml'), 'rb'),
         call(Path('pypyr-config.yaml'), encoding=None)]
 
-    assert str(config) == ("""WRITEABLE PROPERTIES:
+    assert str(config) == f"""WRITEABLE PROPERTIES:
 
 default_backoff: fixed
+default_cmd_encoding: {locale_encoding}
 default_encoding:
 default_failure_group: on_failure
 default_group: steps
@@ -833,7 +841,7 @@ COMPUTED PROPERTIES:
 config_loaded_paths:
   - pyproject.toml
   - pypyr-config.yaml
-""" + f"""cwd: {CWD}
+cwd: {CWD}
 is_macos: {is_macos}
 is_posix: {is_posix}
 is_windows: {is_windows}
@@ -856,6 +864,6 @@ pyproject_toml:
         a: e
         f4: 4
 skip_init: False
-""")  # noqa: 501
+"""  # noqa: 501
     # the noqa is to ignore line length.
 # endregion __str__

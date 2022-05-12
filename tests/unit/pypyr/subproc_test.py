@@ -104,21 +104,21 @@ def test_subproc_command_eq():
 
 def test_subproc_command_no_stdout_on_save():
     """Raise when combining stdout/stdour with save."""
-    #  stdin
+    #  stdout
     with pytest.raises(ContextError) as err:
         Command('arb', is_save=True, stdout='in')
 
     assert str(err.value) == (
         "You can't set `stdout` or `stderr` when `save` is True.")
 
-    #  stdout
+    #  stderr
     with pytest.raises(ContextError) as err:
         Command('arb', is_save=True, stderr='out')
 
     assert str(err.value) == (
         "You can't set `stdout` or `stderr` when `save` is True.")
 
-    #  stdin + stdout
+    #  stdout + stdout
     with pytest.raises(ContextError) as err:
         Command('arb', is_save=True, stdout='in', stderr='out')
 
@@ -184,11 +184,11 @@ def test_subprocessresult_check_returncode_nonzero():
     assert err.stdout == 'out'
     assert err.stderr == 'err'
 
-    sr = SubprocessResult('mycmd', -1)
+    sr = SubprocessResult('mycmd', 2)
     err = sr.check_returncode()
     assert type(err) is SubprocessError
     assert err.cmd == 'mycmd'
-    assert err.returncode == -1
+    assert err.returncode == 2
     assert err.stdout is None
     assert err.stderr is None
 
