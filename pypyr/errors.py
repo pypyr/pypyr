@@ -5,6 +5,9 @@ All pypyr specific exceptions derive from Error.
 Do NOT import any other pypyr modules here. This is to prevent circular
 imports. Every other module in pypyr potentially uses this module.
 """
+# can remove __future__ once py 3.10 the lowest supported version
+from __future__ import annotations
+from collections.abc import Iterator, Sequence
 import signal
 
 
@@ -61,6 +64,62 @@ class KeyNotInContextError(ContextError, KeyError):
 
 class LoopMaxExhaustedError(Error):
     """Max attempts reached during looping."""
+
+
+class MultiError(Error):
+    """Aggregate exception."""
+
+    def __init__(self, message: str | None = None,
+                 errors: list[Exception] | None = None):
+        """Create a MultiError exception."""
+        super().__init__(message, errors)
+        self.message = message
+        self.errors: list[Exception] = errors if errors else []
+
+    def append(self, error: Exception) -> None:
+        """Add exception to the MultiError."""
+        self.errors.append(error)
+
+    def extend(self, errors: Sequence) -> None:
+        """Extend input errors into MultiError list."""
+        self.errors.extend(errors)
+
+    @property
+    def has_errors(self) -> bool:
+        """Return True if contains exceptions."""
+        return len(self.errors) > 0
+
+    def __getitem__(self, index: int) -> Exception:
+        """Get exception by index."""
+        return self.errors[index]
+
+    def __iter__(self) -> Iterator[Exception]:
+        """Iterate through the exceptions in the MultiError."""
+        return iter(self.errors)
+
+    def __len__(self) -> int:
+        """Get number of errors contained in the MultiError."""
+        return len(self.errors)
+
+    def __repr__(self) -> str:
+        """Get string repr."""
+        args = []
+        if self.message:
+            args.append(f'message={repr(self.message)}')
+
+        if self.errors:
+            args.append(f'errors={repr(self.errors)}')
+
+        args_str = ', '.join(args)
+        return f"{type(self).__name__}({args_str})"
+
+    def __str__(self) -> str:
+        """Get human friendly string."""
+        msg = f'{self.message}' if self.message else (
+            'Multiple error(s) occurred:' if len(self.errors) > 1
+            else 'An error occurred:')
+        errors = "\n".join([f'{type(e).__name__}: {e}' for e in self.errors])
+        return f"{msg}\n{errors}" if errors else msg
 
 
 class PipelineDefinitionError(Error):

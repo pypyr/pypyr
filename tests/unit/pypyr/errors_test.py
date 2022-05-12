@@ -9,6 +9,7 @@ from pypyr.errors import (
     KeyInContextHasNoValueError,
     KeyNotInContextError,
     LoopMaxExhaustedError,
+    MultiError,
     PlugInError,
     PipelineDefinitionError,
     PipelineNotFoundError,
@@ -145,6 +146,71 @@ def test_pymodule_not_found_error_raises():
         raise PyModuleNotFoundError("this is error text right here")
 
     assert str(err_info.value) == "this is error text right here"
+
+# region MultiError
+
+
+def test_multierror():
+    """Raise a MultiError."""
+    me = MultiError()
+    assert isinstance(me, PypyrError)
+
+    assert not me.has_errors
+
+    assert len(me) == 0
+
+    # empty repr
+    assert repr(me) == 'MultiError()'
+
+    for m in me:
+        raise AssertionError('nothing to iterate')
+
+    # append
+    me.append(ValueError('one'))
+    assert len(me) == 1
+    assert me.has_errors
+    assert str(me) == "An error occurred:\nValueError: one"
+
+    me.append(SubprocessError(123, "cmd"))
+    assert str(me) == (
+        "Multiple error(s) occurred:\nValueError: one\n"
+        + "SubprocessError: Command 'cmd' returned non-zero exit status 123.")
+    assert len(me) == 2
+    assert me.has_errors
+
+    #  iterate
+    out = [str(m) for m in me]
+    assert out == ['one', "Command 'cmd' returned non-zero exit status 123."]
+
+    # index getter
+    assert repr(me[0]) == "ValueError('one')"
+    assert me[1].returncode == 123
+
+    # repr with errs but no msg
+    assert repr(me) == (
+        "MultiError(errors=[ValueError('one'), "
+        + "SubprocessError(returncode=123, cmd='cmd')])")
+
+    # extend
+    me.extend([AssertionError('blah'), KeyError('ke')])
+    assert len(me) == 4
+
+    # with msg
+    me = MultiError("msg")
+    assert str(me) == 'msg'
+    assert repr(me) == "MultiError(message='msg')"
+
+    me.append(ValueError('one'))
+    assert str(me) == "msg\nValueError: one"
+    assert repr(me) == "MultiError(message='msg', errors=[ValueError('one')])"
+
+    # raises
+    with pytest.raises(MultiError) as err:
+        raise me
+
+    assert repr(err.value[0]) == "ValueError('one')"
+
+# endregion MultiError
 
 # region SubprocessError
 

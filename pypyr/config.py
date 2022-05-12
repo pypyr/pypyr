@@ -7,6 +7,7 @@ Attributes:
 from __future__ import annotations
 from collections.abc import Mapping
 from io import StringIO
+import locale
 import os
 from pathlib import Path
 import sys
@@ -50,6 +51,8 @@ class Config():
         log_notify_format: str. Format str for default log output.
         log_detail_format: str. Format str for detailed log output.
         default_backoff: str. Default retry back-off algorithm.
+        default_cmd_encoding: str. Encoding to use on stdout/stderr with
+            subprocess via pypyr.steps.cmd, pypyr.steps.cmds & shell.
         default_encoding: str. Encoding to use when working with files. None
             means to use the system defaults (utf-8, except for Windows.)
         default_loader: str. Default pipeline loader - 'pypyr.loaders.file'
@@ -82,6 +85,7 @@ class Config():
         'log_detail_format',
         # defaults
         'default_backoff',
+        'default_cmd_encoding',
         'default_encoding',
         'default_loader',
         'default_group',
@@ -114,6 +118,8 @@ class Config():
         # defaults
         self.default_backoff = 'fixed'
         # 'utf-8' is a magic string specially optimized in CPython
+        self.default_cmd_encoding: str | None = os.getenv(
+            'PYPYR_CMD_ENCODING', locale.getpreferredencoding(False))
         self.default_encoding: str | None = os.getenv('PYPYR_ENCODING', None)
         self.default_loader = 'pypyr.loaders.file'
         self.default_group = 'steps'
