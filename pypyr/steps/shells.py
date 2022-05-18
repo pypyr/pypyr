@@ -1,9 +1,8 @@
-"""pypyr step that runs sub-processes asynchronously.
+"""pypyr step that executes commands in the shell as a sub-process.
 
-This runs an executable, it does not invoke the shell. Therefore you cannot
-use things like exit, return, shell pipes, filename wildcards,
-environment variable expansion, and expansion of ~ to a user’s home
-directory. See pypyr.steps.shells for shell invocation.
+The command string must be formatted exactly as it would be when typed
+at the shell prompt. This includes, for example, quoting or backslash escaping
+filenames with spaces in them. The shell defaults to /bin/sh on posix.
 """
 import logging
 from pypyr.steps.dsl.cmdasync import AsyncCmdStep
@@ -14,12 +13,14 @@ logger = logging.getLogger(__name__)
 def run_step(context):
     """Run commands, programs or executables asynchronously, in parallel.
 
+    Spawns a shell for each runnable item.
+
     Context is a pypyr.context.Context. This is dict-like.
 
     Context must contain the following keys:
         cmds:
-            - <<cmd string 1>>
-            - <<cmd string 2>>
+            - <<shell string 1>>
+            - <<shell string 2>>
 
     where <<cmd string>> is command + args to execute.
 
@@ -54,7 +55,7 @@ def run_step(context):
           save: False
           cwd: ./path/here
 
-    Will execute the command string in as a sub-process.
+    Will execute the command string in the shell as a sub-process.
     Escape curly braces: if you want a literal curly brace, double it like
     {{ or }}.
 
@@ -82,10 +83,10 @@ def run_step(context):
         cmds:
             - mything --arg1 {key1}
 
-    The cmd passed to the o/s will be "mything --arg value1"
+    The cmd passed to the shell will be "mything --arg value1"
     """
     logger.debug("started")
 
-    AsyncCmdStep(name=__name__, context=context, is_shell=False).run_step()
+    AsyncCmdStep(name=__name__, context=context, is_shell=True).run_step()
 
     logger.debug("done")

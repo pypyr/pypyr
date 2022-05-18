@@ -1168,7 +1168,6 @@ def test_dsl_async_cmd_run_has_list_input_save():
 
     out2 = out[1]
     assert out2.returncode == 0
-    print(f"{out2.stdout=}")
     assert out2.stdout == 'two three'
     assert not out2.stderr
 
