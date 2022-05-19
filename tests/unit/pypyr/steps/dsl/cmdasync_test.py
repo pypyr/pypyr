@@ -630,19 +630,19 @@ def test_async_cmd_with_save():
         call('C', stdout=PIPE, stderr=PIPE, cwd=None)])
 
     out1 = context['cmdOut'][0]
-    assert out1.cmd == 'A'
+    assert out1.cmd == ['A']
     assert out1.returncode == 0
     assert out1.stdout == 'out1'
     assert out1.stderr == 'err1'
 
     out2 = context['cmdOut'][1]
-    assert out2.cmd == '"B with space" --arg'
+    assert out2.cmd == ['B with space', '--arg']
     assert out2.returncode == 0
     assert out2.stdout == 'out2'
     assert out2.stderr == 'err2'
 
     out3 = context['cmdOut'][2]
-    assert out3.cmd == 'C'
+    assert out3.cmd == ['C']
     assert out3.returncode == 0
     assert out3.stdout == 'out3'
     assert out3.stderr == 'err3'
@@ -841,11 +841,11 @@ def test_dsl_async_cmd_error_throws():
 
     err1 = errs[0]
     assert type(err1) is SubprocessError
-    assert err1.cmd == cmd1
+    assert err1.cmd == [cmd1]
 
     err2 = errs[1]
     assert type(err2) is SubprocessError
-    assert err2.cmd == cmd2
+    assert err2.cmd == [cmd2]
 
 
 def test_dsl_async_cmd_error_throws_exception_initiating_spawn():
@@ -882,7 +882,7 @@ def test_dsl_async_cmd_error_throws_exception_initiating_spawn():
     err3 = errs[2]
     assert type(err3) is SubprocessError
     assert err3.returncode == 1
-    assert err3.cmd == cmd3
+    assert err3.cmd == [cmd3]
 
 
 def test_dsl_async_cmd_error_throws_with_save_true():
@@ -1022,13 +1022,13 @@ def test_dsl_async_cmd_list_input_with_simple_cmd_strings_error_on_first():
     assert len(err.value) == 1
     the_err = err.value[0]
 
-    assert the_err.cmd == f'{cmd1} WRONG VALUE "two two" three'
+    assert the_err.cmd == [cmd1, 'WRONG', 'VALUE', 'two two', 'three']
 
     assert 'cmdOut' not in context
     assert len(step.commands) == 2
     cmd2_results = step.commands[1].results
     assert len(cmd2_results) == 1
-    assert cmd2_results[0].cmd == cmd2
+    assert cmd2_results[0].cmd == cmd2.split()
     assert cmd2_results[0].returncode == 0
 
 
@@ -1057,13 +1057,13 @@ def test_dsl_async_cmd_list_input_with_complex_args_error_on_first():
     assert len(err.value) == 1
     the_err = err.value[0]
 
-    assert the_err.cmd == f'{cmd1} WRONG "two two" three'
+    assert the_err.cmd == [cmd1, 'WRONG', 'two two', 'three']
 
     assert 'cmdOut' not in context
     assert len(step.commands) == 2
     cmd2_results = step.commands[1].results
     assert len(cmd2_results) == 1
-    assert cmd2_results[0].cmd == f'{cmd2} four "five six" seven'
+    assert cmd2_results[0].cmd == [cmd2, 'four', 'five six', 'seven']
     assert cmd2_results[0].returncode == 0
 
 
@@ -1119,7 +1119,7 @@ def test_dsl_async_cmd_list_input_with_complex_args_error_only_first_save():
     assert len(err.value) == 2
     err1 = err.value[0]
 
-    assert err1.cmd == f'{cmd1} WRONG "two two" three'
+    assert err1.cmd == [cmd1, 'WRONG', 'two two', 'three']
     assert err1.returncode == 1
     assert err1.stdout == b''
     assert err1.stderr == 'assert failed'
@@ -1127,7 +1127,7 @@ def test_dsl_async_cmd_list_input_with_complex_args_error_only_first_save():
     err2 = err.value[1]
 
     # save is only true for 1st one, thus no stdout/stderr
-    assert err2.cmd == f'{cmd2} WRONG "five six" seven'
+    assert err2.cmd == [cmd2, 'WRONG', 'five six', 'seven']
     assert err2.returncode == 1
     assert err2.stdout is None
     assert err2.stderr is None
@@ -1136,7 +1136,7 @@ def test_dsl_async_cmd_list_input_with_complex_args_error_only_first_save():
     out = context['cmdOut']
     assert len(out) == 1
     out1 = out[0]
-    assert out1.cmd == f'{cmd1} WRONG "two two" three'
+    assert out1.cmd == [cmd1, 'WRONG', 'two two', 'three']
     assert out1.returncode == 1
     assert out1.stdout == b''
     assert out1.stderr == 'assert failed'
@@ -1466,7 +1466,7 @@ def test_dsl_async_cmd_serial_simple_syntax_save_with_error_return_1():
 
     assert len(err.value) == 1
     the_err = err.value[0]
-    assert the_err.cmd == cmd_return_1
+    assert the_err.cmd == [cmd_return_1]
     assert the_err.stderr == 'arb err here'
 
     out = context['cmdOut']
@@ -1484,7 +1484,7 @@ def test_dsl_async_cmd_serial_simple_syntax_save_with_error_return_1():
 
     outB2 = outB[1]
     assert outB2.returncode == 1
-    assert outB2.cmd == cmd_return_1
+    assert outB2.cmd == [cmd_return_1]
     assert not outB2.stdout
     assert outB2.stderr == 'arb err here'
 

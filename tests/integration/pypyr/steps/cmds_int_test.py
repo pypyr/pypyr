@@ -11,7 +11,7 @@ import pytest
 
 from pypyr.config import config
 from pypyr.context import Context
-from pypyr.errors import MultiError
+from pypyr.errors import MultiError, SubprocessError
 import pypyr.steps.cmds
 
 is_windows = config.is_windows
@@ -55,9 +55,12 @@ def test_async_cmds_stderr_to_stdout(temp_dir):
     assert 'cmdOut' not in context
     err = ex.value
     assert len(err) == 1
-    assert str(err) == f"""\
-The following error(s) occurred while running the async commands:
-SubprocessError: Command '{cmd2}' returned non-zero exit status 1."""
+    the_err = err[0]
+    assert type(the_err) is SubprocessError
+    assert the_err.cmd == [cmd2]
+    assert the_err.returncode == 1
+    # None because save is False
+    assert the_err.stderr is None
 
     out_file_lines = stdout.read_text().rstrip().split('\n')
     TestCase().assertCountEqual(out_file_lines,
