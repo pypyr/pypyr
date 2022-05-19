@@ -365,10 +365,10 @@ class Command:
                                                          stderr=stderr,
                                                          cwd=self.cwd)
         else:
-            args = shlexer(cmd)  # type: ignore
-            logger.debug("arg split is: %s", args)
-            proc = await asyncio.create_subprocess_exec(args[0],
-                                                        *args[1:],
+            cmd = shlexer(cmd)  # type: ignore
+            logger.debug("arg split is: %s", cmd)
+            proc = await asyncio.create_subprocess_exec(cmd[0],
+                                                        *cmd[1:],
                                                         stdout=stdout,
                                                         stderr=stderr,
                                                         cwd=self.cwd)
