@@ -1,9 +1,9 @@
 """Unit tests for pypyr.aio.subproc."""
 import asyncio.subprocess as subprocess
+import locale
 
 import pytest
 
-from pypyr.config import config
 from pypyr.errors import ContextError
 from pypyr.aio.subproc import Command, Commands
 
@@ -22,7 +22,7 @@ def test_async_subproc_minimal():
     assert cmd.is_text is False
     assert cmd.stdout is None
     assert cmd.stderr is None
-    assert cmd.encoding == config.default_cmd_encoding
+    assert cmd.encoding == locale.getpreferredencoding(False)
     assert cmd.append is False
     assert cmd.results == []
 

@@ -66,7 +66,7 @@ class Command:
                     "You can't set `stdout` or `stderr` when `save` is True.")
         self.stdout = stdout
         self.stderr = stderr
-        self.encoding = encoding
+        self.encoding = encoding if encoding else config.default_cmd_encoding
         self.append = append
 
         self.results: list[SubprocessResult] = []
