@@ -3,6 +3,7 @@
 from __future__ import annotations
 import asyncio
 import asyncio.subprocess
+import locale
 from pathlib import Path
 from unittest import TestCase
 from unittest.mock import call, DEFAULT, Mock, mock_open, patch
@@ -20,6 +21,7 @@ from pypyr.steps.dsl.cmdasync import AsyncCmdStep
 from pypyr.aio.subproc import Command
 
 PIPE = asyncio.subprocess.PIPE
+LOCALE_ENCODING = locale.getpreferredencoding(False)
 
 cmd_path = Path.cwd().joinpath('tests/testfiles/cmds')
 is_windows = config.is_windows
@@ -250,7 +252,7 @@ def test_async_cmd_minimal():
     assert cmd1.is_text is False
     assert cmd1.stdout is None
     assert cmd1.stderr is None
-    assert cmd1.encoding == config.default_cmd_encoding
+    assert cmd1.encoding == LOCALE_ENCODING
     assert cmd1.append is False
 
 
@@ -269,7 +271,7 @@ def test_async_cmd_minimal_save():
     assert cmd1.is_text is True
     assert cmd1.stdout == PIPE
     assert cmd1.stderr == PIPE
-    assert cmd1.encoding == config.default_cmd_encoding
+    assert cmd1.encoding == LOCALE_ENCODING
     assert cmd1.append is False
 
 

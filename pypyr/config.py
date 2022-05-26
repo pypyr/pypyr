@@ -7,7 +7,6 @@ Attributes:
 from __future__ import annotations
 from collections.abc import Mapping
 from io import StringIO
-import locale
 import os
 from pathlib import Path
 import sys
@@ -118,8 +117,8 @@ class Config():
         # defaults
         self.default_backoff = 'fixed'
         # 'utf-8' is a magic string specially optimized in CPython
-        self.default_cmd_encoding: str | None = os.getenv(
-            'PYPYR_CMD_ENCODING', locale.getpreferredencoding(False))
+        self.default_cmd_encoding: str | None = os.getenv('PYPYR_CMD_ENCODING',
+                                                          None)
         self.default_encoding: str | None = os.getenv('PYPYR_ENCODING', None)
         self.default_loader = 'pypyr.loaders.file'
         self.default_group = 'steps'

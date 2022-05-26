@@ -5,6 +5,7 @@ import asyncio
 from asyncio import subprocess
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+import locale
 import logging
 from pathlib import Path
 import shlex
@@ -17,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 # region windows shlex
 is_windows = config.is_windows
+
+DEFAULT_ENCODING = (config.default_cmd_encoding
+                    if config.default_cmd_encoding
+                    else locale.getpreferredencoding(False))
 
 # this code is in fact covered when run on windows (during CI)
 # set no cover so no complaining from coverage on posix
@@ -108,7 +113,7 @@ class Command:
         else:
             self.stdout = stdout
             self.stderr = stderr
-        self.encoding = encoding if encoding else config.default_cmd_encoding
+        self.encoding = encoding if encoding else DEFAULT_ENCODING
         self.append = append
 
         self._results: list[SubprocessResult | Exception | list] = []
