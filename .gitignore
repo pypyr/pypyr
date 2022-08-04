@@ -95,3 +95,5 @@ shippable/
 
 # ephemeral test output files
 tests/testfiles/out
+
+.vscode/
