@@ -195,7 +195,7 @@ class StreamReplacePairsRewriterStep(FileInRewriterStep):
 
         """
         def function_iter_replace_strings(iterable_strings):
-            """Yield a formatted string from iterable_strings using a generator.
+            """Yield a formatted string from iterable_strings using generator.
 
             Args:
                 iterable_strings: Iterable containing strings. E.g a file-like
