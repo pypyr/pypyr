@@ -1,8 +1,7 @@
 """Version information."""
 
 import platform
-
-__version__ = '5.5.0'
+from pypyr import __version__
 
 
 def get_version():

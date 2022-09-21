@@ -18,14 +18,6 @@ steps:
 
 lint:
   - name: pypyr.steps.cmd
-    comment: verify setup.py
-             this will soon (?) deprecate in favor of twine --check. 
-             For the moment twine still only checks README validity, and not 
-             metadata.
-    description: --> verify setup.py metadata
-    in:
-      cmd: '"{python}" setup.py check -m -s'
-  - name: pypyr.steps.cmd
     comment: lint with flake8
     description: --> flake8 linting
     in:
@@ -56,12 +48,7 @@ package:
     comment: build wheel + sdist 
     description: --> build wheel + sdist to dist/
     in:
-      cmd: '"{python}" setup.py bdist_wheel sdist'
-  - name: pypyr.steps.cmd
-    comment: verify README/long_description
-    description: --> verify/check new package in dist/
-    in:
-      cmd: twine check dist/*
+      cmd: flit build
 
 publish:
   - name: pypyr.steps.call
@@ -69,8 +56,9 @@ publish:
       call: get_version
   - name: pypyr.steps.cmd
     description: --> publishing package to pypi
+    comment: publish does a build/package itself, no need to call flit build separately.
     in:
-      cmd: twine upload dist/{package_name}-{version}*
+      cmd: flit publish
   - name: pypyr.steps.cmd
     description: --> uninstall current version of package before attempting to reinstall from pypi
     in:
@@ -151,7 +139,7 @@ set_config:
         argList: null
   - pypyr.steps.configvars
   - name: pypyr.steps.assert
-    description: --> check expected keys in pypyr-config.yaml
+    description: --> check expected keys in pyproject.toml
     foreach:
       - package_name
       - version_module_name

@@ -10,15 +10,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Run publish pipeline
         uses: pypyr/run-in-tox-action@main
         with:
-          pipeline: ops/build package publish
+          pipeline: ops/build publish
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          FLIT_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          FLIT_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
