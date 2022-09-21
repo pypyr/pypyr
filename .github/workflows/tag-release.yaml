@@ -19,10 +19,11 @@ jobs:
           # pull all tags also
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: run tag pipeline.
         uses: pypyr/run-in-tox-action@main
