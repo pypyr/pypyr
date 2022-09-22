@@ -24,4 +24,4 @@ def get_parsed_context(args):
         return {'argList': []}
 
     # the list that's parsed from the input args is named argList
-    return dict({'argList': args})
+    return {'argList': args}

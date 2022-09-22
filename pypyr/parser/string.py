@@ -22,5 +22,5 @@ def get_parsed_context(args):
                      )
         return {'argString': ''}
 
-    # the list that's parsed from the input args is named argList
-    return dict({'argString': ' '.join(args)})
+    # the string that's parsed from the input args is named argString
+    return {'argString': ' '.join(args)}
