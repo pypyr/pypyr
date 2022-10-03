@@ -10,6 +10,6 @@ def run_step(context):
     """Output pypyr version in format 'pypyr x.y.z python a.b.c'."""
     logger.debug("started")
 
-    logger.notify("pypyr version is: %s", pypyr.version.get_version())
+    logger.notify(pypyr.version.get_version())
 
     logger.debug("done")

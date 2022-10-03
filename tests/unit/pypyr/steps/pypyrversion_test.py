@@ -15,7 +15,6 @@ def test_pypyr_version():
         pypyr.steps.pypyrversion.run_step({})
 
     mock_logger_notify.assert_called_once_with(
-        'pypyr version is: '
         f'pypyr {pypyr.version.__version__} '
         f'python {platform.python_version()}')
 
