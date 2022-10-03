@@ -1,6 +1,9 @@
 """logger.py unit tests."""
+from contextlib import contextmanager
+from io import StringIO
 import logging
 from unittest.mock import patch
+import sys
 
 from pypyr.config import config
 import pypyr.log.logger
@@ -21,8 +24,11 @@ def test_logger_with_console_handler():
         '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 10
-    assert len(kwargs['handlers']) == 1
+    assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+    assert kwargs['handlers'][0].stream == sys.stdout
+    assert isinstance(kwargs['handlers'][1], logging.StreamHandler)
+    assert kwargs['handlers'][1].stream == sys.stderr
 
 
 def test_logger_with_defaults():
@@ -35,8 +41,11 @@ def test_logger_with_defaults():
     assert kwargs['format'] == '%(message)s'
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 25
-    assert len(kwargs['handlers']) == 1
+    assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+    assert kwargs['handlers'][0].stream == sys.stdout
+    assert isinstance(kwargs['handlers'][1], logging.StreamHandler)
+    assert kwargs['handlers'][1].stream == sys.stderr
 
 
 def test_logger_with_file_and_console_handler():
@@ -54,9 +63,15 @@ def test_logger_with_file_and_console_handler():
         '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 10
-    assert len(kwargs['handlers']) == 2
+
+    assert len(kwargs['handlers']) == 3
+
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
-    assert isinstance(kwargs['handlers'][1], logging.FileHandler)
+    assert kwargs['handlers'][0].stream == sys.stdout
+    assert isinstance(kwargs['handlers'][1], logging.StreamHandler)
+    assert kwargs['handlers'][1].stream == sys.stderr
+
+    assert isinstance(kwargs['handlers'][2], logging.FileHandler)
 
 
 def test_logger_with_dict_config():
@@ -131,8 +146,12 @@ def test_set_logging_log_level_none():
     assert kwargs['format'] == ('%(message)s')
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 25
-    assert len(kwargs['handlers']) == 1
+
+    assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+    assert kwargs['handlers'][0].stream == sys.stdout
+    assert isinstance(kwargs['handlers'][1], logging.StreamHandler)
+    assert kwargs['handlers'][1].stream == sys.stderr
 
 
 def test_set_logging_log_level_25():
@@ -147,7 +166,77 @@ def test_set_logging_log_level_25():
         '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s')
     assert kwargs['datefmt'] == '%Y-%m-%d %H:%M:%S'
     assert kwargs['level'] == 25
-    assert len(kwargs['handlers']) == 1
+    assert len(kwargs['handlers']) == 2
     assert isinstance(kwargs['handlers'][0], logging.StreamHandler)
+    assert kwargs['handlers'][0].stream == sys.stdout
+    assert isinstance(kwargs['handlers'][1], logging.StreamHandler)
+    assert kwargs['handlers'][1].stream == sys.stderr
 
 # endregion set_root_logger
+
+# region stdout & stderr
+
+
+@contextmanager
+def temp_logger(name):
+    """Intercept the specified logger and remove all its handlers."""
+    logger = logging.getLogger(name)
+    og_handlers = [handler for handler in logger.handlers]
+    for handler in og_handlers:
+        logger.removeHandler(handler)
+
+    yield logger
+
+    # when done, get rid of any new loggers and set it back to the o.g ones
+    new_handlers = [handler for handler in logger.handlers]
+    for handler in new_handlers:
+        logger.removeHandler(handler)
+
+    for handler in og_handlers:
+        logger.addHandler(handler)
+
+
+@patch('sys.stderr', new_callable=StringIO)
+@patch('sys.stdout', new_callable=StringIO)
+def test_logger_stdout_vs_stderr(mock_stdout, mock_stderr):
+    """Send NOTIFY and less to stdout, all above to stderr."""
+    # The reason for all of this is that pytest capsys doesn't capture the sys
+    # output, prob because it binds on package init already.
+    with temp_logger('pypyr.xxx') as logger:
+        for handler in pypyr.log.logger.get_log_handlers(logging.DEBUG, None):
+            logger.addHandler(handler)
+
+        logger.setLevel(logging.DEBUG)
+
+        logger.debug("to debug")
+        logger.info("to info")
+        logger.notify("to notify")
+        logger.warning("to warning")
+        logger.error("to error")
+        logger.critical("to critical")
+
+    assert mock_stdout.getvalue() == "to debug\nto info\nto notify\n"
+    assert mock_stderr.getvalue() == "to warning\nto error\nto critical\n"
+
+
+def test_logger_stdout_vs_stderr_capsys(capsys):
+    """Send NOTIFY and less to stdout, all above to stderr."""
+    logger = logging.getLogger('pypyr.xyzunlikelynamehere')
+    for handler in pypyr.log.logger.get_log_handlers(logging.DEBUG, None):
+        logger.addHandler(handler)
+
+    logger.setLevel(logging.DEBUG)
+
+    logger.debug("to debug")
+    logger.info("to info")
+    logger.notify("to notify")
+    logger.warning("to warning")
+    logger.error("to error")
+    logger.critical("to critical")
+
+    stdout, stderr = capsys.readouterr()
+
+    assert stdout == "to debug\nto info\nto notify\n"
+    assert stderr == "to warning\nto error\nto critical\n"
+
+# endregion stdout & stderr

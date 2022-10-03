@@ -4,10 +4,23 @@ Configuration for the python logging library.
 """
 import logging
 import logging.config
+import sys
 
 from pypyr.config import config
 
 NOTIFY = 25
+
+
+class LevelFilter(logging.Filter):
+    """Only let through messages < level."""
+
+    def __init__(self, level: int) -> None:
+        """Set the level at which and lower this filter will log."""
+        self.level = level
+
+    def filter(self, record):
+        """Pass through records with level less than configured level."""
+        return record.levelno < self.level
 
 
 def set_logging_config(log_level, handlers):
@@ -79,16 +92,29 @@ def set_root_logger(log_level=None, log_path=None):
     if config.log_config:
         logging.config.dictConfig(config.log_config)
     else:
-        handlers = []
-        console_handler = logging.StreamHandler()
-        handlers.append(console_handler)
-        if log_path:
-            file_handler = logging.FileHandler(log_path)
-            handlers.append(file_handler)
-
+        handlers = get_log_handlers(log_level, log_path)
         set_logging_config(log_level, handlers=handlers)
 
     root_logger = logging.getLogger('pypyr')
     root_logger.debug(
         "Root logger %s configured with level %s",
         root_logger.name, log_level)
+
+
+def get_log_handlers(log_level, log_path=None):
+    """Return list of log handlers to handle stdout, stderr and file."""
+    handlers = []
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.addFilter(LevelFilter(logging.WARNING))
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setLevel(max(logging.WARNING,
+                                log_level or logging.NOTIFY))
+
+    handlers.append(stdout_handler)
+    handlers.append(stderr_handler)
+    if log_path:
+        file_handler = logging.FileHandler(log_path)
+        handlers.append(file_handler)
+
+    return handlers
