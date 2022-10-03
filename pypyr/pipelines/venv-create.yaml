@@ -1,0 +1,45 @@
+# to execute this pipeline, run:
+# A) $ pypyr venv-create
+# OR
+# B) $ pypyr venv-create ./my-dir/my-file.yaml
+#
+# For A), there must be a `venv` key in either:
+# - pyproject.toml in current dir under `[tool.pypyr.vars]`
+# - one of the pypyr yaml config files.
+#
+# For B), this can be any given yaml file, but it must have a valid `venv` key
+# at top-level.
+context_parser: pypyr.parser.string
+steps:
+  - name: pypyr.steps.fetchyaml
+    description: --> looking for `venv` in yaml input
+    skip: !py not argString
+    in:
+      fetchYaml:
+        path: '{argString}'
+
+  - name: pypyr.steps.configvars
+    description: --> looking for `venv` in pypyr config
+    skip: !py "'venv' in locals()"
+
+  - name: pypyr.steps.assert
+    description: --> only proceed if `venv` input found
+    in:
+      assert:
+        this: !py "'venv' in locals()"
+        msg: |-
+          
+          Invoke me with `$ pypyr venv-create ./my-arb-input.yaml`.
+          This yaml file must contain a `venv` key.
+          
+          Alternatively, when you invoke me with just `$ pypyr venv-create`
+          your `venv` config key must exist in either:
+          - `[tool.pypyr.vars]` in pyproject.toml, or
+          = `vars` in pypyr config.
+
+  - name: pypyr.steps.venv
+    description: --> creating venvs...
+
+  - name: pypyr.steps.echo
+    in:
+      echoMe: --> done
