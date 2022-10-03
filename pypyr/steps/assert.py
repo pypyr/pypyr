@@ -6,6 +6,8 @@ from pypyr.utils.types import cast_to_bool
 # logger means the log level will be set correctly
 logger = logging.getLogger(__name__)
 
+sentinel = object()
+
 
 def run_step(context):
     """Assert that something is True or equal to something else.
@@ -17,6 +19,7 @@ def run_step(context):
                 - this (any): mandatory. If assert['equals'] not specified,
                   eval as boolean.
                 - equals (any): optional. Any type.
+                - msg (str): optional. Error message if assert evaluates False.
 
     Takes one of three input forms:
         assert: evaluate me
@@ -56,29 +59,33 @@ def run_step(context):
 
     is_equals_there = False
     is_this_there = False
+    msg = sentinel
     if isinstance(assert_context, dict):
-        is_this_there = 'this' in assert_context
-        if is_this_there:
-            assert_this = assert_context['this']
-        else:
-            assert_this = assert_context
+        assert_this = assert_context.get('this', sentinel)
+        assert_equals = assert_context.get('equals', sentinel)
+        msg = assert_context.get('msg', sentinel)
 
-        is_equals_there = 'equals' in assert_context
-        if is_equals_there:
-            if not is_this_there:
+        if assert_equals is not sentinel:
+            is_equals_there = True
+            if assert_this is sentinel:
                 raise KeyNotInContextError(
                     "you have to set assert.this to use assert.equals.")
-            assert_equals = assert_context['equals']
+            else:
+                is_this_there = True
+
             # compare assertThis to assertEquals
             logger.debug("comparing assert['this'] to assert['equals'].")
             assert_result = (assert_this == assert_equals)
         else:
             # nothing to compare means treat assert or assert.this as a bool.
-            if is_this_there:
-                logger.debug("evaluating assert['this'] as a boolean.")
-            else:
+            if assert_this is sentinel:
                 logger.debug("assert is a dict but contains no `this`. "
                              "evaluating assert value as a boolean.")
+                assert_this = assert_context
+            else:
+                is_this_there = True
+                logger.debug("evaluating assert['this'] as a boolean.")
+
             assert_result = cast_to_bool(assert_this)
     else:
         # assert key has a non-dict value so eval directly as a bool.
@@ -88,20 +95,23 @@ def run_step(context):
     logger.info("assert evaluated to %s", assert_result)
 
     if not assert_result:
-        if is_equals_there:
-            # emit type to help user, but not the actual field contents.
-            type_this = type(assert_this).__name__
-            type_equals = type(assert_equals).__name__
-            error_text = (
-                f"assert assert['this'] is of type {type_this} "
-                f"and does not equal assert['equals'] of type {type_equals}.")
-        else:
-            og_assert = (context['assert']['this']
-                         if is_this_there else context['assert'])
-            # original literal hard-coded in pipe, so presumably not a
-            # sensitive value.
-            error_text = (
-                f"assert {og_assert} evaluated to False.")
+        error_text = msg
+        if msg is sentinel:
+            # build a default err msg when input didn't specify an err msg
+            if is_equals_there:
+                # emit type to help user, but not the actual field contents.
+                type_this = type(assert_this).__name__
+                type_equals = type(assert_equals).__name__
+                error_text = (
+                    f"assert assert['this'] is of type {type_this} "
+                    "and does not equal assert['equals'] of type "
+                    f"{type_equals}.")
+            else:
+                og_assert = (context['assert']['this']
+                             if is_this_there else context['assert'])
+                # original literal hard-coded in pipe, so presumably not a
+                # sensitive value.
+                error_text = f"assert {og_assert} evaluated to False."
         raise AssertionError(error_text)
 
     logger.debug("done")

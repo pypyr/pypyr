@@ -307,7 +307,28 @@ def test_assert_raises_on_assertthis_not_equals_dict_to_dict():
         "assert assert['this'] is of type dict and does "
         "not equal assert['equals'] of type dict.")
 
+
+def test_assert_raises_on_assertthis_with_msg():
+    """Assert this uses custom error message."""
+    context = Context({'assert': {'this': False,
+                                  'msg': "arb"}})
+    with pytest.raises(AssertionError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "arb"
+
 # region substitutions
+
+
+def test_assert_raises_on_assertthis_with_msg_substitutions():
+    """Assert this uses custom error message."""
+    context = Context({'k1': 'arb',
+                       'assert': {'this': False,
+                                  'msg': 'x{k1}x'}})
+    with pytest.raises(AssertionError) as err_info:
+        assert_step.run_step(context)
+
+    assert str(err_info.value) == "xarbx"
 
 
 def test_assert_passes_on_bare_assert_substitutions():
