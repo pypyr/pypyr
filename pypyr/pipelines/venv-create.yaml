@@ -35,7 +35,7 @@ steps:
           Alternatively, when you invoke me with just `$ pypyr venv-create`
           your `venv` config key must exist in either:
           - `[tool.pypyr.vars]` in pyproject.toml, or
-          = `vars` in pypyr config.
+          - `vars` in pypyr config.
 
   - name: pypyr.steps.venv
     description: --> creating venvs...
