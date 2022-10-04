@@ -40,7 +40,6 @@ dev = [
   "flit",
   "pyfakefs",
   "pytest",
-  "pytest-cov",
 ]
 
 [project.scripts]
@@ -65,13 +64,15 @@ fail_under = 100
 
 [tool.coverage.run]
 branch = true
+source = ["pypyr"]
 
 [tool.flit.sdist]
 exclude = ["docs"]
 
 [tool.pypyr.vars]
 package_name = "pypyr"
-version_module_name = "pypyr.version"
+version_cmd = "pypyr pypyrversion"
+version_index = 1
 
 [tool.pytest.ini_options]
 junit_family = "xunit2"
