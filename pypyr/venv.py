@@ -19,7 +19,7 @@ from pypyr.errors import ContextError, Error
 logger = logging.getLogger(__name__)
 
 CORE_VENV_DEPS = ('pip', 'setuptools')
-SIMPLE_INPUT_TYPE = (str, bytes, PathLike)
+SIMPLE_INPUT_TYPE = (str, PathLike)
 IS_BEFORE_PY_3_9 = sys.version_info < (3, 9)
 
 
@@ -34,7 +34,7 @@ You cannot set both upgrade and clear together for a venv."""
 You cannot set `pip` or `upgrade_pip` when `with_pip` is False."""
 
     def __init__(self,
-                 path: str | bytes | PathLike,
+                 path: str | PathLike,
                  pip_extras: str = None,
                  system_site_packages: bool = False,
                  clear: bool = False,
