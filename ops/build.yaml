@@ -29,13 +29,18 @@ test:
     description: --> tests, output to terminal with line nos.
     skip: '{isCi}'
     in:
-      cmd: pytest --cov={package_name} --cov-report term-missing:skip-covered {test_dir}
+      cmd:
+        - coverage run -m pytest {test_dir}
+        - coverage report --show-missing --skip-covered
   - name: pypyr.steps.cmd
     comment: test & coverage but with file output
     description: --> tests, output to file
     run: '{isCi}'
     in:
-      cmd: pytest --cov={package_name} --cov-report term-missing --cov-report {output_coverage} --junitxml={output_test_results} {test_dir}
+      cmd:
+        - coverage run -m pytest --junitxml={output_test_results} {test_dir}
+        - coverage report --show-missing --skip-covered
+        - coverage xml -o {output_coverage}
   - name: pypyr.steps.cmd
     comment: coverage upload only works like this on CI. if you want to run local you need to give -t upload-token switch.
     description: --> upload coverage report output to codecov if CI.
@@ -59,43 +64,52 @@ publish:
     comment: publish does a build/package itself, no need to call flit build separately.
     in:
       cmd: flit publish
-  - name: pypyr.steps.cmd
-    description: --> uninstall current version of package before attempting to reinstall from pypi
+
+  - name: pypyr.steps.venv
+    description: --> create venv to verify pypi install
     in:
-      cmd: pip uninstall -y {package_name}
-  - name: pypyr.steps.contextcopy
-    in:
-      contextCopy:
-        expected_version: version
+      venv:
+        path: .venv/pypi-verify
+        quiet: True
+
   - name: pypyr.steps.cmd
     description: --> giving pypi 10s before testing release
     in:
       cmd: sleep 10
+
   - name: pypyr.steps.cmd
     description: --> installing just published release from pypi for smoke-test
+    comment: only support posix, not windows.
     retry:
       max: 5
       sleep: 10
     in:
-      cmd: pip install --upgrade --no-cache-dir {package_name}=={expected_version}
-  - name: pypyr.steps.call
+      cmd: .venv/pypi-verify/bin/pip install --upgrade --no-cache-dir {package_name}=={version}
+  - name: pypyr.steps.cmd
+    description: --> get version
     in:
-      call: get_version
+      cmd:
+        run: .venv/pypi-verify/bin/{version_cmd}
+        save: True
+
+  - name: pypyr.steps.cmd
+    description: --> remove pypi verification venv
+    in:
+      cmd: rm -rf .venv/pypi-verify
+
+  - name: pypyr.steps.set
+    description: --> parsing new version descriptor
+    comment: version string looks like this - pypyr 5.5.0 python 3.10.6
+    in:
+      set:
+        pypi_version: !py cmdOut.stdout.split()[version_index]
+
   - name: pypyr.steps.assert
     description: --> checking published package version as expected
     in:
       assert:
-        this: '{version}'
-        equals: '{expected_version}'
-  - name: pypyr.steps.cmd
-    comment: at this point, tox contains the pip compiled pypyr, rather than the -e dev install.
-             currently CI not smart enough to save changes to cache, but this could
-             well change, so prevent future problems.
-             When running locally failing to do this will lead to surprises of
-             not running local verification against the actual latest local. 
-    description: --> reset the tox cache.
-    in:
-      cmd: pip install -e .
+        this: '{pypi_version}'
+        equals: '{version}'
 
 get_version:
   - name: pypyr.steps.default
@@ -103,25 +117,23 @@ get_version:
     in:
       defaults:
         isConfigSet: false
-        is_version_module_loaded: False
   - name: pypyr.steps.call
     comment: set default config & environment values only if not already set.
     skip: '{isConfigSet}'
     in:
       call: set_config
-  - name: pypyr.steps.py
+  - name: pypyr.steps.cmd
     description: --> get version
     in:
-      py: |
-        import importlib
-        version_module = importlib.import_module(version_module_name)
-        if is_version_module_loaded:
-          importlib.reload(version_module)
+      cmd:
+        run: '{version_cmd}'
+        save: True
 
-        version = f'{version_module.__version__}'
-        is_version_module_loaded = True
-
-        save('version', 'is_version_module_loaded')
+  - name: pypyr.steps.set
+    comment: version string looks like this - pypyr 5.5.0 python 3.10.6
+    in:
+      set:
+        version: !py cmdOut.stdout.split()[version_index]
   - name: pypyr.steps.echo
     in:
       echoMe: version is {version}
@@ -134,7 +146,7 @@ set_config:
       defaults:
         test_dir: tests
         output_results_dir: .test-results
-        output_coverage: xml:{output_results_dir}/codecoverage/coverage.xml
+        output_coverage: "{output_results_dir}/codecoverage/coverage.xml"
         output_test_results: "{output_results_dir}/testresults/junitresults.xml"
         argList: null
   - pypyr.steps.configvars
@@ -142,7 +154,8 @@ set_config:
     description: --> check expected keys in pyproject.toml
     foreach:
       - package_name
-      - version_module_name
+      - version_cmd
+      - version_index
     in:
       assert:
         this: !py i in locals()

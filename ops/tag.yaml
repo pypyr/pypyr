@@ -43,10 +43,8 @@ steps:
 
 set_git_config:
   - name: pypyr.steps.cmd
-    description: --> setting git user.name
+    description: --> setting git user.name & user.email
     in:
-      cmd: git config user.name github-actions
-  - name: pypyr.steps.cmd
-    description: --> setting git user.email
-    in:
-      cmd: git config user.email github-actions@github.com
+      cmd:
+        - git config user.name github-actions
+        - git config user.email github-actions@github.com
