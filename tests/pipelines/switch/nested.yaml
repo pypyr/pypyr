@@ -1,0 +1,74 @@
+steps:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: begin
+
+  - name: pypyr.steps.switch
+    in:
+      switch:
+        - case: True
+          call: A
+        - case: False
+          call: never
+
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: end.
+
+A:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: A.1
+
+  - name: pypyr.steps.switch
+    in:
+      switch:
+        - case: True
+          call: B
+
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: A.2
+
+  - name: pypyr.steps.switch
+    in:
+      switch:
+        - case: False
+          call: B
+        - case: True
+          call: C
+
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: A.3
+
+B:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: B
+
+C:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: C
+
+never:
+  - name: pypyr.steps.append
+    in:
+      append:
+        list: out
+        addMe: never
