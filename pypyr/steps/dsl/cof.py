@@ -19,7 +19,8 @@ def instruction_from_dict(config: Mapping,
                           name: str,
                           instruction_type: type[ControlOfFlowInstruction],
                           context_key: str,
-                          original_config: tuple[str, Mapping]):
+                          original_config: tuple[str, Mapping]
+                          ) -> ControlOfFlowInstruction:
     """Create a Call or Jump from input dict."""
     if isinstance(config, str):
         groups = [config]
@@ -69,7 +70,7 @@ def control_of_flow_instruction(
         name: str,
         instruction_type: type[ControlOfFlowInstruction],
         context: Context,
-        context_key: str):
+        context_key: str) -> None:
     """Run a control of flow instruction.
 
     The step config in the context dict looks like this:
