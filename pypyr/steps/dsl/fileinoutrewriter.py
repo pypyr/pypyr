@@ -170,11 +170,8 @@ class StreamReplacePairsRewriterStep(FileInRewriterStep):
 
     def run_step(self):
         """Write in to out, replacing strings per the replace_pairs."""
-        formatted_replacements = self.context.get_formatted_value(
-            self.replace_pairs)
-
         iter = StreamReplacePairsRewriterStep.iter_replace_strings(
-            formatted_replacements)
+            self.replace_pairs)
         rewriter = StreamRewriter(iter,
                                   encoding_in=self.encoding_in,
                                   encoding_out=self.encoding_out)

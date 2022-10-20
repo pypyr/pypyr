@@ -385,6 +385,49 @@ def test_streamreplacepairsrewriterstep_run_step(mock_rewriter):
 
 
 @patch('pypyr.steps.dsl.fileinoutrewriter.StreamRewriter', spec=StreamRewriter)
+def test_streamreplacepairsrewriterstep_run_step_substitutions(mock_rewriter):
+    """Stream replace pairs rewriter files_in_to_out with substitutions."""
+    context = Context({
+        'k1': 'b',
+        'k2': 'd',
+        'k3': '{k2}',
+        'root': {'in': 'inpathhere',
+                 'out': 'outpathhere',
+                 'replacePairs': {
+                     'a': '{k1}',
+                     'c': '{k3}'
+                 },
+                 'encodingIn': 'encIn',
+                 'encodingOut': 'encOut'}})
+
+    obj = StreamReplacePairsRewriterStep('blah.name', 'root', context)
+    assert obj.path_in == 'inpathhere'
+    assert obj.path_out == 'outpathhere'
+    assert obj.context == context
+    assert obj.logger.name == 'blah.name'
+    assert obj.replace_pairs == {'a': 'b', 'c': 'd'}
+    assert obj.encoding_in == 'encIn'
+    assert obj.encoding_out == 'encOut'
+
+    iter_replace_strings_target = ('pypyr.steps.dsl.fileinoutrewriter.'
+                                   'StreamReplacePairsRewriterStep.'
+                                   'iter_replace_strings')
+    with patch(iter_replace_strings_target) as mock_iter:
+        obj.run_step()
+
+    # the rewriter should've been instantiated with the iter_replace_strings
+    # function.
+    mock_iter.assert_called_once_with({'a': 'b', 'c': 'd'})
+    assert mock_rewriter.mock_calls[0] == call(mock_iter.return_value,
+                                               encoding_in='encIn',
+                                               encoding_out='encOut')
+
+    mock_rewriter.return_value.files_in_to_out.assert_called_once_with(
+        in_path='inpathhere',
+        out_path='outpathhere')
+
+
+@patch('pypyr.steps.dsl.fileinoutrewriter.StreamRewriter', spec=StreamRewriter)
 def test_streamreplacepairsrewriterstep_run_step_no_out(mock_rewriter):
     """Stream replace pairs rewriter runs files_in_to_out with no out."""
     context = Context({'root': {'in': 'inpathhere',
