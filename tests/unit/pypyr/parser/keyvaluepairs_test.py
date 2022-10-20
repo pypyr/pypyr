@@ -1,6 +1,5 @@
 """keyvaluepairs.py unit tests."""
 import pypyr.parser.keyvaluepairs
-import pytest
 
 
 def test_kvp_args_parses_to_dict():
@@ -21,11 +20,28 @@ def test_kvp_args_single_parses_to_single_entry():
     assert len(out) == 1, "1 item expected"
 
 
-def test_no_equals_arg_parses_to_single_entry_fail():
-    """No equals input kvp args fails with ValueError."""
-    with pytest.raises(ValueError):
-        pypyr.parser.keyvaluepairs.get_parsed_context(
-            ['key1value2,value3'])
+def test_kvp_args_single_no_equals():
+    """No equals input kvp ends up as key: ''."""
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(
+        ['key1value2,value3'])
+
+    assert out == {'key1value2,value3': ''}
+
+
+def test_kvp_args_no_equals_and_equals():
+    """No equals input combined with equals key value pair."""
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(
+        ['key1value2,value3', "key1=123"])
+
+    assert out == {'key1value2,value3': '', 'key1': '123'}
+
+
+def test_kvp_args_ignore_double_equals():
+    """Ignore double equals."""
+    out = pypyr.parser.keyvaluepairs.get_parsed_context(
+        ['key1value2,value3', "key 1=123=45 6"])
+
+    assert out == {'key1value2,value3': '', 'key 1': '123=45 6'}
 
 
 def test_kvp_empty_args_empty_dict():

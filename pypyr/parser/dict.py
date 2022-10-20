@@ -29,4 +29,5 @@ def get_parsed_context(args):
 
     # for each input argument, project key=value
     return {'argDict':
-            dict(element.split('=') for element in args)}
+            {k: v for k, _, v in (element.partition('=') for element in args)}
+            }
