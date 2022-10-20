@@ -1,6 +1,5 @@
 """dict.py unit tests."""
 import pypyr.parser.dict
-import pytest
 
 
 def test_arg_string_parses_to_argdict():
@@ -28,10 +27,25 @@ def test_arg_string_parses_to_single_entry_argdict():
 
 
 def test_no_equals_string_parses_to_single_entry_argdict():
-    """No equals input kvp string fails with ValueError."""
-    with pytest.raises(ValueError):
-        pypyr.parser.dict.get_parsed_context(
-            'key1value2,value3')
+    """No equals input kvp parses to key=''."""
+    out = pypyr.parser.dict.get_parsed_context(['key1value2,value3'])
+    assert out == {'argDict': {'key1value2,value3': ''}}
+
+
+def test_argdict_no_equals_combined_with_equals():
+    """No equals input kvp string parses to key='' and key=value."""
+    out = pypyr.parser.dict.get_parsed_context(
+        ['key1value2,value3', 'key 1=value 1'])
+    assert out == {'argDict': {'key1value2,value3': '',
+                               'key 1': 'value 1'}}
+
+
+def test_argdict_no_equals_combined_with_double_equals():
+    """Ignore subsequent equals."""
+    out = pypyr.parser.dict.get_parsed_context(
+        ['key1value2,value3', 'key 1=value 1=123'])
+    assert out == {'argDict': {'key1value2,value3': '',
+                               'key 1': 'value 1=123'}}
 
 
 def test_empty_string_empty_dict_argdict():
