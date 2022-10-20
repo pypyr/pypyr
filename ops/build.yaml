@@ -41,12 +41,6 @@ test:
         - coverage run -m pytest --junitxml={output_test_results} {test_dir}
         - coverage report --show-missing --skip-covered
         - coverage xml -o {output_coverage}
-  - name: pypyr.steps.cmd
-    comment: coverage upload only works like this on CI. if you want to run local you need to give -t upload-token switch.
-    description: --> upload coverage report output to codecov if CI.
-    run: '{isCi}'
-    in:
-      cmd: codecov
   
 package:
   - name: pypyr.steps.cmd

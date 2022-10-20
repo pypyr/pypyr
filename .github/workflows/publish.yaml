@@ -23,3 +23,6 @@ jobs:
         env:
           FLIT_USERNAME: ${{ secrets.PYPI_USERNAME }}
           FLIT_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3

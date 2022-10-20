@@ -34,7 +34,7 @@ requires-python = ">=3.7"
 [project.optional-dependencies]
 dev = [
   "bumpversion",
-  "codecov",
+  "coverage",
   "flake8",
   "flake8-docstrings",
   "flit",
