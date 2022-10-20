@@ -36,3 +36,6 @@ jobs:
         with:
           pipeline: ops/build package
           # python-version: ${{ matrix.python-version }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
