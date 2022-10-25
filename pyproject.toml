@@ -15,12 +15,13 @@ classifiers = [
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Typing :: Typed",
 ]
 dependencies = [
   "python-dateutil",
   "ruamel.yaml",
-  "tomli",
+  "tomli >= 1.1.0 ; python_version < '3.11'",
   "tomli-w",
 ]
 description = "task-runner for automation pipelines defined in yaml. cli & api."

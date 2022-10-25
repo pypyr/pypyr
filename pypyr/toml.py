@@ -1,5 +1,11 @@
 """Toml handling."""
-import tomli as toml_reader
+try:
+    # can get rid of the try soon as py 3.11 min supported version
+    # reason is py 3.11 includes tomli in stdlib
+    import tomllib as toml_reader
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as toml_reader
+
 import tomli_w as toml_writer  # type: ignore
 
 

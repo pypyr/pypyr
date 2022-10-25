@@ -2,7 +2,13 @@
 from unittest.mock import mock_open, patch
 
 import pytest
-from tomli import TOMLDecodeError
+
+try:
+    # can get rid of the try soon as py 3.11 min supported version
+    # reason is py 3.11 includes tomli in stdlib
+    from tomllib import TOMLDecodeError
+except ModuleNotFoundError:
+    from tomli import TOMLDecodeError
 
 from pypyr.context import Context
 from pypyr.errors import KeyInContextHasNoValueError, KeyNotInContextError
