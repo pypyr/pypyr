@@ -64,6 +64,7 @@ class Config():
             Set by init().
         vars: dict. User provided variables to write into the pypyr context.
             Set by init().
+        no_cache: bool. Default False. Bypass all pypyr caches entirely.
         platform_paths: pypyr.platform.PlatformPaths: O/S specific paths to
             config files & data dirs. Set by init().
         pyproject_toml: dict. The pyproject.toml file as a dict in a full.
@@ -90,6 +91,8 @@ class Config():
         'default_group',
         'default_success_group',
         'default_failure_group',
+        # flags
+        'no_cache',
         # functional
         'shortcuts',
         'vars'}
@@ -124,6 +127,10 @@ class Config():
         self.default_group = 'steps'
         self.default_success_group = 'on_success'
         self.default_failure_group = 'on_failure'
+
+        # flags
+        self.no_cache: bool = cast_str_to_bool(os.getenv('PYPYR_NO_CACHE',
+                                                         '0'))
 
         # functional
         self.shortcuts: dict = {}

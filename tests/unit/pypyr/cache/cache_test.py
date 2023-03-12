@@ -1,8 +1,17 @@
 """cache.py unit tests."""
 import logging
 from unittest.mock import call, MagicMock
+
+import pytest
+
 from pypyr.cache.cache import Cache
 from tests.common.utils import patch_logger
+
+
+@pytest.fixture
+def no_cache(monkeypatch):
+    """Set no cache."""
+    monkeypatch.setattr('pypyr.cache.cache.config.no_cache', True)
 
 
 def test_cache_get_miss():
@@ -17,7 +26,7 @@ def test_cache_get_miss():
     assert obj == "created obj"
     creator_mock.assert_called_once_with("1")
     mock_logger_debug.assert_called_once_with(
-        "one not found in cache. . . creating")
+        "`one` not found in cache. . . creating")
 
 
 def test_cache_get_hit():
@@ -36,13 +45,45 @@ def test_cache_get_hit():
     assert obj3 == "created obj1"
 
     creator_mock.assert_called_once_with("1")
+
     assert mock_logger_debug.mock_calls == [
-        call("one not found in cache. . . creating"),
-        call("one loading from cache"),
-        call("one loading from cache")]
+        call("`one` not found in cache. . . creating"),
+        call("`one` loading from cache"),
+        call("`one` loading from cache")]
 
     obj4 = creator_mock("4")
     assert obj4 == "created obj2"
+
+
+def test_cache_get_hit_no_cache(no_cache):
+    """Cache get with no_cache set should run creator each time."""
+    cache = Cache()
+    creator_mock = MagicMock()
+    creator_mock.side_effect = ["created obj1", "created obj2", "created obj3",
+                                "created obj4"]
+
+    with patch_logger('pypyr.cache', logging.DEBUG) as mock_logger_debug:
+        obj1 = cache.get('one', lambda: creator_mock("1"))
+        obj2 = cache.get('one', lambda: creator_mock("2"))
+        obj3 = cache.get('one', lambda: creator_mock("3"))
+
+    assert obj1 == "created obj1"
+    assert obj2 == "created obj2"
+    assert obj3 == "created obj3"
+
+    assert creator_mock.mock_calls == [
+        call('1'),
+        call('2'),
+        call('3')
+    ]
+
+    assert mock_logger_debug.mock_calls == [
+        call("no cache mode enabled. creating `one` sans cache"),
+        call("no cache mode enabled. creating `one` sans cache"),
+        call("no cache mode enabled. creating `one` sans cache")]
+
+    obj4 = creator_mock("4")
+    assert obj4 == "created obj4"
 
 
 def test_cache_multiple_items_get_hit_closures():
@@ -66,10 +107,10 @@ def test_cache_multiple_items_get_hit_closures():
     assert obj4 == 5
 
     assert mock_logger_debug.mock_calls == [
-        call("one not found in cache. . . creating"),
-        call("two not found in cache. . . creating"),
-        call("three not found in cache. . . creating"),
-        call("one loading from cache")]
+        call("`one` not found in cache. . . creating"),
+        call("`two` not found in cache. . . creating"),
+        call("`three` not found in cache. . . creating"),
+        call("`one` loading from cache")]
 
 
 def test_cache_clear():
@@ -93,9 +134,9 @@ def test_cache_clear():
     assert obj3 == 5
 
     assert mock_logger_debug.mock_calls == [
-        call("one not found in cache. . . creating"),
-        call("two not found in cache. . . creating"),
-        call("one loading from cache")]
+        call("`one` not found in cache. . . creating"),
+        call("`two` not found in cache. . . creating"),
+        call("`one` loading from cache")]
 
     obj1 = cache.get('one', closure(2, 3))
     obj2 = cache.get('two', closure(4, 5))

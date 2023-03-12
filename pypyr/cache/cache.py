@@ -2,6 +2,8 @@
 import logging
 import threading
 
+from pypyr.config import config
+
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,9 @@ class Cache():
         Be warned that get happens under the context of a Lock. . . so if
         creator takes a long time you might well be blocking.
 
+        If config no_cache is True, bypasses cache entirely - will call
+        creator each time and also not save the result to cache.
+
         Args:
             key: key (unique id) of cached item
             creator: callable that will create cached object if key not found
@@ -41,12 +46,17 @@ class Cache():
         Returns:
             Cached item at key or the result of creator()
         """
+        if config.no_cache:
+            logger.debug("no cache mode enabled. creating `%s` sans cache",
+                         key)
+            return creator()
+
         with self._lock:
             if key in self._cache:
-                logger.debug("%s loading from cache", key)
+                logger.debug("`%s` loading from cache", key)
                 obj = self._cache[key]
             else:
-                logger.debug("%s not found in cache. . . creating", key)
+                logger.debug("`%s` not found in cache. . . creating", key)
                 obj = creator()
                 self._cache[key] = obj
 
