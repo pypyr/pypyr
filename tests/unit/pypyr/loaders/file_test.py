@@ -4,6 +4,7 @@ from unittest.mock import call, mock_open, patch, PropertyMock
 
 import pytest
 
+import pypyr.cache.admin
 from pypyr.errors import PipelineNotFoundError
 import pypyr.loaders.file as fileloader
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
@@ -167,7 +168,7 @@ def test_get_pipeline_definition_pass(mocked_get_path,
                                       mocked_yaml,
                                       mocked_add_sys):
     """get_pipeline_definition passes correct params to all methods."""
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
     with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
@@ -186,10 +187,44 @@ def test_get_pipeline_definition_pass(mocked_get_path,
                                             parent='/parent/dir')
     mocked_open.assert_called_once_with(path, encoding=None)
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
-    assert fileloader._file_cache._cache == {str(path): pipeline_def}
+    assert fileloader.file_cache._cache == {str(path): pipeline_def}
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
 
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
+
+
+@patch('pypyr.loaders.file.add_sys_path')
+@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
+@patch('pypyr.loaders.file.get_pipeline_path',
+       return_value=Path('arb/path/x.yaml'))
+def test_get_pipeline_definition_clear_all_cache(mocked_get_path,
+                                                 mocked_yaml,
+                                                 mocked_add_sys):
+    """Clear all cache clears the pipeline file cache."""
+    fileloader.file_cache.clear()
+
+    with patch('pypyr.loaders.file.open',
+               mock_open(read_data='pipe contents')) as mocked_open:
+        pipeline_def = fileloader.get_pipeline_definition(
+            'pipename', '/parent/dir')
+
+    assert pipeline_def == PipelineDefinition(
+        'mocked pipeline def',
+        PipelineFileInfo(pipeline_name='x.yaml',
+                         loader='pypyr.loaders.file',
+                         parent=Path('arb/path'),
+                         path=Path('arb/path/x.yaml')))
+
+    path = Path('arb/path/x.yaml')
+    mocked_get_path.assert_called_once_with(pipeline_name='pipename',
+                                            parent='/parent/dir')
+    mocked_open.assert_called_once_with(path, encoding=None)
+    mocked_yaml.assert_called_once_with(mocked_open.return_value)
+    assert fileloader.file_cache._cache == {str(path): pipeline_def}
+    mocked_add_sys.assert_called_once_with(Path('arb/path'))
+
+    pypyr.cache.admin.clear_all()
+    assert fileloader.file_cache._cache == {}
 
 
 @patch('pypyr.loaders.file.add_sys_path')
@@ -200,7 +235,7 @@ def test_get_pipeline_definition_from_cache(mocked_get_path,
                                             mocked_yaml,
                                             mocked_add_sys):
     """Known path returns from cache."""
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
     with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
@@ -226,10 +261,10 @@ def test_get_pipeline_definition_from_cache(mocked_get_path,
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
 
-    assert fileloader._file_cache._cache == {str(path): pipeline_def_1}
-    assert fileloader._file_cache._cache[str(path)] is pipeline_def_1
+    assert fileloader.file_cache._cache == {str(path): pipeline_def_1}
+    assert fileloader.file_cache._cache[str(path)] is pipeline_def_1
 
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
 
 @patch('pypyr.loaders.file.add_sys_path')
@@ -240,7 +275,7 @@ def test_get_pipeline_definition_with_encoding(mocked_get_path,
                                                mocked_yaml,
                                                mocked_add_sys):
     """Open pipeline with custom encoding."""
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
     with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
@@ -259,10 +294,10 @@ def test_get_pipeline_definition_with_encoding(mocked_get_path,
                                             parent='/parent/dir')
     path = Path('arb/path/x.yaml')
     mocked_open.assert_called_once_with(path, encoding='arb')
-    assert fileloader._file_cache._cache == {str(path): pipeline_def}
+    assert fileloader.file_cache._cache == {str(path): pipeline_def}
     mocked_yaml.assert_called_once_with(mocked_open.return_value)
     mocked_add_sys.assert_called_once_with(Path('arb/path'))
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
 
 @patch('pypyr.loaders.file.add_sys_path')
@@ -271,7 +306,7 @@ def test_get_pipeline_definition_with_encoding(mocked_get_path,
 def test_get_pipeline_definition_file_not_found(mocked_get_path,
                                                 mocked_add_sys_path):
     """get_pipeline_definition raises file not found."""
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 
     with patch('pypyr.loaders.file.open',
                mock_open(read_data='pipe contents')) as mocked_open:
@@ -282,8 +317,8 @@ def test_get_pipeline_definition_file_not_found(mocked_get_path,
     mocked_get_path.assert_called_once_with(pipeline_name='pipename',
                                             parent='/arb/dir')
 
-    assert fileloader._file_cache._cache == {}
+    assert fileloader.file_cache._cache == {}
     mocked_add_sys_path.assert_not_called()
 
-    fileloader._file_cache.clear()
+    fileloader.file_cache.clear()
 # endregion get_pipeline_definition

@@ -2,7 +2,7 @@
 import logging
 from pathlib import Path
 
-from pypyr.cache.cache import Cache
+from pypyr.cache.filecache import file_cache
 from pypyr.config import config
 from pypyr.errors import PipelineNotFoundError
 from pypyr.moduleloader import add_sys_path
@@ -11,8 +11,6 @@ import pypyr.yaml
 
 logger = logging.getLogger(__name__)
 
-
-_file_cache = Cache()
 cwd_pipelines_dir = config.cwd.joinpath(config.pipelines_subdir)
 pypyr_dir = Path(__file__).parents[1]
 builtin_pipelines_dir = pypyr_dir.joinpath('pipelines')
@@ -151,7 +149,7 @@ def get_pipeline_definition(pipeline_name, parent):
 
     logger.debug("Trying to open pipeline at path %s", pipeline_path)
 
-    pipeline_definition = _file_cache.get(
+    pipeline_definition = file_cache.get(
         str(pipeline_path),
         lambda: load_pipeline_from_file(pipeline_path))
 
