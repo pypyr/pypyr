@@ -24,6 +24,7 @@ def no_envs(monkeypatch):
     monkeypatch.delenv('PYPYR_SKIP_INIT', raising=False)
     monkeypatch.delenv('PYPYR_CONFIG_GLOBAL', raising=False)
     monkeypatch.delenv('PYPYR_CONFIG_LOCAL', raising=False)
+    monkeypatch.delenv('PYPYR_NO_CACHE', raising=False)
 
 # region default initialization
 
@@ -40,6 +41,8 @@ def test_config_defaults(no_envs):
     assert config.platform_paths is None
     assert config.pyproject_toml is None
     assert config.skip_init is False
+
+    assert config.no_cache is False
 
     assert config.vars == {}
     assert config.shortcuts == {}
@@ -67,8 +70,31 @@ def test_config_with_encoding(monkeypatch, no_envs):
     monkeypatch.setenv('PYPYR_ENCODING', 'arb')
     monkeypatch.setenv('PYPYR_CMD_ENCODING', 'arb2')
     config = Config()
-    config.default_encoding == 'arb'
-    config.default_cmd_encoding == 'arb2'
+    assert config.default_encoding == 'arb'
+    assert config.default_cmd_encoding == 'arb2'
+
+
+def test_config_with_no_cache(monkeypatch, no_envs):
+    """Set no cache via env variable."""
+    monkeypatch.setenv('PYPYR_NO_CACHE', '1')
+    config = Config()
+    assert config.no_cache is True
+
+    monkeypatch.setenv('PYPYR_NO_CACHE', 'TRUE')
+    config = Config()
+    assert config.no_cache is True
+
+    monkeypatch.setenv('PYPYR_NO_CACHE', 'true')
+    config = Config()
+    assert config.no_cache is True
+
+    monkeypatch.setenv('PYPYR_NO_CACHE', '0')
+    config = Config()
+    assert config.no_cache is False
+
+    monkeypatch.setenv('PYPYR_NO_CACHE', 'fAlse')
+    config = Config()
+    assert config.no_cache is False
 
 
 def test_config_platforms(monkeypatch):
@@ -737,6 +763,7 @@ log_config:
 log_date_format: '%Y-%m-%d %H:%M:%S'
 log_detail_format: '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s'
 log_notify_format: '%(message)s'
+no_cache: false
 pipelines_subdir: pipelines
 shortcuts: {{}}
 vars: {{}}
@@ -765,6 +792,7 @@ def test_config_all_str(mock_get_platform, no_envs):
                    b'[tool.pypyr]\n'
                    b'pipelines_subdir = "arb4"\n'
                    b'default_success_group = "dsg"\n'
+                   b'no_cache = true\n'
                    b'[tool.pypyr.vars]\n'
                    b'a = "e"\n'
                    b'f4 = 4'))
@@ -802,6 +830,8 @@ def test_config_all_str(mock_get_platform, no_envs):
 
     assert config.platform_paths == fake_pp
 
+    assert config.no_cache is True
+
     mock_get_platform.assert_called_once_with('pypyr', 'config.yaml')
 
     assert mock_files.mock_calls == [
@@ -825,6 +855,7 @@ log_config:
 log_date_format: '%Y-%m-%d %H:%M:%S'
 log_detail_format: '%(asctime)s %(levelname)s:%(name)s:%(funcName)s: %(message)s'
 log_notify_format: '%(message)s'
+no_cache: true
 pipelines_subdir: arb5
 shortcuts:
   s1: one
@@ -858,6 +889,7 @@ pyproject_toml:
     pypyr:
       pipelines_subdir: arb4
       default_success_group: dsg
+      no_cache: true
       vars:
         a: e
         f4: 4

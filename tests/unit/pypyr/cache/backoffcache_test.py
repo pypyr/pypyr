@@ -73,6 +73,30 @@ def test_get_backoff_builtin():
     assert callable_ref(789) == 123
     assert callable_ref(999) == 123
 
+
+@pytest.fixture
+def no_cache(monkeypatch):
+    """Set no cache."""
+    monkeypatch.setattr('pypyr.cache.cache.config.no_cache', True)
+
+
+def test_get_backoff_builtin_no_cache(no_cache):
+    """Load built-in backoff callable when no_cache true."""
+    backoff_cache = backoffcache.BackoffCache()
+    f = backoff_cache.get_backoff('fixed')
+
+    callable_ref = f(sleep=123, max_sleep=456)
+    assert callable_ref(789) == 123
+    assert callable_ref(999) == 123
+
+    f2 = backoff_cache.get_backoff('fixed')
+    callable_ref = f2(sleep=789, max_sleep=1000)
+    assert callable_ref(111) == 789
+
+    # didn't add anything to cache even when calling same built-in twice,
+    # bypassing it entirely
+    assert backoff_cache._cache == pypyr.retries.builtin_backoffs
+
 # endregion BackoffCache: get_backoff
 
 # region BackoffCache: clear
