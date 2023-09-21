@@ -49,9 +49,9 @@ class Step:
 @define
 class Pipeline:
     context_parser: Optional[str] = None
-    steps: Optional[List[Step]] = None  # TODO
-    on_success: Optional[List[Step]] = None  # TODO
-    on_failure: Optional[List[Step]] = None  # TODO
+    steps: Optional[List[Step | str]] = None
+    on_success: Optional[List[Step | str]] = None
+    on_failure: Optional[List[Step | str]] = None
 
     def __hash__(self):
         # TODO: workaround to hash a pipeline
@@ -68,6 +68,14 @@ class Pipeline:
     def __contains__(self, item):
         # TODO: workaround to make the pipeline behave like a dict
         return hasattr(self, item)
+
+
+converter.register_structure_hook(
+    Step | str,
+    lambda data, _: data
+    if isinstance(data, str)
+    else converter.structure(data, Step),
+)
 
 
 converter.register_structure_hook(
