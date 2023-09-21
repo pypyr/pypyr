@@ -11,7 +11,7 @@ import pypyr.moduleloader
 from pypyr.cache.cache import Cache
 from pypyr.config import config
 from pypyr.errors import PipelineDefinitionError
-from pypyr.loaders.model import Pipeline
+from pypyr.models import Pipeline
 from pypyr.pipedef import PipelineDefinition, PipelineInfo
 
 logger = logging.getLogger(__name__)

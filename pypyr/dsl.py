@@ -11,7 +11,7 @@ from pypyr.config import config
 from pypyr.errors import (Call, ControlOfFlowInstruction, HandledError,
                           LoopMaxExhaustedError, PipelineDefinitionError, Stop,
                           get_error_name)
-from pypyr.loaders.model import Step as StepModel
+from pypyr.models import Step as StepModel
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly

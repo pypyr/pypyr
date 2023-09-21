@@ -1,5 +1,6 @@
 """pypyr.loaders.model unit tests."""
-from pypyr.loaders.model import get_pipeline_definition, Pipeline
+from pypyr.loaders.model import get_pipeline_definition
+from pypyr.models import Pipeline
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
 
 

@@ -1,7 +1,8 @@
 """pypyr.loaders.model integration tests."""
 
 from pypyr import pipelinerunner
-from pypyr.loaders.model import Pipeline, Step, get_pipeline_definition
+from pypyr.loaders.model import get_pipeline_definition
+from pypyr.models import Pipeline, Step
 
 
 def test_get_pipeline_definition():
