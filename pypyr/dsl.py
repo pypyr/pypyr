@@ -123,7 +123,7 @@ class Jsonify(SpecialTagDirective):
     @classmethod
     def from_yaml(cls, constructor, node):
         """Create the class from yaml representation."""
-        for data in constructor.construct_undefined(node):
+        for data in constructor.construct_unknown(node):
             # returns generator as a means to update the
             # returned iterator for recursive yaml refs where the node is still
             # under construction.
