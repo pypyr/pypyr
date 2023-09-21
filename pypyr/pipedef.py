@@ -50,6 +50,14 @@ class PipelineDefinition():
         else:
             return False
 
+    def __repr__(self):
+        """Return repr(self)."""
+        return (
+            f"{self.__class__.__name__}("
+            f"pipeline={self.pipeline}, "
+            f"info={self.info})"
+        )
+
 
 class PipelineInfo():
     """The common attributes that every pipeline loader should set.
