@@ -5,16 +5,13 @@ import logging
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.nodes import ScalarNode
 
-from pypyr.cache.stepcache import step_cache
 from pypyr.cache.backoffcache import backoff_cache
+from pypyr.cache.stepcache import step_cache
 from pypyr.config import config
-from pypyr.errors import (Call,
-                          ControlOfFlowInstruction,
-                          get_error_name,
-                          HandledError,
-                          LoopMaxExhaustedError,
-                          PipelineDefinitionError,
-                          Stop)
+from pypyr.errors import (Call, ControlOfFlowInstruction, HandledError,
+                          LoopMaxExhaustedError, PipelineDefinitionError, Stop,
+                          get_error_name)
+from pypyr.loaders.model import Step as StepModel
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -299,7 +296,9 @@ class Step:
         self.on_error = None
 
         try:
-            if isinstance(step, dict):
+            if isinstance(step, StepModel):
+                self._init_from_model(step)
+            elif isinstance(step, dict):
                 self._init_from_dict(step)
             else:
                 # of course, it might not be a string. in line with duck
@@ -382,6 +381,32 @@ class Step:
 
         # while: optional, defaults none.
         while_definition = step.get('while', None)
+        if while_definition:
+            self.while_decorator = WhileDecorator(while_definition)
+
+        logger.debug("step name: %s", self.name)
+
+    def _init_from_model(self, step):
+        self.name = step.name
+        self.in_parameters = step.in_
+        self.description = step.description
+        self.run_me = step.run
+        self.skip_me = step.skip
+        self.swallow_me = step.swallow
+        self.on_error = step.onError
+
+        self.foreach_items = step.foreach
+
+        if self.foreach_items:
+            self.for_counter = None
+
+        retry_definition = step.retry
+
+        if retry_definition:
+            self.retry_decorator = RetryDecorator(retry_definition)
+
+        while_definition = step.while_
+
         if while_definition:
             self.while_decorator = WhileDecorator(while_definition)
 
