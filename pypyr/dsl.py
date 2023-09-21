@@ -393,7 +393,7 @@ class Step:
         self.run_me = step.run
         self.skip_me = step.skip
         self.swallow_me = step.swallow
-        self.on_error = step.onError
+        self.on_error = step.on_error
 
         self.foreach_items = step.foreach
 

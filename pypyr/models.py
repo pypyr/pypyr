@@ -8,18 +8,26 @@ converter = Converter()
 
 
 @define
+class While:
+    error_on_max: bool = False
+    max: Optional[int] = None
+    sleep: float = 0
+    stop: Optional[str] = None
+
+
+@define
 class Step:
     name: str
     comment: Optional[str] = None
     description: Optional[str] = None
     foreach: Optional[list] = None
     in_: Optional[dict] = None
-    onError: Optional[str] = None  # TODO
+    on_error: Optional[str] = None
     retry: Optional[dict] = None  # TODO
     run: bool = True
     skip: bool = False
     swallow: bool = False
-    while_: Optional[dict] = None  # TODO
+    while_: Optional[While] = None
 
     def __hash__(self):
         # TODO: workaround to hash a pipeline
@@ -51,5 +59,22 @@ class Pipeline:
 
 
 converter.register_structure_hook(
-    Step, make_dict_structure_fn(Step, converter, in_=override(rename="in"))
+    Step,
+    make_dict_structure_fn(
+        Step,
+        converter,
+        on_error=override(rename="onError"),
+        in_=override(rename="in"),
+        while_=override(rename="while"),
+    ),
+)
+
+
+converter.register_structure_hook(
+    While,
+    make_dict_structure_fn(
+        While,
+        converter,
+        error_on_max=override(rename="errorOnMax"),
+    ),
 )
