@@ -19,6 +19,8 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "attrs",
+  "cattrs",
   "python-dateutil",
   "ruamel.yaml",
   "tomli >= 1.1.0 ; python_version < '3.11'",
