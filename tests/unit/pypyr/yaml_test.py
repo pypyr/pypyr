@@ -1,9 +1,33 @@
 """yaml.py unit tests."""
 import io
+from textwrap import dedent
+
 import pytest
 import ruamel.yaml as yamler
-from pypyr.context import Context
+
 import pypyr.yaml as pypyr_yaml
+from pypyr.context import Context
+from pypyr.models import Pipeline, Step
+
+
+# region get_pipeline
+def test_get_pipeline():
+    data = dedent(
+        """\
+        steps:
+          - name: pypyr.steps.echo
+            in:
+              echoMe: 'testing'
+          """
+    )
+    pipeline = pypyr_yaml.get_pipeline(data)
+
+    assert pipeline == Pipeline(
+        steps=[Step(name='pypyr.steps.echo', in_={'echoMe': 'testing'})]
+    )
+
+
+# endregion get_pipeline
 
 
 # region get_pipeline_yaml

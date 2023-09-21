@@ -1,6 +1,10 @@
 from typing import List, Optional
 
 from attrs import define
+from cattrs import Converter
+from cattrs.gen import make_dict_structure_fn, override
+
+converter = Converter()
 
 
 @define
@@ -44,3 +48,8 @@ class Pipeline:
     def __contains__(self, item):
         # TODO: workaround to make the pipeline behave like a dict
         return hasattr(self, item)
+
+
+converter.register_structure_hook(
+    Step, make_dict_structure_fn(Step, converter, in_=override(rename="in"))
+)

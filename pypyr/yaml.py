@@ -1,7 +1,13 @@
 """yaml handling functions."""
 import ruamel.yaml as yamler  # type: ignore
+
 from pypyr.context import Context
 from pypyr.dsl import Jsonify, PyString, SicString
+from pypyr.models import Pipeline, converter
+
+
+def get_pipeline(data):
+    return converter.structure(get_pipeline_yaml(data), Pipeline)
 
 
 def get_pipeline_yaml(file):
