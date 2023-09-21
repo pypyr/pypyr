@@ -63,3 +63,23 @@ def test_convert_with_steps():
         on_failure=[Step(name="failure_step")],
         steps=[Step(name="step_one")],
     )
+
+
+def test_convert_with_custom_steps():
+    data = {
+        "my_custom_one": ["step_one"],
+        "my_custom_two": [{"name": "step_two"}],
+    }
+
+    pipeline = converter.structure(data, Pipeline)
+
+    assert pipeline.extra['my_custom_one'] == ["step_one"]
+    assert pipeline.extra['my_custom_two'] == [Step(name="step_two")]
+
+
+def test_extra_step():
+    data = {"extra": ["extra_step"]}
+
+    pipeline = converter.structure(data, Pipeline)
+
+    assert pipeline.extra['extra'] == ["extra_step"]

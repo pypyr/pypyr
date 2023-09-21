@@ -1,6 +1,7 @@
-from typing import List, Optional
+from collections import defaultdict
+from typing import Dict, List, Optional
 
-from attrs import define
+from attrs import define, fields
 from cattrs import Converter
 from cattrs.gen import make_dict_structure_fn, override
 
@@ -46,12 +47,16 @@ class Step:
         return id(self)
 
 
+Steps = List[Step | str]
+
+
 @define
 class Pipeline:
     context_parser: Optional[str] = None
-    steps: Optional[List[Step | str]] = None
-    on_success: Optional[List[Step | str]] = None
-    on_failure: Optional[List[Step | str]] = None
+    extra: Optional[Dict[str, Steps]] = None
+    on_failure: Optional[Steps] = None
+    on_success: Optional[Steps] = None
+    steps: Optional[Steps] = None
 
     def __hash__(self):
         # TODO: workaround to hash a pipeline
@@ -70,13 +75,29 @@ class Pipeline:
         return hasattr(self, item)
 
 
+def structure_pipeline(data, cls, extra_field_name='extra'):
+    structured_data = defaultdict(dict)
+    fields_by_name = {f.name: f for f in fields(cls)}
+
+    for k, v in data.items():
+        if k in fields_by_name and k != extra_field_name:
+            structured_data[k] = converter.structure(v, fields_by_name[k].type)
+        else:
+            structured_data[extra_field_name][k] = converter.structure(
+                v, Steps  # TODO: change hard-coded Steps to a dynamic type
+            )
+
+    return cls(**structured_data)
+
+
+converter.register_structure_hook(Pipeline, structure_pipeline)
+
 converter.register_structure_hook(
     Step | str,
     lambda data, _: data
     if isinstance(data, str)
     else converter.structure(data, Step),
 )
-
 
 converter.register_structure_hook(
     Retry,
@@ -90,7 +111,6 @@ converter.register_structure_hook(
     ),
 )
 
-
 converter.register_structure_hook(
     Step,
     make_dict_structure_fn(
@@ -101,7 +121,6 @@ converter.register_structure_hook(
         while_=override(rename="while"),
     ),
 )
-
 
 converter.register_structure_hook(
     While,
