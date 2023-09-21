@@ -2,7 +2,7 @@
 import logging
 
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
-from pypyr.yaml import get_pipeline_yaml
+from pypyr.yaml import get_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,13 @@ def get_pipeline_definition(pipeline_name, parent=None):
     """
     logger.debug("starting")
 
-    pipeline = get_pipeline_yaml(pipeline_name)
+    pipeline = get_pipeline(pipeline_name)
     info = PipelineFileInfo(
         pipeline_name="", parent=parent, loader=__name__, path=None
     )
     definition = PipelineDefinition(pipeline=pipeline, info=info)
 
-    logger.debug("found %d stages in pipeline.", len(definition.pipeline))
+    logger.debug("pipeline:", definition.pipeline)
     logger.debug("done")
 
     return definition
