@@ -8,6 +8,18 @@ converter = Converter()
 
 
 @define
+class Retry:
+    backoff: str = 'fixed'
+    backoff_args: Optional[dict] = None
+    jrc: float = 0
+    max: Optional[int] = None
+    retry_on: Optional[List[str]] = None
+    sleep: float = 0
+    sleep_max: Optional[float] = None
+    stop_on: Optional[List[str]] = None
+
+
+@define
 class While:
     error_on_max: bool = False
     max: Optional[int] = None
@@ -23,7 +35,7 @@ class Step:
     foreach: Optional[list] = None
     in_: Optional[dict] = None
     on_error: Optional[str] = None
-    retry: Optional[dict] = None  # TODO
+    retry: Optional[Retry] = None
     run: bool = True
     skip: bool = False
     swallow: bool = False
@@ -56,6 +68,19 @@ class Pipeline:
     def __contains__(self, item):
         # TODO: workaround to make the pipeline behave like a dict
         return hasattr(self, item)
+
+
+converter.register_structure_hook(
+    Retry,
+    make_dict_structure_fn(
+        Retry,
+        converter,
+        backoff_args=override(rename="backoffArgs"),
+        retry_on=override(rename="retryOn"),
+        sleep_max=override(rename="sleepMax"),
+        stop_on=override(rename="stopOn"),
+    ),
+)
 
 
 converter.register_structure_hook(

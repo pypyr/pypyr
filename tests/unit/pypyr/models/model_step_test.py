@@ -1,4 +1,4 @@
-from pypyr.models import Step, While, converter
+from pypyr.models import Retry, Step, While, converter
 
 
 def test_init():
@@ -10,7 +10,7 @@ def test_init():
         foreach=["foreach"],
         in_={"in": "in"},
         on_error="onError",
-        retry={"retry": "retry"},
+        retry=Retry(),
         run=True,
         skip=False,
         swallow=False,
@@ -23,7 +23,7 @@ def test_init():
     assert step.foreach == ["foreach"]
     assert step.in_ == {"in": "in"}
     assert step.on_error == "onError"
-    assert step.retry == {"retry": "retry"}
+    assert step.retry == Retry()
     assert step.run is True
     assert step.skip is False
     assert step.swallow is False
@@ -38,7 +38,16 @@ def test_convert():
         "foreach": ["foreach"],
         "in": {"in": "in"},
         "onError": "onError",
-        "retry": {"retry": "retry"},
+        "retry": {
+            'max': 1,
+            'sleep': 0,
+            'stopOn': ['ValueError', 'MyModule.SevereError'],
+            'retryOn': ['TimeoutError'],
+            'backoff': 'backoff',
+            'backoffArgs': {'arg1': 'value 1'},
+            'sleepMax': 123,
+            'jrc': 123.45,
+        },
         "run": True,
         "skip": False,
         "swallow": False,
@@ -54,7 +63,16 @@ def test_convert():
         foreach=["foreach"],
         in_={"in": "in"},
         on_error="onError",
-        retry={"retry": "retry"},
+        retry=Retry(
+            backoff="backoff",
+            backoff_args={'arg1': 'value 1'},
+            jrc=123.45,
+            max=1,
+            retry_on=['TimeoutError'],
+            sleep=0,
+            sleep_max=123,
+            stop_on=['ValueError', 'MyModule.SevereError'],
+        ),
         run=True,
         skip=False,
         swallow=False,
