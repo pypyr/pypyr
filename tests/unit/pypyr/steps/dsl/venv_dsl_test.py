@@ -1,6 +1,7 @@
 """Unit tests for pypyr.steps.dsl.venv."""
 from types import SimpleNamespace
 from pathlib import Path
+from unittest import TestCase
 from unittest.mock import patch, call, DEFAULT
 
 import pytest
@@ -312,16 +313,25 @@ def test_venv_dsl_simple_str_error(mock_builder):
     mocked_builder.pip_install_extras.assert_not_called()
 
 
+arb2_path = str(Path('/arb2').expanduser().resolve())
+arb4_path = str(Path('/arb4').expanduser().resolve())
+
+
+def env_builder_create_mock(path):
+    """Force the correct order even for async calls."""
+    if path == arb2_path:
+        raise ValueError('arb')
+    if path == arb4_path:
+        raise ValueError('arb2')
+
+
 @patch('pypyr.venv.EnvBuilderWithExtraDeps')
 def test_venv_dsl_mapping_list_of_str_error_on_create(mock_builder):
     """Run with list of str input inside mapping raising create errors."""
     context = get_simple_context()
     mocked_builder = mock_builder.return_value
     mocked_builder.context = context
-    mocked_builder.create.side_effect = [DEFAULT,
-                                         ValueError('arb'),
-                                         DEFAULT,
-                                         ValueError('arb2')]
+    mocked_builder.create.side_effect = env_builder_create_mock
 
     step = VenvCreatorStep.from_context(Context(
         {'venv': {
@@ -379,10 +389,7 @@ def test_venv_dsl_list_of_mapping_error_on_create(mock_builder):
     context = get_simple_context()
     mocked_builder = mock_builder.return_value
     mocked_builder.context = context
-    mocked_builder.create.side_effect = [DEFAULT,
-                                         ValueError('arb'),
-                                         DEFAULT,
-                                         ValueError('arb2')]
+    mocked_builder.create.side_effect = env_builder_create_mock
 
     step = VenvCreatorStep.from_context(Context(
         {'venv': [
@@ -505,11 +512,12 @@ def test_venv_dsl_mapping_list_of_str_error_on_pip_install(mock_builder):
     assert mocked_builder.upgrade_dependencies.mock_calls[3] == call(context)
 
     assert mocked_builder.pip_install_extras.call_count == 4
-    assert mocked_builder.pip_install_extras.mock_calls[0] == call(
-        'package1 package2')
-    assert mocked_builder.pip_install_extras.mock_calls[1] == call(
-        'package3 package4')
-    assert mocked_builder.pip_install_extras.mock_calls[2] == call(
-        'package5 package6')
-    assert mocked_builder.pip_install_extras.mock_calls[3] == call(
-        'package7 package8')
+    # strictly speaking the mock_calls list could be in any order, because
+    # envs might have finished creating out of instantiation order.
+    TestCase().assertCountEqual(
+        mocked_builder.pip_install_extras.mock_calls,
+        ([
+            call('package1 package2'),
+            call('package3 package4'),
+            call('package5 package6'),
+            call('package7 package8')]))
