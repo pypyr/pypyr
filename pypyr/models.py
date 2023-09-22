@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, NewType, Optional, get_args
 
 from attrs import define, fields
 from cattrs import Converter
@@ -8,15 +8,27 @@ from cattrs.gen import make_dict_structure_fn, override
 converter = Converter()
 
 
+class Annotable(NewType):
+    @property
+    def supertype(self):
+        return self.__supertype__
+
+    def __getitem__(self, item):
+        return Annotated[self, item]
+
+
+Evaluable = Annotable('Evaluable', str)
+
+
 @define
 class Retry:
-    backoff: str = 'fixed'
+    backoff: Evaluable[str] = 'fixed'
     backoff_args: Optional[dict] = None
-    jrc: float = 0
-    max: Optional[int] = None
+    jrc: Evaluable[float] = 0
+    max: Optional[Evaluable[int]] = None
     retry_on: Optional[List[str]] = None
-    sleep: float = 0
-    sleep_max: Optional[float] = None
+    sleep: Evaluable[float] = 0
+    sleep_max: Optional[Evaluable[float]] = None
     stop_on: Optional[List[str]] = None
 
 
@@ -90,7 +102,17 @@ def structure_pipeline(data, cls, extra_field_name='extra'):
     return cls(**structured_data)
 
 
+def structure_evaluable(data, cls):
+    evaluable, type_ = get_args(cls)
+    try:
+        return converter.structure(data, type_)
+    except ValueError:
+        return converter.structure(data, evaluable.supertype)
+
+
 converter.register_structure_hook(Pipeline, structure_pipeline)
+
+converter.register_structure_hook(Evaluable, structure_evaluable)
 
 converter.register_structure_hook(
     Step | str,

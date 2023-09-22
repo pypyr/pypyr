@@ -61,3 +61,27 @@ def test_convert():
         sleep_max=123,
         stop_on=['ValueError', 'MyModule.SevereError'],
     )
+
+
+def test_evaluable_fields():
+    """
+    Evaluable are types containing an expression
+    that can be formatted as the real value.
+    """
+    data = {
+        'backoff': '{backoff}',
+        'jrc': '{jrc}',
+        'max': '{max}',
+        'sleep': '{sleep}',
+        'sleepMax': '{sleepMax}',
+    }
+
+    retry = converter.structure(data, Retry)
+
+    assert retry == Retry(
+        backoff="{backoff}",
+        jrc='{jrc}',
+        max='{max}',
+        sleep='{sleep}',
+        sleep_max='{sleepMax}',
+    )
