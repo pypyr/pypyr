@@ -63,10 +63,9 @@ def test_convert():
     )
 
 
-def test_evaluable_fields():
+def test_expression_fields():
     """
-    Evaluable are types containing an expression
-    that can be formatted as the real value.
+    Expression is a type that can be formatted as the real value.
     """
     data = {
         'backoff': '{backoff}',

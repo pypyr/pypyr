@@ -17,27 +17,27 @@ class Annotable(NewType):
         return Annotated[self, item]
 
 
-Evaluable = Annotable('Evaluable', str)
+Expression = Annotable('Expression', str)
 
 
 @define
 class Retry:
-    backoff: Evaluable[str] = 'fixed'
+    backoff: Expression[str] = 'fixed'
     backoff_args: Optional[dict] = None
-    jrc: Evaluable[float] = 0
-    max: Optional[Evaluable[int]] = None
+    jrc: Expression[float] = 0
+    max: Optional[Expression[int]] = None
     retry_on: Optional[List[str]] = None
-    sleep: Evaluable[float | List[float]] = 0
-    sleep_max: Optional[Evaluable[float]] = None
+    sleep: Expression[float | List[float]] = 0
+    sleep_max: Optional[Expression[float]] = None
     stop_on: Optional[List[str]] = None
 
 
 @define
 class While:
-    error_on_max: Evaluable[bool] = False
-    max: Optional[Evaluable[int]] = None
-    sleep: Evaluable[float] = 0
-    stop: Optional[Evaluable[str]] = None
+    error_on_max: Expression[bool] = False
+    max: Optional[Expression[int]] = None
+    sleep: Expression[float] = 0
+    stop: Optional[Expression[str]] = None
 
 
 @define
@@ -102,12 +102,12 @@ def structure_pipeline(data, cls, extra_field_name='extra'):
     return cls(**structured_data)
 
 
-def structure_evaluable(data, cls):
-    evaluable, type_ = get_args(cls)
+def structure_expression(data, cls):
+    expression, type_ = get_args(cls)
     try:
         return converter.structure(data, type_)
     except ValueError:
-        return converter.structure(data, evaluable.supertype)
+        return converter.structure(data, expression.supertype)
 
 
 def structure_bool(data, cls):
@@ -126,7 +126,7 @@ converter.register_structure_hook(
     lambda data, _: data if isinstance(data, list) else float(data),
 )
 
-converter.register_structure_hook(Evaluable, structure_evaluable)
+converter.register_structure_hook(Expression, structure_expression)
 
 converter.register_structure_hook(
     Step | str,
