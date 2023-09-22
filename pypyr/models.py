@@ -27,7 +27,7 @@ class Retry:
     jrc: Evaluable[float] = 0
     max: Optional[Evaluable[int]] = None
     retry_on: Optional[List[str]] = None
-    sleep: Evaluable[float] = 0
+    sleep: Evaluable[float | List[float]] = 0
     sleep_max: Optional[Evaluable[float]] = None
     stop_on: Optional[List[str]] = None
 
@@ -120,6 +120,11 @@ def structure_bool(data, cls):
 converter.register_structure_hook(Pipeline, structure_pipeline)
 
 converter.register_structure_hook(bool, structure_bool)
+
+converter.register_structure_hook(
+    float | List[float],
+    lambda data, _: data if isinstance(data, list) else float(data),
+)
 
 converter.register_structure_hook(Evaluable, structure_evaluable)
 

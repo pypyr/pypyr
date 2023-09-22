@@ -85,3 +85,11 @@ def test_evaluable_fields():
         sleep='{sleep}',
         sleep_max='{sleepMax}',
     )
+
+
+def test_sleep_as_float_list():
+    data = {'sleep': [2, 4, 6]}
+
+    retry = converter.structure(data, Retry)
+
+    assert retry == Retry(sleep=[2, 4, 6])
