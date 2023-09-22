@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
   "python-dateutil",
-  "ruamel.yaml",
+  "ruamel.yaml >= 0.17.32",
   "tomli >= 1.1.0 ; python_version < '3.11'",
   "tomli-w",
 ]
