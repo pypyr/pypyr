@@ -34,10 +34,10 @@ class Retry:
 
 @define
 class While:
-    error_on_max: bool = False
-    max: Optional[int] = None
-    sleep: float = 0
-    stop: Optional[str] = None
+    error_on_max: Evaluable[bool] = False
+    max: Optional[Evaluable[int]] = None
+    sleep: Evaluable[float] = 0
+    stop: Optional[Evaluable[str]] = None
 
 
 @define
@@ -110,7 +110,16 @@ def structure_evaluable(data, cls):
         return converter.structure(data, evaluable.supertype)
 
 
+def structure_bool(data, cls):
+    if not isinstance(data, bool):
+        raise ValueError(f'Expected a boolean value, got {data}')
+
+    return data
+
+
 converter.register_structure_hook(Pipeline, structure_pipeline)
+
+converter.register_structure_hook(bool, structure_bool)
 
 converter.register_structure_hook(Evaluable, structure_evaluable)
 

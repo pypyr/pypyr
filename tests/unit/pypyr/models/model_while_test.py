@@ -31,3 +31,25 @@ def test_convert():
         sleep=0.1,
         error_on_max=True,
     )
+
+
+def test_evaluable_fields():
+    """
+    Evaluable are types containing an expression
+    that can be formatted as the real value.
+    """
+    data = {
+        'errorOnMax': '{errorOnMax}',
+        'max': '{max}',
+        'sleep': '{sleep}',
+        'stop': '{stop}',
+    }
+
+    retry = converter.structure(data, While)
+
+    assert retry == While(
+        error_on_max='{errorOnMax}',
+        max='{max}',
+        sleep='{sleep}',
+        stop='{stop}',
+    )
