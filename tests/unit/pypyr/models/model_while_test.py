@@ -1,3 +1,4 @@
+from pypyr.dsl import Jsonify, PyString, SicString
 from pypyr.models import While, converter
 
 
@@ -33,6 +34,24 @@ def test_convert():
     )
 
 
+def test_converter_cast_fields():
+    data = {
+        "stop": "stop",
+        "max": '1',
+        "sleep": '0.1',
+        "errorOnMax": True,
+    }
+
+    while_ = converter.structure(data, While)
+
+    assert while_ == While(
+        stop="stop",
+        max=1,
+        sleep=0.1,
+        error_on_max=True,
+    )
+
+
 def test_expression_fields():
     """
     Expresion is a type that can be formatted as the real value.
@@ -51,4 +70,22 @@ def test_expression_fields():
         max='{max}',
         sleep='{sleep}',
         stop='{stop}',
+    )
+
+
+def test_special_tag_directive_fields():
+    data = {
+        'errorOnMax': PyString('f()'),
+        'max': Jsonify("{'test': True}"),
+        'sleep': SicString('{sleep}'),
+        'stop': SicString('{stop}'),
+    }
+
+    while_ = converter.structure(data, While)
+
+    assert while_ == While(
+        error_on_max=PyString('f()'),
+        max=Jsonify("{'test': True}"),
+        sleep=SicString('{sleep}'),
+        stop=SicString('{stop}'),
     )

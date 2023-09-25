@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from pypyr.dsl import Jsonify, PyString, SicString
 from pypyr.models import Retry, converter
 
 
@@ -92,3 +93,23 @@ def test_sleep_as_float_list():
     retry = converter.structure(data, Retry)
 
     assert retry == Retry(sleep=[2, 4, 6])
+
+
+def test_special_tag_directive_fields():
+    data = {
+        'backoff': PyString('f()'),
+        'jrc': Jsonify("{'test': True}"),
+        'max': SicString('{max}'),
+        'sleep': SicString('{sleep}'),
+        'sleepMax': SicString('{sleepMax}'),
+    }
+
+    retry = converter.structure(data, Retry)
+
+    assert retry == Retry(
+        backoff=PyString('f()'),
+        jrc=Jsonify("{'test': True}"),
+        max=SicString('{max}'),
+        sleep=SicString('{sleep}'),
+        sleep_max=SicString('{sleepMax}'),
+    )

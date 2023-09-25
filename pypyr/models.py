@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from typing import Annotated, Dict, List, NewType, Optional, get_args
 
@@ -5,7 +6,10 @@ from attrs import define, fields
 from cattrs import Converter
 from cattrs.gen import make_dict_structure_fn, override
 
+from pypyr.dsl import SpecialTagDirective
+
 converter = Converter()
+logger = logging.getLogger(__name__)
 
 
 class Annotable(NewType):
@@ -17,27 +21,29 @@ class Annotable(NewType):
         return Annotated[self, item]
 
 
-Expression = Annotable('Expression', str)
+Expression = NewType('Expression', str)
+SpecialTag = NewType('SpecialTag', SpecialTagDirective)
+Tag = Annotable('Tag', SpecialTag | Expression)
 
 
 @define
 class Retry:
-    backoff: Expression[str] = 'fixed'
+    backoff: Tag[str] = 'fixed'
     backoff_args: Optional[dict] = None
-    jrc: Expression[float] = 0
-    max: Optional[Expression[int]] = None
+    jrc: Tag[float] = 0
+    max: Optional[Tag[int]] = None
     retry_on: Optional[List[str]] = None
-    sleep: Expression[float | List[float]] = 0
-    sleep_max: Optional[Expression[float]] = None
+    sleep: Tag[float | List[float]] = 0
+    sleep_max: Optional[Tag[float]] = None
     stop_on: Optional[List[str]] = None
 
 
 @define
 class While:
-    error_on_max: Expression[bool] = False
-    max: Optional[Expression[int]] = None
-    sleep: Expression[float] = 0
-    stop: Optional[Expression[str]] = None
+    error_on_max: Tag[bool] = False
+    max: Optional[Tag[int]] = None
+    sleep: Tag[float] = 0
+    stop: Optional[Tag[str]] = None
 
 
 @define
@@ -102,12 +108,19 @@ def structure_pipeline(data, cls, extra_field_name='extra'):
     return cls(**structured_data)
 
 
-def structure_expression(data, cls):
-    expression, type_ = get_args(cls)
+def structure_tag(data, cls):
+    if isinstance(data, SpecialTagDirective):
+        return data
+
+    tag_type, field_type = get_args(cls)
+    logger.debug("structuring '%s' data '%s' ", cls, data)
+
     try:
-        return converter.structure(data, type_)
-    except ValueError:
-        return converter.structure(data, expression.supertype)
+        return converter.structure(data, field_type)
+    except (ValueError, TypeError) as e:
+        if not isinstance(data, str):
+            raise e
+        return data
 
 
 def structure_bool(data, cls):
@@ -126,7 +139,7 @@ converter.register_structure_hook(
     lambda data, _: data if isinstance(data, list) else float(data),
 )
 
-converter.register_structure_hook(Expression, structure_expression)
+converter.register_structure_hook(Tag, structure_tag)
 
 converter.register_structure_hook(
     Step | str,
