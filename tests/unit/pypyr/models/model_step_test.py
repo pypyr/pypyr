@@ -1,3 +1,4 @@
+from pypyr.dsl import PyString
 from pypyr.models import Retry, Step, While, converter
 
 
@@ -84,8 +85,37 @@ def test_expression_fields():
     data = {
         'name': 'test',
         'foreach': '{foreach}',
+        'run': '{run}',
+        'skip': '{skip}',
+        'swallow': '{swallow}',
     }
 
     step = converter.structure(data, Step)
 
-    assert step == Step(name='test', foreach='{foreach}')
+    assert step == Step(
+        name='test',
+        foreach='{foreach}',
+        run='{run}',
+        skip='{skip}',
+        swallow='{swallow}',
+    )
+
+
+def test_special_tag_fields():
+    data = {
+        'name': 'test',
+        'foreach': PyString('[1,2,3]'),
+        'run': PyString('True'),
+        'skip': PyString('False'),
+        'swallow': PyString('False'),
+    }
+
+    step = converter.structure(data, Step)
+
+    assert step == Step(
+        name='test',
+        foreach=PyString('[1,2,3]'),
+        run=PyString('True'),
+        skip=PyString('False'),
+        swallow=PyString('False'),
+    )

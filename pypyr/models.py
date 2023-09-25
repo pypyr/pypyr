@@ -55,9 +55,9 @@ class Step:
     in_: Optional[dict] = None
     on_error: Optional[str] = None
     retry: Optional[Retry] = None
-    run: bool = True
-    skip: bool = False
-    swallow: bool = False
+    run: Tag[bool] = True
+    skip: Tag[bool] = False
+    swallow: Tag[bool] = False
     while_: Optional[While] = None
 
     def __hash__(self):
