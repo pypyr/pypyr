@@ -78,3 +78,14 @@ def test_convert():
         swallow=False,
         while_=While(stop="stop", max=1, sleep=0.1, error_on_max=True),
     )
+
+
+def test_expression_fields():
+    data = {
+        'name': 'test',
+        'foreach': '{foreach}',
+    }
+
+    step = converter.structure(data, Step)
+
+    assert step == Step(name='test', foreach='{foreach}')

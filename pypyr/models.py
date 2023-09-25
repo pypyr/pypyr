@@ -51,7 +51,7 @@ class Step:
     name: str
     comment: Optional[str] = None
     description: Optional[str] = None
-    foreach: Optional[list] = None
+    foreach: Optional[Tag[list]] = None
     in_: Optional[dict] = None
     on_error: Optional[str] = None
     retry: Optional[Retry] = None
@@ -130,9 +130,18 @@ def structure_bool(data, cls):
     return data
 
 
+def structure_list(data, cls):
+    if not isinstance(data, list):
+        raise ValueError(f'Expected a list value, got {data}')
+
+    return data
+
+
 converter.register_structure_hook(Pipeline, structure_pipeline)
 
 converter.register_structure_hook(bool, structure_bool)
+
+converter.register_structure_hook(list, structure_list)
 
 converter.register_structure_hook(
     float | List[float],
