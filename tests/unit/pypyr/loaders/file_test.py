@@ -1,12 +1,13 @@
 """fileloader.py unit tests."""
 from pathlib import Path
-from unittest.mock import call, mock_open, patch, PropertyMock
+from unittest.mock import PropertyMock, call, mock_open, patch
 
 import pytest
 
 import pypyr.cache.admin
-from pypyr.errors import PipelineNotFoundError
 import pypyr.loaders.file as fileloader
+from pypyr.errors import PipelineNotFoundError
+from pypyr.models import Pipeline
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
 
 # region get_pipeline_path
@@ -161,7 +162,7 @@ def test_get_pipeline_path_raises_parent_is_cwd():
 
 
 @patch('pypyr.loaders.file.add_sys_path')
-@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
+@patch('ruamel.yaml.YAML.load', return_value={})
 @patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_pass(mocked_get_path,
@@ -176,7 +177,7 @@ def test_get_pipeline_definition_pass(mocked_get_path,
             'pipename', '/parent/dir')
 
     assert pipeline_def == PipelineDefinition(
-        'mocked pipeline def',
+        Pipeline(),
         PipelineFileInfo(pipeline_name='x.yaml',
                          loader='pypyr.loaders.file',
                          parent=Path('arb/path'),
@@ -194,7 +195,7 @@ def test_get_pipeline_definition_pass(mocked_get_path,
 
 
 @patch('pypyr.loaders.file.add_sys_path')
-@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
+@patch('ruamel.yaml.YAML.load', return_value={})
 @patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_clear_all_cache(mocked_get_path,
@@ -209,7 +210,7 @@ def test_get_pipeline_definition_clear_all_cache(mocked_get_path,
             'pipename', '/parent/dir')
 
     assert pipeline_def == PipelineDefinition(
-        'mocked pipeline def',
+        Pipeline(),
         PipelineFileInfo(pipeline_name='x.yaml',
                          loader='pypyr.loaders.file',
                          parent=Path('arb/path'),
@@ -228,7 +229,7 @@ def test_get_pipeline_definition_clear_all_cache(mocked_get_path,
 
 
 @patch('pypyr.loaders.file.add_sys_path')
-@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
+@patch('ruamel.yaml.YAML.load', return_value={})
 @patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_from_cache(mocked_get_path,
@@ -245,7 +246,7 @@ def test_get_pipeline_definition_from_cache(mocked_get_path,
             'pipename', '/parent/dir')
 
     assert pipeline_def_1 == pipeline_def_2 == PipelineDefinition(
-        'mocked pipeline def',
+        Pipeline(),
         PipelineFileInfo(pipeline_name='x.yaml',
                          loader='pypyr.loaders.file',
                          parent=Path('arb/path'),
@@ -268,7 +269,7 @@ def test_get_pipeline_definition_from_cache(mocked_get_path,
 
 
 @patch('pypyr.loaders.file.add_sys_path')
-@patch('ruamel.yaml.YAML.load', return_value='mocked pipeline def')
+@patch('ruamel.yaml.YAML.load', return_value={})
 @patch('pypyr.loaders.file.get_pipeline_path',
        return_value=Path('arb/path/x.yaml'))
 def test_get_pipeline_definition_with_encoding(mocked_get_path,
@@ -284,7 +285,7 @@ def test_get_pipeline_definition_with_encoding(mocked_get_path,
                 'pipename', '/parent/dir')
 
     assert pipeline_def == PipelineDefinition(
-        'mocked pipeline def',
+        Pipeline(),
         PipelineFileInfo(pipeline_name='x.yaml',
                          loader='pypyr.loaders.file',
                          parent=Path('arb/path'),

@@ -84,15 +84,15 @@ class Pipeline:
 
     def get(self, key, default=None):
         # TODO: workaround to make the pipeline behave like a dict
-        return getattr(self, key, default)
+        return getattr(self, key, (self.extra or {}).get(key, default))
 
     def __getitem__(self, key):
         # TODO: workaround to make the pipeline behave like a dict
-        return getattr(self, key)
+        return getattr(self, key, (self.extra or {}).get(key))
 
     def __contains__(self, item):
         # TODO: workaround to make the pipeline behave like a dict
-        return hasattr(self, item)
+        return hasattr(self, item) or item in self.extra
 
 
 def structure_pipeline(data, cls, extra_field_name='extra'):

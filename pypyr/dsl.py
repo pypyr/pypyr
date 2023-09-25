@@ -8,10 +8,15 @@ from ruamel.yaml.nodes import ScalarNode
 from pypyr.cache.backoffcache import backoff_cache
 from pypyr.cache.stepcache import step_cache
 from pypyr.config import config
-from pypyr.errors import (Call, ControlOfFlowInstruction, HandledError,
-                          LoopMaxExhaustedError, PipelineDefinitionError, Stop,
-                          get_error_name)
-from pypyr.models import Step as StepModel
+from pypyr.errors import (
+    Call,
+    ControlOfFlowInstruction,
+    HandledError,
+    LoopMaxExhaustedError,
+    PipelineDefinitionError,
+    Stop,
+    get_error_name,
+)
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -296,6 +301,8 @@ class Step:
         self.on_error = None
 
         try:
+            from pypyr.models import Step as StepModel  # TODO
+
             if isinstance(step, StepModel):
                 self._init_from_model(step)
             elif isinstance(step, dict):
@@ -390,6 +397,8 @@ class Step:
         self.name = step.name
         self.in_parameters = step.in_
         self.description = step.description
+        self.line_col = step.line_col
+        self.line_no = step.line_no
         self.run_me = step.run
         self.skip_me = step.skip
         self.swallow_me = step.swallow
@@ -400,15 +409,11 @@ class Step:
         if self.foreach_items:
             self.for_counter = None
 
-        retry_definition = step.retry
+        if step.retry:
+            self.retry_decorator = RetryDecorator(step.retry)
 
-        if retry_definition:
-            self.retry_decorator = RetryDecorator(retry_definition)
-
-        while_definition = step.while_
-
-        if while_definition:
-            self.while_decorator = WhileDecorator(while_definition)
+        if step.while_:
+            self.while_decorator = WhileDecorator(step.while_)
 
         logger.debug("step name: %s", self.name)
 
@@ -801,7 +806,18 @@ class RetryDecorator:
         """
         logger.debug("starting")
 
-        if isinstance(retry_definition, dict):
+        from pypyr.models import Retry as RetryModel  # TODO
+
+        if isinstance(retry_definition, RetryModel):
+            self.backoff = retry_definition.backoff
+            self.backoff_args = retry_definition.backoff_args
+            self.jrc = retry_definition.jrc
+            self.max = retry_definition.max
+            self.sleep = retry_definition.sleep
+            self.sleep_max = retry_definition.sleep_max
+            self.stop_on = retry_definition.stop_on
+            self.retry_on = retry_definition.retry_on
+        elif isinstance(retry_definition, dict):
             # backoff: optional. defaults 'fixed' - set in retry_loop().
             self.backoff = retry_definition.get('backoff', None)
 
@@ -1008,7 +1024,25 @@ class WhileDecorator:
         """
         logger.debug("starting")
 
-        if isinstance(while_definition, dict):
+        from pypyr.models import While as WhileModel  # TODO
+
+        if isinstance(while_definition, WhileModel):
+            self.error_on_max = while_definition.error_on_max
+            self.max = while_definition.max
+            self.sleep = while_definition.sleep
+            self.stop = while_definition.stop
+
+            if self.stop is None and self.max is None:
+                # TODO: move to WhileModel validations
+                logger.error("while decorator missing both max and stop.")
+                raise PipelineDefinitionError("the while decorator must have "
+                                              "either max or stop, or both. "
+                                              "But not neither. Note that "
+                                              "setting stop: False with no "
+                                              "max is an infinite loop. If "
+                                              "an infinite loop is really "
+                                              "what you want, set stop: False")
+        elif isinstance(while_definition, dict):
             # errorOnMax: optional. defaults False
             self.error_on_max = while_definition.get('errorOnMax', False)
 

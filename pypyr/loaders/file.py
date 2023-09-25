@@ -2,12 +2,12 @@
 import logging
 from pathlib import Path
 
+import pypyr.yaml
 from pypyr.cache.filecache import file_cache
 from pypyr.config import config
 from pypyr.errors import PipelineNotFoundError
 from pypyr.moduleloader import add_sys_path
 from pypyr.pipedef import PipelineDefinition, PipelineFileInfo
-import pypyr.yaml
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +153,7 @@ def get_pipeline_definition(pipeline_name, parent):
         str(pipeline_path),
         lambda: load_pipeline_from_file(pipeline_path))
 
-    logger.debug("found %d stages in pipeline.",
-                 len(pipeline_definition.pipeline))
+    logger.debug("pipeline %s:", pipeline_definition.pipeline)
 
     logger.debug("done")
     return pipeline_definition
@@ -180,7 +179,7 @@ def load_pipeline_from_file(path):
 
     try:
         with open(path, encoding=config.default_encoding) as yaml_file:
-            pipeline_yaml = pypyr.yaml.get_pipeline_yaml(yaml_file)
+            pipeline = pypyr.yaml.get_pipeline(yaml_file)
     except FileNotFoundError:
         # this can only happen if file disappears between get_pipeline_path
         # & here, so pretty edge
@@ -198,8 +197,7 @@ def load_pipeline_from_file(path):
                             loader=__name__,
                             path=path)
 
-    pipeline_definition = PipelineDefinition(pipeline=pipeline_yaml,
-                                             info=info)
+    pipeline_definition = PipelineDefinition(pipeline=pipeline, info=info)
 
     logger.debug("done")
     return pipeline_definition

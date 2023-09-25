@@ -46,28 +46,10 @@ class StepsRunner():
         """
         logger.debug("starting")
         assert step_group
-
         logger.debug("retrieving %s steps from pipeline", step_group)
         pipeline = self.pipeline_body
-        if step_group in pipeline:
-            steps = pipeline[step_group]
 
-            if steps is None:
-                logger.warning(
-                    "%s: sequence has no elements. So it won't do anything.",
-                    step_group,
-                )
-                logger.debug("done")
-                return None
-
-            steps_count = len(steps)
-
-            logger.debug("%s steps found under %s in pipeline definition.",
-                         steps_count, step_group)
-
-            logger.debug("done")
-            return steps
-        else:
+        if step_group not in pipeline:
             logger.debug(
                 "pipeline doesn't have a %(steps_group)s collection. Add a "
                 "%(steps_group)s: sequence to the yaml if you want "
@@ -76,6 +58,24 @@ class StepsRunner():
             )
             logger.debug("done")
             return None
+
+        steps = pipeline[step_group]
+
+        if steps is None:
+            logger.warning(
+                "%s: sequence has no elements. So it won't do anything.",
+                step_group,
+            )
+            logger.debug("done")
+            return None
+
+        steps_count = len(steps)
+
+        logger.debug("%s steps found under %s in pipeline definition.",
+                     steps_count, step_group)
+
+        logger.debug("done")
+        return steps
 
     def run_failure_step_group(self, group_name):
         """Run the group_name if it exists, as a failure handler..
