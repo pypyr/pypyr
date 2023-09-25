@@ -53,6 +53,8 @@ class Step:
     description: Optional[str] = None
     foreach: Optional[Tag[list]] = None
     in_: Optional[dict] = None
+    line_col: Optional[int] = None
+    line_no: Optional[int] = None
     on_error: Optional[str] = None
     retry: Optional[Retry] = None
     run: Tag[bool] = True
@@ -123,6 +125,7 @@ def structure_tag(data, cls):
         return data
 
 
+# TODO: strict cast?
 def structure_bool(data, cls):
     if not isinstance(data, bool):
         raise ValueError(f'Expected a boolean value, got {data}')
@@ -130,6 +133,7 @@ def structure_bool(data, cls):
     return data
 
 
+# TODO: strict cast?
 def structure_list(data, cls):
     if not isinstance(data, list):
         raise ValueError(f'Expected a list value, got {data}')
@@ -169,16 +173,24 @@ converter.register_structure_hook(
     ),
 )
 
-converter.register_structure_hook(
+_structure_step = make_dict_structure_fn(
     Step,
-    make_dict_structure_fn(
-        Step,
-        converter,
-        on_error=override(rename="onError"),
-        in_=override(rename="in"),
-        while_=override(rename="while"),
-    ),
+    converter,
+    on_error=override(rename="onError"),
+    in_=override(rename="in"),
+    while_=override(rename="while"),
 )
+
+
+def structure_step(data, cls):
+    logger.debug("structuring step '%s' data '%s' ", cls, data)
+    if hasattr(data, 'lc'):
+        data["line_col"] = data.lc.col + 1
+        data["line_no"] = data.lc.line + 1
+    return _structure_step(data, cls)
+
+
+converter.register_structure_hook(Step, structure_step)
 
 converter.register_structure_hook(
     While,

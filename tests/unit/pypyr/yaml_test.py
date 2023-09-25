@@ -23,7 +23,14 @@ def test_get_pipeline():
     pipeline = pypyr_yaml.get_pipeline(data)
 
     assert pipeline == Pipeline(
-        steps=[Step(name='pypyr.steps.echo', in_={'echoMe': 'testing'})]
+        steps=[
+            Step(
+                name='pypyr.steps.echo',
+                in_={'echoMe': 'testing'},
+                line_col=5,
+                line_no=2,
+            )
+        ]
     )
 
 

@@ -7,7 +7,8 @@ from pypyr.models import Pipeline, converter
 
 
 def get_pipeline(data):
-    return converter.structure(get_pipeline_yaml(data), Pipeline)
+    yaml = get_pipeline_yaml(data)
+    return converter.structure(yaml, Pipeline)
 
 
 def get_pipeline_yaml(file):

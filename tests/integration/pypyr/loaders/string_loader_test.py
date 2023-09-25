@@ -20,7 +20,14 @@ def test_get_pipeline_definition():
     definition = get_pipeline_definition(pipeline, None)
 
     assert definition.pipeline == Pipeline(
-        steps=[Step(name="pypyr.steps.echo", in_={"echoMe": "testing"})]
+        steps=[
+            Step(
+                name="pypyr.steps.echo",
+                in_={"echoMe": "testing"},
+                line_col=5,
+                line_no=2,
+            )
+        ]
     )
 
 
