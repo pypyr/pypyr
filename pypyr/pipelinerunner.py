@@ -10,6 +10,7 @@ import logging
 from os import PathLike
 
 from pypyr.context import Context
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineInfo
 from pypyr.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
@@ -111,6 +112,41 @@ def run(
                                                 failure_group=failure_group,
                                                 py_dir=py_dir)
 
+    return _run(pipeline, args)
+
+
+def run_pipeline_body(
+    pipeline_name: str,
+    pipeline_body: PipelineBody,
+    args_in: list[str] | None = None,
+    parse_args: bool | None = None,
+    dict_in: dict | None = None,
+    groups: list[str] | None = None,
+    success_group: str | None = None,
+    failure_group: str | None = None,
+    loader: str | None = None,
+    py_dir: str | bytes | PathLike | None = None
+) -> Context:
+    pipeline_definition = PipelineDefinition(
+        pipeline=pipeline_body,
+        info=PipelineInfo(pipeline_name=pipeline_name,
+                          loader=None,
+                          parent=None))
+
+    pipeline, args = Pipeline.new_pipe_and_args(name=pipeline_name,
+                                                context_args=args_in,
+                                                parse_input=parse_args,
+                                                dict_in=dict_in,
+                                                loader=loader,
+                                                groups=groups,
+                                                success_group=success_group,
+                                                failure_group=failure_group,
+                                                py_dir=py_dir)
+    pipeline.pipeline_definition = pipeline_definition
+    return _run(pipeline, args)
+
+
+def _run(pipeline, args):
     context = Context(args) if args else Context()
 
     pipeline.run(context)

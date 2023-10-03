@@ -11,7 +11,7 @@ from pypyr.cache.cache import Cache
 from pypyr.config import config
 from pypyr.errors import PipelineDefinitionError
 import pypyr.moduleloader
-from pypyr.pipedef import PipelineDefinition, PipelineInfo
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineInfo
 
 logger = logging.getLogger(__name__)
 
@@ -98,23 +98,10 @@ class Loader():
             # standardize to the common cascading PipelineInfo if the loader
             # didn't provide any.
             pipeline_definition = PipelineDefinition(
-                pipeline=pipeline_definition,
+                pipeline=PipelineBody.from_mapping(pipeline_definition),
                 info=PipelineInfo(pipeline_name=name,
                                   loader=self.name,
                                   parent=parent))
-
-        # if the pipeline is not a dict at top level, failures down-stream get
-        # mysterious - this prevents malformed pipe from even making it into
-        # cache.
-        if not isinstance(pipeline_definition.pipeline, Mapping):
-            raise PipelineDefinitionError(
-                "A pipeline must be a mapping at the top level. "
-                "Does your top-level yaml have a 'steps:' key? "
-                "For example:\n\n"
-                "steps:\n"
-                "  - name: pypyr.steps.echo\n"
-                "    in:\n"
-                "      echoMe: this is a bare bones pipeline example.\n")
 
         logger.debug("done")
         return pipeline_definition

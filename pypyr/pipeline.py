@@ -21,7 +21,7 @@ from pypyr.config import config
 from pypyr.context import Context
 from pypyr.errors import Stop, StopPipeline, StopStepGroup
 import pypyr.moduleloader
-from pypyr.stepsrunner import StepsRunner
+from pypyr.pipedef import PipelineDefinition
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class Pipeline():
 
     __slots__ = ['name', 'context_args', 'parse_input', 'loader', 'groups',
                  'success_group', 'failure_group', 'py_dir',
-                 'pipeline_definition', 'steps_runner']
+                 'pipeline_definition']
 
     # region constructors
     def __init__(self,
@@ -115,8 +115,8 @@ class Pipeline():
         # not using a classmethod fromLoader factory style thing coz PipeDef
         # AND StepsRunner depend on having a context object, which is subject
         # to logic only called later in obj life-time in load_and_run_pipeline.
-        self.pipeline_definition = None
-        self.steps_runner = None
+        self.pipeline_definition: PipelineDefinition | None = None
+        # self.steps_runner: StepsRunner | None = None
 
     @classmethod
     def new_pipe_and_args(
@@ -318,17 +318,18 @@ class Pipeline():
         if self.py_dir:
             pypyr.moduleloader.add_sys_path(self.py_dir)
 
-        # could save loader_instance to self for >1 run on same pipeline, but
-        # since you'd need extra check if self.loader has changed since last
-        # time, O(1) dict lookup in cache prob not going to add too much
-        # overhead by comparison.
-        loader_instance = loader_cache.get_pype_loader(self.loader)
+        if self.pipeline_definition is None:
+            # could save loader_instance to self for >1 run on same pipeline, but
+            # since you'd need extra check if self.loader has changed since last
+            # time, O(1) dict lookup in cache prob not going to add too much
+            # overhead by comparison.
+            loader_instance = loader_cache.get_pype_loader(self.loader)
 
-        # pipeline loading deliberately outside try catch. If the pipeline
-        # doesn't exist there is no failure handler that can possibly run so
-        # this is very much a fatal stop error.
-        self.pipeline_definition = loader_instance.get_pipeline(name=self.name,
-                                                                parent=parent)
+            # pipeline loading deliberately outside try catch. If the pipeline
+            # doesn't exist there is no failure handler that can possibly run so
+            # this is very much a fatal stop error.
+            self.pipeline_definition = loader_instance.get_pipeline(name=self.name,
+                                                                    parent=parent)
 
         # add current pipeline's info to the callstack & remove when pipeline
         # done.
@@ -372,11 +373,12 @@ class Pipeline():
                 success_group = config.default_success_group
                 failure_group = config.default_failure_group
 
-        steps_runner = StepsRunner(
-            pipeline_body=self.pipeline_definition.pipeline,
-            context=context)
+        # steps_runner = StepsRunner(
+        #     pipeline_body=self.pipeline_definition.pipeline,
+        #     context=context)
 
-        self.steps_runner = steps_runner
+        # self.steps_runner = steps_runner
+        steps_runner = self.pipeline_definition.pipeline
 
         try:
             self._prepare_context(context)
@@ -388,7 +390,7 @@ class Pipeline():
 
             # failure_step_group will log but swallow any errors except Stop
             try:
-                steps_runner.run_failure_step_group(failure_group)
+                steps_runner.run_failure_step_group(failure_group, context)
             except StopStepGroup:
                 pass
 
@@ -398,7 +400,8 @@ class Pipeline():
         try:
             steps_runner.run_step_groups(groups=groups,
                                          success_group=success_group,
-                                         failure_group=failure_group)
+                                         failure_group=failure_group,
+                                         context=context)
         except StopPipeline:
             logger.debug("StopPipeline: stopped %s", self.name)
 
@@ -446,8 +449,9 @@ class Pipeline():
         """
         logger.debug("starting")
 
-        pipeline_yaml = self.pipeline_definition.pipeline
-        parser_module_name = pipeline_yaml.get('context_parser')
+        # pipeline_yaml = self.pipeline_definition.pipeline
+        # pipeline_yaml.get('context_parser')
+        parser_module_name = self.pipeline_definition.pipeline.context_parser
 
         if parser_module_name:
             logger.debug("context parser specified: %s", parser_module_name)

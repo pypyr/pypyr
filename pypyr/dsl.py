@@ -1,6 +1,8 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
+from collections.abc import Mapping
 import json
 import logging
+from typing import Self
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.nodes import ScalarNode
@@ -271,7 +273,20 @@ class Step:
 
     """
 
-    def __init__(self, step):
+    # region constructors
+    def __init__(self,
+                 name,
+                 description=None,
+                 foreach_items=None,
+                 in_parameters=None,
+                 retry_decorator=None,
+                 line_no=None,
+                 line_col=None,
+                 run_me=True,
+                 skip_me=False,
+                 swallow_me=False,
+                 while_decorator=None,
+                 on_error=None):
         """Initialize the class. No duh, huh?.
 
         You can happily expect the initializer to initialize all
@@ -285,42 +300,38 @@ class Step:
         logger.debug("starting")
 
         # defaults for decorators
-        self.description = None
-        self.foreach_items = None
-        self.in_parameters = None
-        self.retry_decorator = None
-        self.line_no = None
-        self.line_col = None
-        self.run_me = True
-        self.skip_me = False
-        self.swallow_me = False
-        self.name = None
-        self.while_decorator = None
-        self.on_error = None
+        self.description = description
+        self.foreach_items = foreach_items
+        self.in_parameters = in_parameters
+        self.retry_decorator = retry_decorator
+        self.line_no = line_no
+        self.line_col = line_col
+        self.run_me = run_me
+        self.skip_me = skip_me
+        self.swallow_me = swallow_me
+        self.name = name
+        self.while_decorator = while_decorator
+        self.on_error = on_error
+
+        self.for_counter = None
+        # if foreach_items:
+        #     # current item in loops
+        #     self.for_counter = None
 
         try:
-            if isinstance(step, dict):
-                self._init_from_dict(step)
-            else:
-                # of course, it might not be a string. in line with duck
-                # typing, beg forgiveness later. as long as it loads
-                # the module, happy days.
-                logger.debug("%s is a simple string.", step)
-                self.name = step
-
             self.run_step_function = step_cache.get_step(self.name)
         except Exception:
             # Exceptions could also happened on the step init phase
             # (ModuleNotFound, KeyError, etc..),
             # put exception handler here because of that.
             # also handle case with missing step name
-            name = f" {self.name}" if self.name else ""
+            name = f" {name}" if name else ""
 
-            if self.line_no:
+            if line_no:
                 logger.error(
                     "Error at pipeline step%s yaml line: "
                     "%d, col: %d",
-                    name, self.line_no, self.line_col
+                    name, line_no, line_col
                 )
             else:
                 logger.error(
@@ -330,62 +341,124 @@ class Step:
 
         logger.debug("done")
 
-    def _init_from_dict(self, step):
-        """Initialize the class from a dict for a complex step.
+    @classmethod
+    def from_step_definition(cls, step_definition: Mapping | str) -> Self:
+        logger.debug("starting")
 
-        Args:
-            step: (CommentedMap/dict) This is the actual step as it
-            exists in the pipeline yaml.
-        """
-        if hasattr(step, 'lc'):
-            # line_no: optional. Has value only when the yaml
-            # round trip parser is in use.
-            self.line_no = step.lc.line + 1
-            # line_col: optional. Has value only when the yaml
-            # round trip parser is in use.
-            self.line_col = step.lc.col + 1
+        name = None
 
-        self.name = step.get('name', None)
+        # defaults for decorators
+        description = None
+        foreach_items = None
+        in_parameters = None
+        retry_decorator = None
+        line_no = None
+        line_col = None
+        run_me = True
+        skip_me = False
+        swallow_me = False
+        name = None
+        while_decorator = None
+        on_error = None
 
-        if not self.name:
-            raise PipelineDefinitionError('step must have a name.')
+        try:
+            if isinstance(step_definition, dict):
+                # step_instance = cls.from_mapping(step_definition)
+                if hasattr(step_definition, 'lc'):
+                    # line_no: optional. Has value only when the yaml
+                    # round trip parser is in use.
+                    line_no = step_definition.lc.line + 1
+                    # line_col: optional. Has value only when the yaml
+                    # round trip parser is in use.
+                    line_col = step_definition.lc.col + 1
 
-        logger.debug("%s is complex.", self.name)
+                name = step_definition.get('name', None)
 
-        self.in_parameters = step.get('in', None)
+                if not name:
+                    raise PipelineDefinitionError('step must have a name.')
 
-        # description: optional. Write to stdout if exists and flagged.
-        self.description = step.get('description', None)
+                logger.debug("%s is complex.", name)
 
-        # foreach: optional value. None by default.
-        self.foreach_items = step.get('foreach', None)
-        if self.foreach_items:
-            # current item in loops
-            self.for_counter = None
+                in_parameters = step_definition.get('in', None)
 
-        # retry: optional, defaults none.
-        retry_definition = step.get('retry', None)
-        if retry_definition:
-            self.retry_decorator = RetryDecorator(retry_definition)
+                # description: optional. Write to stdout if exists and flagged.
+                description = step_definition.get('description', None)
 
-        # run: optional value, true by default. Allow substitution.
-        self.run_me = step.get('run', True)
+                # foreach: optional value. None by default.
+                foreach_items = step_definition.get('foreach', None)
 
-        # skip: optional value, false by default. Allow substitution.
-        self.skip_me = step.get('skip', False)
+                # retry: optional, defaults none.
+                retry_decorator = None
+                retry_definition = step_definition.get('retry', None)
+                if retry_definition:
+                    retry_decorator = RetryDecorator.from_mapping(
+                        retry_definition)
 
-        # swallow: optional, defaults false. Allow substitution.
-        self.swallow_me = step.get('swallow', False)
+                # run: optional value, true by default. Allow substitution.
+                run_me = step_definition.get('run', True)
 
-        # on_error: optional, defaults none. Allow substitution.
-        self.on_error = step.get('onError', None)
+                # skip: optional value, false by default. Allow substitution.
+                skip_me = step_definition.get('skip', False)
 
-        # while: optional, defaults none.
-        while_definition = step.get('while', None)
-        if while_definition:
-            self.while_decorator = WhileDecorator(while_definition)
+                # swallow: optional, defaults false. Allow substitution.
+                swallow_me = step_definition.get('swallow', False)
 
-        logger.debug("step name: %s", self.name)
+                # on_error: optional, defaults none. Allow substitution.
+                on_error = step_definition.get('onError', None)
+
+                # while: optional, defaults none.
+                while_decorator = None
+                while_definition = step_definition.get('while', None)
+                if while_definition:
+                    while_decorator = WhileDecorator.from_mapping(
+                        while_definition)
+
+                logger.debug("step name: %s", name)
+            else:
+                # of course, it might not be a string. in line with duck
+                # typing, beg forgiveness later. as long as it loads
+                # the module, happy days.
+                logger.debug("%s is a simple string.", step_definition)
+                # step_instance = cls(step) - and run_cache happens in ctor.
+                name = step_definition
+
+            # run_step_function = step_cache.get_step(name)
+        except Exception:
+            # Exceptions could also happened on the step init phase
+            # (ModuleNotFound, KeyError, etc..),
+            # put exception handler here because of that.
+            # also handle case with missing step name
+            name = f" {name}" if name else ""
+
+            if line_no:
+                logger.error(
+                    "Error at pipeline step%s yaml line: "
+                    "%d, col: %d",
+                    name, line_no, line_col
+                )
+            else:
+                logger.error(
+                    "Error at pipeline step%s", name
+                )
+            raise
+
+        step = cls(name=name,
+                   description=description,
+                   foreach_items=foreach_items,
+                   in_parameters=in_parameters,
+                   retry_decorator=retry_decorator,
+                   line_no=line_no,
+                   line_col=line_col,
+                   run_me=run_me,
+                   skip_me=skip_me,
+                   swallow_me=swallow_me,
+                   while_decorator=while_decorator,
+                   on_error=on_error)
+
+        logger.debug("done")
+        return step
+
+    # endregion constructors
 
     def save_error(self, context, exception, swallowed):
         """Append step's exception information to the context.
@@ -763,7 +836,16 @@ class RetryDecorator:
 
     """
 
-    def __init__(self, retry_definition):
+    # region constructors
+    def __init__(self,
+                 backoff=None,
+                 backoff_args=None,
+                 jrc=0,
+                 max=None,
+                 sleep=0,
+                 sleep_max=None,
+                 stop_on=None,
+                 retry_on=None):
         """Initialize the class. No duh, huh.
 
         You can happily expect the initializer to initialize all
@@ -776,39 +858,65 @@ class RetryDecorator:
         """
         logger.debug("starting")
 
-        if isinstance(retry_definition, dict):
+        self.backoff = backoff
+        self.backoff_args = backoff_args
+        self.jrc = jrc
+        self.max = max
+        self.sleep = sleep
+        self.sleep_max = sleep_max
+        self.stop_on = stop_on
+        self.retry_on = retry_on
+
+        self.retry_counter = None
+
+        logger.debug("done")
+
+    @classmethod
+    def from_retry_mapping(cls, mapping: Mapping) -> Self:
+        logger.debug("starting")
+
+        if isinstance(mapping, dict):
             # backoff: optional. defaults 'fixed' - set in retry_loop().
-            self.backoff = retry_definition.get('backoff', None)
+            backoff = mapping.get('backoff', None)
 
             # backoffArgs: optional.
-            self.backoff_args = retry_definition.get('backoffArgs', None)
+            backoff_args = mapping.get('backoffArgs', None)
 
             # jrc: optional. defaults 0.
-            self.jrc = retry_definition.get('jrc', 0)
+            jrc = mapping.get('jrc', 0)
 
             # max: optional. defaults None.
-            self.max = retry_definition.get('max', None)
+            max = mapping.get('max', None)
 
             # sleep: optional. defaults 0.
-            self.sleep = retry_definition.get('sleep', 0)
+            sleep = mapping.get('sleep', 0)
 
             # sleep_max: optional. defaults None.
-            self.sleep_max = retry_definition.get('sleepMax', None)
+            sleep_max = mapping.get('sleepMax', None)
 
             # stopOn: optional. defaults None.
-            self.stop_on = retry_definition.get('stopOn', None)
+            stop_on = mapping.get('stopOn', None)
 
             # retryOn: optional. defaults None.
-            self.retry_on = retry_definition.get('retryOn', None)
+            retry_on = mapping.get('retryOn', None)
+
+            instance = cls(backoff=backoff,
+                           backoff_args=backoff_args,
+                           jrc=jrc,
+                           max=max,
+                           sleep=sleep,
+                           sleep_max=sleep_max,
+                           stop_on=stop_on,
+                           retry_on=retry_on)
+            logger.debug("done")
+            return instance
         else:
             # if it isn't a dict, pipeline configuration is wrong.
             logger.error("retry decorator definition incorrect.")
             raise PipelineDefinitionError("retry decorator must be a dict "
                                           "(i.e a map) type.")
 
-        self.retry_counter = None
-
-        logger.debug("done")
+    # endregion constructors
 
     def exec_iteration(self, counter, context, step_method, max):
         """Run a single retry iteration.
@@ -970,7 +1078,12 @@ class WhileDecorator:
 
     """
 
-    def __init__(self, while_definition):
+    # region constructors
+    def __init__(self,
+                 max=None,
+                 sleep=0,
+                 stop=None,
+                 error_on_max=False):
         """Initialize the class. No duh, huh.
 
         You can happily expect the initializer to initialize all
@@ -983,37 +1096,55 @@ class WhileDecorator:
         """
         logger.debug("starting")
 
-        if isinstance(while_definition, dict):
+        self.max = max
+        self.sleep = sleep
+        self.stop = stop
+        self.error_on_max = error_on_max
+
+        if stop is None and max is None:
+            logger.error("while decorator missing both max and stop.")
+            raise PipelineDefinitionError("the while decorator must have "
+                                          "either max or stop, or both. "
+                                          "But not neither. Note that "
+                                          "setting stop: False with no "
+                                          "max is an infinite loop. If "
+                                          "an infinite loop is really "
+                                          "what you want, set stop: False")
+
+        self.while_counter = None
+
+        logger.debug("done")
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping) -> Self:
+        logger.debug("starting")
+
+        if isinstance(mapping, dict):
             # errorOnMax: optional. defaults False
-            self.error_on_max = while_definition.get('errorOnMax', False)
+            error_on_max = mapping.get('errorOnMax', False)
 
             # max: optional. defaults None.
-            self.max = while_definition.get('max', None)
+            max = mapping.get('max', None)
 
             # sleep: optional. defaults 0.
-            self.sleep = while_definition.get('sleep', 0)
+            sleep = mapping.get('sleep', 0)
 
             # stop: optional. defaults None.
-            self.stop = while_definition.get('stop', None)
+            stop = mapping.get('stop', None)
 
-            if self.stop is None and self.max is None:
-                logger.error("while decorator missing both max and stop.")
-                raise PipelineDefinitionError("the while decorator must have "
-                                              "either max or stop, or both. "
-                                              "But not neither. Note that "
-                                              "setting stop: False with no "
-                                              "max is an infinite loop. If "
-                                              "an infinite loop is really "
-                                              "what you want, set stop: False")
+            instance = cls(max=max,
+                           sleep=sleep,
+                           stop=stop,
+                           error_on_max=error_on_max)
+            logger.debug("done")
+            return instance
         else:
             # if it isn't a dict, pipeline configuration is wrong.
             logger.error("while decorator definition incorrect.")
             raise PipelineDefinitionError("while decorator must be a dict "
                                           "(i.e a map) type.")
 
-        self.while_counter = None
-
-        logger.debug("done")
+    # endregion constructors
 
     def exec_iteration(self, counter, context, step_method):
         """Run a single loop iteration.

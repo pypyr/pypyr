@@ -2,13 +2,16 @@
 
 Pipeline uses this to parse and run step-groups and steps.
 """
-
+from collections.abc import Sequence
 import logging
+
+from pypyr.context import Context
 from pypyr.dsl import Step
 from pypyr.errors import (ControlOfFlowInstruction,
                           Jump,
                           Stop,
                           StopStepGroup)
+from pypyr.pipedef import PipelineBody
 
 # use pypyr logger to ensure loglevel is set correctly
 logger = logging.getLogger(__name__)
@@ -21,7 +24,7 @@ class StepsRunner():
     run_step_groups() is a sensible entrypoint.
     """
 
-    def __init__(self, pipeline_body, context):
+    def __init__(self, pipeline_body: PipelineBody, context: Context):
         """Initialize the Step Runner with the pipeline to maintain state.
 
         Args:
@@ -48,9 +51,9 @@ class StepsRunner():
         assert step_group
 
         logger.debug("retrieving %s steps from pipeline", step_group)
-        pipeline = self.pipeline_body
-        if step_group in pipeline:
-            steps = pipeline[step_group]
+        step_groups = self.pipeline_body.step_groups
+        if step_group in step_groups:
+            steps = step_groups[step_group]
 
             if steps is None:
                 logger.warning(
@@ -97,7 +100,7 @@ class StepsRunner():
 
         logger.debug("done")
 
-    def run_pipeline_steps(self, steps):
+    def run_pipeline_steps(self, steps: Sequence[Step]):
         """Run the run_step(context) method of each step in steps.
 
         Args:
@@ -113,8 +116,9 @@ class StepsRunner():
             step_count = 0
 
             for step in steps:
-                step_instance = Step(step)
-                step_instance.run_step(self.context)
+                # step_instance = Step(step)
+                # step_instance.run_step(self.context)
+                step.run_step(self.context)
                 step_count += 1
 
             logger.debug("executed %s steps", step_count)
