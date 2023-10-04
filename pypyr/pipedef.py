@@ -368,7 +368,9 @@ class PipelineBody():
     # endregion pipeline execution
 
 
-class PipelineDefinition():
+# TODO: document breaking change - pipeline now is a PipelineBody, not a dict.
+#       It will break all custom loaders.
+class PipelineDefinition:
     """The pipeline body and its metadata.
 
     A loader creates the PipelineDefinition and sets the metadata in .info.
@@ -387,7 +389,7 @@ class PipelineDefinition():
         """Initialize a pipeline definition.
 
         Args:
-            pipeline (dict-like): The pipeline yaml body itself.
+            pipeline (PipelineBody): The pipeline yaml body itself.
             info (PipelineInfo): Meta-data set by the loader for the pipeline.
         """
         self.pipeline: PipelineBody = pipeline
