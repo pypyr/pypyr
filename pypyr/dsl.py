@@ -872,7 +872,7 @@ class RetryDecorator:
         logger.debug("done")
 
     @classmethod
-    def from_retry_mapping(cls, mapping: Mapping) -> Self:
+    def from_mapping(cls, mapping: Mapping) -> Self:
         logger.debug("starting")
 
         if isinstance(mapping, dict):
