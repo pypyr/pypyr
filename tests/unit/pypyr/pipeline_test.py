@@ -5,29 +5,32 @@ exist in ./pipelinerunner_test.py, which tests at a higher level that the
 inputs from a run request map as expected into the Pipeline instance.
 """
 import logging
-from unittest.mock import call, patch, Mock
+from unittest.mock import Mock, call, patch
 
 import pytest
 
 from pypyr.cache.loadercache import loader_cache
 from pypyr.cache.parsercache import contextparser_cache
 from pypyr.context import Context
-from pypyr.errors import (ContextError,
-                          KeyNotInContextError,
-                          PyModuleNotFoundError,
-                          Stop,
-                          StopPipeline,
-                          StopStepGroup)
+from pypyr.errors import (
+    ContextError,
+    KeyNotInContextError,
+    PyModuleNotFoundError,
+    Stop,
+    StopPipeline,
+    StopStepGroup,
+)
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineInfo
 from pypyr.pipeline import Pipeline
-from pypyr.pipedef import PipelineDefinition, PipelineInfo
-from tests.common.utils import DeepCopyMagicMock
-
-from tests.common.utils import patch_logger
+from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
 def get_pipe_def(dict_in, info=None):
     """Wrap input dict & info into a PipelineDefinition."""
-    return PipelineDefinition(pipeline=dict_in, info=info)
+    return PipelineDefinition(
+        pipeline=PipelineBody.from_mapping(dict_in), info=info
+    )
+
 
 # region context parser
 # region parser mocks
@@ -233,7 +236,7 @@ def test_empty_loader_set_up_to_default(mock_get_pipeline_definition):
     """Default loader should be pypyr.loaders.file."""
     loader_cache.clear()
 
-    mock_get_pipeline_definition.return_value = get_pipe_def({'steps': None})
+    mock_get_pipeline_definition.return_value = get_pipe_def({'steps': []})
 
     pipeline = Pipeline('arb pipe', context_args='arb context input')
     pipeline.run(Context())
@@ -250,7 +253,7 @@ def test_empty_loader_set_up_to_default_with_parent(
     """Default loader should be pypyr.loaders.file with parent."""
     loader_cache.clear()
 
-    mock_get_pipeline_definition.return_value = get_pipe_def({'steps': None})
+    mock_get_pipeline_definition.return_value = get_pipe_def({'steps': []})
 
     pipeline = Pipeline('arb pipe', context_args='arb context input')
     pipeline.load_and_run_pipeline(Context(), parent='/arb/dir')

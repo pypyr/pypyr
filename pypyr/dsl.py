@@ -1,22 +1,24 @@
 """pypyr pipeline yaml definition classes - domain specific language."""
-from collections.abc import Mapping
 import json
 import logging
+from collections.abc import Mapping
 from typing import Self
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.nodes import ScalarNode
 
-from pypyr.cache.stepcache import step_cache
 from pypyr.cache.backoffcache import backoff_cache
+from pypyr.cache.stepcache import step_cache
 from pypyr.config import config
-from pypyr.errors import (Call,
-                          ControlOfFlowInstruction,
-                          get_error_name,
-                          HandledError,
-                          LoopMaxExhaustedError,
-                          PipelineDefinitionError,
-                          Stop)
+from pypyr.errors import (
+    Call,
+    ControlOfFlowInstruction,
+    HandledError,
+    LoopMaxExhaustedError,
+    PipelineDefinitionError,
+    Stop,
+    get_error_name,
+)
 from pypyr.utils import poll
 
 # use pypyr logger to ensure loglevel is set correctly
@@ -272,6 +274,23 @@ class Step:
                          loop.
 
     """
+
+    __slots__ = (
+        'description',
+        'foreach_items',
+        'for_counter',
+        'in_parameters',
+        'line_col',
+        'line_no',
+        'name',
+        'on_error',
+        'retry_decorator',
+        'run_me',
+        'run_step_function',
+        'skip_me',
+        'swallow_me',
+        'while_decorator',
+    )
 
     # region constructors
     def __init__(self,
@@ -800,6 +819,20 @@ class Step:
                     context.pop(key, None)
 
         logger.debug("done")
+
+    def __eq__(self, other):
+        """Step equality comparison."""
+        if type(self) is not type(other):
+            return False
+
+        all_slots = [
+            p for c in type(self).__mro__ for p in getattr(c, '__slots__', [])
+        ]
+
+        return all(
+            getattr(self, s, id(self)) == getattr(other, s, id(other))
+            for s in all_slots
+        )
 
 
 class RetryDecorator:
