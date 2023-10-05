@@ -1,32 +1,38 @@
 """dsl.py unit tests."""
+import logging
 from copy import deepcopy
 from io import StringIO
-import logging
-import pytest
-from unittest.mock import call, patch, MagicMock
-from tests.common.utils import DeepCopyMagicMock, patch_logger
+from unittest.mock import MagicMock, call, patch
 
+import pytest
 import ruamel.yaml as yamler
 from ruamel.yaml.comments import CommentedMap, CommentedSeq, TaggedScalar
 
 import pypyr.cache.stepcache as stepcache
 from pypyr.context import Context
-from pypyr.dsl import (Jsonify,
-                       PyString,
-                       SicString,
-                       SpecialTagDirective,
-                       Step,
-                       RetryDecorator,
-                       WhileDecorator)
-from pypyr.errors import (Call,
-                          HandledError,
-                          LoopMaxExhaustedError,
-                          PipelineDefinitionError)
+from pypyr.dsl import (
+    Jsonify,
+    PyString,
+    RetryDecorator,
+    SicString,
+    SpecialTagDirective,
+    Step,
+    WhileDecorator,
+)
+from pypyr.errors import (
+    Call,
+    HandledError,
+    LoopMaxExhaustedError,
+    PipelineDefinitionError,
+)
+from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
 def arb_step_mock(context):
     """No real reason, other than to mock the existence of a run_step."""
     return 'from arb step mock'
+
+
 # region custom yaml tags
 
 # region SpecialTagDirective base
@@ -61,6 +67,7 @@ def test_special_tag_directive_truthy():
     assert SpecialTagDirective('blah')
     assert not SpecialTagDirective(None)
     assert not SpecialTagDirective('')
+
 
 # endregion SpecialTagDirective base
 
@@ -452,6 +459,7 @@ def test_py_string_truthy():
     assert not PyString(None)
     assert not PyString('')
 
+
 # endregion py string custom tag
 
 # region sic string custom tag
@@ -512,6 +520,7 @@ def test_sic_string_truthy():
     assert not SicString(None)
     assert not SicString('')
 
+
 # endregion sic string custom tag
 
 # endregion custom yaml tags
@@ -556,6 +565,8 @@ def mock_run_step_none_context(context):
     """None the context in the step."""
     # ignore the context is not used flake8 warning
     context = None  # noqa: F841
+
+
 # endregion step mocks
 
 # endregion test setup & fixtures
@@ -565,19 +576,16 @@ def mock_run_step_none_context(context):
 
 
 @patch('pypyr.moduleloader.get_module')
-def test_simple_step_init_defaults(mocked_moduleloader):
+def test_init_defaults(mocked_moduleloader):
     """Simple step initializes with defaults as expected."""
     mocked_moduleloader.return_value.run_step = arb_step_mock
 
-    with patch_logger('pypyr.dsl') as mock_logger_debug:
-        step = Step('blah')
-
-    mock_logger_debug.assert_any_call("blah is a simple string.")
+    step = Step('blah')
 
     assert step.name == 'blah'
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
-    assert not hasattr(step, 'for_counter')
+    assert step.for_counter is None
     assert step.in_parameters is None
     assert not step.retry_decorator
     assert step.run_me
@@ -591,24 +599,113 @@ def test_simple_step_init_defaults(mocked_moduleloader):
 
 
 @patch('pypyr.moduleloader.get_module')
-def test_complex_step_init_defaults(mocked_moduleloader):
+def test_from_step_definition(mocked_moduleloader):
+    stepcache.step_cache.clear()
+    mocked_moduleloader.return_value.run_step = arb_step_mock
+    step = Step.from_step_definition(
+        {
+            'name': '{name}',
+            'in': {'k1': 'v1', 'k2': 'v2'},
+            'description': '{description}',
+            'foreach': [0],
+            'retry': {
+                'backoff': '{backoff}',
+                'backoffArgs': '{backoffArgs}',
+                'jrc': '{jrc}',
+                'max': '{max}',
+                'sleep': '{sleep}',
+                'sleepMax': '{sleepMax}',
+                'stopOn': '{stopOn}',
+                'retryOn': '{retryOn}',
+            },
+            'run': '{run}',
+            'skip': '{skip}',
+            'swallow': '{swallow}',
+            'onError': '{onError}',
+            'while': {
+                'errorOnMax': '{errorOnMax}',
+                'max': '{max}',
+                'sleep': '{sleep}',
+                'stop': '{stop}',
+            },
+        }
+    )
+
+    assert step == Step(
+        name='{name}',
+        in_parameters={'k1': 'v1', 'k2': 'v2'},
+        description='{description}',
+        foreach_items=[0],
+        retry_decorator=RetryDecorator(
+            backoff='{backoff}',
+            backoff_args='{backoffArgs}',
+            jrc='{jrc}',
+            max='{max}',
+            sleep='{sleep}',
+            sleep_max='{sleepMax}',
+            stop_on='{stopOn}',
+            retry_on='{retryOn}',
+        ),
+        run_me='{run}',
+        skip_me='{skip}',
+        swallow_me='{swallow}',
+        while_decorator=WhileDecorator(
+            error_on_max='{errorOnMax}',
+            max='{max}',
+            sleep='{sleep}',
+            stop='{stop}',
+        ),
+    )
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_from_step_definition_simple_step(mocked_moduleloader):
+    """Simple step initializes with defaults as expected."""
+    stepcache.step_cache.clear()
+    mocked_moduleloader.return_value.run_step = arb_step_mock
+
+    with patch_logger('pypyr.dsl') as mock_logger_debug:
+        step = Step.from_step_definition('blah')
+
+    mock_logger_debug.assert_any_call("blah is a simple string.")
+
+    assert step.name == 'blah'
+    assert step.run_step_function('blahblah') == 'from arb step mock'
+    assert step.foreach_items is None
+    assert step.for_counter is None
+    assert step.in_parameters is None
+    assert not step.retry_decorator
+    assert step.run_me
+    assert not step.skip_me
+    assert not step.swallow_me
+    assert not step.while_decorator
+    assert step.line_no is None
+    assert step.line_col is None
+
+    mocked_moduleloader.assert_called_once_with('blah')
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_from_step_definition_complex_step(mocked_moduleloader):
     """Complex step initializes with defaults as expected."""
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
     with patch_logger('pypyr.dsl') as mock_logger_debug:
-        step = Step({'name': 'blah'})
+        step = Step.from_step_definition({'name': 'blah'})
 
     assert mock_logger_debug.call_args_list == [
         call("starting"),
         call("blah is complex."),
         call("step name: blah"),
+        call("starting"),
+        call("done"),
         call("done"),
     ]
 
     assert step.name == 'blah'
     assert step.run_step_function('blahblah') == 'from arb step mock'
     assert step.foreach_items is None
-    assert not hasattr(step, 'for_counter')
+    assert step.for_counter is None
     assert step.in_parameters is None
     assert not step.retry_decorator
     assert step.run_me
@@ -621,13 +718,13 @@ def test_complex_step_init_defaults(mocked_moduleloader):
     mocked_moduleloader.assert_called_once_with('blah')
 
 
-def test_complex_step_init_with_missing_name_round_trip():
+def test_from_step_definition_complex_step_with_missing_name_round_trip():
     """Step can't get step name from the yaml pipeline."""
     with pytest.raises(PipelineDefinitionError) as err_info:
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
             step_info = CommentedMap({})
             step_info._yaml_set_line_col(6, 7)
-            Step(step_info)
+            Step.from_step_definition(step_info)
 
     assert mock_logger_error.call_count == 1
     assert mock_logger_error.mock_calls == [
@@ -643,18 +740,21 @@ def test_step_cant_get_run_step_dynamically(mocked_moduleloader):
     stepcache.step_cache.clear()
     with pytest.raises(AttributeError) as err_info:
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-            with patch_logger('pypyr.cache.stepcache',
-                              logging.ERROR) as mock_cache_logger_error:
+            with patch_logger(
+                'pypyr.cache.stepcache', logging.ERROR
+            ) as mock_cache_logger_error:
                 Step('mocked.step')
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
 
     mock_logger_error.assert_called_once_with(
-        'Error at pipeline step mocked.step')
+        'Error at pipeline step mocked.step'
+    )
 
     mock_cache_logger_error.assert_called_once_with(
         "The step mocked.step in module 3 doesn't have a "
-        "run_step(context) function.")
+        "run_step(context) function."
+    )
 
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
@@ -668,18 +768,21 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     stepcache.step_cache.clear()
     with pytest.raises(AttributeError) as err_info:
         with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
-            with patch_logger('pypyr.cache.stepcache',
-                              logging.ERROR) as mock_cache_logger_error:
+            with patch_logger(
+                'pypyr.cache.stepcache', logging.ERROR
+            ) as mock_cache_logger_error:
                 commented_context = CommentedMap({'name': 'mocked.step'})
                 commented_context._yaml_set_line_col(1, 2)
-                Step(commented_context)
+                Step.from_step_definition(commented_context)
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
     mock_logger_error.assert_called_once_with(
-        "Error at pipeline step mocked.step yaml line: 2, col: 3")
+        "Error at pipeline step mocked.step yaml line: 2, col: 3"
+    )
     mock_cache_logger_error.assert_called_once_with(
         "The step mocked.step in module 3 doesn't have a "
-        "run_step(context) function.")
+        "run_step(context) function."
+    )
 
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
@@ -689,18 +792,18 @@ def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
-    step = Step({'name': 'blah',
-                 'in': {'k1': 'v1', 'k2': 'v2'},
-                 'foreach': [0],
-                 'retry': {'max': 5, 'sleep': 7},
-                 'run': False,
-                 'skip': True,
-                 'swallow': True,
-                 'while': {'stop': 'stop condition',
-                           'errorOnMax': True,
-                           'sleep': 3,
-                           'max': 4}
-                 })
+    step = Step(
+        name='blah',
+        in_parameters={'k1': 'v1', 'k2': 'v2'},
+        foreach_items=[0],
+        retry_decorator=RetryDecorator(max=5, sleep=7),
+        run_me=False,
+        skip_me=True,
+        swallow_me=True,
+        while_decorator=WhileDecorator(
+            stop='stop condition', error_on_max=True, sleep=3, max=4
+        ),
+    )
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
@@ -730,26 +833,28 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
 
-    context = CommentedMap({
-        'name': 'blah',
-        'in': {'k1': 'v1', 'k2': 'v2'},
-        'foreach': [0],
-        'retry': {'max': 5, 'sleep': 7},
-        'run': False,
-        'skip': True,
-        'swallow': True,
-        'while': {
-            'stop': 'stop condition',
-            'errorOnMax': True,
-            'sleep': 3,
-            'max': 4
+    context = CommentedMap(
+        {
+            'name': 'blah',
+            'in': {'k1': 'v1', 'k2': 'v2'},
+            'foreach': [0],
+            'retry': {'max': 5, 'sleep': 7},
+            'run': False,
+            'skip': True,
+            'swallow': True,
+            'while': {
+                'stop': 'stop condition',
+                'errorOnMax': True,
+                'sleep': 3,
+                'max': 4,
+            },
         }
-    }
     )
 
     context._yaml_set_line_col(8, 9)
 
-    step = Step(context)
+    step = Step.from_step_definition(context)
+
     assert step.name == 'blah'
     assert step.run_step_function('blah') == 'from arb step mock'
     assert step.foreach_items == [0]
@@ -774,14 +879,15 @@ def test_complex_step_init_with_decorators_roundtrip(mocked_moduleloader):
 
 # endregion Step: init
 
+
 # region Step: description
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
-                                                     mock_get_module):
+def test_run_pipeline_steps_complex_with_description(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator outputs notify description."""
-    step = Step({'name': 'step1',
-                 'description': 'test {key1} description'})
+    step = Step(name='step1', description='test {key1} description')
 
     context = get_test_context()
     original_len = len(context)
@@ -798,12 +904,11 @@ def test_run_pipeline_steps_complex_with_description(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
-                                                             mock_get_module):
+def test_run_pipeline_steps_complex_with_description_not_run(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator set false doesn't run step."""
-    step = Step({'name': 'step1',
-                 'description': 'test description',
-                 'run': '{key5}'})
+    step = Step(name='step1', description='test description', run_me='{key5}')
 
     context = get_test_context()
     original_len = len(context)
@@ -823,12 +928,15 @@ def test_run_pipeline_steps_complex_with_description_not_run(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_description_in_params(
-        mock_invoke_step, mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator set false at the in parameters."""
-    step = Step({'name': 'step1',
-                 'description': 'test description',
-                 'run': '{key5}',
-                 'in': {'key5': True}})
+    step = Step(
+        name='step1',
+        description='test description',
+        run_me='{key5}',
+        in_parameters={'key5': True},
+    )
 
     context = Context({"key5": False})
 
@@ -844,12 +952,13 @@ def test_run_pipeline_steps_complex_with_description_in_params(
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_description_skip(mock_invoke_step,
-                                                          mock_get_module):
+def test_run_pipeline_steps_complex_with_description_skip(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator set false doesn't run step."""
-    step = Step({'name': 'step1',
-                 'description': 'test {key5} description',
-                 'skip': True})
+    step = Step(
+        name='step1', description='test {key5} description', skip_me=True
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -859,12 +968,14 @@ def test_run_pipeline_steps_complex_with_description_skip(mock_invoke_step,
             step.run_step(context)
 
     mock_logger_notify.assert_called_once_with(
-        '(skipping): test False description')
+        '(skipping): test False description'
+    )
     mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
+
 
 # endregion Step: description
 # region Step: run_step: foreach
@@ -895,8 +1006,7 @@ def test_foreach_none(mock_foreach, mock_run, mock_moduleloader):
 @patch.object(Step, 'foreach_loop')
 def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
     """Complex step with empty foreach decorator doesn't loop."""
-    step = Step({'name': 'step1',
-                 'foreach': []})
+    step = Step(name='step1', foreach_items=[])
 
     context = get_test_context()
     original_len = len(context)
@@ -914,8 +1024,7 @@ def test_foreach_empty(mock_foreach, mock_run, mock_moduleloader):
 @patch.object(Step, 'run_conditional_decorators')
 def test_foreach_once(mock_run, mock_moduleloader):
     """The foreach loops once."""
-    step = Step({'name': 'step1',
-                 'foreach': ['one']})
+    step = Step(name='step1', foreach_items=['one'])
 
     context = get_test_context()
     original_len = len(context)
@@ -925,7 +1034,8 @@ def test_foreach_once(mock_run, mock_moduleloader):
 
     assert mock_logger_info.mock_calls == [
         call('foreach: running step one'),
-        call('foreach decorator looped 1 times.')]
+        call('foreach decorator looped 1 times.'),
+    ]
 
     assert mock_run.call_count == 1
     mutated_context = get_test_context()
@@ -944,8 +1054,7 @@ def test_foreach_once(mock_run, mock_moduleloader):
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_twice(mock_run, mock_moduleloader):
     """The foreach loops twice."""
-    step = Step({'name': 'step1',
-                 'foreach': ['one', 'two']})
+    step = Step(name='step1', foreach_items=['one', 'two'])
 
     context = get_test_context()
     original_len = len(context)
@@ -956,7 +1065,8 @@ def test_foreach_twice(mock_run, mock_moduleloader):
     assert mock_logger_info.mock_calls == [
         call('foreach: running step one'),
         call('foreach: running step two'),
-        call('foreach decorator looped 2 times.')]
+        call('foreach decorator looped 2 times.'),
+    ]
 
     assert mock_run.call_count == 2
     mutated_context = get_test_context()
@@ -979,8 +1089,7 @@ def test_foreach_twice(mock_run, mock_moduleloader):
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
     """The foreach loops thrice with substitutions inside a list."""
-    step = Step({'name': 'step1',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+    step = Step(name='step1', foreach_items=['{key1}', '{key2}', 'key3'])
 
     context = get_test_context()
     original_len = len(context)
@@ -992,7 +1101,8 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
         call('foreach: running step value1'),
         call('foreach: running step value2'),
         call('foreach: running step key3'),
-        call('foreach decorator looped 3 times.')]
+        call('foreach decorator looped 3 times.'),
+    ]
 
     assert mock_run.call_count == 3
     mutated_context = get_test_context()
@@ -1018,8 +1128,7 @@ def test_foreach_thrice_with_substitutions(mock_run, mock_moduleloader):
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
     """The foreach gets list from string format expression."""
-    step = Step({'name': 'step1',
-                 'foreach': '{list}'})
+    step = Step(name='step1', foreach_items='{list}')
 
     context = get_test_context()
     context['list'] = [99, True, 'string here', 'formatted {key1}']
@@ -1033,7 +1142,8 @@ def test_foreach_with_single_key_substitution(mock_run, mock_moduleloader):
         call('foreach: running step True'),
         call('foreach: running step string here'),
         call('foreach: running step formatted value1'),
-        call('foreach decorator looped 4 times.')]
+        call('foreach decorator looped 4 times.'),
+    ]
 
     assert mock_run.call_count == 4
     mutated_context = get_test_context()
@@ -1067,9 +1177,11 @@ def mock_step_mutating_run(context):
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates run_me expression on each loop iteration."""
-    step = Step({'name': 'step1',
-                 'run': '{dynamic_run_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+    step = Step(
+        name='step1',
+        run_me='{dynamic_run_expression}',
+        foreach_items=['{key1}', '{key2}', 'key3'],
+    )
 
     context = get_test_context()
     context['dynamic_run_expression'] = True
@@ -1084,7 +1196,8 @@ def test_foreach_evaluates_run_decorator(mock_invoke, mock_moduleloader):
         call('step1 not running because run is False.'),
         call('foreach: running step key3'),
         call('step1 not running because run is False.'),
-        call('foreach decorator looped 3 times.')]
+        call('foreach decorator looped 3 times.'),
+    ]
 
     assert mock_invoke.call_count == 1
 
@@ -1104,9 +1217,11 @@ def mock_step_mutating_skip(context):
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_skip)
 def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
-    step = Step({'name': 'step1',
-                 'skip': '{dynamic_skip_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+    step = Step(
+        name='step1',
+        skip_me='{dynamic_skip_expression}',
+        foreach_items=['{key1}', '{key2}', 'key3'],
+    )
 
     context = get_test_context()
     context['dynamic_skip_expression'] = False
@@ -1121,7 +1236,8 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
         call('step1 not running because skip is True.'),
         call('foreach: running step key3'),
         call('step1 not running because skip is True.'),
-        call('foreach decorator looped 3 times.')]
+        call('foreach decorator looped 3 times.'),
+    ]
 
     assert mock_invoke.call_count == 1
 
@@ -1135,9 +1251,11 @@ def test_foreach_evaluates_skip_decorator(mock_invoke, mock_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     """The foreach evaluates skip expression on each loop iteration."""
-    step = Step({'name': 'step1',
-                 'swallow': '{dynamic_swallow_expression}',
-                 'foreach': ['{key1}', '{key2}', 'key3']})
+    step = Step(
+        name='step1',
+        swallow_me='{dynamic_swallow_expression}',
+        foreach_items=['{key1}', '{key2}', 'key3'],
+    )
 
     context = get_test_context()
     context['dynamic_swallow_expression'] = False
@@ -1152,8 +1270,9 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
         elif context['i'] == 'key3':
             raise arb_error
 
-    with patch.object(Step, 'invoke_step',
-                      side_effect=mock_step_deliberate_error) as mock_invoke:
+    with patch.object(
+        Step, 'invoke_step', side_effect=mock_step_deliberate_error
+    ) as mock_invoke:
         with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
             with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
                 step.run_step(context)
@@ -1162,14 +1281,16 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
         call('foreach: running step value1'),
         call('foreach: running step value2'),
         call('foreach: running step key3'),
-        call('foreach decorator looped 3 times.')]
+        call('foreach decorator looped 3 times.'),
+    ]
 
     assert mock_invoke.call_count == 3
 
     assert mock_logger_error.call_count == 1
     mock_logger_error.assert_called_once_with(
         'step1 Ignoring error '
-        'because swallow is True for this step.\nValueError: arb error')
+        'because swallow is True for this step.\nValueError: arb error'
+    )
 
     # validate all the in params ended up in context as intended, plus i,
     # plus runErrors
@@ -1177,53 +1298,61 @@ def test_foreach_evaluates_swallow_decorator(mock_moduleloader):
     # after the looping's done, the i value will be the last iterator value
     assert context['i'] == 'key3'
     assert step.for_counter == 'key3'
-    assert context['runErrors'] == [{
-        'col': None,
-        'customError': {},
-        'description': 'arb error',
-        'exception': arb_error,
-        'line': None,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': True,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': None,
+            'customError': {},
+            'description': 'arb error',
+            'exception': arb_error,
+            'line': None,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': True,
+        }
+    ]
 
 
 def test_foreach_with_iterator():
     """Loop over iterator in foreach."""
     context = Context({'lst': []})
     from itertools import product
+
     context.pystring_globals_update({'product': product})
 
-    step = Step({'name': 'pypyr.steps.py',
-                 'foreach': PyString('product([1, 2], ["A", "B"])'),
-                 'in': {'py': 'lst.append(i)'}
-                 })
+    step = Step(
+        name='pypyr.steps.py',
+        foreach_items=PyString('product([1, 2], ["A", "B"])'),
+        in_parameters={'py': 'lst.append(i)'},
+    )
 
     step.run_step(context)
 
-    assert context == {'lst': [(1, 'A'), (1, 'B'), (2, 'A'), (2, 'B')],
-                       'i': (2, 'B')}
+    assert context == {
+        'lst': [(1, 'A'), (1, 'B'), (2, 'A'), (2, 'B')],
+        'i': (2, 'B'),
+    }
 
 
 def test_foreach_with_inline_iterator():
     """Loop over iterator in foreach."""
+
     def myfunc():
         yield from ['one', 'two', 'three']
 
-    context = Context({'lst': [],
-                       'test_iterator': myfunc()})
+    context = Context({'lst': [], 'test_iterator': myfunc()})
 
-    step = Step({'name': 'pypyr.steps.py',
-                 'foreach': PyString('test_iterator'),
-                 'in': {'py': 'lst.append(i)'}
-                 })
+    step = Step(
+        name='pypyr.steps.py',
+        foreach_items=PyString('test_iterator'),
+        in_parameters={'py': 'lst.append(i)'},
+    )
 
     step.run_step(context)
 
     assert len(context) == 3
     assert context['lst'] == ['one', 'two', 'three']
     assert context['i'] == 'three'
+
 
 # endregion Step: run_step
 
@@ -1234,8 +1363,7 @@ def test_foreach_with_inline_iterator():
 @patch.object(Step, 'invoke_step')
 def test_while_max(mock_invoke, mock_moduleloader):
     """The while runs to max."""
-    step = Step({'name': 'step1',
-                 'while': {'max': 3}})
+    step = Step(name='step1', while_decorator=WhileDecorator(max=3))
 
     context = get_test_context()
     original_len = len(context)
@@ -1247,7 +1375,8 @@ def test_while_max(mock_invoke, mock_moduleloader):
         call('while decorator will loop 3 times at 0.0s intervals.'),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
-        call('while: running step with counter 3')]
+        call('while: running step with counter 3'),
+    ]
 
     assert mock_invoke.call_count == 3
 
@@ -1262,9 +1391,11 @@ def test_while_max(mock_invoke, mock_moduleloader):
 @patch.object(Step, 'invoke_step', side_effect=mock_step_mutating_run)
 def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
     """The while evaluates run_me expression on each loop iteration."""
-    step = Step({'name': 'step1',
-                 'run': '{dynamic_run_expression}',
-                 'while': {'max': '{whileMax}', 'stop': '{key5}'}})
+    step = Step(
+        name='step1',
+        run_me='{dynamic_run_expression}',
+        while_decorator=WhileDecorator(max='{whileMax}', stop='{key5}'),
+    )
 
     context = get_test_context()
     context['dynamic_run_expression'] = True
@@ -1275,15 +1406,20 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
         step.run_step(context)
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will loop 3 times, or until {key5} evaluates to '
-             'True at 0.0s intervals.'),
+        call(
+            'while decorator will loop 3 times, or until {key5} evaluates to '
+            'True at 0.0s intervals.'
+        ),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
         call('step1 not running because run is False.'),
         call('while: running step with counter 3'),
         call('step1 not running because run is False.'),
-        call('while decorator looped 3 times, and {key5} never evaluated to '
-             'True.')]
+        call(
+            'while decorator looped 3 times, and {key5} never evaluated to '
+            'True.'
+        ),
+    ]
 
     assert mock_invoke.call_count == 1
 
@@ -1298,8 +1434,7 @@ def test_while_evaluates_run_decorator(mock_invoke, mock_moduleloader):
 @patch.object(Step, 'invoke_step', side_effect=[None, ValueError('whoops')])
 def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     """Error during while kicks loop."""
-    step = Step({'name': 'step1',
-                 'while': {'max': 3}})
+    step = Step(name='step1', while_decorator=WhileDecorator(max=3))
 
     context = get_test_context()
     original_len = len(context)
@@ -1313,7 +1448,8 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     assert mock_logger_info.mock_calls == [
         call('while decorator will loop 3 times at 0.0s intervals.'),
         call('while: running step with counter 1'),
-        call('while: running step with counter 2')]
+        call('while: running step with counter 2'),
+    ]
 
     assert mock_invoke.call_count == 2
 
@@ -1323,26 +1459,30 @@ def test_while_error_kicks_loop(mock_invoke, mock_moduleloader):
     # after the looping's done, the counter will be the last iterator value
     assert context['whileCounter'] == 2
     assert step.while_decorator.while_counter == 2
-    assert context['runErrors'] == [{
-        'col': None,
-        'customError': {},
-        'description': 'whoops',
-        'exception': err_info.value,
-        'line': None,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': False,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': None,
+            'customError': {},
+            'description': 'whoops',
+            'exception': err_info.value,
+            'line': None,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': False,
+        }
+    ]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_while_exhausts(mock_invoke, mock_moduleloader):
     """While exhausts throws error on errorOnMax."""
-    step = Step({'name': 'step1',
-                 'while': {'max': '{whileMax}',
-                           'stop': '{key5}',
-                           'errorOnMax': '{key6}'}})
+    step = Step(
+        name='step1',
+        while_decorator=WhileDecorator(
+            max='{whileMax}', stop='{key5}', error_on_max='{key6}'
+        ),
+    )
 
     context = get_test_context()
     context['whileMax'] = 3
@@ -1352,15 +1492,19 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
         with pytest.raises(LoopMaxExhaustedError) as err_info:
             step.run_step(context)
 
-    assert str(err_info.value) == ("while loop reached "
-                                   "3 and {key5} never evaluated to True.")
+    assert str(err_info.value) == (
+        "while loop reached " "3 and {key5} never evaluated to True."
+    )
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will loop 3 times, or until {key5} evaluates to '
-             'True at 0.0s intervals.'),
+        call(
+            'while decorator will loop 3 times, or until {key5} evaluates to '
+            'True at 0.0s intervals.'
+        ),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
-        call('while: running step with counter 3')]
+        call('while: running step with counter 3'),
+    ]
 
     assert mock_invoke.call_count == 3
 
@@ -1375,10 +1519,12 @@ def test_while_exhausts(mock_invoke, mock_moduleloader):
 @patch.object(Step, 'invoke_step')
 def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     """While evaluates run_me expression on each loop iteration, no format."""
-    step = Step({'name': 'step1',
-                 'while': {'max': '{whileMax}',
-                           'stop': False,
-                           'errorOnMax': True}})
+    step = Step(
+        name='step1',
+        while_decorator=WhileDecorator(
+            max='{whileMax}', stop=False, error_on_max=True
+        ),
+    )
 
     context = get_test_context()
     context['whileMax'] = 3
@@ -1391,11 +1537,14 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
     assert str(err_info.value) == "while loop reached 3."
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will loop 3 times, or until False evaluates to '
-             'True at 0.0s intervals.'),
+        call(
+            'while decorator will loop 3 times, or until False evaluates to '
+            'True at 0.0s intervals.'
+        ),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
-        call('while: running step with counter 3')]
+        call('while: running step with counter 3'),
+    ]
 
     assert mock_invoke.call_count == 3
 
@@ -1411,10 +1560,11 @@ def test_while_exhausts_hard_true(mock_invoke, mock_moduleloader):
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     """While loops twice, foreach thrice with substitutions inside a list."""
-    step = Step({'name': 'step1',
-                 'foreach': ['{key1}', '{key2}', 'key3'],
-                 'while': {'max': 2}
-                 })
+    step = Step(
+        name='step1',
+        foreach_items=['{key1}', '{key2}', 'key3'],
+        while_decorator=WhileDecorator(max=2),
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1433,7 +1583,8 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
         call('foreach: running step value1'),
         call('foreach: running step value2'),
         call('foreach: running step key3'),
-        call('foreach decorator looped 3 times.')]
+        call('foreach decorator looped 3 times.'),
+    ]
 
     assert mock_run.call_count == 6
     mutated_context = get_test_context()
@@ -1461,6 +1612,7 @@ def test_while_nests_foreach_with_substitutions(mock_run, mock_moduleloader):
     assert context['whileCounter'] == 2
     assert step.while_decorator.while_counter == 2
 
+
 # endregion Step: run_step: while
 
 # region Step: invoke_step
@@ -1475,15 +1627,19 @@ def test_invoke_step_pass(mocked_moduleloader):
 
     mocked_moduleloader.assert_called_once_with('mocked.step')
     mocked_moduleloader.return_value.run_step.assert_called_once_with(
-        {'key1': 'value1',
-         'key2': 'value2',
-         'key3': 'value3',
-         'key4': [
-             {'k4lk1': 'value4', 'k4lk2': 'value5'},
-             {'k4lk1': 'value6', 'k4lk2': 'value7'}],
-         'key5': False,
-         'key6': True,
-         'key7': 77})
+        {
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
@@ -1523,15 +1679,19 @@ def test_invoke_step_none_context(mocked_stepcache):
     step.invoke_step(False)
 
     mocked_stepcache.assert_called_once_with('mocked.step')
-    assert context == {'key1': 'value1',
-                       'key2': 'value2',
-                       'key3': 'value3',
-                       'key4': [
-                           {'k4lk1': 'value4', 'k4lk2': 'value5'},
-                           {'k4lk1': 'value6', 'k4lk2': 'value7'}],
-                       'key5': False,
-                       'key6': True,
-                       'key7': 77}
+    assert context == {
+        'key1': 'value1',
+        'key2': 'value2',
+        'key3': 'value3',
+        'key4': [
+            {'k4lk1': 'value4', 'k4lk2': 'value5'},
+            {'k4lk1': 'value6', 'k4lk2': 'value7'},
+        ],
+        'key5': False,
+        'key6': True,
+        'key7': 77,
+    }
+
 
 # endregion Step: invoke_step
 
@@ -1541,78 +1701,77 @@ def test_invoke_step_none_context(mocked_stepcache):
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters(mock_step_cache):
     """Reset all counters in context."""
-    context = {'a': 'b',
-               'c': 'd',
-               'whileCounter': 99,
-               'retryCounter': 999,
-               'i': '9999'}
+    context = {
+        'a': 'b',
+        'c': 'd',
+        'whileCounter': 99,
+        'retryCounter': 999,
+        'i': '9999',
+    }
 
     call = Call(['one', 'two'], 'sg', 'fg', ('a', 'changed'))
 
-    step_config = {'name': 'blah',
-                   'while': {
-                       'max': 4
-                   },
-                   'foreach': ['one', 'two'],
-                   'retry': {
-                       'max': 5
-                   }
-                   }
+    step = Step(
+        name='blah',
+        while_decorator=WhileDecorator(max=4),
+        foreach_items=['one', 'two'],
+        retry_decorator=RetryDecorator(max=5),
+    )
 
-    step = Step(step_config)
     step.while_decorator.while_counter = 6
     step.for_counter = 'seven'
     step.retry_decorator.retry_counter = 8
 
     step.reset_context_counters(context, call)
 
-    assert context == {'a': 'changed',
-                       'c': 'd',
-                       'whileCounter': 6,
-                       'i': 'seven',
-                       'retryCounter': 8}
+    assert context == {
+        'a': 'changed',
+        'c': 'd',
+        'whileCounter': 6,
+        'i': 'seven',
+        'retryCounter': 8,
+    }
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_dont_need_updating(mock_step_cache):
     """Reset all counters in context when they don't need to update."""
-    context = {'a': 'b',
-               'c': 'd',
-               'whileCounter': 99,
-               'retryCounter': 999,
-               'i': '9999'}
+    context = {
+        'a': 'b',
+        'c': 'd',
+        'whileCounter': 99,
+        'retryCounter': 999,
+        'i': '9999',
+    }
 
     call = Call(['one', 'two'], 'sg', 'fg', ('a', 'b'))
 
-    step_config = {'name': 'blah',
-                   'while': {
-                       'max': 4
-                   },
-                   'foreach': ['one', 'two'],
-                   'retry': {
-                       'max': 5
-                   }
-                   }
+    step = Step(
+        name='blah',
+        while_decorator=WhileDecorator(max=4),
+        foreach_items=['one', 'two'],
+        retry_decorator=RetryDecorator(max=5),
+    )
 
-    step = Step(step_config)
     step.while_decorator.while_counter = 99
     step.for_counter = '9999'
     step.retry_decorator.retry_counter = 999
 
     step.reset_context_counters(context, call)
 
-    assert context == {'a': 'b',
-                       'c': 'd',
-                       'whileCounter': 99,
-                       'i': '9999',
-                       'retryCounter': 999}
+    assert context == {
+        'a': 'b',
+        'c': 'd',
+        'whileCounter': 99,
+        'i': '9999',
+        'retryCounter': 999,
+    }
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_none(mock_step_cache):
     """Reset but no counters available & key not found in context."""
-    context = {'a': 'b',
-               'c': 'd'}
+    context = {'a': 'b', 'c': 'd'}
 
     call = Call(['one', 'two'], 'sg', 'fg', ('x', 'z'))
 
@@ -1623,16 +1782,13 @@ def test_reset_context_counters_none(mock_step_cache):
     step.reset_context_counters(context, call)
 
     # reset added the key that didn't exist to context
-    assert context == {'a': 'b',
-                       'c': 'd',
-                       'x': 'z'}
+    assert context == {'a': 'b', 'c': 'd', 'x': 'z'}
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_none_none(mock_step_cache):
     """Reset key to none should not be possible."""
-    context = {'a': 'b',
-               'c': 'd'}
+    context = {'a': 'b', 'c': 'd'}
 
     call = Call(['one', 'two'], 'sg', 'fg', ('x', None))
 
@@ -1648,8 +1804,7 @@ def test_reset_context_counters_none_none(mock_step_cache):
 def test_reset_context_counters_mutable(mock_step_cache):
     """Reset to a mutable object."""
     arb_mutable = ['b']
-    context = {'a': arb_mutable,
-               'c': 'd'}
+    context = {'a': arb_mutable, 'c': 'd'}
 
     call = Call(['one', 'two'], 'sg', 'fg', ('a', arb_mutable))
 
@@ -1659,16 +1814,14 @@ def test_reset_context_counters_mutable(mock_step_cache):
 
     step.reset_context_counters(context, call)
 
-    assert context == {'a': ['b'],
-                       'c': 'd'}
+    assert context == {'a': ['b'], 'c': 'd'}
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
 def test_reset_context_counters_mutate(mock_step_cache):
     """Reset to a mutating mutable."""
     arb_mutable = ['b']
-    context = {'a': arb_mutable,
-               'c': 'd'}
+    context = {'a': arb_mutable, 'c': 'd'}
 
     call = Call(['one', 'two'], 'sg', 'fg', ('a', arb_mutable))
 
@@ -1680,8 +1833,9 @@ def test_reset_context_counters_mutate(mock_step_cache):
 
     step.reset_context_counters(context, call)
 
-    assert context == {'a': ['changed'],
-                       'c': 'd'}
+    assert context == {'a': ['changed'], 'c': 'd'}
+
+
 # endregion Step: reset_context_counters
 
 # region Step: run_step: run
@@ -1689,11 +1843,11 @@ def test_reset_context_counters_mutate(mock_step_cache):
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
-                                                  mock_get_module):
+def test_run_pipeline_steps_complex_with_run_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator set true will run step."""
-    step = Step({'name': 'step1',
-                 'run': True})
+    step = Step(name='step1', run_me=True)
 
     context = get_test_context()
     original_len = len(context)
@@ -1701,18 +1855,19 @@ def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
     step.run_step(context)
 
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1720,11 +1875,11 @@ def test_run_pipeline_steps_complex_with_run_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
-                                                   mock_get_module):
+def test_run_pipeline_steps_complex_with_run_false(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run decorator set false doesn't run step."""
-    step = Step({'name': 'step1',
-                 'run': False})
+    step = Step(name='step1', run_me=False)
 
     context = get_test_context()
     original_len = len(context)
@@ -1742,13 +1897,14 @@ def test_run_pipeline_steps_complex_with_run_false(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_str_formatting_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run formatting expression false doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': '{key1}'})
+        run_me='{key1}',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1765,13 +1921,15 @@ def test_run_pipeline_steps_complex_with_run_str_formatting_false(
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
-                                                       mock_get_module):
+def test_run_pipeline_steps_complex_with_run_str_false(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run set to string False doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': 'False'})
+        run_me='False',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1779,8 +1937,7 @@ def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -1789,13 +1946,15 @@ def test_run_pipeline_steps_complex_with_run_str_false(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
-                                                             mock_get_module):
+def test_run_pipeline_steps_complex_with_run_str_lower_false(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run set to string false doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # name will evaluate False because it's a string and it's not 'True'.
-        'run': 'false'})
+        run_me='false',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1803,8 +1962,7 @@ def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -1814,13 +1972,14 @@ def test_run_pipeline_steps_complex_with_run_str_lower_false(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run formatting expression false doesn't run step."""
-    step = Step({
-        'name': 'step1',
-                # key5 will evaluate False because it's a bool and it's False
-                'run': '{key5}'})
+    step = Step(
+        name='step1',
+        # key5 will evaluate False because it's a bool and it's False
+        run_me='{key5}',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1828,8 +1987,7 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -1839,13 +1997,14 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_false(
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run formatting expression true runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # key6 will evaluate True because it's a bool and it's True
-        'run': '{key6}'})
+        run_me='{key6}',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1855,18 +2014,19 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1874,13 +2034,15 @@ def test_run_pipeline_steps_complex_with_run_bool_formatting_true(
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
-                                                         mock_get_module):
+def test_run_pipeline_steps_complex_with_run_string_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run formatting expression True runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 'True' will evaluate bool True
-        'run': 'True'})
+        run_me='True',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1890,18 +2052,19 @@ def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1909,13 +2072,15 @@ def test_run_pipeline_steps_complex_with_run_string_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
-                                                    mock_get_module):
+def test_run_pipeline_steps_complex_with_run_1_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run 1 runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 1 will evaluate True because it's an int and 1
-        'run': 1})
+        run_me=1,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1925,18 +2090,19 @@ def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1944,14 +2110,15 @@ def test_run_pipeline_steps_complex_with_run_1_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
-                                                     mock_get_module):
+def test_run_pipeline_steps_complex_with_run_99_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run 99 runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 99 will evaluate True because it's an int and > 0
-        'run': 99
-    })
+        run_me=99,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1961,18 +2128,19 @@ def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -1980,14 +2148,15 @@ def test_run_pipeline_steps_complex_with_run_99_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
-                                                       mock_get_module):
+def test_run_pipeline_steps_complex_with_run_neg1_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run -1 runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # -1 will evaluate True because it's an int and != 0
-        'run': -1
-    })
+        run_me=-1,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -1997,18 +2166,19 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -2016,14 +2186,15 @@ def test_run_pipeline_steps_complex_with_run_neg1_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
-                                              mock_get_module):
+def test_run_pipeline_steps_with_single_retry(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with retry runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # -1 will evaluate True because it's an int and != 0
-        'retry': {'max': 10}
-    })
+        retry_decorator=RetryDecorator(max=10),
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2033,19 +2204,20 @@ def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        {'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-         'key5': False,
-         'key6': True,
-         'key7': 77,
-         'retryCounter': 1})
+        {
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+            'retryCounter': 1,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len + 1
@@ -2054,14 +2226,13 @@ def test_run_pipeline_steps_with_single_retry(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_with_retries(mock_invoke_step,
-                                         mock_get_module):
+def test_run_pipeline_steps_with_retries(mock_invoke_step, mock_get_module):
     """Complex step with retry runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # -1 will evaluate True because it's an int and != 0
-        'retry': {'max': 0}
-    })
+        retry_decorator=RetryDecorator(max=0),
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2074,19 +2245,20 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
     mock_logger_debug.assert_any_call("done")
     assert mock_invoke_step.call_count == 2
     mock_invoke_step.assert_called_with(
-        {'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-         'key5': False,
-         'key6': True,
-         'key7': 77,
-         'retryCounter': 2})
+        {
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+            'retryCounter': 2,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len + 1
@@ -2094,18 +2266,15 @@ def test_run_pipeline_steps_with_retries(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
-def test_run_on_error(mock_invoke_step,
-                      mock_get_module):
+def test_run_on_error(mock_invoke_step, mock_get_module):
     """Complex step with swallow false raises error."""
-    complex_step_info = CommentedMap({
-        'name': 'step1',
-        'swallow': 0,
-        'onError': {'arb': 'value'}
-    })
+    complex_step_info = CommentedMap(
+        {'name': 'step1', 'swallow': 0, 'onError': {'arb': 'value'}}
+    )
 
     complex_step_info._yaml_set_line_col(5, 6)
 
-    step = Step(complex_step_info)
+    step = Step.from_step_definition(complex_step_info)
 
     context = get_test_context()
     original_len = len(context)
@@ -2117,34 +2286,40 @@ def test_run_on_error(mock_invoke_step,
             assert str(err_info.value) == "arb error here"
 
     mock_logger_error.assert_called_once_with(
-        "Error while running step step1 at pipeline yaml line: 6, col: 7")
+        "Error while running step step1 at pipeline yaml line: 6, col: 7"
+    )
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
-    assert context['runErrors'] == [{
-        'col': 7,
-        'customError': {'arb': 'value'},
-        'description': 'arb error here',
-        'exception': err_info.value,
-        'line': 6,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': False,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': 7,
+            'customError': {'arb': 'value'},
+            'description': 'arb error here',
+            'exception': err_info.value,
+            'line': 6,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': False,
+        }
+    ]
+
+
 # endregion Step: run_step: run
 
 
 # region Step: run_step: skip
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
-                                                    mock_get_module):
+def test_run_pipeline_steps_complex_with_skip_false(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip decorator set false will run step."""
-    step = Step({
-        'name': 'step1',
-        'skip': False
-    })
+    step = Step(
+        name='step1',
+        skip_me=False,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2154,18 +2329,19 @@ def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
 
     mock_logger_debug.assert_any_call("done")
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended
     assert len(context) == original_len
@@ -2173,13 +2349,14 @@ def test_run_pipeline_steps_complex_with_skip_false(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
-                                                   mock_get_module):
+def test_run_pipeline_steps_complex_with_skip_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip decorator set true runa step."""
-    step = Step({
-        'name': 'step1',
-        'skip': True
-    })
+    step = Step(
+        name='step1',
+        skip_me=True,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2187,8 +2364,7 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2198,17 +2374,16 @@ def test_run_pipeline_steps_complex_with_skip_true(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 @pytest.mark.parametrize("description", [None, "arb description"])
-def test_run_pipeline_steps_run_false_with_skip_invalid(mock_invoke_step,
-                                                        mock_get_module,
-                                                        description):
+def test_run_pipeline_steps_run_false_with_skip_invalid(
+    mock_invoke_step, mock_get_module, description
+):
     """Skip is not called if run is False."""
     step = Step(
-        {
-            'name': 'step1',
-            'run': False,
-            'description': description,
-            'skip': PyString("invalid")
-        })
+        name='step1',
+        run_me=False,
+        description=description,
+        skip_me=PyString("invalid"),
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2216,8 +2391,7 @@ def test_run_pipeline_steps_run_false_with_skip_invalid(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2227,14 +2401,14 @@ def test_run_pipeline_steps_run_false_with_skip_invalid(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip formatting expression false doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # name will evaluate True
-        'skip': '{key6}'
-    })
+        skip_me='{key6}',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2242,8 +2416,7 @@ def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2252,14 +2425,15 @@ def test_run_pipeline_steps_complex_with_skip_str_formatting_false(
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
-                                                       mock_get_module):
+def test_run_pipeline_steps_complex_with_skip_str_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip set to string False doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # skip evaluates True because it's a string and TRUE parses to True.
-        'skip': 'TRUE'
-    })
+        skip_me='TRUE',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2267,8 +2441,7 @@ def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2277,14 +2450,15 @@ def test_run_pipeline_steps_complex_with_skip_str_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
-                                                             mock_get_module):
+def test_run_pipeline_steps_complex_with_skip_str_lower_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run set to string true doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # skip will evaluate true because it's a string and true is True.
-        'skip': 'true'
-    })
+        skip_me='true',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2292,8 +2466,7 @@ def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2303,15 +2476,15 @@ def test_run_pipeline_steps_complex_with_skip_str_lower_true(mock_invoke_step,
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run doesn't run step, evals before skip."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # key5 will evaluate False because it's a bool and it's False
-        'run': '{key5}',
-        'skip': True
-    })
+        run_me='{key5}',
+        skip_me=True,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2319,8 +2492,7 @@ def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because run is False.")
+    mock_logger_info.assert_any_call("step1 not running because run is False.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2330,14 +2502,14 @@ def test_run_pipeline_steps_complex_with_run_and_skip_bool_formatting_false(
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip formatting expression true runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # key5 will evaluate False because it's a bool and it's False
-        'skip': '{key5}'
-    })
+        skip_me='{key5}',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2367,14 +2539,14 @@ def test_run_pipeline_steps_complex_with_skip_bool_formatting_false(
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_string_false(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip formatting expression False runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 'False' will evaluate bool False
-        'skip': 'False'
-    })
+        skip_me='False',
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2404,14 +2576,14 @@ def test_run_pipeline_steps_complex_with_skip_string_false(
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_0_true(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run 1 runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 0 will evaluate False because it's an int and 0
-        'skip': 0
-    })
+        skip_me=0,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2441,14 +2613,14 @@ def test_run_pipeline_steps_complex_with_skip_0_true(
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 def test_run_pipeline_steps_complex_with_skip_99_true(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with skip 99 doesn't run step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # 99 will evaluate True because it's an int and > 0
-        'skip': 99
-    })
+        skip_me=99,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2456,8 +2628,7 @@ def test_run_pipeline_steps_complex_with_skip_99_true(
     with patch_logger('pypyr.dsl', logging.INFO) as mock_logger_info:
         step.run_step(context)
 
-    mock_logger_info.assert_any_call(
-        "step1 not running because skip is True.")
+    mock_logger_info.assert_any_call("step1 not running because skip is True.")
     mock_invoke_step.assert_not_called()
 
     # validate all the in params ended up in context as intended
@@ -2466,14 +2637,15 @@ def test_run_pipeline_steps_complex_with_skip_99_true(
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
-                                                        mock_get_module):
+def test_run_pipeline_steps_complex_with_skip_neg1_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with run -1 runs step."""
-    step = Step({
-        'name': 'step1',
+    step = Step(
+        name='step1',
         # -1 will evaluate True because it's an int and != 0
-        'skip': -1
-    })
+        skip_me=-1,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2490,16 +2662,18 @@ def test_run_pipeline_steps_complex_with_skip_neg1_true(mock_invoke_step,
 
 # endregion Step: run_step: skip
 
+
 # region Step: run_step: swallow
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
-                                                 mock_get_module):
+def test_run_pipeline_steps_complex_swallow_true(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow true runs normally even without error."""
-    step = Step({
-        'name': 'step1',
-        'swallow': True
-    })
+    step = Step(
+        name='step1',
+        swallow_me=True,
+    )
 
     context = get_test_context()
     original_len = len(context)
@@ -2528,13 +2702,11 @@ def test_run_pipeline_steps_complex_swallow_true(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
-                                                  mock_get_module):
+def test_run_pipeline_steps_complex_swallow_false(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow false runs normally even without error."""
-    step = Step({
-        'name': 'step1',
-        'swallow': False
-    })
+    step = Step(name='step1', swallow_me=False)
 
     context = get_test_context()
     original_len = len(context)
@@ -2565,17 +2737,15 @@ def test_run_pipeline_steps_complex_swallow_false(mock_invoke_step,
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     """Complex step with swallow true swallows error."""
-    step = Step({
-        'name': 'step1',
-        'swallow': 1
-    })
+    step = Step(name='step1', swallow_me=1)
 
     context = get_test_context()
     original_len = len(context)
 
     arb_error = ValueError('arb error here')
     with patch.object(
-            Step, 'invoke_step', side_effect=arb_error) as mock_invoke_step:
+        Step, 'invoke_step', side_effect=arb_error
+    ) as mock_invoke_step:
         with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
             with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
                 step.run_step(context)
@@ -2584,48 +2754,50 @@ def test_run_pipeline_steps_complex_swallow_true_error(mock_get_module):
     mock_logger_error.assert_called_once_with(
         "step1 Ignoring error because swallow is True "
         "for this step.\n"
-        "ValueError: arb error here")
+        "ValueError: arb error here"
+    )
     mock_invoke_step.assert_called_once_with(
-        context={'key1': 'value1',
-                 'key2': 'value2',
-                 'key3': 'value3',
-                 'key4': [
-                     {'k4lk1': 'value4',
-                      'k4lk2': 'value5'},
-                     {'k4lk1': 'value6',
-                      'k4lk2': 'value7'}
-                 ],
-                 'key5': False,
-                 'key6': True,
-                 'key7': 77})
+        context={
+            'key1': 'value1',
+            'key2': 'value2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+        }
+    )
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
-    assert context['runErrors'] == [{
-        'col': None,
-        'customError': {},
-        'description': 'arb error here',
-        'exception': arb_error,
-        'line': None,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': True,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': None,
+            'customError': {},
+            'description': 'arb error here',
+            'exception': arb_error,
+            'line': None,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': True,
+        }
+    ]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
-def test_run_pipeline_steps_complex_swallow_invalid_error(mock_invoke_step,
-                                                          mock_get_module):
+def test_run_pipeline_steps_complex_swallow_invalid_error(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow raising formatter error."""
     err = ValueError('arb error here')
     mock_invoke_step.side_effect = err
 
-    step = Step({
-        'name': 'step1',
-        'swallow': PyString("invalid")
-    })
+    step = Step(name='step1', swallow_me=PyString("invalid"))
 
     context = get_test_context()
     original_len = len(context)
@@ -2642,13 +2814,11 @@ def test_run_pipeline_steps_complex_swallow_invalid_error(mock_invoke_step,
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
-def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
-                                                        mock_get_module):
+def test_run_pipeline_steps_complex_swallow_false_error(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow false raises error."""
-    step = Step({
-        'name': 'step1',
-        'swallow': 0
-    })
+    step = Step(name='step1', swallow_me=0)
 
     context = get_test_context()
     original_len = len(context)
@@ -2661,31 +2831,31 @@ def test_run_pipeline_steps_complex_swallow_false_error(mock_invoke_step,
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
-    assert context['runErrors'] == [{
-        'col': None,
-        'customError': {},
-        'description': 'arb error here',
-        'exception': err_info.value,
-        'line': None,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': False,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': None,
+            'customError': {},
+            'description': 'arb error here',
+            'exception': err_info.value,
+            'line': None,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': False,
+        }
+    ]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
-def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
-                                               mock_get_module):
+def test_run_pipeline_steps_complex_round_trip(
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow false raises error."""
-    complex_step_info = CommentedMap({
-        'name': 'step1',
-        'swallow': 0
-    })
+    complex_step_info = CommentedMap({'name': 'step1', 'swallow': 0})
 
     complex_step_info._yaml_set_line_col(5, 6)
 
-    step = Step(complex_step_info)
+    step = Step.from_step_definition(complex_step_info)
 
     context = get_test_context()
     original_len = len(context)
@@ -2697,32 +2867,33 @@ def test_run_pipeline_steps_complex_round_trip(mock_invoke_step,
             assert str(err_info.value) == "arb error here"
 
     mock_logger_error.assert_called_once_with(
-        "Error while running step step1 at pipeline yaml line: 6, col: 7")
+        "Error while running step step1 at pipeline yaml line: 6, col: 7"
+    )
 
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
-    assert context['runErrors'] == [{
-        'col': 7,
-        'customError': {},
-        'description': 'arb error here',
-        'exception': err_info.value,
-        'line': 6,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': False,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': 7,
+            'customError': {},
+            'description': 'arb error here',
+            'exception': err_info.value,
+            'line': 6,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': False,
+        }
+    ]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 def test_run_pipeline_steps_complex_swallow_defaults_false_error(
-        mock_invoke_step,
-        mock_get_module):
+    mock_invoke_step, mock_get_module
+):
     """Complex step with swallow not specified still raises error."""
-    step = Step({
-        'name': 'step1'
-    })
+    step = Step('step1')
 
     context = get_test_context()
     original_len = len(context)
@@ -2735,85 +2906,91 @@ def test_run_pipeline_steps_complex_swallow_defaults_false_error(
     # validate all the in params ended up in context as intended,
     # plus runErrors
     assert len(context) == original_len + 1
-    assert context['runErrors'] == [{
-        'col': None,
-        'customError': {},
-        'description': 'arb error here',
-        'exception': err_info.value,
-        'line': None,
-        'name': 'ValueError',
-        'step': step.name,
-        'swallowed': False,
-    }]
+    assert context['runErrors'] == [
+        {
+            'col': None,
+            'customError': {},
+            'description': 'arb error here',
+            'exception': err_info.value,
+            'line': None,
+            'name': 'ValueError',
+            'step': step.name,
+            'swallowed': False,
+        }
+    ]
 
 
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step', side_effect=ValueError('arb error here'))
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
-def test_run_pipeline_steps_simple_with_error(mock_invoke_step,
-                                              mock_get_module):
+def test_run_pipeline_steps_simple_with_error(
+    mock_invoke_step, mock_get_module
+):
     """Simple step run with error should not swallow."""
     with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
-        step = Step('step1')
+        step = Step.from_step_definition('step1')
         with pytest.raises(ValueError) as err_info:
             step.run_step(Context({'k1': 'v1'}))
 
             assert str(err_info.value) == "arb error here"
 
     mock_logger_debug.assert_any_call('step1 is a simple string.')
-    mock_invoke_step.assert_called_once_with(
-        context={'k1': 'v1'})
+    mock_invoke_step.assert_called_once_with(context={'k1': 'v1'})
+
 
 # endregion Step: run_step: swallow
 
 
 # region Step: run_step: input context
 
+
 @patch('pypyr.moduleloader.get_module')
 @patch.object(Step, 'invoke_step')
 @patch('unittest.mock.MagicMock', new=DeepCopyMagicMock)
 def test_run_step_in_with_clean(mock_invoke_step, mock_get_module):
     """Step sets 'in' arguments in context, unset from context when done."""
-    step = Step({
-        'name': 'step1',
-        'in': {
+    step = Step(
+        name='step1',
+        in_parameters={
             'key1': 'updated1',
             'key2': 'updated2',
-            'keyadded': 'added3'
-        }
-    })
+            'keyadded': 'added3',
+        },
+    )
 
     context = get_test_context()
     step.run_step(context)
 
     # step called with context updated with 'in' arguments
     assert mock_invoke_step.call_count == 1
-    assert mock_invoke_step.call_args_list[0] == call(context={
-        'key1': 'updated1',
-        'key2': 'updated2',
+    assert mock_invoke_step.call_args_list[0] == call(
+        context={
+            'key1': 'updated1',
+            'key2': 'updated2',
+            'key3': 'value3',
+            'key4': [
+                {'k4lk1': 'value4', 'k4lk2': 'value5'},
+                {'k4lk1': 'value6', 'k4lk2': 'value7'},
+            ],
+            'key5': False,
+            'key6': True,
+            'key7': 77,
+            'keyadded': 'added3',
+        }
+    )
+
+    # context when done has 'in' args removed.
+    assert context == {
         'key3': 'value3',
         'key4': [
-                {'k4lk1': 'value4',
-                 'k4lk2': 'value5'},
-                {'k4lk1': 'value6',
-                 'k4lk2': 'value7'}
+            {'k4lk1': 'value4', 'k4lk2': 'value5'},
+            {'k4lk1': 'value6', 'k4lk2': 'value7'},
         ],
         'key5': False,
         'key6': True,
         'key7': 77,
-        'keyadded': 'added3'})
+    }
 
-    # context when done has 'in' args removed.
-    assert context == {'key3': 'value3',
-                       'key4': [
-                           {'k4lk1': 'value4',
-                            'k4lk2': 'value5'},
-                           {'k4lk1': 'value6',
-                            'k4lk2': 'value7'}
-                       ],
-                       'key5': False,
-                       'key6': True,
-                       'key7': 77}
 
 # endregion Step: run_step: input context
 
@@ -2833,7 +3010,7 @@ def test_set_step_input_context_no_in_simple(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_no_in_complex(mocked_moduleloader):
     """Set step context does nothing if no in key found in complex step."""
-    step = Step({'name': 'blah'})
+    step = Step(name='blah')
     context = get_test_context()
     step.set_step_input_context(context)
 
@@ -2843,7 +3020,7 @@ def test_set_step_input_context_no_in_complex(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_set_step_input_context_in_empty(mocked_moduleloader):
     """Set step context does nothing if in key found but it's empty."""
-    step = Step({'name': 'blah', 'in': {}})
+    step = Step(name='blah', in_parameters={})
     context = get_test_context()
     step.set_step_input_context(context)
 
@@ -2855,14 +3032,16 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
     """Set step context adds in to context."""
     context = get_test_context()
     original_len = len(context)
-    in_args = {'newkey1': 'v1',
-               'newkey2': 'v2',
-               'key3': 'updated in',
-               'key4': [0, 1, 2, 3],
-               'key5': True,
-               'key6': False,
-               'key7': 88}
-    step = Step({'name': 'blah', 'in': in_args})
+    in_args = {
+        'newkey1': 'v1',
+        'newkey2': 'v2',
+        'key3': 'updated in',
+        'key4': [0, 1, 2, 3],
+        'key5': True,
+        'key6': False,
+        'key7': 88,
+    }
+    step = Step(name='blah', in_parameters=in_args)
     step.set_step_input_context(context)
 
     assert len(context) - 2 == original_len
@@ -2876,6 +3055,7 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
     assert not context['key6']
     assert context['key7'] == 88
 
+
 # endregion Step: set_step_input_context
 
 # region Step: unset_step_input_context
@@ -2884,7 +3064,7 @@ def test_set_step_input_context_with_in(mocked_moduleloader):
 def test_unset_step_input_context_in_none():
     """Unset works when in parameters None."""
     context = get_test_context()
-    step = Step({'name': 'blah', 'in': None})
+    step = Step(name='blah', in_parameters=None)
     step.unset_step_input_context(context)
 
     # Nothing removed because 'in' was None
@@ -2894,7 +3074,7 @@ def test_unset_step_input_context_in_none():
 def test_unset_step_input_context_in_empty():
     """Unset works when in parameters exists but is empty."""
     context = get_test_context()
-    step = Step({'name': 'blah', 'in': {}})
+    step = Step(name='blah', in_parameters={})
     step.unset_step_input_context(context)
 
     # Nothing removed because 'in' was empty list
@@ -2904,19 +3084,21 @@ def test_unset_step_input_context_in_empty():
 def test_unset_step_input_context():
     """Unset works when in parameters specified."""
     context = get_test_context()
-    in_args = {'newkey1': 'v1',
-               'newkey2': 'v2',
-               'key3': 'updated in',
-               'key4': [0, 1, 2, 3],
-               'key5': True,
-               'key6': False,
-               'key7': 88}
-    step = Step({'name': 'blah', 'in': in_args})
+    in_args = {
+        'newkey1': 'v1',
+        'newkey2': 'v2',
+        'key3': 'updated in',
+        'key4': [0, 1, 2, 3],
+        'key5': True,
+        'key6': False,
+        'key7': 88,
+    }
+    step = Step(name='blah', in_parameters=in_args)
     step.unset_step_input_context(context)
 
     # Removed existing keys & non-existing keys specified in 'in' from context
-    assert context == {'key1': 'value1',
-                       'key2': 'value2'}
+    assert context == {'key1': 'value1', 'key2': 'value2'}
+
 
 # endregion Step: unset_step_input_context
 
@@ -2925,7 +3107,7 @@ def test_unset_step_input_context():
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_with_no_previous_errors_in_context(mocked_moduleloader):
     """Save error."""
-    step = Step({'name': 'blah'})
+    step = Step(name='blah')
     context = get_test_context()
     original_len = len(context)
     arb_error = ValueError("arb error")
@@ -2954,7 +3136,7 @@ def test_save_error_round_trip(mocked_moduleloader):
     context = get_test_context()
     step_info = CommentedMap({'name': 'arb step'})
     step_info._yaml_set_line_col(6, 7)
-    step = Step(step_info)
+    step = Step.from_step_definition(step_info)
     original_len = len(context)
     arb_error = ValueError("arb error")
     step.save_error(context, exception=arb_error, swallowed=True)
@@ -2977,7 +3159,7 @@ def test_save_error_round_trip(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_formatted(mocked_moduleloader):
     """Save error with formatting expression."""
-    step = Step({'name': 'blah', 'onError': {'key': '{key1}'}})
+    step = Step(name='blah', on_error={'key': '{key1}'})
     context = get_test_context()
     original_len = len(context)
     arb_error = ValueError("arb error")
@@ -3001,7 +3183,7 @@ def test_save_error_formatted(mocked_moduleloader):
 @patch('pypyr.moduleloader.get_module')
 def test_save_error_multiple_call(mocked_moduleloader):
     """Save multiple errors."""
-    step = Step({'name': 'blah'})
+    step = Step(name='blah')
     context = get_test_context()
     original_len = len(context)
 
@@ -3038,6 +3220,7 @@ def test_save_error_multiple_call(mocked_moduleloader):
         'swallowed': False,
     }
 
+
 # endregion Step: save_error
 # endregion Step
 
@@ -3047,7 +3230,21 @@ def test_save_error_multiple_call(mocked_moduleloader):
 
 def test_retry_init_defaults_all():
     """The RetryDecorator ctor sets defaults with nothing set."""
-    rd = RetryDecorator({})
+    rd = RetryDecorator()
+    assert rd.backoff is None
+    assert rd.backoff_args is None
+    assert rd.jrc == 0
+    assert rd.max is None
+    assert rd.sleep_max is None
+    assert rd.sleep == 0
+    assert rd.stop_on is None
+    assert rd.retry_on is None
+    assert rd.retry_counter is None
+
+
+def test_retry_from_mapping():
+    """The RetryDecorator ctor sets defaults with nothing set."""
+    rd = RetryDecorator.from_mapping({})
     assert rd.backoff is None
     assert rd.backoff_args is None
     assert rd.jrc == 0
@@ -3061,7 +3258,7 @@ def test_retry_init_defaults_all():
 
 def test_retry_init_defaults_max():
     """The RetryDecorator ctor sets defaults with only max set."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator(max=3)
     assert rd.backoff is None
     assert rd.backoff_args is None
     assert rd.jrc == 0
@@ -3075,15 +3272,16 @@ def test_retry_init_defaults_max():
 
 def test_retry_init_all_attributes():
     """The RetryDecorator ctor with all props set."""
-    rd = RetryDecorator({'max': 3,
-                         'sleep': 4.4,
-                         'retryOn': [1, 2, 3],
-                         'stopOn': [4, 5, 6],
-                         'backoff': 'arb',
-                         'sleepMax': 5.5,
-                         'jrc': 6.6,
-                         'backoffArgs': {'a': 'b'}}
-                        )
+    rd = RetryDecorator(
+        max=3,
+        sleep=4.4,
+        retry_on=[1, 2, 3],
+        stop_on=[4, 5, 6],
+        backoff='arb',
+        sleep_max=5.5,
+        jrc=6.6,
+        backoff_args={'a': 'b'},
+    )
     assert rd.backoff == 'arb'
     assert rd.backoff_args == {'a': 'b'}
     assert rd.jrc == 6.6
@@ -3098,7 +3296,7 @@ def test_retry_init_all_attributes():
 def test_retry_init_not_a_dict():
     """The RetryDecorator raises PipelineDefinitionError on bad ctor input."""
     with pytest.raises(PipelineDefinitionError) as err_info:
-        RetryDecorator('arb')
+        RetryDecorator.from_mapping('arb')
 
     assert str(err_info.value) == (
         "retry decorator must be a dict (i.e a map) type.")
@@ -3162,8 +3360,7 @@ def test_retry_exec_iteration_returns_false_on_error():
 
 def test_retry_exec_iteration_returns_false_on_error_with_retryon():
     """exec_iteration returns False when error specified in retryOn."""
-    rd = RetryDecorator({'max': 3,
-                         'retryOn': ['KeyError', 'ValueError']})
+    rd = RetryDecorator({'max': 3, 'retryOn': ['KeyError', 'ValueError']})
 
     context = Context({})
     mock = MagicMock()
@@ -3177,15 +3374,16 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon():
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
 
 
 def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
     """exec_iteration returns False when error in retryOn with format."""
-    rd = RetryDecorator({'max': 3,
-                         'retryOn': ['KeyError', '{k1}']})
+    rd = RetryDecorator(max=3, retry_on=['KeyError', '{k1}'])
 
     context = Context({'k1': 'ValueError'})
     mock = MagicMock()
@@ -3201,16 +3399,17 @@ def test_retry_exec_iteration_returns_false_on_error_with_retryon_format():
     assert len(context) == 2
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'k1': 'ValueError', 'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
     mock_logger_debug.assert_any_call('ValueError in retryOn. Retry again.')
 
 
 def test_retry_exec_iteration_raises_on_error_not_in_retryon():
     """exec_iteration raises when error not in retryOn."""
-    rd = RetryDecorator({'max': 3,
-                         'retryOn': ['KeyError', 'BlahError']})
+    rd = RetryDecorator(max=3, retry_on=['KeyError', 'BlahError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3229,13 +3428,13 @@ def test_retry_exec_iteration_raises_on_error_not_in_retryon():
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
     mock_logger_error.assert_called_once_with(
-        'ValueError not in retryOn. Raising error and exiting retry.')
+        'ValueError not in retryOn. Raising error and exiting retry.'
+    )
 
 
 def test_retry_exec_iteration_raises_on_error_in_stopon():
     """exec_iteration raises when error in stopOn."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': ['KeyError', 'ValueError']})
+    rd = RetryDecorator(max=3, stop_on=['KeyError', 'ValueError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3254,13 +3453,13 @@ def test_retry_exec_iteration_raises_on_error_in_stopon():
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
     mock_logger_error.assert_called_once_with(
-        'ValueError in stopOn. Raising error and exiting retry.')
+        'ValueError in stopOn. Raising error and exiting retry.'
+    )
 
 
 def test_retry_exec_iteration_raises_on_error_in_stopon_format():
     """exec_iteration raises when error in stopOn with formatting."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': '{k1}'})
+    rd = RetryDecorator(max=3, stop_on='{k1}')
 
     context = Context({'k1': ['KeyError', 'ValueError']})
     mock = MagicMock()
@@ -3277,16 +3476,17 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_format():
     assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
-    mock.assert_called_once_with({'k1': ['KeyError', 'ValueError'],
-                                  'retryCounter': 2})
+    mock.assert_called_once_with(
+        {'k1': ['KeyError', 'ValueError'], 'retryCounter': 2}
+    )
     mock_logger_error.assert_called_once_with(
-        'ValueError in stopOn. Raising error and exiting retry.')
+        'ValueError in stopOn. Raising error and exiting retry.'
+    )
 
 
 def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
     """exec_iteration returns False when error specified in stopOn."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': ['KeyError', 'ArbError']})
+    rd = RetryDecorator(max=3, stop_on=['KeyError', 'ArbError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3300,15 +3500,16 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon():
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
 
 
 def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
     """exec_iteration returns False when error specified in stopOn."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': '{k1}'})
+    rd = RetryDecorator(max=3, stop_on='{k1}')
 
     context = Context({'k1': ['KeyError', 'ArbError']})
     mock = MagicMock()
@@ -3322,19 +3523,24 @@ def test_retry_exec_iteration_returns_false_on_error_not_in_stopon_format():
     assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
-    mock.assert_called_once_with({'k1': ['KeyError', 'ArbError'],
-                                  'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock.assert_called_once_with(
+        {'k1': ['KeyError', 'ArbError'], 'retryCounter': 2}
+    )
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
     mock_logger_debug.assert_any_call('ValueError not in stopOn. Continue.')
 
 
 def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
     """exec_iteration stopOn supersedes retryOn."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': ['KeyError', 'ValueError'],
-                         'retryOn': ['KeyError', 'ValueError']})
+    rd = RetryDecorator(
+        max=3,
+        stop_on=['KeyError', 'ValueError'],
+        retry_on=['KeyError', 'ValueError'],
+    )
 
     context = Context({})
     mock = MagicMock()
@@ -3358,7 +3564,7 @@ def test_retry_exec_iteration_raises_on_error_in_stopon_with_retryon():
 
 def test_retry_exec_iteration_raises_on_max_exhaust():
     """exec_iteration raises error if counter is max."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator(max=3)
 
     context = Context({})
     mock = MagicMock()
@@ -3382,8 +3588,7 @@ def test_retry_exec_iteration_raises_on_max_exhaust():
 
 def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
     """exec_iteration raises error if counter is max and supersedes retryOn."""
-    rd = RetryDecorator({'max': 3,
-                         'retryOn': ['KeyError', 'ValueError']})
+    rd = RetryDecorator(max=3, retry_on=['KeyError', 'ValueError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3401,14 +3606,14 @@ def test_retry_exec_iteration_raises_on_max_exhaust_with_retryon():
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 3})
-    mock_logger_debug.assert_called_with('retry: max 3 retries '
-                                         'exhausted. raising error.')
+    mock_logger_debug.assert_called_with(
+        'retry: max 3 retries ' 'exhausted. raising error.'
+    )
 
 
 def test_retry_exec_iteration_handlederror():
     """Use inner exception when error type is HandledError."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': ['KeyError', 'ArbError']})
+    rd = RetryDecorator(max=3, stop_on=['KeyError', 'ArbError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3424,15 +3629,16 @@ def test_retry_exec_iteration_handlederror():
     assert len(context) == 1
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
 
 
 def test_retry_exec_iteration_handlederror_with_stopon():
     """exec_iteration evals inner error against stopon list."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': '{k1}'})
+    rd = RetryDecorator(max=3, stop_on='{k1}')
 
     context = Context({'k1': ['KeyError', 'ArbError']})
     mock = MagicMock()
@@ -3448,18 +3654,20 @@ def test_retry_exec_iteration_handlederror_with_stopon():
     assert rd.retry_counter == 2
     assert len(context) == 2
     # step_method called once and only once with updated context
-    mock.assert_called_once_with({'k1': ['KeyError', 'ArbError'],
-                                  'retryCounter': 2})
-    mock_logger_error.assert_called_once_with('retry: ignoring error because '
-                                              'retryCounter < max.\n'
-                                              'ValueError: arb')
+    mock.assert_called_once_with(
+        {'k1': ['KeyError', 'ArbError'], 'retryCounter': 2}
+    )
+    mock_logger_error.assert_called_once_with(
+        'retry: ignoring error because '
+        'retryCounter < max.\n'
+        'ValueError: arb'
+    )
     mock_logger_debug.assert_any_call('ValueError not in stopOn. Continue.')
 
 
 def test_retry_exec_iteration_handlederror_stopon_raises():
     """exec_iteration raises HandledError on stopOn."""
-    rd = RetryDecorator({'max': 3,
-                         'stopOn': ['ValueError']})
+    rd = RetryDecorator(max=3, stop_on=['ValueError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3481,13 +3689,13 @@ def test_retry_exec_iteration_handlederror_stopon_raises():
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'retryCounter': 2})
     mock_logger_error.assert_called_once_with(
-        'ValueError in stopOn. Raising error and exiting retry.')
+        'ValueError in stopOn. Raising error and exiting retry.'
+    )
 
 
 def test_retry_exec_iteration_handlederror_retryon_raises():
     """exec_iteration raises HandledError on retryOn."""
-    rd = RetryDecorator({'max': 3,
-                         'retryOn': ['KeyError', 'BlahError']})
+    rd = RetryDecorator(max=3, retry_on=['KeyError', 'BlahError'])
 
     context = Context({})
     mock = MagicMock()
@@ -3518,7 +3726,7 @@ def test_retry_exec_iteration_handlederror_retryon_raises():
 @patch('time.sleep')
 def test_retry_loop_max_end_on_error(mock_time_sleep):
     """Retry loops until max and ends with error at end."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator(max=3)
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
@@ -3548,7 +3756,7 @@ def test_retry_loop_max_end_on_error(mock_time_sleep):
 @patch('time.sleep')
 def test_retry_loop_max_end_on_error_substitution(mock_time_sleep):
     """Retry loops with substitution until max and ends with error at end."""
-    rd = RetryDecorator({'max': PyString('3')})
+    rd = RetryDecorator(max=PyString('3'))
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = ValueError('arb')
@@ -3578,7 +3786,7 @@ def test_retry_loop_max_end_on_error_substitution(mock_time_sleep):
 @patch('time.sleep')
 def test_retry_loop_max_continue_on_success(mock_time_sleep):
     """Retry loops breaks out of loop on success."""
-    rd = RetryDecorator({'max': 3, 'sleep': 10.1})
+    rd = RetryDecorator(max=3, sleep=10.1)
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = [ValueError('arb'), None]
@@ -3608,7 +3816,7 @@ def test_retry_loop_max_continue_on_success(mock_time_sleep):
 @patch('time.sleep')
 def test_retry_loop_max_continue_on_success_fixed_list(mock_time_sleep):
     """Retry loops breaks out of loop on success with list input to fixed."""
-    rd = RetryDecorator({'max': 5, 'sleep': [10.1, 10.2]})
+    rd = RetryDecorator(max=5, sleep=[10.1, 10.2])
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = [ValueError('arb'),
@@ -3644,7 +3852,7 @@ def test_retry_loop_max_continue_on_success_fixed_list(mock_time_sleep):
 @patch('time.sleep')
 def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
     """Retry loops breaks out of indefinite loop on success."""
-    rd = RetryDecorator({'sleep': 10.1})
+    rd = RetryDecorator(sleep=10.1)
     context = Context({'k1': 'v1'})
     mock = MagicMock()
     mock.side_effect = [ValueError('arb1'), ValueError('arb2'), None]
@@ -3661,24 +3869,23 @@ def test_retry_loop_indefinite_continue_on_success(mock_time_sleep):
     mock_time_sleep.assert_called_with(10.1)
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try indefinitely with fixed backoff '
-             'starting at 10.1s intervals.'),
+        call(
+            'retry decorator will try indefinitely with fixed backoff '
+            'starting at 10.1s intervals.'
+        ),
         call('retry: running step with counter 1'),
         call('retry: running step with counter 2'),
-        call('retry: running step with counter 3')]
+        call('retry: running step with counter 3'),
+    ]
 
 
 @patch('time.sleep')
 def test_retry_all_substitutions(mock_time_sleep):
     """Retry loop runs every param substituted."""
-    rd = RetryDecorator({'max': '{k3[1][k031]}',
-                         'sleep': '{k2}'})
-    context = Context({'k1': False,
-                       'k2': 0.3,
-                       'k3': [
-                           0,
-                           {'k031': 1, 'k032': False}
-                       ]})
+    rd = RetryDecorator(max='{k3[1][k031]}', sleep='{k2}')
+    context = Context(
+        {'k1': False, 'k2': 0.3, 'k3': [0, {'k031': 1, 'k032': False}]}
+    )
 
     step_count = 0
 
@@ -3696,33 +3903,39 @@ def test_retry_all_substitutions(mock_time_sleep):
     assert mock_time_sleep.call_count == 0
 
     assert mock_logger_info.mock_calls == [
-        call('retry decorator will try 1 times with fixed backoff starting at '
-             '0.3s intervals.'),
-        call('retry: running step with counter 1')]
+        call(
+            'retry decorator will try 1 times with fixed backoff starting at '
+            '0.3s intervals.'
+        ),
+        call('retry: running step with counter 1'),
+    ]
 
 
 @patch('pypyr.retries.random.uniform', side_effect=[11, 12, 13])
 @patch('time.sleep')
 def test_retry_all_substitutions_backoff(mock_sleep, mock_random):
     """Retry loop runs every param substituted with non-default backoff."""
-    rd = RetryDecorator({'max': '{k3[1][k031]}',
-                         'sleep': '{k2}',
-                         'backoff': '{k6}',
-                         'jrc': '{k4}',
-                         'sleepMax': '{k5}',
-                         'backoffArgs': {'base': '{k7}', 'arb': '{k8}'}})
-    context = Context({'k1': False,
-                       'k2': 3,
-                       'k3': [
-                           0,
-                           {'k031': 4, 'k032': False}
-                       ],
-                       'k4': 0.5,
-                       'k5': 30,
-                       'k6': 'exponentialjitter',
-                       'k7': 3,
-                       'k8': 'a value',
-                       'step_count': 0})
+    rd = RetryDecorator(
+        max='{k3[1][k031]}',
+        sleep='{k2}',
+        backoff='{k6}',
+        jrc='{k4}',
+        sleep_max='{k5}',
+        backoff_args={'base': '{k7}', 'arb': '{k8}'},
+    )
+    context = Context(
+        {
+            'k1': False,
+            'k2': 3,
+            'k3': [0, {'k031': 4, 'k032': False}],
+            'k4': 0.5,
+            'k5': 30,
+            'k6': 'exponentialjitter',
+            'k7': 3,
+            'k8': 'a value',
+            'step_count': 0,
+        }
+    )
 
     def mock_step(context):
         context['step_count'] += 1
@@ -3736,30 +3949,35 @@ def test_retry_all_substitutions_backoff(mock_sleep, mock_random):
     assert context['step_count'] == 4
 
     assert mock_sleep.mock_calls == [call(11), call(12), call(13)]
-    assert mock_random.mock_calls == [call(4.5, 9),
-                                      call(13.5, 27),
-                                      call(15, 30)]
+    assert mock_random.mock_calls == [
+        call(4.5, 9),
+        call(13.5, 27),
+        call(15, 30),
+    ]
 
 
 @patch('pypyr.retries.random.uniform', side_effect=[11, 12, 13])
 @patch('time.sleep')
 def test_retry_all_substitutions_backoff_jitter_list(mock_sleep, mock_random):
     """Retry loop runs fixed jitter with list."""
-    rd = RetryDecorator({'max': '{k3[1][k031]}',
-                         'sleep': '{k2}',
-                         'backoff': '{k6}',
-                         'jrc': '{k4}',
-                         'sleepMax': '{k5}'})
-    context = Context({'k1': False,
-                       'k2': [0.3, 0.2, 0.1],
-                       'k3': [
-                           0,
-                           {'k031': 4, 'k032': False}
-                       ],
-                       'k4': 2,
-                       'k5': 0.25,
-                       'k6': 'jitter',
-                       'step_count': 0})
+    rd = RetryDecorator(
+        max='{k3[1][k031]}',
+        sleep='{k2}',
+        backoff='{k6}',
+        jrc='{k4}',
+        sleep_max='{k5}',
+    )
+    context = Context(
+        {
+            'k1': False,
+            'k2': [0.3, 0.2, 0.1],
+            'k3': [0, {'k031': 4, 'k032': False}],
+            'k4': 2,
+            'k5': 0.25,
+            'k6': 'jitter',
+            'step_count': 0,
+        }
+    )
 
     def mock_step(context):
         context['step_count'] += 1
@@ -3788,7 +4006,7 @@ def test_retry_all_substitutions_backoff_jitter_list(mock_sleep, mock_random):
 
 def test_while_init_defaults_stop():
     """The WhileDecorator ctor sets defaults with only stop set."""
-    wd = WhileDecorator({'stop': 'arb'})
+    wd = WhileDecorator(stop='arb')
     assert wd.stop == 'arb'
     assert wd.sleep == 0
     assert wd.max is None
@@ -3796,9 +4014,34 @@ def test_while_init_defaults_stop():
     assert wd.while_counter is None
 
 
+def test_while_from_mapping_defaults_stop():
+    """The WhileDecorator ctor sets defaults with only stop set."""
+    wd = WhileDecorator.from_mapping({'stop': 'arb'})
+    assert wd.stop == 'arb'
+    assert wd.sleep == 0
+    assert wd.max is None
+    assert not wd.error_on_max
+    assert wd.while_counter is None
+
+
+def test_while_from_mapping():
+    wd = WhileDecorator.from_mapping(
+        {
+            'stop': 'arb',
+            'sleep': 1,
+            'max': 2,
+            'errorOnMax': True,
+        }
+    )
+    assert wd.stop == 'arb'
+    assert wd.sleep == 1
+    assert wd.max == 2
+    assert wd.error_on_max is True
+
+
 def test_while_init_defaults_max():
     """The WhileDecorator ctor sets defaults with only max set."""
-    wd = WhileDecorator({'max': 3})
+    wd = WhileDecorator(max=3)
     assert wd.stop is None
     assert wd.sleep == 0
     assert wd.max == 3
@@ -3809,7 +4052,11 @@ def test_while_init_defaults_max():
 def test_while_init_all_attributes():
     """The WhileDecorator ctor with all props set."""
     wd = WhileDecorator(
-        {'errorOnMax': True, 'max': 3, 'sleep': 4.4, 'stop': '5'})
+        error_on_max=True,
+        max=3,
+        sleep=4.4,
+        stop='5',
+    )
     assert wd.stop == '5'
     assert wd.sleep == 4.4
     assert wd.max == 3
@@ -3817,10 +4064,10 @@ def test_while_init_all_attributes():
     assert wd.while_counter is None
 
 
-def test_while_init_not_a_dict():
+def test_while_from_mapping_not_a_dict():
     """The WhileDecorator raises PipelineDefinitionError on bad ctor input."""
     with pytest.raises(PipelineDefinitionError) as err_info:
-        WhileDecorator('arb')
+        WhileDecorator.from_mapping('arb')
 
     assert str(err_info.value) == (
         "while decorator must be a dict (i.e a map) type.")
@@ -3829,16 +4076,18 @@ def test_while_init_not_a_dict():
 def test_while_init_no_max_no_stop():
     """The WhileDecorator raises PipelineDefinitionError no max and no stop."""
     with pytest.raises(PipelineDefinitionError) as err_info:
-        WhileDecorator({'arb': 'arbv'})
+        WhileDecorator()
 
     assert str(err_info.value) == (
         "the while decorator must have either max or "
         "stop, or both. But not neither. Note that setting stop: False with "
         "no max is an infinite loop. If an infinite loop is really what you "
-        "want, set stop: False")
+        "want, set stop: False"
+    )
 
 
 # endregion WhileDecorator: init
+
 
 # region WhileDecorator: exec_iteration
 def test_while_exec_iteration_no_stop():
@@ -3858,7 +4107,7 @@ def test_while_exec_iteration_no_stop():
 
 def test_while_exec_iteration_stop_true():
     """exec_iteration returns True when stop is bool True."""
-    wd = WhileDecorator({'stop': True})
+    wd = WhileDecorator(stop=True)
 
     context = Context({})
     mock = MagicMock()
@@ -3873,7 +4122,7 @@ def test_while_exec_iteration_stop_true():
 
 def test_while_exec_iteration_stop_evals_true():
     """exec_iteration True when stop evals True from formatting expr."""
-    wd = WhileDecorator({'stop': '{stop}'})
+    wd = WhileDecorator(stop='{stop}')
 
     context = Context({'stop': True})
     mock = MagicMock()
@@ -3916,6 +4165,7 @@ def test_while_exec_iteration_stop_evals_false():
     # step_method called once and only once with updated context
     mock.assert_called_once_with({'stop': False, 'whileCounter': 2})
 
+
 # endregion WhileDecorator: exec_iteration
 
 # region WhileDecorator: while_loop
@@ -3923,7 +4173,7 @@ def test_while_exec_iteration_stop_evals_false():
 
 def test_while_loop_stop_true():
     """Stop True runs loop once because it only evals after 1st iteration."""
-    wd = WhileDecorator({'stop': True})
+    wd = WhileDecorator(stop=True)
 
     mock = MagicMock()
 
@@ -3943,7 +4193,7 @@ def test_while_loop_stop_true():
 
 def test_while_loop_max_0():
     """Max 0 doesn't run even once."""
-    wd = WhileDecorator({'max': 0})
+    wd = WhileDecorator(max=0)
 
     mock = MagicMock()
 
@@ -3960,7 +4210,7 @@ def test_while_loop_max_0():
 
 def test_while_loop_max_0_with_formatting():
     """Max 0 doesn't run even once with formatting expression."""
-    wd = WhileDecorator({'max': '{x}'})
+    wd = WhileDecorator(max='{x}')
 
     mock = MagicMock()
 
@@ -3977,7 +4227,7 @@ def test_while_loop_max_0_with_formatting():
 
 def test_while_loop_stop_evals_true():
     """Stop evaluates True from formatting expr runs once."""
-    wd = WhileDecorator({'stop': '{thisistrue}'})
+    wd = WhileDecorator(stop='{thisistrue}')
 
     mock = MagicMock()
 
@@ -3997,7 +4247,7 @@ def test_while_loop_stop_evals_true():
 
 def test_while_loop_no_stop_no_max():
     """No stop, no max should raise error."""
-    wd = WhileDecorator({'stop': True})
+    wd = WhileDecorator(stop=True)
     wd.max = None
     wd.stop = None
 
@@ -4014,7 +4264,7 @@ def test_while_loop_no_stop_no_max():
 @patch('time.sleep')
 def test_while_loop_max_no_stop(mock_time_sleep):
     """While loop runs with max but no stop."""
-    wd = WhileDecorator({'max': 3})
+    wd = WhileDecorator(max=3)
     context = Context({'k1': 'v1'})
     mock = MagicMock()
 
@@ -4039,7 +4289,7 @@ def test_while_loop_max_no_stop(mock_time_sleep):
 @patch('time.sleep')
 def test_while_loop_stop_no_max(mock_time_sleep):
     """While loop runs with stop but no max."""
-    wd = WhileDecorator({'stop': '{k1}', 'sleep': '{k2}'})
+    wd = WhileDecorator(stop='{k1}', sleep='{k2}')
     context = Context({'k1': False, 'k2': 0.3})
 
     step_count = 0
@@ -4077,7 +4327,7 @@ def test_while_loop_stop_no_max(mock_time_sleep):
 @patch('time.sleep')
 def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
     """While loop runs with stop and max, exit before max."""
-    wd = WhileDecorator({'max': 5, 'stop': '{k1}', 'sleep': '{k2}'})
+    wd = WhileDecorator(max=5, stop='{k1}', sleep='{k2}')
     context = Context({'k1': False, 'k2': 0.3})
 
     step_count = 0
@@ -4115,7 +4365,7 @@ def test_while_loop_stop_and_max_stop_before_max(mock_time_sleep):
 @patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
     """While loop runs with stop and max, exhaust max."""
-    wd = WhileDecorator({'max': 3, 'stop': '{k1}', 'sleep': '{k2}'})
+    wd = WhileDecorator(max=3, stop='{k1}', sleep='{k2}')
     context = Context({'k1': False, 'k2': 0.3})
 
     step_count = 0
@@ -4132,30 +4382,34 @@ def test_while_loop_stop_and_max_exhaust_max(mock_time_sleep):
     assert context['whileCounter'] == 3
     assert wd.while_counter == 3
     assert step_count == 3
-    assert step_context == [{'k1': False, 'k2': 0.3, 'whileCounter': 1},
-                            {'k1': False, 'k2': 0.3, 'whileCounter': 2},
-                            {'k1': False, 'k2': 0.3, 'whileCounter': 3}]
+    assert step_context == [
+        {'k1': False, 'k2': 0.3, 'whileCounter': 1},
+        {'k1': False, 'k2': 0.3, 'whileCounter': 2},
+        {'k1': False, 'k2': 0.3, 'whileCounter': 3},
+    ]
 
     assert mock_time_sleep.call_count == 2
     mock_time_sleep.assert_called_with(0.3)
 
     assert mock_logger_info.mock_calls == [
-        call('while decorator will loop 3 times, or until {k1} evaluates to '
-             'True at 0.3s intervals.'),
+        call(
+            'while decorator will loop 3 times, or until {k1} evaluates to '
+            'True at 0.3s intervals.'
+        ),
         call('while: running step with counter 1'),
         call('while: running step with counter 2'),
         call('while: running step with counter 3'),
-        call('while decorator looped 3 times, and {k1} never evaluated to '
-             'True.')]
+        call(
+            'while decorator looped 3 times, and {k1} never evaluated to '
+            'True.'
+        ),
+    ]
 
 
 @patch('time.sleep')
 def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
     """While loop runs with stop and max, exhaust max."""
-    wd = WhileDecorator({'max': 3,
-                         'stop': '{k1}',
-                         'sleep': '{k2}',
-                         'errorOnMax': '{k3}'})
+    wd = WhileDecorator(max=3, stop='{k1}', sleep='{k2}', error_on_max='{k3}')
     context = Context({'k1': False, 'k2': 0.3, 'k3': True})
 
     step_count = 0
@@ -4208,9 +4462,7 @@ def test_while_loop_stop_and_max_exhaust_error(mock_time_sleep):
 @patch('time.sleep')
 def test_while_loop_max_exhaust_error(mock_time_sleep):
     """While loop runs with only max, exhaust max."""
-    wd = WhileDecorator({'max': 3,
-                         'sleep': '{k2}',
-                         'errorOnMax': True})
+    wd = WhileDecorator(max=3, sleep='{k2}', error_on_max=True)
     context = Context({'k1': False, 'k2': 0.3, 'k3': True})
 
     step_count = 0
@@ -4261,16 +4513,15 @@ def test_while_loop_max_exhaust_error(mock_time_sleep):
 @patch('time.sleep')
 def test_while_loop_all_substitutions(mock_time_sleep):
     """While loop runs every param substituted."""
-    wd = WhileDecorator({'max': '{k3[1][k031]}',
-                         'stop': '{k1}',
-                         'sleep': '{k2}',
-                         'errorOnMax': '{k3[1][k032]}'})
-    context = Context({'k1': False,
-                       'k2': 0.3,
-                       'k3': [
-                           0,
-                           {'k031': 1, 'k032': False}
-                       ]})
+    wd = WhileDecorator(
+        max='{k3[1][k031]}',
+        stop='{k1}',
+        sleep='{k2}',
+        error_on_max='{k3[1][k032]}',
+    )
+    context = Context(
+        {'k1': False, 'k2': 0.3, 'k3': [0, {'k031': 1, 'k032': False}]}
+    )
 
     step_count = 0
 
