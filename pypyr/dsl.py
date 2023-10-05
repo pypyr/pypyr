@@ -870,6 +870,17 @@ class RetryDecorator:
             errors.
 
     """
+    __slots__ = (
+        'backoff',
+        'backoff_args',
+        'jrc',
+        'max',
+        'sleep',
+        'sleep_max',
+        'stop_on',
+        'retry_on',
+        'retry_counter',
+    )
 
     # region constructors
     def __init__(self,
@@ -1091,6 +1102,20 @@ class RetryDecorator:
 
         logger.debug("done")
 
+    def __eq__(self, other):
+        """RetryDecorator equality comparison."""
+        if type(self) is not type(other):
+            return False
+
+        all_slots = [
+            p for c in type(self).__mro__ for p in getattr(c, '__slots__', [])
+        ]
+
+        return all(
+            getattr(self, s, id(self)) == getattr(other, s, id(other))
+            for s in all_slots
+        )
+
 
 class WhileDecorator:
     """While Decorator, as interpreted by the pypyr pipeline definition yaml.
@@ -1112,6 +1137,14 @@ class WhileDecorator:
         stop:(bool) defaults None. Exit loop when stop is True.
 
     """
+
+    __slots__ = (
+        'error_on_max',
+        'max',
+        'sleep',
+        'stop',
+        'while_counter',
+    )
 
     # region constructors
     def __init__(self,
@@ -1298,3 +1331,17 @@ class WhileDecorator:
                         "evaluated True.", self.stop)
 
         logger.debug("done")
+
+    def __eq__(self, other):
+        """WhileDecorator equality comparison."""
+        if type(self) is not type(other):
+            return False
+
+        all_slots = [
+            p for c in type(self).__mro__ for p in getattr(c, '__slots__', [])
+        ]
+
+        return all(
+            getattr(self, s, id(self)) == getattr(other, s, id(other))
+            for s in all_slots
+        )

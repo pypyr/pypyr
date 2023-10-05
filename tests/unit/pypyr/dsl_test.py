@@ -636,6 +636,7 @@ def test_from_step_definition(mocked_moduleloader):
         in_parameters={'k1': 'v1', 'k2': 'v2'},
         description='{description}',
         foreach_items=[0],
+        on_error='{onError}',
         retry_decorator=RetryDecorator(
             backoff='{backoff}',
             backoff_args='{backoffArgs}',
