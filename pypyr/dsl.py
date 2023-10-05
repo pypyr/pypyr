@@ -545,12 +545,14 @@ class Step:
             self.run_step_function(context)
         except Call as call:
             logger.debug("call: calling %s", call.groups)
-            steps_runner = context.current_pipeline.steps_runner
+            steps_runner = (
+                context.current_pipeline.pipeline_definition.pipeline)
             try:
                 steps_runner.run_step_groups(
                     groups=call.groups,
                     success_group=call.success_group,
-                    failure_group=call.failure_group)
+                    failure_group=call.failure_group,
+                    context=context)
             except Exception as ex_info:
                 # don't want to log error twice - would've been logged already
                 # in called step-group.
