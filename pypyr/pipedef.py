@@ -158,6 +158,19 @@ class PipelineBody():
 
     # endregion constructors
 
+    def __eq__(self, other):
+        """Check all instance attributes are equal."""
+        type_self = type(self)
+
+        if type_self is type(other):
+            all_slots = [p for c in type_self.__mro__ for p in getattr(
+                c, '__slots__', [])]
+            return all(
+                getattr(self, s, id(self)) == getattr(other, s, id(other))
+                for s in all_slots)
+        else:
+            return False
+
     # region helpers to build pipeline in code rather than yaml
     def create_custom_step_group(self, name, steps: list[Step]) -> None:
         self.step_groups[name] = steps
