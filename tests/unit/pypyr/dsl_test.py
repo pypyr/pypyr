@@ -3222,6 +3222,23 @@ def test_save_error_multiple_call(mocked_moduleloader):
 
 
 # endregion Step: save_error
+# region Step: __eq__
+
+@patch('pypyr.moduleloader.get_module')
+def test_step_eq_another_type(mocked_moduleloader):
+    class ChildStep(Step):
+        pass
+
+    assert Step('arb') != ChildStep('arb')
+
+
+@patch('pypyr.moduleloader.get_module')
+def test_step_eq_name(mocked_moduleloader):
+    assert Step('arb') == Step('arb')
+    assert Step('arb') != Step('arb1')
+
+
+# endregion Step: __eq__
 # endregion Step
 
 # region RetryDecorator

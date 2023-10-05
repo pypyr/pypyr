@@ -2,7 +2,9 @@
 from textwrap import dedent
 
 from pypyr import pipelinerunner
+from pypyr.dsl import Step
 from pypyr.loaders.string import get_pipeline_definition
+from pypyr.pipedef import PipelineBody
 
 
 def test_get_pipeline_definition():
@@ -18,9 +20,18 @@ def test_get_pipeline_definition():
 
     definition = get_pipeline_definition(pipeline, None)
 
-    assert definition.pipeline == {
-        "steps": [{"name": "pypyr.steps.echo", "in": {"echoMe": "testing"}}]
-    }
+    assert definition.pipeline == PipelineBody(
+        step_groups={
+            'steps': [
+                Step(
+                    name='pypyr.steps.echo',
+                    in_parameters={'echoMe': 'testing'},
+                    line_col=5,
+                    line_no=2,
+                )
+            ]
+        }
+    )
 
 
 def test_run_with_custom_runner():
