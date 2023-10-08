@@ -25,10 +25,20 @@ from pypyr.pipeline import Pipeline
 from tests.common.utils import DeepCopyMagicMock, patch_logger
 
 
+class NonSlotsPipelineBody(PipelineBody):
+    """Patch PipelineBody's instance methods.
+
+    why? because slots classes only allow you to patch on the TYPE of the
+    running instance, which means you can intercept run_step_groups, but not
+    the method that method calls, like run_step_group.
+    """
+    pass
+
+
 def get_pipe_def(dict_in, info=None):
     """Wrap input dict & info into a PipelineDefinition."""
     return PipelineDefinition(
-        pipeline=PipelineBody.from_mapping(dict_in), info=info
+        pipeline=NonSlotsPipelineBody.from_mapping(dict_in), info=info
     )
 
 
@@ -276,8 +286,11 @@ def test_arb_loader():
 
     loader = loader_cache.get_pype_loader('arbpack.arbloader')
     assert loader.name == 'arbpack.arbloader'
-    assert loader.get_pipeline('arb pipe', '/arb/dir').pipeline == {
-        'pipeline_name': 'arb pipe', 'parent': '/arb/dir'}
+
+    assert loader.get_pipeline(
+        'arb pipe',
+        '/arb/dir').pipeline == PipelineBody(None,
+                                             {'arb pipe': [], '/arb/dir': []})
 
     loader_cache.clear()
 
@@ -294,8 +307,9 @@ def test_arb_loader_no_parent():
 
     loader = loader_cache.get_pype_loader('arbpack.arbloader')
     assert loader.name == 'arbpack.arbloader'
-    assert loader.get_pipeline('arb pipe', None).pipeline == {
-        'pipeline_name': 'arb pipe', 'parent': None}
+    assert loader.get_pipeline('arb pipe', None).pipeline == PipelineBody(
+        None,
+        {'arb pipe': [], None: []})
 
     loader_cache.clear()
 
@@ -304,17 +318,23 @@ def test_arb_loader_no_parent():
 # region run_pipeline
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_pass_minimal(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Create implicit context if doesn't exist & no context parser."""
-    pipe_def = get_pipe_def({'arb': 'pipe'})
+    pipe_def = get_pipe_def({'arb': [], 'pipe': []})
+
+    run_step_groups_mock = Mock()
+    run_failure_groups_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_groups_mock
+
     mock_get_pipe.return_value = pipe_def
 
     parser = Mock()
@@ -323,6 +343,7 @@ def test_load_and_run_pipeline_pass_minimal(
 
     pipeline = Pipeline('arb pipe', context_args='arb context input')
     context_instance = Context()
+
     with patch('pypyr.pipeline.Context') as mock_context:
         mock_context.return_value = context_instance
         pipeline.load_and_run_pipeline(None)
@@ -339,29 +360,30 @@ def test_load_and_run_pipeline_pass_minimal(
     # assure that stack empty when done
     assert not context_instance._stack
 
-    mock_steps_runner.assert_called_once_with(
-        pipeline_body={'arb': 'pipe'},
-        context=context_instance)
-    # No called steps
-    sr = mock_steps_runner.return_value
-    sr.run_step_groups.assert_called_once_with(groups=['steps'],
-                                               success_group='on_success',
-                                               failure_group='on_failure')
-    sr.run_failure_step_group.assert_not_called()
+    run_step_groups_mock.assert_called_once_with(groups=['steps'],
+                                                 success_group='on_success',
+                                                 failure_group='on_failure',
+                                                 context=context_instance)
+    run_failure_groups_mock.run_failure_step_group.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_pass_skip_parse_context(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Explicit False parse_input doesn't run parser."""
-    pipe_def = get_pipe_def({'arb': 'pipe'})
+    pipe_def = get_pipe_def({'arb': [], 'pipe': []})
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'a': 'b'}
@@ -369,7 +391,7 @@ def test_load_and_run_pipeline_pass_skip_parse_context(
 
     context = Context({'c': 'd'})
     pipeline = Pipeline('arb pipe', parse_input=False)
-    pipeline.load_and_run_pipeline(context)
+    pipeline.run(context)
 
     mock_add_sys_path.assert_not_called()
     mock_get_pipe.assert_called_once_with(name='arb pipe',
@@ -377,29 +399,30 @@ def test_load_and_run_pipeline_pass_skip_parse_context(
     mock_parser.assert_not_called()
     parser.assert_not_called()
 
-    mock_steps_runner.assert_called_once_with(
-        pipeline_body={'arb': 'pipe'},
-        context=context)
-    # No called steps, just on_failure since err on parse context already
-    sr = mock_steps_runner.return_value
-    sr.run_step_groups.assert_called_once_with(groups=['steps'],
-                                               success_group='on_success',
-                                               failure_group='on_failure')
-    sr.run_failure_step_group.assert_not_called()
+    run_step_groups_mock.assert_called_once_with(groups=['steps'],
+                                                 success_group='on_success',
+                                                 failure_group='on_failure',
+                                                 context=context)
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_parse_context_error(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """run_pipeline on_failure with Context as is if parse fails."""
     pipe_def = get_pipe_def({'context_parser': 'arb parser'})
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.side_effect = ContextError
@@ -411,7 +434,7 @@ def test_load_and_run_pipeline_parse_context_error(
                         parse_input=True)
 
     with pytest.raises(ContextError):
-        pipeline.load_and_run_pipeline(context)
+        pipeline.run(context)
 
     assert context == {'c': 'd'}
     mock_add_sys_path.assert_not_called()
@@ -421,28 +444,36 @@ def test_load_and_run_pipeline_parse_context_error(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.assert_called_once_with(
-        pipeline_body=pipe_def.pipeline,
-        context=context)
     # No called steps, just on_failure since err on parse context already
-    sr = mock_steps_runner.return_value
-    sr.run_step_groups.assert_not_called()
-    sr.run_failure_step_group.assert_called_once_with('on_failure')
+    run_step_groups_mock.assert_not_called()
+    run_failure_group_mock.assert_called_once_with(group_name='on_failure',
+                                                   context=context)
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_steps_error_raises(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run on_failure and raise error if steps group fails."""
-    # First time it runs is steps - give a KeyNotInContextError.
+    pipe_def = PipelineDefinition(
+        pipeline=NonSlotsPipelineBody.from_mapping(
+            {'context_parser': 'arb parser'}),
+        info=None
+    )
     pipe_def = get_pipe_def({'context_parser': 'arb parser'})
+
     mock_get_pipe.return_value = pipe_def
+
+    run_step_group_mock = Mock(side_effect=KeyNotInContextError())
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_group = run_step_group_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'a': 'b'}
@@ -452,9 +483,6 @@ def test_load_and_run_pipeline_steps_error_raises(
     pipeline = Pipeline('arb pipe',
                         context_args='arb context input',
                         parse_input=True)
-
-    mock_steps_runner.return_value.run_step_groups.side_effect = (
-        KeyNotInContextError)
 
     with pytest.raises(KeyNotInContextError):
         pipeline.run(context)
@@ -468,28 +496,29 @@ def test_load_and_run_pipeline_steps_error_raises(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
-        groups=['steps'],
-        success_group='on_success',
-        failure_group='on_failure'
-    )
-    mock_steps_runner.assert_called_once_with(
-        pipeline_body=pipe_def.pipeline,
-        context=context)
+    run_step_group_mock.assert_called_once_with('steps', context=context)
+    run_failure_group_mock.assert_called_once_with(
+        'on_failure', context=context)
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_existing_context_pass(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Pipeline runs with existing context."""
     pipe_def = get_pipe_def({'context_parser': 'arb parser'})
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -499,7 +528,7 @@ def test_load_and_run_pipeline_with_existing_context_pass(
 
     pipeline = Pipeline('arb pipe',
                         context_args='arb context input')
-    pipeline.load_and_run_pipeline(context)
+    pipeline.run(context)
 
     assert not context.is_in_pipeline_scope
     mock_add_sys_path.assert_not_called()
@@ -509,31 +538,36 @@ def test_load_and_run_pipeline_with_existing_context_pass(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['steps'],
         success_group='on_success',
-        failure_group='on_failure'
-    )
-    mock_steps_runner.assert_called_once_with(
-        pipeline_body={'context_parser': 'arb parser'},
+        failure_group='on_failure',
         context={'1': 'context 1',
                  '2': 'context2',
-                 '3': 'new'})
+                 '3': 'new'}
+    )
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_dir_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Py dir passed to add_sys_path."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -554,30 +588,36 @@ def test_load_and_run_pipeline_with_dir_specified(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['steps'],
         success_group='on_success',
-        failure_group='on_failure'
+        failure_group='on_failure',
+        context={'1': 'context 1',
+                 '2': 'context2',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'1': 'context 1',
-                                                       '2': 'context2',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_group_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run pipeline with specified groups."""
-    pipe_yaml = {'arb': 'pipe'}
+    pipe_yaml = {'arb': ['arbpack.arbstep']}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -599,29 +639,35 @@ def test_load_and_run_pipeline_with_group_specified(
     mock_parser.assert_not_called()
     parser.assert_not_called()
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['arb1', 'arb2'],
         success_group=None,
-        failure_group=None
+        failure_group=None,
+        context={'2': 'original',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'2': 'original',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_parent_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run pipeline with specified parent."""
-    pipe_yaml = {'arb': 'pipe'}
+    pipe_yaml = {'arb': ['arbpack.arbstep']}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -641,29 +687,35 @@ def test_load_and_run_pipeline_with_parent_specified(
     mock_parser.assert_not_called()
     parser.assert_not_called()
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['steps'],
         success_group='on_success',
-        failure_group='on_failure'
+        failure_group='on_failure',
+        context={'2': 'original',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'2': 'original',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_success_group_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run pipeline with specified success group."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -686,30 +738,36 @@ def test_load_and_run_pipeline_with_success_group_specified(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    pipeline_body.run_step_groups.assert_called_once_with(
         groups=['steps'],
         success_group='arb1',
-        failure_group=None
+        failure_group=None,
+        context={'1': 'context 1',
+                 '2': 'context2',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'1': 'context 1',
-                                                       '2': 'context2',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_failure_group_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run pipeline with specified failure group."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -732,30 +790,36 @@ def test_load_and_run_pipeline_with_failure_group_specified(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['steps'],
         success_group=None,
-        failure_group='arb1'
+        failure_group='arb1',
+        context={'1': 'context 1',
+                 '2': 'context2',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'1': 'context 1',
-                                                       '2': 'context2',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_load_and_run_pipeline_with_group_and_failure_group_specified(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Pass run_pipeline with specified group and failure group."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.return_value = {'1': 'context 1', '2': 'context2'}
@@ -779,30 +843,36 @@ def test_load_and_run_pipeline_with_group_and_failure_group_specified(
     mock_get_pipe.assert_called_once_with(name='arb pipe',
                                           parent=None)
 
-    mock_steps_runner.return_value.run_step_groups.assert_called_once_with(
+    run_step_groups_mock.assert_called_once_with(
         groups=['arb1'],
         success_group=None,
-        failure_group='arb2'
+        failure_group='arb2',
+        context={'1': 'context 1',
+                 '2': 'context2',
+                 '3': 'new'}
     )
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'1': 'context 1',
-                                                       '2': 'context2',
-                                                       '3': 'new'})
+    run_failure_group_mock.assert_not_called()
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_run_pipeline_parse_context_error_failure(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run on_failure on context parse exception."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
+
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock()
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
 
     parser = Mock()
     parser.side_effect = ValueError('arb')
@@ -827,36 +897,36 @@ def test_run_pipeline_parse_context_error_failure(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={'2': 'original',
-                                                       '3': 'new'})
     # No called steps, just on_failure since err on parse context already
-    sr = mock_steps_runner.return_value
-    sr.run_step_groups.assert_not_called()
-    sr.run_failure_step_group.assert_called_once_with('fg')
+    run_step_groups_mock.assert_not_called()
+    run_failure_group_mock.assert_called_once_with(group_name='fg',
+                                                   context={'2': 'original',
+                                                            '3': 'new'})
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_run_pipeline_parse_context_error_failure_stop(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Run on_failure on context parser exception with Stop."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
 
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock(side_effect=Stop())
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
+
     parser = Mock()
     parser.side_effect = ValueError('arb')
     mock_parser.return_value = parser
-
-    sr = mock_steps_runner.return_value
-
-    sr.run_failure_step_group.side_effect = Stop()
 
     context = Context()
     pipeline = Pipeline('arb pipe',
@@ -871,35 +941,36 @@ def test_run_pipeline_parse_context_error_failure_stop(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={})
-
     # No called steps, just on_failure since err on parse context already
-    sr.run_step_groups.assert_not_called()
-    sr.run_failure_step_group.assert_called_once_with('on_failure')
+    run_step_groups_mock.assert_not_called()
+    run_failure_group_mock.assert_called_once_with(group_name='on_failure',
+                                                   context={})
 
 
-@patch('pypyr.pipeline.StepsRunner', autospec=True)
 @patch('pypyr.cache.parsercache.contextparser_cache.get_context_parser')
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
 @patch('pypyr.moduleloader.add_sys_path')
 def test_run_pipeline_parse_context_error_failure_stopstepgroup(
         mock_add_sys_path,
         mock_get_pipe,
-        mock_parser,
-        mock_steps_runner):
+        mock_parser):
     """Context failure handler swallows StopStepGroup."""
     pipe_yaml = {'context_parser': 'arb parser'}
     pipe_def = get_pipe_def(pipe_yaml)
     mock_get_pipe.return_value = pipe_def
 
+    run_step_groups_mock = Mock()
+    run_failure_group_mock = Mock(side_effect=StopStepGroup())
+
+    pipeline_body = pipe_def.pipeline
+
+    pipeline_body.run_step_groups = run_step_groups_mock
+    pipeline_body.run_failure_step_group = run_failure_group_mock
+
     parser = Mock()
     parser.side_effect = ValueError('arb')
     mock_parser.return_value = parser
 
-    sr = mock_steps_runner.return_value
-
-    sr.run_failure_step_group.side_effect = StopStepGroup()
     context = Context()
 
     pipeline = Pipeline('arb pipe',
@@ -916,12 +987,10 @@ def test_run_pipeline_parse_context_error_failure_stopstepgroup(
     mock_parser.assert_called_once_with('arb parser')
     parser.assert_called_once_with('arb context input')
 
-    mock_steps_runner.assert_called_once_with(pipeline_body=pipe_yaml,
-                                              context={})
-
     # No called steps, just on_failure since err on parse context already
-    sr.run_step_groups.assert_not_called()
-    sr.run_failure_step_group.assert_called_once_with('on_failure')
+    run_step_groups_mock.run_step_groups.assert_not_called()
+    run_failure_group_mock.assert_called_once_with(group_name='on_failure',
+                                                   context={})
 
 # endregion run_pipeline
 
@@ -940,7 +1009,7 @@ def get_test_pipeline_definition(pipeline):
         PipelineDefinition with pipeline payload and arb PipelineInfo.
     """
     return PipelineDefinition(
-        pipeline=pipeline,
+        pipeline=PipelineBody.from_mapping(pipeline),
         info=PipelineInfo(pipeline_name='arbpipe',
                           loader='arbloader',
                           parent='arbdir'))
@@ -980,19 +1049,35 @@ def get_step_pipeline_payload():
     }
 
 
-def nothing_step(context):
-    """Mock step."""
-    pass
+class StepStubs():
+    """Stubs for fake steps. It maps the step-name into mock on run_step."""
+    def __init__(self):
+        self.mock = Mock()
 
+    def nothing_step(self, context):
+        """Mock step."""
+        pass
 
-def stop_pipe_step(context):
-    """Mock stop pipeline step."""
-    raise StopPipeline()
+    def stop_pipe_step(self, context):
+        """Mock stop pipeline step."""
+        raise StopPipeline()
 
+    def stop_all_step(self, context):
+        """Mock stop all step."""
+        raise Stop()
 
-def stop_all_step(context):
-    """Mock stop all step."""
-    raise Stop()
+    def unmapped(self, context):
+        """Throw deliberate error if trying to use a step that was unexpected."""
+        raise ValueError("step_name wasn't found in fake cache.")
+
+    def fake_step_cache(self, step_to_func_mapping):
+        """Initialize step-name to stub mapping like the pypyr cache does."""
+        def get_step(step_name):
+            def _run_me(context):
+                self.mock(step_name)
+                step_to_func_mapping.get(step_name, self.unmapped)(context)
+            return _run_me
+        return get_step
 
 # endregion stop helpers
 
@@ -1003,11 +1088,14 @@ def test_stop_pipeline(mock_step_cache, mock_get_pipe):
     """When StopPipeline stop pipeline execution."""
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 (StopPipeline)
-    mock_step_cache.side_effect = [
-        nothing_step,  # 2.1
-        nothing_step,  # 2.2
-        stop_pipe_step,  # 3.1
-    ]
+    stubs = StepStubs()
+    
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+            'sg2.step1': stubs.nothing_step,
+            'sg2.step2': stubs.nothing_step,
+            'sg3.step1': stubs.stop_pipe_step,
+        }
+    )
 
     mock_get_pipe.return_value = get_test_pipeline_definition(
         get_step_pipeline_payload())
@@ -1021,10 +1109,9 @@ def test_stop_pipeline(mock_step_cache, mock_get_pipe):
     pipeline.run(context)
 
     assert not context.is_in_pipeline_scope
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
-                                          ]
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
+                                     call('sg2.step2'),
+                                     call('sg3.step1')]
 
 
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
@@ -1042,11 +1129,13 @@ def test_stop_pipeline_for(mock_step_cache, mock_get_pipe):
         if context['i'] == 'two':
             raise StopPipeline()
 
-    mock_step_cache.side_effect = [
-        nothing_mock,  # 2.1
-        nothing_mock,  # 2.2
-        step31,  # 3.1
-    ]
+    stubs = StepStubs()
+    
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+        'sg2.step1': nothing_mock,
+        'sg2.step2': nothing_mock,
+        'sg3.step1': step31
+    })
 
     mock_get_pipe.return_value = get_for_step_pipeline()
     context = Context()
@@ -1066,10 +1155,10 @@ def test_stop_pipeline_for(mock_step_cache, mock_get_pipe):
     assert mock312.mock_calls == [call({'i': 'one'}),
                                   call({'i': 'two'})]
 
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
-                                          ]
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
+                                     call('sg2.step2'),
+                                     call('sg3.step1'),
+                                     call('sg3.step1')]
 
 
 def get_retry_step_pipeline():
@@ -1120,11 +1209,12 @@ def test_stop_pipeline_retry(mock_step_cache, mock_get_pipe):
         else:
             raise ValueError(context['retryCounter'])
 
-    mock_step_cache.side_effect = [
-        nothing_mock,  # 2.1
-        nothing_mock,  # 2.2
-        step31,  # 3.1
-    ]
+    stubs = StepStubs()
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+        'sg2.step1': nothing_mock,
+        'sg2.step2': nothing_mock,
+        'sg3.step1': step31
+    })
 
     pipe_yaml = get_retry_step_pipeline()
     mock_get_pipe.return_value = get_test_pipeline_definition(pipe_yaml)
@@ -1146,10 +1236,10 @@ def test_stop_pipeline_retry(mock_step_cache, mock_get_pipe):
     assert mock312.mock_calls == [call({'retryCounter': 1}),
                                   call({'retryCounter': 2})]
 
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
-                                          ]
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
+                                     call('sg2.step2'),
+                                     call('sg3.step1'),
+                                     call('sg3.step1')]
 
 
 @patch('pypyr.cache.loadercache.Loader.get_pipeline')
@@ -1158,11 +1248,13 @@ def test_stop_all(mock_step_cache, mock_get_pipe):
     """Stop stops pipeline execution."""
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 (StopPipeline)
-    mock_step_cache.side_effect = [
-        nothing_step,  # 2.1
-        nothing_step,  # 2.2
-        stop_all_step,  # 3.1
-    ]
+
+    stubs = StepStubs()
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+        'sg2.step1': stubs.nothing_step,
+        'sg2.step2': stubs.nothing_step,
+        'sg3.step1': stubs.stop_all_step
+    })
 
     mock_get_pipe.return_value = get_step_pipeline()
 
@@ -1177,7 +1269,7 @@ def test_stop_all(mock_step_cache, mock_get_pipe):
 
     assert not context.is_in_pipeline_scope
 
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
                                           call('sg2.step2'),
                                           call('sg3.step1')
                                           ]
@@ -1229,11 +1321,13 @@ def test_stop_all_while(mock_step_cache, mock_get_pipe):
         if context['whileCounter'] == 2:
             raise Stop()
 
-    mock_step_cache.side_effect = [
-        nothing_mock,  # 2.1
-        nothing_mock,  # 2.2
-        step31  # 3.1.2
-    ]
+    stubs = StepStubs()
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+        'sg2.step1': nothing_mock,
+        'sg2.step2': nothing_mock,
+        'sg3.step1': step31
+    })
+
     mock_get_pipe.return_value = get_while_step_pipeline()
 
     context = Context()
@@ -1247,9 +1341,10 @@ def test_stop_all_while(mock_step_cache, mock_get_pipe):
 
     assert not context.is_in_pipeline_scope
 
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
+                                     call('sg2.step2'),
+                                     call('sg3.step1'),
+                                     call('sg3.step1')
                                           ]
 
     assert nothing_mock.mock_calls == [call({}),
@@ -1310,11 +1405,12 @@ def test_stop_all_for(mock_step_cache, mock_get_pipe):
         if context['i'] == 'two':
             raise Stop()
 
-    mock_step_cache.side_effect = [
-        nothing_mock,  # 2.1
-        nothing_mock,  # 2.2
-        step31  # 3.1.2
-    ]
+    stubs = StepStubs()
+    mock_step_cache.side_effect = stubs.fake_step_cache({
+        'sg2.step1': nothing_mock,
+        'sg2.step2': nothing_mock,
+        'sg3.step1': step31
+    })
 
     mock_get_pipe.return_value = get_for_step_pipeline()
 
@@ -1329,10 +1425,11 @@ def test_stop_all_for(mock_step_cache, mock_get_pipe):
 
     assert not context.is_in_pipeline_scope
 
-    assert mock_step_cache.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
-                                          ]
+    assert stubs.mock.mock_calls == [call('sg2.step1'),
+                                     call('sg2.step2'),
+                                     call('sg3.step1'),
+                                     call('sg3.step1')
+                                    ]
 
     assert nothing_mock.mock_calls == [call({}),
                                        call({})
