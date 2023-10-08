@@ -373,11 +373,6 @@ class Pipeline():
                 success_group = config.default_success_group
                 failure_group = config.default_failure_group
 
-        # steps_runner = StepsRunner(
-        #     pipeline_body=self.pipeline_definition.pipeline,
-        #     context=context)
-
-        # self.steps_runner = steps_runner
         steps_runner = self.pipeline_definition.pipeline
 
         try:
@@ -390,7 +385,8 @@ class Pipeline():
 
             # failure_step_group will log but swallow any errors except Stop
             try:
-                steps_runner.run_failure_step_group(failure_group, context)
+                steps_runner.run_failure_step_group(group_name=failure_group,
+                                                    context=context)
             except StopStepGroup:
                 pass
 

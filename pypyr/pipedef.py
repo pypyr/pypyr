@@ -142,7 +142,9 @@ class PipelineBody():
                 context_parser = v
                 continue
 
-            # v must be list-like
+            # v must be list-like if this is a step-group
+            # but we don't necessarily know all the group names in advance, so
+            # can only validate the ones we do know about
             if not isinstance(v, Sequence):
                 raise PipelineDefinitionError(
                     "step group must be sequence/list.")
@@ -258,7 +260,7 @@ class PipelineBody():
         logger.debug("starting")
         try:
             # if no group_name exists, it'll do nothing.
-            self.run_step_group(group_name, context, raise_stop=True)
+            self.run_step_group(group_name, context=context, raise_stop=True)
         except Stop:
             logger.debug("Stop instruction: done with failure handler %s.",
                          group_name)
