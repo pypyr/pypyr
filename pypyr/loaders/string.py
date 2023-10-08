@@ -1,7 +1,7 @@
 """Load pipelines from string."""
 import logging
 
-from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineFileInfo
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineStringInfo
 from pypyr.yaml import get_pipeline_yaml
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,7 @@ def get_pipeline_definition(pipeline_name, parent=None):
     logger.debug("starting")
 
     pipeline = get_pipeline_yaml(pipeline_name)
-    info = PipelineFileInfo(
-        pipeline_name="", parent=parent, loader=__name__, path=None
-    )
+    info = PipelineStringInfo(loader=__name__)
     definition = PipelineDefinition(
         pipeline=PipelineBody.from_mapping(pipeline),
         info=info)

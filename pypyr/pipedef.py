@@ -14,6 +14,7 @@ from collections.abc import Mapping, Sequence
 import logging
 from typing import Self
 
+from pypyr.context import Context
 from pypyr.dsl import Step
 from pypyr.errors import (ControlOfFlowInstruction,
                           Jump,
@@ -77,6 +78,16 @@ class PipelineInfo():
         else:
             return False
 
+
+class PipelineStringInfo(PipelineInfo):
+    """Pipeline loaded from a string input."""
+    def __init__(self, loader, is_loader_cascading=True):
+         """Initialize info for a pipeline loader from string."""
+         super().__init__(pipeline_name=None,
+                         loader=loader,
+                         parent=None,
+                         is_parent_cascading=True,
+                         is_loader_cascading=is_loader_cascading)       
 
 class PipelineFileInfo(PipelineInfo):
     """Pipeline properties set by the default file loader.
@@ -160,7 +171,7 @@ class PipelineBody():
 
     # endregion constructors
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Check all instance attributes are equal."""
         type_self = type(self)
 
@@ -205,7 +216,7 @@ class PipelineBody():
     # endregion
 
     # region pipeline execution
-    def get_pipeline_steps(self, step_group):
+    def get_pipeline_steps(self, step_group: str) -> list[Step]:
         """Get the specified step-group's steps from the pipeline.
 
         If there is no steps_group sequence on the pipeline, return None.
@@ -251,7 +262,9 @@ class PipelineBody():
             logger.debug("done")
             return None
 
-    def run_failure_step_group(self, group_name, context):
+    def run_failure_step_group(self,
+                               group_name: str,
+                               context: Context) -> None:
         """Run the group_name if it exists, as a failure handler..
 
         This function will swallow all errors, to prevent obfuscating the error
@@ -271,7 +284,9 @@ class PipelineBody():
 
         logger.debug("done")
 
-    def run_pipeline_steps(self, steps: Sequence[Step], context):
+    def run_pipeline_steps(self,
+                           steps: Sequence[Step],
+                           context: Context) -> None:
         """Run the run_step(context) method of each step in steps.
 
         Args:
@@ -296,7 +311,10 @@ class PipelineBody():
 
         logger.debug("done")
 
-    def run_step_group(self, step_group_name, context, raise_stop=False):
+    def run_step_group(self,
+                       step_group_name: str,
+                       context: Context,
+                       raise_stop: bool=False) -> None:
         """Get the specified step group from the pipeline and run its steps."""
         logger.debug("starting %s", step_group_name)
         assert step_group_name
@@ -319,7 +337,11 @@ class PipelineBody():
 
         logger.debug("done %s", step_group_name)
 
-    def run_step_groups(self, groups, success_group, failure_group, context):
+    def run_step_groups(self,
+                        groups: Sequence[Step],
+                        success_group: str,
+                        failure_group: str,
+                        context: Context) -> None:
         """Run stepgroups specified, with the success and failure handlers.
 
         Args:
@@ -410,7 +432,7 @@ class PipelineDefinition:
         self.pipeline: PipelineBody = pipeline
         self.info: PipelineInfo = info
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Equality comparison checks Pipeline and info objects are equal."""
         type_self = type(self)
 

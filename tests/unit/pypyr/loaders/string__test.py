@@ -2,7 +2,7 @@
 from unittest.mock import patch
 
 import pypyr.loaders.string as string_loader
-from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineFileInfo
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineStringInfo
 
 
 @patch("ruamel.yaml.YAML.load", return_value={})
@@ -15,11 +15,7 @@ def test_get_pipeline_definition(mocked_yaml):
     mocked_yaml.assert_called_once_with(pipeline)
     expected_pipeline_def = PipelineDefinition(
         PipelineBody.from_mapping({}),
-        PipelineFileInfo(
-            pipeline_name="",
-            loader="pypyr.loaders.string",
-            parent=None,
-            path=None,
-        ),
+        PipelineStringInfo(loader="pypyr.loaders.string"),
     )
+
     assert pipeline_def == expected_pipeline_def
