@@ -1,4 +1,7 @@
-"""pipedef.py unit tests."""
+"""pipedef.py unit tests.
+
+For PipelineBody unit tests, see stepsrunner_test.py.
+"""
 from pypyr.pipedef import PipelineDefinition, PipelineInfo, PipelineFileInfo
 
 # region PipelineDefinition
