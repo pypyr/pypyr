@@ -10,7 +10,7 @@ pypyr.pipeline.Pipeline instead.
 All of the below could well be DataClasses + slots once py3.10 the min
 supported version. Might be nice to have frozen class to make these hashable.
 """
-from collections.abc import Mapping, Sequence
+from collections.abc import Hashable, Mapping, Sequence
 import logging
 from typing import Self
 
@@ -185,17 +185,19 @@ class PipelineBody():
             return False
 
     # region helpers to build pipeline in code rather than yaml
-    def create_custom_step_group(self, name, steps: list[Step]) -> None:
+    def create_custom_step_group(self,
+                                 name: Hashable,
+                                 steps: list[Step]) -> None:
         self.step_groups[name] = steps
 
-    def create_steps_group(self, steps: list[Step]) -> None:
+    def create_steps_group(self, steps: Sequence[Step]) -> None:
         # TODO: these defaults should prob come from config
         self.create_custom_step_group('steps', steps)
 
-    def create_success_group(self, steps: list[Step]) -> None:
+    def create_success_group(self, steps: Sequence[Step]) -> None:
         self.create_custom_step_group('on_success', steps)
 
-    def create_failure_group(self, steps: list[Step]) -> None:
+    def create_failure_group(self, steps: Sequence[Step]) -> None:
         self.create_custom_step_group('on_failure', steps)
 
     def steps_append_step(self, step: Step) -> None:
@@ -207,7 +209,9 @@ class PipelineBody():
     def failure_append_step(self, step: Step) -> None:
         self.custom_step_group_append_step('on_failure', step)
 
-    def custom_step_group_append_step(self, name, step: Step) -> None:
+    def custom_step_group_append_step(self,
+                                      name: Hashable,
+                                      step: Step) -> None:
         if name not in self.step_groups:
             self.step_groups[name] = [step]
         else:
@@ -216,7 +220,7 @@ class PipelineBody():
     # endregion
 
     # region pipeline execution
-    def get_pipeline_steps(self, step_group: str) -> list[Step]:
+    def get_pipeline_steps(self, step_group: Hashable) -> Sequence[Step]:
         """Get the specified step-group's steps from the pipeline.
 
         If there is no steps_group sequence on the pipeline, return None.
@@ -237,7 +241,7 @@ class PipelineBody():
         if step_group in step_groups:
             steps = step_groups[step_group]
 
-            if steps is None:
+            if not steps:
                 logger.warning(
                     "%s: sequence has no elements. So it won't do anything.",
                     step_group,
@@ -263,7 +267,7 @@ class PipelineBody():
             return None
 
     def run_failure_step_group(self,
-                               group_name: str,
+                               group_name: Hashable,
                                context: Context) -> None:
         """Run the group_name if it exists, as a failure handler..
 
@@ -312,7 +316,7 @@ class PipelineBody():
         logger.debug("done")
 
     def run_step_group(self,
-                       step_group_name: str,
+                       step_group_name: Hashable,
                        context: Context,
                        raise_stop: bool=False) -> None:
         """Get the specified step group from the pipeline and run its steps."""
@@ -339,8 +343,8 @@ class PipelineBody():
 
     def run_step_groups(self,
                         groups: Sequence[Step],
-                        success_group: str,
-                        failure_group: str,
+                        success_group: Hashable,
+                        failure_group: Hashable,
                         context: Context) -> None:
         """Run stepgroups specified, with the success and failure handlers.
 
