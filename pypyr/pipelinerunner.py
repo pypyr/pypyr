@@ -127,12 +127,38 @@ def run_pipeline_body(
     loader: str | None = None,
     py_dir: str | bytes | PathLike | None = None
 ) -> Context:
+    logger.debug("starting")
     pipeline_definition = PipelineDefinition(
         pipeline=pipeline_body,
         info=PipelineInfo(pipeline_name=pipeline_name,
                           loader=None,
                           parent=None))
 
+    return run_pipeline_definition(
+        pipeline_name = pipeline_name,
+        pipeline_definition = pipeline_definition,
+        args_in = args_in,
+        parse_args = parse_args,
+        dict_in = dict_in,
+        groups = groups,
+        success_group = success_group,
+        failure_group = failure_group,
+        loader = loader,
+        py_dir= py_dir)
+
+def run_pipeline_definition(
+    pipeline_name: str,
+    pipeline_definition: PipelineDefinition,
+    args_in: list[str] | None = None,
+    parse_args: bool | None = None,
+    dict_in: dict | None = None,
+    groups: list[str] | None = None,
+    success_group: str | None = None,
+    failure_group: str | None = None,
+    loader: str | None = None,
+    py_dir: str | bytes | PathLike | None = None
+) -> Context:
+    logger.debug("starting")
     pipeline, args = Pipeline.new_pipe_and_args(name=pipeline_name,
                                                 context_args=args_in,
                                                 parse_input=parse_args,
@@ -147,6 +173,7 @@ def run_pipeline_body(
 
 
 def _run(pipeline, args):
+    logger.debug("starting")
     context = Context(args) if args else Context()
 
     pipeline.run(context)

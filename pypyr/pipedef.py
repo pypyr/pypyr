@@ -12,8 +12,10 @@ supported version. Might be nice to have frozen class to make these hashable.
 """
 from collections.abc import Hashable, Mapping, Sequence
 import logging
-from typing import Self
+from pathlib import Path
+from typing import Any, Self
 
+from pypyr.config import config
 from pypyr.context import Context
 from pypyr.dsl import Step
 from pypyr.errors import (ControlOfFlowInstruction,
@@ -45,9 +47,12 @@ class PipelineInfo():
     __slots__ = ['pipeline_name', 'loader', 'parent',
                  'is_loader_cascading', 'is_parent_cascading']
 
-    def __init__(self, pipeline_name, loader, parent,
-                 is_parent_cascading=True,
-                 is_loader_cascading=True):
+    def __init__(self,
+                 pipeline_name: str,
+                 loader: str,
+                 parent: Any,
+                 is_parent_cascading: bool = True,
+                 is_loader_cascading: bool = True) -> None:
         """Initialize PipelineInfo.
 
         Args:
@@ -65,7 +70,7 @@ class PipelineInfo():
         self.is_loader_cascading = is_loader_cascading
         self.is_parent_cascading = is_parent_cascading
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """Check all instance attributes are equal."""
         type_self = type(self)
 
@@ -81,7 +86,7 @@ class PipelineInfo():
 
 class PipelineStringInfo(PipelineInfo):
     """Pipeline loaded from a string input."""
-    def __init__(self, loader, is_loader_cascading=True):
+    def __init__(self, loader: str, is_loader_cascading: bool = True) -> None:
          """Initialize info for a pipeline loader from string."""
          super().__init__(pipeline_name=None,
                          loader=loader,
@@ -105,7 +110,8 @@ class PipelineFileInfo(PipelineInfo):
 
     __slots__ = ['path']
 
-    def __init__(self, pipeline_name, loader, parent, path):
+    def __init__(self, pipeline_name: str, loader: str,
+                 parent: Path, path: Path):
         """Initialize PipelineFleInfo.
 
         Args:
@@ -121,18 +127,60 @@ class PipelineFileInfo(PipelineInfo):
         self.path = path
 
 
+class Metadata():
+
+    __slots__ = ['_raw']
+
+    def __init__(self, raw: Mapping) -> None:
+        self._raw: Mapping = raw
+
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping) -> Self:
+        if not isinstance(mapping, Mapping):
+            raise PipelineDefinitionError(
+                f"_meta must be a mapping, not a {type(mapping)}.")
+        return cls(mapping)
+
+
+    @property
+    def author(self) -> Any:
+        self._raw.get('author')
+
+    @property
+    def get(self, property) -> Any:
+        self._raw.get(property)
+
+    @property
+    def help(self) -> Any:
+        self._raw.get('help')
+
+    @property
+    def version(self) -> Any:
+        self._raw.get('version')
+
+    def __eq__(self, other) -> bool:
+        """Equality comparison checks Metadata and other objects are equal."""
+        if type(self) is type(other):
+            return self._raw == other._raw
+        else:
+            return False
+        
 class PipelineBody():
-    __slots__ = ['context_parser', 'step_groups']
+    __slots__ = ['meta', 'context_parser', 'step_groups']
 
     # region constructors
     def __init__(self,
+                 step_groups: Mapping | None = None,
                  context_parser: str | None = None,
-                 step_groups: Mapping | None = None):
+                 meta: Metadata | None = None):
         self.context_parser: str | None = context_parser
+        self.meta: Metadata | None = meta
         self.step_groups: Mapping | None = step_groups if step_groups else {}
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
+        logger.debug("starting")
         # if the pipeline is not a dict at top level, failures down-stream get
         # mysterious - this prevents malformed pipe from even making it into
         # cache.
@@ -147,10 +195,15 @@ class PipelineBody():
                 "      echoMe: this is a bare bones pipeline example.\n")
 
         context_parser = None
+        meta = None
         step_groups = {}
         for k, v in mapping.items():
             if k == 'context_parser':
                 context_parser = v
+                continue
+
+            if k == '_meta':
+                meta = Metadata.from_mapping(v)
                 continue
 
             # v must be list-like if this is a step-group
@@ -167,7 +220,10 @@ class PipelineBody():
             step_groups[k] = [Step.from_step_definition(
                 step_def) for step_def in v]
 
-        return cls(context_parser=context_parser, step_groups=step_groups)
+        logger.debug("done")
+        return cls(step_groups=step_groups,
+                   context_parser=context_parser,
+                   meta=meta)
 
     # endregion constructors
 
@@ -191,23 +247,22 @@ class PipelineBody():
         self.step_groups[name] = steps
 
     def create_steps_group(self, steps: Sequence[Step]) -> None:
-        # TODO: these defaults should prob come from config
-        self.create_custom_step_group('steps', steps)
+        self.create_custom_step_group(config.default_group, steps)
 
     def create_success_group(self, steps: Sequence[Step]) -> None:
-        self.create_custom_step_group('on_success', steps)
+        self.create_custom_step_group(config.default_success_group, steps)
 
     def create_failure_group(self, steps: Sequence[Step]) -> None:
-        self.create_custom_step_group('on_failure', steps)
+        self.create_custom_step_group(config.default_failure_group, steps)
 
     def steps_append_step(self, step: Step) -> None:
-        self.custom_step_group_append_step('steps', step)
+        self.custom_step_group_append_step(config.default_group, step)
 
     def success_append_step(self, step: Step) -> None:
-        self.custom_step_group_append_step('on_success', step)
+        self.custom_step_group_append_step(config.default_success_group, step)
 
     def failure_append_step(self, step: Step) -> None:
-        self.custom_step_group_append_step('on_failure', step)
+        self.custom_step_group_append_step(config.default_failure_group, step)
 
     def custom_step_group_append_step(self,
                                       name: Hashable,
@@ -217,7 +272,7 @@ class PipelineBody():
         else:
             self.step_groups[name].append(step)
 
-    # endregion
+    # endregion helpers to build pipeline in code rather than yaml
 
     # region pipeline execution
     def get_pipeline_steps(self, step_group: Hashable) -> Sequence[Step]:
