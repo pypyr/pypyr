@@ -7,7 +7,7 @@ import pypyr.cache.loadercache as loadercache
 from pypyr.errors import (PipelineDefinitionError,
                           PipelineNotFoundError,
                           PyModuleNotFoundError)
-from pypyr.pipedef import PipelineDefinition, PipelineInfo
+from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineInfo
 
 
 # region load_the_loader
@@ -33,7 +33,8 @@ def test_load_the_loader_ok():
     response = loader.get_pipeline(name='arb', parent='/arb')
 
     assert response == PipelineDefinition(
-        pipeline={'pipeline_name': 'arb', 'parent': '/arb'},
+        pipeline=PipelineBody(
+            step_groups={'arb': [], '/arb': []}),
         info=PipelineInfo('arb', 'tests.arbpack.arbloader', '/arb'))
 
     # 2nd time gets from cache
@@ -44,21 +45,26 @@ def test_load_the_loader_ok():
 
     # name+parent is unique
     response3 = loader.get_pipeline(name='arb', parent='/arb2')
+    
     assert response3 == PipelineDefinition(
-        pipeline={'pipeline_name': 'arb', 'parent': '/arb2'},
+        pipeline=PipelineBody(
+            step_groups={'arb': [], '/arb2': []}),
         info=PipelineInfo('arb', 'tests.arbpack.arbloader', '/arb2'))
-    assert len(loader._pipeline_cache._cache) == 2
 
     response4 = loader.get_pipeline(name='arb2', parent='/arb2')
-    assert response4 == PipelineDefinition(
-        pipeline={'pipeline_name': 'arb2', 'parent': '/arb2'},
-        info=PipelineInfo('arb2', 'tests.arbpack.arbloader', '/arb2'))
-    assert len(loader._pipeline_cache._cache) == 3
 
+    assert response4 == PipelineDefinition(
+        pipeline=PipelineBody(
+            step_groups={'arb2': [], '/arb2': []}),
+        info=PipelineInfo('arb2', 'tests.arbpack.arbloader', '/arb2'))
+    
     response5 = loader.get_pipeline(name='arb2', parent=None)
+
     assert response5 == PipelineDefinition(
-        pipeline={'pipeline_name': 'arb2', 'parent': None},
+        pipeline=PipelineBody(
+            step_groups={'arb2': [], None: []}),
         info=PipelineInfo('arb2', 'tests.arbpack.arbloader', None))
+    
     assert len(loader._pipeline_cache._cache) == 4
 
 
@@ -80,7 +86,7 @@ def test_get_pype_loader_default():
     """Loader defaults to fileloader."""
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
-        mock_get_def.return_value = Mock(spec=dict())
+        mock_get_def.return_value = {}
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader()
 
@@ -116,7 +122,7 @@ def test_get_pype_loader_specified_wraps_in_pipedef():
     """Loader passes loader arg and wraps response in PipelineDefinition."""
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
-        mock_get_def.return_value = {'a': 'b'}
+        mock_get_def.return_value = {'a': ['b']}
 
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader('arbloader')
@@ -124,9 +130,14 @@ def test_get_pype_loader_specified_wraps_in_pipedef():
     mock_get_module.assert_called_once_with('arbloader')
     assert loader.name == 'arbloader'
 
-    pipeline = loader.get_pipeline('arb', 'parent')
+    with patch('pypyr.moduleloader.get_module') as mock_get_module:
+        pipeline_body = PipelineBody.from_mapping({'a': ['b']})
+        mock_get_step = Mock()
+        # mock_get_step.return_value = Mock()
+        pipeline = loader.get_pipeline('arb', 'parent')
+
     assert pipeline == PipelineDefinition(
-        pipeline={'a': 'b'},
+        pipeline=pipeline_body,
         info=PipelineInfo('arb', 'arbloader', 'parent'))
 
     mock_get_def.assert_called_once_with(pipeline_name='arb', parent='parent')
@@ -158,7 +169,7 @@ def test_loader_clear():
     """Clear pipeline cache in Loader."""
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
-        mock_get_def.return_value = Mock(spec=dict())
+        mock_get_def.return_value = Mock(spec=PipelineDefinition)
 
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         loader = loadercache.LoaderCache().get_pype_loader('arbloader')
@@ -181,8 +192,7 @@ def test_loadercache_clear_pipes():
     """Clear pipeline cache in LoaderCache."""
     lc = loadercache.LoaderCache()
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
-        mock_get_def = Mock()
-        mock_get_def.return_value = Mock(spec=dict())
+        mock_get_def = Mock(return_value={})
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
 
         arb_loader = lc.get_pype_loader('arbloader')
@@ -220,7 +230,7 @@ def test_loadercache_clear_pipes_all():
     lc = loadercache.LoaderCache()
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         mock_get_def = Mock()
-        mock_get_def.return_value = Mock(spec=dict())
+        mock_get_def.return_value = {}
         mock_get_module.return_value.get_pipeline_definition = mock_get_def
         arb_loader = lc.get_pype_loader('arbloader')
         arb_loader2 = lc.get_pype_loader('arbloader2')

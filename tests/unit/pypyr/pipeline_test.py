@@ -289,8 +289,7 @@ def test_arb_loader():
 
     assert loader.get_pipeline(
         'arb pipe',
-        '/arb/dir').pipeline == PipelineBody(None,
-                                             {'arb pipe': [], '/arb/dir': []})
+        '/arb/dir').pipeline == PipelineBody({'arb pipe': [], '/arb/dir': []})
 
     loader_cache.clear()
 
@@ -308,8 +307,8 @@ def test_arb_loader_no_parent():
     loader = loader_cache.get_pype_loader('arbpack.arbloader')
     assert loader.name == 'arbpack.arbloader'
     assert loader.get_pipeline('arb pipe', None).pipeline == PipelineBody(
-        None,
-        {'arb pipe': [], None: []})
+        {'arb pipe': [], None: []},
+        None)
 
     loader_cache.clear()
 

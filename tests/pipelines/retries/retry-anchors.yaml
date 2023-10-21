@@ -1,17 +1,18 @@
-common:
-  retry1: &commonRetryFixedList
-    sleep: [2, 4, 8]
-    max: 3
-    sleepMax: 6
+_meta:
+  common:
+    retry1: &commonRetryFixedList
+      sleep: [2, 4, 8]
+      max: 3
+      sleepMax: 6
 
-  retry2: &commonRetryWithSubstitutions
-    sleep: '{base3_exponential_retry[sleep]}'
-    max: '{base3_exponential_retry[max]}'
-    sleepMax: '{base3_exponential_retry[sleepMax]}'
-    jrc: '{base3_exponential_retry[jrc]}'
-    backoff: '{base3_exponential_retry[backoff]}'
-    backoffArgs:
-      base: '{base3_exponential_retry[base]}'
+    retry2: &commonRetryWithSubstitutions
+      sleep: '{base3_exponential_retry[sleep]}'
+      max: '{base3_exponential_retry[max]}'
+      sleepMax: '{base3_exponential_retry[sleepMax]}'
+      jrc: '{base3_exponential_retry[jrc]}'
+      backoff: '{base3_exponential_retry[backoff]}'
+      backoffArgs:
+        base: '{base3_exponential_retry[base]}'
 
 steps:
   - name: pypyr.steps.py
