@@ -26,6 +26,7 @@ from pypyr.errors import (ControlOfFlowInstruction,
 
 logger = logging.getLogger(__name__)
 
+RESERVED_NAMES = {'context_parser', '_meta'}
 
 class PipelineInfo():
     """The common attributes that every pipeline loader should set.
@@ -378,6 +379,12 @@ class PipelineBody():
         logger.debug("starting %s", step_group_name)
         assert step_group_name
 
+        if (step_group_name in RESERVED_NAMES):
+            # this should be rare - trying to run a non-runnable key.
+            raise PipelineDefinitionError(
+                f"{step_group_name} is reserved. Use a different " +
+                f"step-group name. The reserved names are: {RESERVED_NAMES}.")
+
         steps = self.get_pipeline_steps(step_group=step_group_name)
 
         try:
@@ -401,7 +408,7 @@ class PipelineBody():
                         success_group: Hashable,
                         failure_group: Hashable,
                         context: Context) -> None:
-        """Run stepgroups specified, with the success and failure handlers.
+        """Run step-groups specified, with the success and failure handlers.
 
         Args:
             groups: (list) list of step-group names to run.
