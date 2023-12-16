@@ -788,6 +788,22 @@ def test_step_cant_get_run_step_dynamically_round_trip(mocked_moduleloader):
     assert str(err_info.value) == "'int' object has no attribute 'run_step'"
 
 
+@patch('pypyr.moduleloader.get_module', return_value=3)
+def test_step_cant_get_run_step_no_line_no_set(mocked_moduleloader):
+    """Step can't get run_step method on the dynamically imported module.
+
+    With dict (rather than CommentedMap) - i.e line and col not set.
+    """
+    stepcache.step_cache.clear()
+    with pytest.raises(PipelineDefinitionError) as err_info:
+        with patch_logger('pypyr.dsl', logging.ERROR) as mock_logger_error:
+            Step.from_step_definition({'arb': 'arbvalue'})
+
+    mock_logger_error.assert_called_once_with("Error at pipeline step")
+
+    assert str(err_info.value) == "step must have a name."
+
+
 @patch('pypyr.moduleloader.get_module')
 def test_complex_step_init_with_decorators(mocked_moduleloader):
     """Complex step initializes with decorators set."""
@@ -3319,13 +3335,20 @@ def test_retry_init_not_a_dict():
     assert str(err_info.value) == (
         "retry decorator must be a dict (i.e a map) type.")
 
+
+def test_retry_not_eq():
+    """Verify that RetryDecorator Equals returns False when not same type."""
+    assert RetryDecorator(max=3) != 3
+    assert RetryDecorator(max=4) != RetryDecorator(max=5)
+
 # endregion RetryDecorator: init
+
 # region RetryDecorator: exec_iteration
 
 
 def test_retry_exec_iteration_returns_true_on_success():
     """exec_iteration returns True when no error on step method."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator(max=3)
 
     context = Context({})
     mock = MagicMock()
@@ -3342,7 +3365,7 @@ def test_retry_exec_iteration_returns_true_on_success():
 
 def test_retry_exec_iteration_returns_true_on_max_success():
     """exec_iteration returns True when no error on step method on max."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator.from_mapping({'max': 3})
 
     context = Context({})
     mock = MagicMock()
@@ -3357,7 +3380,7 @@ def test_retry_exec_iteration_returns_true_on_max_success():
 
 def test_retry_exec_iteration_returns_false_on_error():
     """exec_iteration returns True when no error on step method."""
-    rd = RetryDecorator({'max': 3})
+    rd = RetryDecorator.from_mapping({'max': 3})
 
     context = Context({})
     mock = MagicMock()
@@ -3378,7 +3401,8 @@ def test_retry_exec_iteration_returns_false_on_error():
 
 def test_retry_exec_iteration_returns_false_on_error_with_retryon():
     """exec_iteration returns False when error specified in retryOn."""
-    rd = RetryDecorator({'max': 3, 'retryOn': ['KeyError', 'ValueError']})
+    rd = RetryDecorator.from_mapping(
+        {'max': 3, 'retryOn': ['KeyError', 'ValueError']})
 
     context = Context({})
     mock = MagicMock()
@@ -4104,6 +4128,12 @@ def test_while_init_no_max_no_stop():
     )
 
 
+def test_while_decorator_not_eq():
+    """Return Equal False when compared on different type."""
+    assert WhileDecorator(max=3) != 3
+    assert WhileDecorator(max=3) != WhileDecorator(max=4)
+
+
 # endregion WhileDecorator: init
 
 
@@ -4155,7 +4185,7 @@ def test_while_exec_iteration_stop_evals_true():
 
 def test_while_exec_iteration_stop_false():
     """exec_iteration False when stop is False."""
-    wd = WhileDecorator({'max': 1, 'stop': False})
+    wd = WhileDecorator.from_mapping({'max': 1, 'stop': False})
 
     context = Context()
     mock = MagicMock()
@@ -4170,7 +4200,7 @@ def test_while_exec_iteration_stop_false():
 
 def test_while_exec_iteration_stop_evals_false():
     """exec_iteration False when stop is False."""
-    wd = WhileDecorator({'stop': '{stop}'})
+    wd = WhileDecorator.from_mapping({'stop': '{stop}'})
 
     context = Context({'stop': False})
     mock = MagicMock()

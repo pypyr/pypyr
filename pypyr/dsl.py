@@ -451,14 +451,11 @@ class Step:
 
             if line_no:
                 logger.error(
-                    "Error at pipeline step%s yaml line: "
-                    "%d, col: %d",
+                    "Error at pipeline step%s yaml line: %d, col: %d",
                     name, line_no, line_col
                 )
             else:
-                logger.error(
-                    "Error at pipeline step%s", name
-                )
+                logger.error("Error at pipeline step%s", name)
             raise
 
         step = cls(name=name,
