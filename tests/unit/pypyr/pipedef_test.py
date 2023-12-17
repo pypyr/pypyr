@@ -4,8 +4,10 @@ For PipelineBody unit tests, see stepsrunner_test.py.
 """
 import pytest
 
+from pypyr.context import Context
 from pypyr.errors import PipelineDefinitionError
 from pypyr.pipedef import (Metadata,
+                           PipelineBody,
                            PipelineDefinition,
                            PipelineInfo,
                            PipelineFileInfo)
@@ -180,7 +182,6 @@ def test_metadata_from_mapping_on_none():
     with pytest.raises(PipelineDefinitionError) as err:
         Metadata.from_mapping(None)
 
-    print(str(err.value))
     assert str(err.value) == '_meta must be a mapping, not a NoneType.'
 
 
@@ -213,3 +214,85 @@ def test_metadata_none():
     assert md.get('arb') is None
 
 # endregion Metadata
+
+# region PipelineBody
+
+
+def test_pipeline_body_from_mapping_step_group_not_list_raises():
+    """Raise error if step-group is not a list."""
+    with pytest.raises(PipelineDefinitionError) as err:
+        PipelineBody.from_mapping({'sg': 123})
+
+    assert str(err.value) == ("step group 'sg' must be a sequence "
+                              + "(aka list or array), but it is a int.")
+
+
+def test_pipeline_body_from_mapping_step_group_is_string_raises():
+    """Raise error if step-group is a string."""
+    with pytest.raises(PipelineDefinitionError) as err:
+        PipelineBody.from_mapping({'sg': '123'})
+
+    assert str(err.value) == ("step group 'sg' must be a sequence "
+                              + "(aka list or array), but it is a str.")
+
+
+def test_pipeline_body_not_equal_raises():
+    """Raise error if PipelineBody equality on different type."""
+    assert PipelineBody.from_mapping({}) != 123
+    assert PipelineBody.from_mapping(
+        {}) != PipelineBody.from_mapping({'a': []})
+
+
+def test_test_pipeline_body_create_custom_step_group_and_append():
+    """Create a custom step group and append to it."""
+    pb = PipelineBody()
+    pb.create_custom_step_group('a', [1, 2, 3])
+    assert pb.step_groups == {'a': [1, 2, 3]}
+    pb.custom_step_group_append_step('a', 4)
+    assert pb.step_groups == {'a': [1, 2, 3, 4]}
+
+    # and append if step-group don't exist yet
+    pb.custom_step_group_append_step('b', 5)
+    assert pb.step_groups == {'a': [1, 2, 3, 4], 'b': [5]}
+
+
+def test_test_pipeline_body_create_success_group_and_append():
+    """Create a success step group and append to it."""
+    pb = PipelineBody()
+    pb.create_success_group([1, 2, 3])
+    assert pb.step_groups == {'on_success': [1, 2, 3]}
+    pb.success_append_step(4)
+    assert pb.step_groups == {'on_success': [1, 2, 3, 4]}
+
+
+def test_test_pipeline_body_create_failure_group_and_append():
+    """Create a failure step group and append to it."""
+    pb = PipelineBody()
+    pb.create_failure_group([1, 2, 3])
+    assert pb.step_groups == {'on_failure': [1, 2, 3]}
+    pb.failure_append_step(4)
+    assert pb.step_groups == {'on_failure': [1, 2, 3, 4]}
+
+
+def test_pipeline_body_create_steps_group_and_append():
+    """Create steps group and append to it."""
+    pb = PipelineBody()
+    pb.create_steps_group([1, 2, 3])
+    assert pb.step_groups == {'steps': [1, 2, 3]}
+    pb.steps_append_step(4)
+    assert pb.step_groups == {'steps': [1, 2, 3, 4]}
+
+
+def test_pipeline_body_reserved_step_group_raises():
+    """Raise error when trying to run a reserved step group name."""
+    pb = PipelineBody()
+    with pytest.raises(PipelineDefinitionError) as err:
+        pb.run_step_group('_meta', Context())
+
+    assert str(err.value).startswith(
+        "_meta is reserved. Use a different step-group name. The reserved "
+        + "names are: {")
+    # remaining output looks like {'_meta', 'context_parser'}. Not asserting
+    # because no sort order on set to str convert.
+
+# endregion PipelineBody
