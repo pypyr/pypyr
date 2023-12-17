@@ -219,15 +219,13 @@ class PipelineBody():
                 continue
 
             # v must be list-like if this is a step-group
-            # but we don't necessarily know all the group names in advance, so
-            # can only validate the ones we do know about
-            if not isinstance(v, Sequence):
+            # since it's NOT one of the known keys (e.g _meta), it MUST be a
+            # step-group, and therefore a Sequence.
+            if (not isinstance(v, Sequence)
+                    or isinstance(v, (str, bytes, bytearray))):
                 raise PipelineDefinitionError(
-                    "step group must be sequence/list.")
-            else:
-                if isinstance(v, (str, bytes, bytearray)):
-                    raise PipelineDefinitionError(
-                        "step group must be a list, not a string")
+                    f"step group '{k}' must be a sequence "
+                    f"(aka list or array), but it is a {type(v).__name__}.")
 
             step_groups[k] = [Step.from_step_definition(
                 step_def) for step_def in v]
