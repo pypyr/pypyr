@@ -2,7 +2,13 @@
 
 For PipelineBody unit tests, see stepsrunner_test.py.
 """
-from pypyr.pipedef import PipelineDefinition, PipelineInfo, PipelineFileInfo
+import pytest
+
+from pypyr.errors import PipelineDefinitionError
+from pypyr.pipedef import (Metadata,
+                           PipelineDefinition,
+                           PipelineInfo,
+                           PipelineFileInfo)
 
 # region PipelineDefinition
 
@@ -129,3 +135,81 @@ def test_pipelinefileinfo_eq():
                             parent='arbdir',
                             path='arbpath') != 2
 # endregion PipelineFileInfo
+
+# region Metadata
+
+
+def test_metadata_all_props():
+    """Instantiate metadata with all properties."""
+    md = Metadata({'author': 'arb author',
+                   'help': 'arb help',
+                   'version': 'arb version',
+                   'arb': 'arb'})
+
+    assert md
+    assert md.author == 'arb author'
+    assert md.help == 'arb help'
+    assert md.version == 'arb version'
+    assert md.get('arb') == 'arb'
+
+
+def test_metadata_from_mapping():
+    """Instantiate metadata with all properties with factory."""
+    md = Metadata.from_mapping({'author': 'arb author',
+                                'help': 'arb help',
+                                'version': 'arb version',
+                                'arb': 'arb'})
+
+    assert md
+    assert md.author == 'arb author'
+    assert md.help == 'arb help'
+    assert md.version == 'arb version'
+    assert md.get('arb') == 'arb'
+
+
+def test_metadata_from_mapping_raise_on_non_mapping():
+    """Instantiate metadata with wrong type should raise."""
+    with pytest.raises(PipelineDefinitionError) as err:
+        Metadata.from_mapping([])
+
+    assert str(err.value) == '_meta must be a mapping, not a list.'
+
+
+def test_metadata_from_mapping_on_none():
+    """Instantiate from None should raise."""
+    with pytest.raises(PipelineDefinitionError) as err:
+        Metadata.from_mapping(None)
+
+    print(str(err.value))
+    assert str(err.value) == '_meta must be a mapping, not a NoneType.'
+
+
+def test_metadata_eq():
+    """Assert metadata equality on equal instances."""
+    assert Metadata({'arb': 123}) == Metadata({'arb': 123})
+    assert Metadata({'arb': 123}) != Metadata({'arb': 456})
+    assert Metadata({}) != 123
+
+
+def test_metadata_empty():
+    """Instantiate metadata no properties."""
+    md = Metadata({})
+
+    assert md
+    assert md.author is None
+    assert md.help is None
+    assert md.version is None
+    assert md.get('arb') is None
+
+
+def test_metadata_none():
+    """Instantiate metadata None."""
+    md = Metadata(None)
+
+    assert md
+    assert md.author is None
+    assert md.help is None
+    assert md.version is None
+    assert md.get('arb') is None
+
+# endregion Metadata
