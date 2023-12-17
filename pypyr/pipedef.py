@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 RESERVED_NAMES = {'context_parser', '_meta'}
 
+
 class PipelineInfo():
     """The common attributes that every pipeline loader should set.
 
@@ -87,13 +88,15 @@ class PipelineInfo():
 
 class PipelineStringInfo(PipelineInfo):
     """Pipeline loaded from a string input."""
+
     def __init__(self, loader: str, is_loader_cascading: bool = True) -> None:
-         """Initialize info for a pipeline loader from string."""
-         super().__init__(pipeline_name=None,
+        """Initialize info for a pipeline loader from string."""
+        super().__init__(pipeline_name=None,
                          loader=loader,
                          parent=None,
                          is_parent_cascading=True,
-                         is_loader_cascading=is_loader_cascading)       
+                         is_loader_cascading=is_loader_cascading)
+
 
 class PipelineFileInfo(PipelineInfo):
     """Pipeline properties set by the default file loader.
@@ -129,44 +132,52 @@ class PipelineFileInfo(PipelineInfo):
 
 
 class Metadata():
+    """Metadata for pipeline.
+
+    In pipeline yaml, this is everything under the _meta key.
+    """
 
     __slots__ = ['_raw']
 
     def __init__(self, raw: Mapping) -> None:
-        self._raw: Mapping = raw
-
+        """Construct metadata object."""
+        self._raw: Mapping = raw if raw is not None else {}
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
+        """Instantiate a metadata object from Mapping."""
         if not isinstance(mapping, Mapping):
             raise PipelineDefinitionError(
-                f"_meta must be a mapping, not a {type(mapping)}.")
+                f"_meta must be a mapping, not a {type(mapping).__name__}.")
         return cls(mapping)
-
 
     @property
     def author(self) -> Any:
-        self._raw.get('author')
-
-    @property
-    def get(self, property) -> Any:
-        self._raw.get(property)
+        """Get author, if any, from metadata."""
+        return self._raw.get('author')
 
     @property
     def help(self) -> Any:
-        self._raw.get('help')
+        """Get help text, if any, from Metadata."""
+        return self._raw.get('help')
 
     @property
     def version(self) -> Any:
-        self._raw.get('version')
+        """Get version, if any, from Metadata."""
+        return self._raw.get('version')
 
-    def __eq__(self, other) -> bool:
-        """Equality comparison checks Metadata and other objects are equal."""
+    def get(self, property) -> Any:
+        """Get any property in the Metadata object, including custom ones."""
+        return self._raw.get(property)
+
+    def __eq__(self, other: Any) -> bool:
+        """Check if Metadata and other objects are equal."""
         if type(self) is type(other):
             return self._raw == other._raw
         else:
             return False
-        
+
+
 class PipelineBody():
     __slots__ = ['meta', 'context_parser', 'step_groups']
 
@@ -374,7 +385,7 @@ class PipelineBody():
     def run_step_group(self,
                        step_group_name: Hashable,
                        context: Context,
-                       raise_stop: bool=False) -> None:
+                       raise_stop: bool = False) -> None:
         """Get the specified step group from the pipeline and run its steps."""
         logger.debug("starting %s", step_group_name)
         assert step_group_name
@@ -382,8 +393,8 @@ class PipelineBody():
         if (step_group_name in RESERVED_NAMES):
             # this should be rare - trying to run a non-runnable key.
             raise PipelineDefinitionError(
-                f"{step_group_name} is reserved. Use a different " +
-                f"step-group name. The reserved names are: {RESERVED_NAMES}.")
+                f"{step_group_name} is reserved. Use a different "
+                + f"step-group name. The reserved names are: {RESERVED_NAMES}.")
 
         steps = self.get_pipeline_steps(step_group=step_group_name)
 
