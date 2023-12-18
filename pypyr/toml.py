@@ -4,7 +4,7 @@ try:
     # reason is py 3.11 includes tomli in stdlib
     import tomllib as toml_reader
 except ModuleNotFoundError:  # pragma: no cover
-    import tomli as toml_reader
+    import tomli as toml_reader  # type: ignore
 
 import tomli_w as toml_writer  # type: ignore
 

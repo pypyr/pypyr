@@ -35,13 +35,13 @@ You cannot set `pip` or `upgrade_pip` when `with_pip` is False."""
 
     def __init__(self,
                  path: str | PathLike,
-                 pip_extras: str = None,
+                 pip_extras: str | None = None,
                  system_site_packages: bool = False,
                  clear: bool = False,
                  symlinks: bool | None = None,
                  upgrade: bool = False,
                  with_pip: bool = True,
-                 prompt: str = None,
+                 prompt: str | None = None,
                  upgrade_pip: bool = True,
                  is_quiet: bool = False) -> None:
         """Initialize VenvCreator."""
@@ -199,7 +199,7 @@ You cannot set `pip` or `upgrade_pip` when `with_pip` is False."""
 class EnvBuilderWithExtraDeps(EnvBuilder):
     """Derived stdlib EnvBuilder to persist in-flight context."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """Initialize with special is_quiet flag."""
         self.is_quiet: bool = kwargs.pop('is_quiet', False)
         # the base ctor still does the actual work

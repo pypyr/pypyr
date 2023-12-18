@@ -8,6 +8,7 @@ from os import PathLike
 from pathlib import Path
 import shlex
 import subprocess
+from typing import Any, Generator
 
 from pypyr.config import config
 from pypyr.errors import ContextError, SubprocessError
@@ -52,7 +53,7 @@ class Command:
                  stdout=None,
                  stderr=None,
                  encoding=None,
-                 append=False):
+                 append=False) -> None:
         """Initialize the Cmd."""
         self.cmd = cmd
         self.is_shell = is_shell
@@ -72,7 +73,7 @@ class Command:
         self.results: list[SubprocessResult] = []
 
     @contextmanager
-    def output_handles(self):
+    def output_handles(self) -> Generator[tuple, None, None]:
         """Return stdout + stderr output handles for subprocess.
 
         If self.stdout or self.stderr are None, will return None for whichever
@@ -141,7 +142,7 @@ class Command:
                     logger.debug("closing cmd file output %s", f.name)
                     f.close()
 
-    def run(self):
+    def run(self) -> None:
         """Run the command as a subprocess.
 
         Raises:
@@ -182,7 +183,7 @@ class Command:
                     "    - another-executable --arg2\n"
                     "  cwd: ../mydir/subdir")
 
-    def _run(self, cmd, stdout=None, stderr=None):
+    def _run(self, cmd, stdout=None, stderr=None) -> None:
         """Spawn subprocess for cmd with stdout + stderr output streams.
 
         If self.save is True, will append the completed process results to
@@ -262,7 +263,7 @@ class Command:
                            stdout=stdout,
                            stderr=stderr)
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         """Check equality for all attributes."""
         if self is other:
             return True

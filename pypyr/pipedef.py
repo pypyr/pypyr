@@ -10,7 +10,11 @@ pypyr.pipeline.Pipeline instead.
 All of the below could well be DataClasses + slots once py3.10 the min
 supported version. Might be nice to have frozen class to make these hashable.
 """
-from collections.abc import Hashable, Mapping, Sequence
+from collections.abc import (Hashable,
+                             Mapping,
+                             MutableMapping,
+                             MutableSequence,
+                             Sequence)
 import logging
 from pathlib import Path
 from typing import Any, Self
@@ -50,8 +54,8 @@ class PipelineInfo():
                  'is_loader_cascading', 'is_parent_cascading']
 
     def __init__(self,
-                 pipeline_name: str,
-                 loader: str,
+                 pipeline_name: str | None,
+                 loader: str | None,
                  parent: Any,
                  is_parent_cascading: bool = True,
                  is_loader_cascading: bool = True) -> None:
@@ -183,12 +187,15 @@ class PipelineBody():
 
     # region constructors
     def __init__(self,
-                 step_groups: Mapping | None = None,
+                 step_groups: MutableMapping[Hashable,
+                                             MutableSequence[Step]]
+                 | None = None,
                  context_parser: str | None = None,
                  meta: Metadata | None = None):
         self.context_parser: str | None = context_parser
         self.meta: Metadata | None = meta
-        self.step_groups: Mapping | None = step_groups if step_groups else {}
+        self.step_groups: MutableMapping[Hashable, MutableSequence[Step]
+                                         ] = step_groups if step_groups else {}
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
@@ -208,7 +215,7 @@ class PipelineBody():
 
         context_parser = None
         meta = None
-        step_groups = {}
+        step_groups: MutableMapping[Hashable, MutableSequence[Step]] = {}
         for k, v in mapping.items():
             if k == 'context_parser':
                 context_parser = v
@@ -253,16 +260,16 @@ class PipelineBody():
     # region helpers to build pipeline in code rather than yaml
     def create_custom_step_group(self,
                                  name: Hashable,
-                                 steps: list[Step]) -> None:
+                                 steps: MutableSequence[Step]) -> None:
         self.step_groups[name] = steps
 
-    def create_steps_group(self, steps: Sequence[Step]) -> None:
+    def create_steps_group(self, steps: MutableSequence[Step]) -> None:
         self.create_custom_step_group(config.default_group, steps)
 
-    def create_success_group(self, steps: Sequence[Step]) -> None:
+    def create_success_group(self, steps: MutableSequence[Step]) -> None:
         self.create_custom_step_group(config.default_success_group, steps)
 
-    def create_failure_group(self, steps: Sequence[Step]) -> None:
+    def create_failure_group(self, steps: MutableSequence[Step]) -> None:
         self.create_custom_step_group(config.default_failure_group, steps)
 
     def steps_append_step(self, step: Step) -> None:
@@ -285,7 +292,7 @@ class PipelineBody():
     # endregion helpers to build pipeline in code rather than yaml
 
     # region pipeline execution
-    def get_pipeline_steps(self, step_group: Hashable) -> Sequence[Step]:
+    def get_pipeline_steps(self, step_group: Hashable) -> Sequence[Step] | None:
         """Get the specified step-group's steps from the pipeline.
 
         If there is no steps_group sequence on the pipeline, return None.
@@ -354,7 +361,7 @@ class PipelineBody():
         logger.debug("done")
 
     def run_pipeline_steps(self,
-                           steps: Sequence[Step],
+                           steps: Sequence[Step] | None,
                            context: Context) -> None:
         """Run the run_step(context) method of each step in steps.
 

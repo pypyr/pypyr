@@ -97,7 +97,7 @@ class Command:
                  stdout=None,
                  stderr=None,
                  encoding=None,
-                 append=False):
+                 append=False) -> None:
         """Initialize the Cmd."""
         self.cmd = cmd
         self.is_shell = is_shell
@@ -271,8 +271,13 @@ class Command:
                     tasks = [self._run(c, stdout, stderr) for c in cmd]
                     results = await asyncio.gather(*tasks,
                                                    return_exceptions=True)
-                    # extend results shared state here coz concurrent now done
-                    self._results.extend(results)
+
+                    # extend results shared state here coz concurrent now done.
+                    # ignore typing warning that BaseException can return from
+                    # gather(), because I tested it and it doesn't.
+                    # KeyboardException etc. raises, it doesn't come back in
+                    # result list.
+                    self._results.extend(results)  # type: ignore
                 else:
                     err = ContextError(
                         f"{cmd} cmds input.\n"
