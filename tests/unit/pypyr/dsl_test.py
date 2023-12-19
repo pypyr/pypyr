@@ -600,6 +600,7 @@ def test_init_defaults(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_from_step_definition(mocked_moduleloader):
+    """Instantiate from step definition factory."""
     stepcache.step_cache.clear()
     mocked_moduleloader.return_value.run_step = arb_step_mock
     step = Step.from_step_definition(
@@ -3243,6 +3244,7 @@ def test_save_error_multiple_call(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_step_eq_another_type(mocked_moduleloader):
+    """Test step equality on different types."""
     class ChildStep(Step):
         pass
 
@@ -3251,6 +3253,7 @@ def test_step_eq_another_type(mocked_moduleloader):
 
 @patch('pypyr.moduleloader.get_module')
 def test_step_eq_name(mocked_moduleloader):
+    """Test step quality on names."""
     assert Step('arb') == Step('arb')
     assert Step('arb') != Step('arb1')
 
@@ -4067,6 +4070,7 @@ def test_while_from_mapping_defaults_stop():
 
 
 def test_while_from_mapping():
+    """Instantiate while from mapping factory."""
     wd = WhileDecorator.from_mapping(
         {
             'stop': 'arb',

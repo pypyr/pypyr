@@ -2,7 +2,7 @@
 import json
 import logging
 from collections.abc import Mapping
-from typing import Self
+from typing import Any, Self
 
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
 from ruamel.yaml.nodes import ScalarNode
@@ -362,6 +362,7 @@ class Step:
 
     @classmethod
     def from_step_definition(cls, step_definition: Mapping | str) -> Self:
+        """Create Step from deserialized yaml."""
         logger.debug("starting")
 
         name = None
@@ -867,6 +868,7 @@ class RetryDecorator:
             errors.
 
     """
+
     __slots__ = (
         'backoff',
         'backoff_args',
@@ -916,6 +918,7 @@ class RetryDecorator:
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
+        """Create a Retry from a mapping/dict."""
         logger.debug("starting")
 
         if isinstance(mapping, dict):
@@ -1099,8 +1102,8 @@ class RetryDecorator:
 
         logger.debug("done")
 
-    def __eq__(self, other):
-        """RetryDecorator equality comparison."""
+    def __eq__(self, other: Any) -> bool:
+        """Check RetryDecorator equality comparison."""
         if type(self) is not type(other):
             return False
 
@@ -1182,6 +1185,7 @@ class WhileDecorator:
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
+        """Create a While from a mapping/dict."""
         logger.debug("starting")
 
         if isinstance(mapping, dict):
@@ -1329,8 +1333,8 @@ class WhileDecorator:
 
         logger.debug("done")
 
-    def __eq__(self, other):
-        """WhileDecorator equality comparison."""
+    def __eq__(self, other: Any) -> bool:
+        """Check WhileDecorator equality comparison."""
         if type(self) is not type(other):
             return False
 

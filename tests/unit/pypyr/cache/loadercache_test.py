@@ -45,7 +45,7 @@ def test_load_the_loader_ok():
 
     # name+parent is unique
     response3 = loader.get_pipeline(name='arb', parent='/arb2')
-    
+
     assert response3 == PipelineDefinition(
         pipeline=PipelineBody(
             step_groups={'arb': [], '/arb2': []}),
@@ -57,14 +57,14 @@ def test_load_the_loader_ok():
         pipeline=PipelineBody(
             step_groups={'arb2': [], '/arb2': []}),
         info=PipelineInfo('arb2', 'tests.arbpack.arbloader', '/arb2'))
-    
+
     response5 = loader.get_pipeline(name='arb2', parent=None)
 
     assert response5 == PipelineDefinition(
         pipeline=PipelineBody(
             step_groups={'arb2': [], None: []}),
         info=PipelineInfo('arb2', 'tests.arbpack.arbloader', None))
-    
+
     assert len(loader._pipeline_cache._cache) == 4
 
 
@@ -132,7 +132,6 @@ def test_get_pype_loader_specified_wraps_in_pipedef():
 
     with patch('pypyr.moduleloader.get_module') as mock_get_module:
         pipeline_body = PipelineBody.from_mapping({'a': ['b']})
-        mock_get_step = Mock()
         # mock_get_step.return_value = Mock()
         pipeline = loader.get_pipeline('arb', 'parent')
 

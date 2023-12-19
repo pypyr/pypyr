@@ -2,10 +2,15 @@
 
 This is the entrypoint for the pypyr API.
 
-Use run() to run a pipeline.
+Use run() to run a pipeline if you are passing a YAML file to pypyr.
+
+If you are constructing your pipelines in code, use run_pipeline_body (which
+will create a default PipelineDefinition for you) or run_pipeline_definition
+(for which you create your own PipelineDefinition).
 """
 # can remove __future__ once py 3.10 the lowest supported version
 from __future__ import annotations
+from collections.abc import Mapping
 import logging
 from os import PathLike
 
@@ -127,6 +132,41 @@ def run_pipeline_body(
     loader: str | None = None,
     py_dir: str | bytes | PathLike | None = None
 ) -> Context:
+    """Run a PipelineBody.
+
+    If you are creating your pipelines in code rather than yaml, this or
+    :func:`~pypyr.pipelinerunner.run_pipeline_definition` is a sensible
+    entrypoint. If you have are creating the PipelineDefinition yourself, use
+    :func:`~pypyr.pipelinerunner.run_pipeline_definition`. If instead you are
+    creating a PipelineBody you can run from here - this function will create
+    a default PipelineDefinition under the hood for you.
+
+    For the functional mechanics of how run works, please see the documentation
+    for :func:`~pypyr.pipelinerunner.run`.
+
+    Args:
+        pipeline_name (str): Name of pipeline. Since you are specifying the
+            pipeline_body here yourself, the name doesn't really matter (unlike
+            run(), where name points to a file location). This name turns up in
+            context.current_pipeline.pipeline_definition.info.pipeline_name.
+        args_in (list[str]): All the input arguments after the pipeline name
+            from cli.
+        parse_args (bool): run context_parser in pipeline. Default True.
+        dict_in (dict): Dict-like object to initialize the Context.
+        groups: (list[str]): Step-group names to run in pipeline.
+            Default is ['steps'].
+        success_group (str): Step-group name to run on success completion.
+            Default is on_success.
+        failure_group: (str): Step-group name to run on pipeline failure.
+            Default is on_failure.
+        loader (str): optional. Absolute name of pipeline loader module.
+            If not specified will use pypyr.loaders.file.
+        py_dir (Path-like): Custom python modules resolve from this dir.
+
+    Returns:
+        pypyr.context.Context(): The pypyr context as it is after the pipeline
+                                  completes.
+    """
     logger.debug("starting")
     pipeline_definition = PipelineDefinition(
         pipeline=pipeline_body,
@@ -135,16 +175,17 @@ def run_pipeline_body(
                           parent=None))
 
     return run_pipeline_definition(
-        pipeline_name = pipeline_name,
-        pipeline_definition = pipeline_definition,
-        args_in = args_in,
-        parse_args = parse_args,
-        dict_in = dict_in,
-        groups = groups,
-        success_group = success_group,
-        failure_group = failure_group,
-        loader = loader,
-        py_dir= py_dir)
+        pipeline_name=pipeline_name,
+        pipeline_definition=pipeline_definition,
+        args_in=args_in,
+        parse_args=parse_args,
+        dict_in=dict_in,
+        groups=groups,
+        success_group=success_group,
+        failure_group=failure_group,
+        loader=loader,
+        py_dir=py_dir)
+
 
 def run_pipeline_definition(
     pipeline_name: str,
@@ -158,6 +199,41 @@ def run_pipeline_definition(
     loader: str | None = None,
     py_dir: str | bytes | PathLike | None = None
 ) -> Context:
+    """Run a PipelineDefinition.
+
+    If you are creating your pipelines in code rather than yaml, this is a
+    sensible entrypoint. If you are only creating a PipelineBody rather than
+    a PipelineDefinition, you can use
+    :func:`~pypyr.pipelinerunner.run_pipeline_body` instead, which will
+    create a default PipelineDefinition for you and then call this function.
+
+    For the functional mechanics of how run works, please see the documentation
+    for :func:`~pypyr.pipelinerunner.run`.
+
+    Args:
+        pipeline_name (str): Name of pipeline. Since you are specifying the
+            pipeline_definition yourself, the name doesn't really matter (
+            unlike run(), where name points to a file location). This name
+            turns up in:
+            context.current_pipeline.pipeline_definition.info.pipeline_name.
+        args_in (list[str]): All the input arguments after the pipeline name
+            from cli.
+        parse_args (bool): run context_parser in pipeline. Default True.
+        dict_in (dict): Dict-like object to initialize the Context.
+        groups: (list[str]): Step-group names to run in pipeline.
+            Default is ['steps'].
+        success_group (str): Step-group name to run on success completion.
+            Default is on_success.
+        failure_group: (str): Step-group name to run on pipeline failure.
+            Default is on_failure.
+        loader (str): optional. Absolute name of pipeline loader module.
+            If not specified will use pypyr.loaders.file.
+        py_dir (Path-like): Custom python modules resolve from this dir.
+
+    Returns:
+        pypyr.context.Context(): The pypyr context as it is after the pipeline
+                                  completes.
+    """
     logger.debug("starting")
     pipeline, args = Pipeline.new_pipe_and_args(name=pipeline_name,
                                                 context_args=args_in,
@@ -172,7 +248,8 @@ def run_pipeline_definition(
     return _run(pipeline, args)
 
 
-def _run(pipeline, args):
+def _run(pipeline: Pipeline, args: Mapping | None) -> Context:
+    """Instantiate context and run the pipeline."""
     logger.debug("starting")
     context = Context(args) if args else Context()
 
