@@ -10,15 +10,15 @@ interpreting pipeline yaml - it parses step-by-step as it goes (or just-in-time,
 if you will) and does NOT validate the entire yaml file's structure in advance.
 
 This does make pypyr very flexible, in that it's not restrictive about the
-over-all file structure and that it's relatively fault-tolerant in that even if
-one section of a pipeline is not valid, other valid sections will still work.
+over-all file's structure and is relatively fault-tolerant - even if one section
+of a pipeline is not valid, other valid sections will still work.
 
 However, this also means that pipeline authors only discover at runtime whether
 there are structural errors in their pipeline yaml. pypyr currently has no way
 of validating that a pipeline's structure is correct and runnable without
 actually running the pipeline. This is annoying in long running pipelines
-because it could burn a lot of time before pypyr raises a formatting error at a
-later step in the pipeline. 
+because it could burn a lot of time before pypyr reaches a later malformed step
+in the pipeline and raises a formatting error. 
 
 ### Pipelines as Code
 Additionally, API consumers want to construct pipelines in code, rather than
@@ -28,7 +28,7 @@ the case and pypyr is in NO WAY getting rid of yaml pipelines - the design
 principle of simple, intuitively human-readable yaml pipelines still obtains.
 
 However, pypyr can provide an alternative for API coders to construct pipelines
-in code - currently API consumers construct pipelines in YAML, rather than have
+in code. Currently API consumers construct pipelines in YAML, rather than have
 typed pipeline definitions that will make it possible to create pipelines right
 there in the code without having to switch context to a YAML file.
 
@@ -46,7 +46,7 @@ the already existing `pypyr.dsl.Step` classes.
 
 - `PipelineDefinition` <-- exists already
    - `PipelineBody` <-- NEW
-      - list of `Step` <-- exists already
+      - Sequence of `Step` <-- exists already
 
 The `PipelineBody` initialization _is_ effectively the validation. If a
 `mapping` can parse into a `PipelineBody`, it means it's a valid pipeline. This
@@ -54,7 +54,8 @@ will happen on loading the pipeline, so pipeline authors will know immediately
 if there are problems with the pipeline, rather than have to wait until pypyr
 reaches a step at runtime to know that it passes validation.
 
-NB: this does NOT validate the step `in` input, this remains just-in-time. This
+### in parameter validation
+The does NOT validate the step `in` input, this remains just-in-time. This
 does seem like an oversight, but here are the reasons:
 1. Step `in` is dynamic. This is one of the strengths of pypyr. The step's `in`
 args could be derived dynamically from other preceding steps in the pipeline -
@@ -134,8 +135,8 @@ wish-list purpose of validation.
 1. No more ad hoc yaml in a pipeline - all yaml in pipeline must conform to 
    schema.
 2. Custom loaders returning a `PipelineDefinition` will have to wrap a mapping
-   dict into a `PipelineBody`. Note that loaders returning a `Mapping` (e.g a
-   `dict`) will keep on working as before, no changes necessary.
+   (aka dict) into a `PipelineBody`. Note that loaders returning a `Mapping`
+   (e.g a `dict`) will keep on working as before, no changes necessary.
 3. Broken pipelines that used to run until they got to a structurally malformed
    step will now not run at all, rather than run until it hits the breaking
    point.
