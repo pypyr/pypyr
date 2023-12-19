@@ -6,7 +6,7 @@ from pypyr.steps import configvars
 def test_configvars_empty_vars(monkeypatch):
     """Do nothing when config.vars is empty."""
     monkeypatch.setattr('pypyr.config.config.vars', None)
-    
+
     context = Context()
     configvars.run_step(context)
     assert context == {}

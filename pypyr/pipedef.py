@@ -183,6 +183,12 @@ class Metadata():
 
 
 class PipelineBody():
+    """The body of the pipeline.
+
+    This is the context_parser, metadata and step-groups. The step-groups
+    contain steps.
+    """
+
     __slots__ = ['meta', 'context_parser', 'step_groups']
 
     # region constructors
@@ -192,6 +198,7 @@ class PipelineBody():
                  | None = None,
                  context_parser: str | None = None,
                  meta: Metadata | None = None):
+        """Create a PipelineBody."""
         self.context_parser: str | None = context_parser
         self.meta: Metadata | None = meta
         self.step_groups: MutableMapping[Hashable, MutableSequence[Step]
@@ -199,6 +206,7 @@ class PipelineBody():
 
     @classmethod
     def from_mapping(cls, mapping: Mapping) -> Self:
+        """Create a PipelineBody from a mapping."""
         logger.debug("starting")
         # if the pipeline is not a dict at top level, failures down-stream get
         # mysterious - this prevents malformed pipe from even making it into
@@ -244,7 +252,7 @@ class PipelineBody():
 
     # endregion constructors
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check all instance attributes are equal."""
         type_self = type(self)
 
@@ -261,29 +269,57 @@ class PipelineBody():
     def create_custom_step_group(self,
                                  name: Hashable,
                                  steps: MutableSequence[Step]) -> None:
+        """Create a custom step-group in this pipeline.
+
+        A step-group has a name (which is usually a string), and it contains
+        a sequence of Steps.
+        """
         self.step_groups[name] = steps
 
     def create_steps_group(self, steps: MutableSequence[Step]) -> None:
+        """Create the default `steps` step-group containing these Steps."""
         self.create_custom_step_group(config.default_group, steps)
 
     def create_success_group(self, steps: MutableSequence[Step]) -> None:
+        """Create the default `on_success` step-group with these steps."""
         self.create_custom_step_group(config.default_success_group, steps)
 
     def create_failure_group(self, steps: MutableSequence[Step]) -> None:
+        """Create the default `on_failure` step-group with these steps."""
         self.create_custom_step_group(config.default_failure_group, steps)
 
     def steps_append_step(self, step: Step) -> None:
+        """Append a Step to the default `steps` group.
+
+        This will create the `steps` group for you if it doesn't exist yet.
+        """
         self.custom_step_group_append_step(config.default_group, step)
 
     def success_append_step(self, step: Step) -> None:
+        """Append a Step to the default `on_success` group.
+
+        This will create the `on_success` group for you if it doesn't exist
+        yet.
+        """
         self.custom_step_group_append_step(config.default_success_group, step)
 
     def failure_append_step(self, step: Step) -> None:
+        """Append a Step to the default `on_failure` group.
+
+        This will create the `on_failure` group for you if it doesn't exist
+        yet.
+        """
         self.custom_step_group_append_step(config.default_failure_group, step)
 
     def custom_step_group_append_step(self,
                                       name: Hashable,
                                       step: Step) -> None:
+        """Append a Step to the named step group.
+
+        This is handy for your own custom step groups.
+
+        This will create the step-group for you if it doesn't exist yet.
+        """
         if name not in self.step_groups:
             self.step_groups[name] = [step]
         else:
@@ -292,7 +328,8 @@ class PipelineBody():
     # endregion helpers to build pipeline in code rather than yaml
 
     # region pipeline execution
-    def get_pipeline_steps(self, step_group: Hashable) -> Sequence[Step] | None:
+    def get_pipeline_steps(self,
+                           step_group: Hashable) -> Sequence[Step] | None:
         """Get the specified step-group's steps from the pipeline.
 
         If there is no steps_group sequence on the pipeline, return None.
@@ -398,8 +435,8 @@ class PipelineBody():
         if (step_group_name in RESERVED_NAMES):
             # this should be rare - trying to run a non-runnable key.
             raise PipelineDefinitionError(
-                f"{step_group_name} is reserved. Use a different "
-                + f"step-group name. The reserved names are: {RESERVED_NAMES}.")
+                f"{step_group_name} is reserved. Use a different step-group "
+                + f"name. The reserved names are: {RESERVED_NAMES}.")
 
         steps = self.get_pipeline_steps(step_group=step_group_name)
 

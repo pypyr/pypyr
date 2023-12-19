@@ -32,6 +32,7 @@ class NonSlotsPipelineBody(PipelineBody):
     running instance, which means you can intercept run_step_groups, but not
     the method that method calls, like run_step_group.
     """
+
     pass
 
 
@@ -1050,7 +1051,9 @@ def get_step_pipeline_payload():
 
 class StepStubs():
     """Stubs for fake steps. It maps the step-name into mock on run_step."""
+
     def __init__(self):
+        """Initialize stub."""
         self.mock = Mock()
 
     def nothing_step(self, context):
@@ -1066,7 +1069,7 @@ class StepStubs():
         raise Stop()
 
     def unmapped(self, context):
-        """Throw deliberate error if trying to use a step that was unexpected."""
+        """Throw deliberate error if trying to use unexpected a step."""
         raise ValueError("step_name wasn't found in fake cache.")
 
     def fake_step_cache(self, step_to_func_mapping):
@@ -1088,12 +1091,12 @@ def test_stop_pipeline(mock_step_cache, mock_get_pipe):
     # Sequence: sg2 - sg2.1, 2.2
     #           sg3 - sg3.1 (StopPipeline)
     stubs = StepStubs()
-    
+
     mock_step_cache.side_effect = stubs.fake_step_cache({
-            'sg2.step1': stubs.nothing_step,
-            'sg2.step2': stubs.nothing_step,
-            'sg3.step1': stubs.stop_pipe_step,
-        }
+        'sg2.step1': stubs.nothing_step,
+        'sg2.step2': stubs.nothing_step,
+        'sg3.step1': stubs.stop_pipe_step,
+    }
     )
 
     mock_get_pipe.return_value = get_test_pipeline_definition(
@@ -1129,7 +1132,7 @@ def test_stop_pipeline_for(mock_step_cache, mock_get_pipe):
             raise StopPipeline()
 
     stubs = StepStubs()
-    
+
     mock_step_cache.side_effect = stubs.fake_step_cache({
         'sg2.step1': nothing_mock,
         'sg2.step2': nothing_mock,
@@ -1269,9 +1272,9 @@ def test_stop_all(mock_step_cache, mock_get_pipe):
     assert not context.is_in_pipeline_scope
 
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                          call('sg2.step2'),
-                                          call('sg3.step1')
-                                          ]
+                                     call('sg2.step2'),
+                                     call('sg3.step1')
+                                     ]
 
 
 def get_while_step_pipeline():
@@ -1344,7 +1347,7 @@ def test_stop_all_while(mock_step_cache, mock_get_pipe):
                                      call('sg2.step2'),
                                      call('sg3.step1'),
                                      call('sg3.step1')
-                                          ]
+                                     ]
 
     assert nothing_mock.mock_calls == [call({}),
                                        call({})
@@ -1428,7 +1431,7 @@ def test_stop_all_for(mock_step_cache, mock_get_pipe):
                                      call('sg2.step2'),
                                      call('sg3.step1'),
                                      call('sg3.step1')
-                                    ]
+                                     ]
 
     assert nothing_mock.mock_calls == [call({}),
                                        call({})

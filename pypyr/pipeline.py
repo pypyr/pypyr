@@ -319,17 +319,18 @@ class Pipeline():
             pypyr.moduleloader.add_sys_path(self.py_dir)
 
         if self.pipeline_definition is None:
-            # could save loader_instance to self for >1 run on same pipeline, but
-            # since you'd need extra check if self.loader has changed since last
-            # time, O(1) dict lookup in cache prob not going to add too much
-            # overhead by comparison.
+            # could save loader_instance to self for >1 run on same pipeline,
+            # but since you'd need extra check if self.loader has changed since
+            # last time, O(1) dict lookup in cache prob not going to add too
+            # much overhead by comparison.
             loader_instance = loader_cache.get_pype_loader(self.loader)
 
             # pipeline loading deliberately outside try catch. If the pipeline
-            # doesn't exist there is no failure handler that can possibly run so
-            # this is very much a fatal stop error.
-            self.pipeline_definition = loader_instance.get_pipeline(name=self.name,
-                                                                    parent=parent)
+            # doesn't exist there is no failure handler that can possibly run
+            # so this is very much a fatal stop error.
+            self.pipeline_definition = loader_instance.get_pipeline(
+                name=self.name,
+                parent=parent)
 
         # add current pipeline's info to the callstack & remove when pipeline
         # done.

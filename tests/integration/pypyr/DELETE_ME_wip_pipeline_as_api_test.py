@@ -1,3 +1,4 @@
+# flake8: noqa
 from pypyr.pipedef import PipelineBody
 from pypyr.dsl import Step, RetryDecorator, PyString
 from pypyr.pipelinerunner import run_pipeline_body

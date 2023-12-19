@@ -114,7 +114,7 @@ def test_get_pipeline_steps_pass(mocked_module_get):
     assert steps[0] == Step('step1')
     assert steps[1] == Step('step2')
     assert steps[2] == Step('step3key1',
-                            in_parameters=  {'key3k2': 'values3k2'})
+                            in_parameters={'key3k2': 'values3k2'})
     assert steps[3] == Step('step4')
 
     mock_logger_debug.assert_any_call("4 steps found under sg1 in "
@@ -219,7 +219,7 @@ def test_run_pipeline_steps_complex(mock_invoke_step, mock_module):
     """Complex step run with no in args."""
     with patch_logger('pypyr.dsl', logging.DEBUG) as mock_logger_debug:
         PipelineBody.from_mapping(
-            {'steps' :[]}).run_pipeline_steps([
+            {'steps': []}).run_pipeline_steps([
                 Step.from_step_definition({'name': 'step1'})],
                 Context({'k1': 'v1'}))
 
@@ -290,7 +290,7 @@ def test_run_pipeline_steps_complex_with_in(mock_invoke_step, mock_module):
 def test_run_pipeline_steps_simple(mock_run_step, mock_module):
     """Simple step run."""
     PipelineBody.from_mapping({}).run_pipeline_steps([Step('step1')],
-            Context( {'k1': 'v1'}))
+                                                     Context({'k1': 'v1'}))
 
     mock_run_step.assert_called_once_with({'k1': 'v1'})
 
@@ -308,12 +308,12 @@ def test_run_pipeline_steps_mix_run_and_not_run(mock_invoke_step, mock_module):
         'run': True
     }),
         Step.from_step_definition({
-        'name': 'step2',
-        'run': False
-    }),
+            'name': 'step2',
+            'run': False
+        }),
         Step.from_step_definition({
-        'name': 'step3',
-    }),
+            'name': 'step3',
+        }),
     ]
 
     context = get_test_context()
@@ -374,13 +374,13 @@ def test_run_pipeline_steps_complex_with_multistep_none_run(mock_invoke_step,
         'run': False
     }),
         Step.from_step_definition({
-        'name': 'step2',
-        'run': 0
-    }),
+            'name': 'step2',
+            'run': 0
+        }),
         Step.from_step_definition({
-        'name': 'step3',
-        'run': None,
-    }),
+            'name': 'step3',
+            'run': None,
+        }),
     ]
 
     context = get_test_context()
@@ -415,12 +415,12 @@ def test_run_pipeline_steps_mix_skip_and_not_skip(mock_invoke_step,
         'skip': False
     }),
         Step.from_step_definition({
-        'name': 'step2',
-        'skip': True
-    }),
+            'name': 'step2',
+            'skip': True
+        }),
         Step.from_step_definition({
-        'name': 'step3',
-    }),
+            'name': 'step3',
+        }),
     ]
 
     context = get_test_context()
@@ -481,19 +481,19 @@ def test_run_pipeline_steps_complex_with_multistep_all_skip(mock_invoke_step,
         'skip': [1, 2, 3]
     }),
         Step.from_step_definition({
-        'name': 'step2',
-        'skip': 1
-    }),
+            'name': 'step2',
+            'skip': 1
+        }),
         Step.from_step_definition({
-        'name': 'step3',
-        'skip': True,
-    }),
+            'name': 'step3',
+            'skip': True,
+        }),
         Step.from_step_definition({
-        'name': 'step4',
-        # run evals before skip
-        'run': False,
-        'skip': False
-    }),
+            'name': 'step4',
+            # run evals before skip
+            'run': False,
+            'skip': False
+        }),
     ]
 
     context = get_test_context()
@@ -687,9 +687,9 @@ def test_run_step_group_raise(mock_run_steps):
     with pytest.raises(StopStepGroup):
         PipelineBody.from_mapping(
             get_valid_test_pipeline()).run_step_group(
-                                              step_group_name='sg1',
-                                              context=Context(),
-                                              raise_stop=True)
+            step_group_name='sg1',
+            context=Context(),
+            raise_stop=True)
 
     mock_run_steps.assert_called_once_with(steps=[
         Step('step1'),
@@ -966,23 +966,23 @@ def call_step(groups,
         raise Call(groups, success, failure, original_config)
     return run_step
 
+
 class StepStubs():
     """Stubs for fake steps. It maps the step-name into mock on run_step."""
+
     def __init__(self):
-        """Initialize mock to record stubs calls"""
+        """Initialize mock to record stubs calls."""
         self.mock = Mock()
 
     def nothing_step(self, context):
         """Do nothing."""
         pass
 
-
     def jump_step(self, groups, success=None, failure=None):
         """Jump step mock."""
         def run_step(context):
             raise Jump(groups, success, failure, 'jumparb')
         return run_step
-
 
     def call_step(self,
                   groups,
@@ -995,7 +995,7 @@ class StepStubs():
         return run_step
 
     def unmapped(self, context):
-        """Throw deliberate error if trying to use a step that was unexpected."""
+        """Throw deliberate error if trying to use unexpected step."""
         raise ValueError("step_name wasn't found in fake cache.")
 
     def fake_step_cache(self, step_to_func_mapping):
@@ -1021,7 +1021,7 @@ def test_jump_with_success_handler(mock_step_cache):
     mock_step_cache.side_effect = stubs.fake_step_cache({
         'sg2.step1': stubs.jump_step(['sg1']),
         'sg1.step1': stubs.nothing_step,
-        'sg1.step2': stubs.jump_step(['sg4']),  
+        'sg1.step2': stubs.jump_step(['sg4']),
         'sg4.step1': stubs.jump_step(['sg3']),
         'sg3.step1': stubs.nothing_step,
         'sg3.step2': stubs.nothing_step,
@@ -1193,7 +1193,7 @@ def test_jump_with_while(mock_step_cache):
                                  call({'a': 'b', 'whileCounter': 2})]
 
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                     call('sg2.step1'), # repeats coz while
+                                     call('sg2.step1'),  # repeats coz while
                                      call('sg1.step1'),
                                      call('sg1.step2'),
                                      call('sg4.step1'),
@@ -1272,10 +1272,9 @@ def test_jump_with_for(mock_step_cache):
 
     assert mock21.mock_calls == [call({'a': 'b', 'i': 'one'}),
                                  call({'a': 'b', 'i': 'two'})]
-    
 
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                     call('sg2.step1'), # repeats coz for
+                                     call('sg2.step1'),  # repeats coz for
                                      call('sg1.step1'),
                                      call('sg1.step2'),
                                      call('sg4.step1'),
@@ -1319,7 +1318,7 @@ def test_stop_step_group_with_success_handler(mock_step_cache):
                                      call('sg1.step1'),
                                      call('sg3.step1'),
                                      call('sg3.step2')
-                                    ]
+                                     ]
 
 
 @patch('pypyr.cache.stepcache.step_cache.get_step')
@@ -1421,7 +1420,7 @@ def test_stop_step_group_with_success_handler_for(mock_step_cache):
                                      call('sg1.step1'),
                                      call('sg3.step1'),
                                      call('sg3.step2')
-                                    ]
+                                     ]
 
 
 def get_while_11_pipeline():
@@ -1496,7 +1495,7 @@ def test_stop_step_group_with_success_handler_while(mock_step_cache):
                                      call('sg1.step1'),
                                      call('sg3.step1'),
                                      call('sg3.step2')
-                                    ]
+                                     ]
 # endregion StopStepGroup
 
 
@@ -1534,7 +1533,7 @@ def test_call_with_success_handler(mock_step_cache):
         info=PipelineInfo(pipeline_name='arb',
                           loader=None,
                           parent=None))
-    
+
     with context.pipeline_scope(pipeline):
         pipeline_body.run_step_groups(
             groups=['sg2'],
@@ -1562,7 +1561,6 @@ def test_call_with_failure_handler(mock_step_cache):
     def err_step(context):
         raise ValueError('3.1')
 
-
     stubs = StepStubs()
     mock_step_cache.side_effect = stubs.fake_step_cache({
         'sg2.step1': call_step(['sg3']),  # 2.1
@@ -1580,7 +1578,7 @@ def test_call_with_failure_handler(mock_step_cache):
         info=PipelineInfo(pipeline_name='arb',
                           loader=None,
                           parent=None))
-    
+
     with context.pipeline_scope(pipeline):
         with pytest.raises(ValueError) as err_info:
             pipeline_body.run_step_groups(
@@ -1641,7 +1639,7 @@ def test_call_with_failure_handler_while(mock_step_cache):
 
     assert str(err_info.value) == '3.1'
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                     call('sg2.step1'), # 2x coz while
+                                     call('sg2.step1'),  # 2x coz while
                                      call('sg3.step1'),
                                      call('sg4.step1'),
                                      call('sg4.step2')]
@@ -1755,7 +1753,7 @@ def test_call_with_success_handler_for(mock_step_cache):
         info=PipelineInfo(pipeline_name='arb',
                           loader=None,
                           parent=None))
-    
+
     with context.pipeline_scope(pipeline):
         pipeline_body.run_step_groups(
             groups=['sg2'],
@@ -1773,7 +1771,7 @@ def test_call_with_success_handler_for(mock_step_cache):
     assert context == {'a': 'after loop', 'i': 'three', 'call': 'arb'}
 
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                     call('sg2.step1'), # 2x for
+                                     call('sg2.step1'),  # 2x for
                                      call('sg1.step1'),
                                      call('sg1.step2'),
                                      call('sg4.step1'),
@@ -1781,7 +1779,7 @@ def test_call_with_success_handler_for(mock_step_cache):
                                      call('sg3.step2'),
                                      call('sg4.step2'),
                                      call('sg2.step1'),
-                                     call('sg2.step2'), # complete for
+                                     call('sg2.step2'),  # complete for
                                      call('sg5.step1')]
 
 
@@ -1858,7 +1856,7 @@ def test_call_with_success_handler_retry(mock_step_cache):
         info=PipelineInfo(pipeline_name='arb',
                           loader=None,
                           parent=None))
-    
+
     with context.pipeline_scope(pipeline):
         pipeline_body.run_step_groups(
             groups=['sg2'],
@@ -1874,7 +1872,7 @@ def test_call_with_success_handler_retry(mock_step_cache):
                        'retryCounter': 2,
                        'call': 'arb'}
     assert stubs.mock.mock_calls == [call('sg2.step1'),
-                                     call('sg2.step1'), # 2x retry
+                                     call('sg2.step1'),  # 2x retry
                                      call('sg1.step1'),
                                      call('sg1.step2'),
                                      call('sg4.step1'),

@@ -4,12 +4,10 @@ Attributes:
     loader_cache: Global instance of the loader cache.
                   Use this attribute to access the cache from elsewhere.
 """
-from collections.abc import Mapping
 import logging
 
 from pypyr.cache.cache import Cache
 from pypyr.config import config
-from pypyr.errors import PipelineDefinitionError
 import pypyr.moduleloader
 from pypyr.pipedef import PipelineBody, PipelineDefinition, PipelineInfo
 
